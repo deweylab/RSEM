@@ -1,0 +1,248 @@
+#!/usr/bin/perl
+
+use Getopt::Long;
+use Pod::Usage;	
+use File::Basename;
+use strict;
+
+my $status;
+
+my $gtfF = "";
+my $mappingF = "";
+my $polyAChoice = 0; # 0, default, pad polyA tails for all isoforms; 1, --no-polyA; 2, --no-polyA-subset
+my $no_polyA = 0; # for option --no-polyA 
+my $subsetFile = "";
+my $polyALen = 125;
+my $bowtie_path = "";
+my $no_bowtie = 0;
+my $no_ntog = 0; 
+my $quiet = 0;
+my $help = 0;
+
+GetOptions("gtf=s" => \$gtfF,
+	   "transcript-to-gene-map=s" => \$mappingF,
+	   "no-polyA" => \$no_polyA, 
+	   "no-polyA-subset=s" => \$subsetFile,
+	   "polyA-length=i" => \$polyALen,
+	   "bowtie-path=s" => \$bowtie_path,
+	   "no-bowtie" => \$no_bowtie,
+	   "no-ntog" => \$no_ntog,
+	   "q|quiet" => \$quiet,
+	   "h|help" => \$help) or pod2usage(-exitval => 2, -verbose => 2);
+
+pod2usage(-verbose => 2) if ($help == 1);
+pod2usage(-msg => "Set --no-polyA & --no-polyA-subset at the same time!", -exitval => 2, -verbose => 2) if ($no_polyA == 1 && $subsetFile ne '');
+pod2usage(-msg => "Invalid number of arguments!", -exitval => 2, -verbose => 2) if (scalar(@ARGV) != 2);
+pod2usage(-msg => "If bowtie is used, --no-ntog cannot be set!", -exitval => 2, -verbose => 2) if (!$no_bowtie && $no_ntog);
+
+if ($no_bowtie && $bowtie_path ne "") { print "Warning: If bowtie is not used, no need to set --bowtie-path option!\n"; }
+
+my $type;
+
+if ($gtfF ne "") { $type = 0; }
+else { $type = 1; }
+
+my @list = split(/,/, $ARGV[0]);
+my $size = scalar(@list);
+
+if ($size == 1 && (-d $list[0])) {
+    my $dir = $list[0];
+    @list = (<$dir/*.fa>, <$dir/*.fasta>);
+    $size = scalar(@list);
+}
+
+if ($no_polyA) { $polyAChoice = 1 }
+elsif ($subsetFile ne "") { $polyAChoice = 2; }
+
+if ($bowtie_path ne "") { $bowtie_path .= "/"; }
+
+my ($fn, $dir, $suf) = fileparse($0); 
+my $command = "";
+
+if ($type == 0) {
+    $"=" ";
+    $command = $dir."rsem-extract-reference-transcripts $ARGV[1] $quiet $gtfF";
+    if ($mappingF ne "") { $command .= " 1 $mappingF"; }
+    else { $command .= " 0"; }
+    $command .= " @list";
+    print "$command\n";
+    $status = system($command);
+    if ($status != 0) {
+	print "rsem-extract-reference-transcripts failed! Please check if you provide correct parameters/options for the pipeline!\n";
+	exit(-1);
+    }
+    print "\n";
+}
+else {
+    $"=" ";
+    $command = $dir."rsem-synthesis-reference-transcripts $ARGV[1] $quiet";
+    if ($mappingF ne "") { $command .= " 1 $mappingF"; }
+    else { $command .= " 0"; } 
+    $command .= " @list";
+    print "$command\n";
+    $status = system($command);
+    if ($status != 0) {
+	print "rsem-synthesis-reference-transcripts failed! Please check if you provide correct parameters/options for the pipeline!\n";
+	exit(-1);
+    }
+    print "\n";
+}
+
+$command = $dir."rsem-preref $ARGV[1].transcripts.fa $polyAChoice $ARGV[1] -l $polyALen";
+if ($polyAChoice == 2) { $command .= " -f $subsetFile"; }
+if ($no_ntog) { $command .= " --no-ntog"; }
+if ($quiet) { $command .= " -q"; }
+ 
+print "$command\n";
+$status = system($command);
+if ($status != 0) {
+    print "rsem-preref failed! Please check if you provide correct parameters/options for the pipeline!\n";
+    exit(-1);
+}
+print "\n";
+
+if (!$no_bowtie) {
+    $command = $bowtie_path."bowtie-build -f";
+    if ($quiet) { $command .= " -q"; }
+    $command .= " $ARGV[1].idx.fa $ARGV[1]";
+    
+    print "$command\n";
+    $status = system($command);
+    if ($status != 0) {
+	print "bowtie-build failed! Please check if you provide correct parameters/options for the pipeline!\n";
+	exit(-1);
+    }
+    print "\n";
+}
+
+__END__
+
+=head1 NAME
+
+rsem-prepare-reference
+
+=head1 SYNOPSIS
+
+=over
+
+ rsem-prepare-reference [options] reference_fasta_file(s) reference_name
+
+=back
+
+=head1 ARGUMENTS
+
+=over
+
+=item B<reference_fasta_file(s)>
+
+Either a comma-separated list of FASTA formatted files OR a directory name. If a directory name is specified, RSEM will read all files with suffix ".fa" or ".fasta" in this directory.  The files should contain either the sequences of transcripts or an entire genome, depending on whether the --gtf option is used.
+
+=item B<reference name>
+
+The name of the reference used. RSEM will generate several reference-related files that are prefixed by this name. This name can contain path information (e.g. /ref/mm9).
+
+=back
+
+=head1 OPTIONS
+
+=over 
+
+=item B<--gtf> <file>
+
+If this option is on, RSEM assumes that 'reference_fasta_file(s)' contains the sequence of a genome, and will extract transcript reference sequences using the gene annotations specified in <file>, which should be in GTF format.
+
+If this option is off, RSEM will assume 'reference_fasta_file(s)' contains the reference transcripts. In this case, RSEM assumes that name of each sequence in the FASTA files is its transcript_id. 
+
+(Default: off)
+
+=item B<--transcript-to-gene-map> <file>
+
+Use information from <file> to map from transcript (isoform) ids to gene ids.
+Each line of <file> should be of the form:
+
+gene_id transcript_id
+
+with the two fields separated by a tab character.
+ 
+If you are using a GTF file for the "UCSC Genes" gene set from the UCSC Genome Browser, then the "knownIsoforms.txt" file (obtained from the "Downloads" section of the UCSC Genome Browser site) is of this format.
+
+If this option is off, then the mapping of isoforms to genes depends on whether the --gtf option is specified.  If --gtf is specified, then RSEM uses the "gene_id" and "transcript_id" attributes in the GTF file.  Otherwise, RSEM assumes that each sequence in the reference sequence files is a separate gene.
+
+(Default: off)
+
+=item B<--no-polyA>
+
+Do not add poly(A) tails to the end of reference isoforms. (Default: add poly(A) tails to all transcripts)
+
+=item B<--no-polyA-subset> <file>
+
+Add poly(A) tails to all transcripts except those listed in <file>. <file> is a file containing a list of transcript_ids. (Default: add poly(A) tails to all transcripts. This option cannot be used with '--no-polyA'.)
+
+=item B<--polyA-length> <int>
+
+The length of the poly(A) tails to be added. (Default: 125)
+
+=item B<--bowtie-path> <path>
+
+The path to the bowtie executables. (Default: the path to bowtie executables is assumed to be in the user's PATH environment variable)
+
+=item B<--no-bowtie>
+
+Do not build Bowtie indices.  Specify this option if you wish to use an alternative aligner for mapping reads to transcripts.  You should align against the sequences generated in the output file 'reference_name.idx.fa'.  (Default: off)
+
+=item B<--no-ntog>
+
+Disable the conversion of 'N' characters to 'G' characters in the reference sequences.  This conversion is normally desired because it allows some aligners (e.g., Bowtie) to align against all positions in the reference.
+(Default: off)
+
+=item B<-q/--quiet>
+
+Suppress the output of logging information. (Default: off)
+
+=item B<-h/--help>
+
+Show help information.
+
+=back
+
+=head1 DESCRIPTION
+
+This program extracts/preprocesses the reference sequences and builds Bowtie indices using default parameters.  If an alternative aligner is to be used, then the '--no-bowtie' option should be specified to disable building Bowtie indices. This program is used in conjunction with the 'rsem-calculate-expression' program.
+
+=head1 OUTPUT
+
+This program will generate 'reference_name.grp', 'reference_name.ti', 'reference_name.transcripts.fa', 'reference_name.seq', 'reference_name.chrlist' (if '--gtf' is on), 'reference_name.idx.fa', and corresponding Bowtie index files (unless '--no-bowtie' is specified).
+
+'reference_name.grp', 'reference_name.ti', 'reference_name.seq', 'reference_name.idx.fa', and 'reference_name.chrlist' are used by RSEM internally.
+
+B<'reference_name.transcripts.fa'> contains the extracted reference transcripts in FASTA format. Poly(A) tails are not added.
+
+=head1 EXAMPLES
+
+1) Suppose we have mouse RNA-Seq data and want to use the UCSC mm9 version of the mouse genome. We have downloaded the UCSC Genes transcript annotations in GTF format (as mm9.gtf) using the Table Browser and the knownIsoforms.txt file for mm9 from the UCSC Downloads. We also have all chromosome files for mm9 in the directory '/data/mm9'.  We want to put the generated reference files under '/ref' with name 'mm9'. We'll add poly(A) tails with length 125. Please note that GTF files generated from UCSC's Table Browser do not contain isoform-gene relationship information.  For the UCSC Genes annotation, this information can be obtained from the knownIsoforms.txt file.  Suppose we want to build Bowtie indices and Bowtie executables are found in '/sw/bowtie'.
+
+There are two ways to write the command:
+
+ rsem-prepare-reference --gtf mm9.gtf \
+                        --transcript-to-gene-map knownIsoforms.txt \
+                        --bowtie-path /sw/bowtie \                  
+                        /data/mm9/chr1.fa,/data/mm9/chr2.fa,...,/data/mm9/chrM.fa \
+                        /ref/mm9
+
+OR
+
+ rsem-prepare-reference --gtf mm9.gtf \
+                        --transcript-to-gene-map knownIsoforms.txt \
+                        --bowtie-path /sw/bowtie \
+                        /data/mm9 \
+                        /ref/mm9
+
+2) Suppose we only have transcripts from EST tags in 'mm9.fasta'. In addition, we also have isoform-gene information in 'mapping.txt'. We do not want to add any poly(A) tails. The reference_name will be set to 'mm9'. In addition, we do not want to build Bowtie indices, and will use an alternative aligner to align reads against the 'mm9.idx.fa' output file:
+
+ rsem-prepare-reference --transcript-to-gene-map mapping.txt \
+                        --no-polyA \
+                        --no-bowtie \
+                        mm9.fasta \
+                        mm9
+
+=cut
