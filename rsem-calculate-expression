@@ -93,7 +93,7 @@ pod2usage(-verbose => 2) if ($help == 1);
 if ($is_sam || $is_bam) {
     pod2usage(-msg => "Invalid number of arguments!", -exitval => 2, -verbose => 2) if (scalar(@ARGV) != 3);
     pod2usage(-msg => "--sam and --bam cannot be active at the same time!", -exitval => 2, -verbose => 2) if ($is_sam == 1&& $is_bam == 1);
-    pod2usage(-msg => "--bowtie-path, --bowtie-n, --bowtie-e, --bowtie-m, --phred33-quals, --phred64-quals or --solexa-quals cannot be set if input is SAM/BAM format!", -exitval => 2, -verbose => 2) if ($bowtie_path ne "" || $C != 2 || $E != 999999 || $maxHits != 200 || $phred33 || $phred64 || $solexa);
+    pod2usage(-msg => "--bowtie-path, --bowtie-n, --bowtie-e, --bowtie-m, --phred33-quals, --phred64-quals or --solexa-quals cannot be set if input is SAM/BAM format!", -exitval => 2, -verbose => 2) if ($bowtie_path ne "" || $C != 2 || $E != 99999999 || $maxHits != 200 || $phred33 || $phred64 || $solexa);
 }
 else {
     pod2usage(-msg => "Invalid number of arguments!", -exitval => 2, -verbose => 2) if (!$paired_end && scalar(@ARGV) != 3 || $paired_end && scalar(@ARGV) != 4);    

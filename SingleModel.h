@@ -334,8 +334,6 @@ void SingleModel::read(const char* inpF) {
 	pro->read(fi);
 	npro->read(fi);
 
-	fclose(fi);
-
 	if (fscanf(fi, "%d", &M) == 1) {
 	  mw = new double[M + 1];
 	  for (int i = 0; i <= M; i++) fscanf(fi, "%lf", &mw[i]);
@@ -363,7 +361,7 @@ void SingleModel::write(const char* outF) {
 	npro->write(fo);
 
 	if (mw != NULL) {
-	  fprintf(fo, "%d\n", M);
+	  fprintf(fo, "\n%d\n", M);
 	  for (int i = 0; i < M; i++) {
 	    fprintf(fo, "%.15g ", mw[i]);
 	  }

@@ -377,7 +377,7 @@ void SingleQModel::write(const char* outF) {
 	nqpro->write(fo);
 
 	if (mw != NULL) {
-	  fprintf(fo, "%d\n", M);
+	  fprintf(fo, "\n%d\n", M);
 	  for (int i = 0; i < M; i++) {
 	    fprintf(fo, "%.15g ", mw[i]);
 	  }
