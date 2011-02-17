@@ -66,17 +66,13 @@ documentation page](rsem-prepare-reference.html).
 
 ### II. Calculating Expression Values
 
-To prepare the reference sequences, you should run the
+To calculate expression values, you should run the
 'rsem-calculate-expression' program.  Run 
 
     rsem-calculate-expression --help
 
 to get usage information or visit the [rsem-calculate-expression
 documentation page](rsem-calculate-expression.html).
-
-Note: RSEM no longer provides nu values. Instead, RSEM provides
-nrf(normalized read fraction), which is a normalized version of theta
-vector excluding theta_0.
 
 #### Calculating expression values from single-end data
 
