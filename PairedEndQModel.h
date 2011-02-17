@@ -61,12 +61,12 @@ public:
 		mw = NULL;
 
 		if (isMaster) {
-			ori = new Orientation(params.probF);
 			if (!estRSPD) rspd = new RSPD(estRSPD);
 			qd = new QualDist();
 			mld = new LenDist(params.mate_minL, params.mate_maxL);
 		}
 
+		ori = new Orientation(params.probF);
 		gld = new LenDist(params.minL, params.maxL);
 		if (estRSPD) rspd = new RSPD(estRSPD, params.B);
 		qpro = new QProfile();

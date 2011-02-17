@@ -315,21 +315,13 @@ void writeResults(ModelType& model, double* counts) {
 	fprintf(fo, "%.15g\n", theta[M]);
 	fclose(fo);
 
-
-	//calculate normalized read fraction
-	double *nrf = new double[M + 1];
-	memset(nrf, 0, sizeof(double) * (M + 1));
-	denom = 1.0 - theta[0];
-	if (denom <= 0) { fprintf(stderr, "No alignable reads?!\n"); exit(-1); }
-	for (int i = 1; i <= M; i++) nrf[i] = theta[i] / denom;
-
 	//calculate tau values
 	double *tau = new double[M + 1];
 	memset(tau, 0, sizeof(double) * (M + 1));
 
 	denom = 0.0;
 	for (int i = 1; i <= M; i++) 
-	  if (eel[i] > EPSILON) {
+	  if (eel[i] >= EPSILON) {
 	    tau[i] = theta[i] / eel[i];
 	    denom += tau[i];
 	  }   
@@ -348,8 +340,6 @@ void writeResults(ModelType& model, double* counts) {
 	}
 	for (int i = 1; i <= M; i++)
 		fprintf(fo, "%.2f%c", counts[i], (i < M ? '\t' : '\n'));
-	for (int i = 1; i <= M; i++)
-		fprintf(fo, "%.15g%c", nrf[i], (i < M ? '\t' : '\n'));
 	for (int i = 1; i <= M; i++)
 		fprintf(fo, "%.15g%c", tau[i], (i < M ? '\t' : '\n'));
 	for (int i = 1; i <= M; i++) {
@@ -372,12 +362,6 @@ void writeResults(ModelType& model, double* counts) {
 		fprintf(fo, "%.2f%c", sumC, (i < m - 1 ? '\t' : '\n'));
 	}
 	for (int i = 0; i < m; i++) {
-		double sumN = 0.0; // sum of normalized read fraction
-		int b = gi.spAt(i), e = gi.spAt(i + 1);
-		for (int j = b; j < e; j++) sumN += nrf[j];
-		fprintf(fo, "%.15g%c", sumN, (i < m - 1 ? '\t' : '\n'));
-	}
-	for (int i = 0; i < m; i++) {
 		double sumT = 0.0; // sum of tau values
 		int b = gi.spAt(i), e = gi.spAt(i + 1);
 		for (int j = b; j < e; j++) sumT += tau[j];
@@ -391,7 +375,6 @@ void writeResults(ModelType& model, double* counts) {
 	}
 	fclose(fo);
 
-	delete[] nrf;
 	delete[] tau;
 
 	if (verbose) { printf("Expression Results are written!\n"); }
@@ -471,7 +454,6 @@ void EM() {
 	/* set thread attribute to be joinable */
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-
 
 	ROUND = 0;
 	do {

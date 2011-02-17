@@ -18,7 +18,7 @@ public:
 		cdf = new double[B + 2];
 
 		//set initial parameters
-		memset(pdf, 0, sizeof(double) * (B + 2));
+		memset(pdf, 0, sizeof(double) * (B + 2)); // use B + 2 for evalCDF
 		memset(cdf, 0, sizeof(double) * (B + 2));
 		for (int i = 1; i <= B; i++) {
 			pdf[i] = 1.0 / B;

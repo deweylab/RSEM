@@ -1,3 +1,144 @@
+Beta release 0.1.12a (2 December, 2010)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This is another bug fix release:
+
+ * Fixed a memory violation in mpileup, which causes segfault. Release
+   0.1.9 and above are affected.
+
+ * Fixed a memory violation in the indel caller, which does not causes
+   segfault, but may potentially affect deletion calls in an unexpected
+   way. Release 0.1.10 and above are affected.
+
+ * Fixed a bug in computing r-square in bcftools. Few are using this
+   functionality and it only has minor effect.
+
+ * Fixed a memory leak in bam_fetch().
+
+ * Fixed a bug in writing meta information to the BAM index for the last
+   sequence. This bug is invisible to most users, but it is a bug anyway.
+
+ * Fixed a bug in bcftools which causes false "DP4=0,0,0,0" annotations.
+
+(0.1.12: 2 December 2010, r862)
+
+
+
+Beta release 0.1.11 (21 November, 2010)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This is mainly a bug fix release:
+
+ * Fixed a bug in random retrieval (since 0.1.8). It occurs when reads
+   are retrieved from a small region containing no reads.
+
+ * Fixed a bug in pileup (since 0.1.9). The bug causes an assertion
+   failure when the first CIGAR operation is a deletion.
+
+ * Improved fault tolerence in remote access.
+
+One minor feature has been implemented in bcftools:
+
+ * Added a reference-free variant calling mode. In this mode, a site is
+   regarded as a variat iff the sample(s) contains two or more alleles;
+   the meaning of the QUAL field in the VCF output is changed
+   accordingly. Effectively, the reference allele is irrelevant to the
+   result in the new mode, although the reference sequence has to be
+   used in realignment when SAMtools computes genotype likelihoods.
+
+In addition, since 0.1.10, the `pileup' command has been deprecated by
+`mpileup' which is more powerful and more accurate. The `pileup' command
+will not be removed in the next few releases, but new features will not
+be added.
+
+(0.1.11: 21 November 2010, r851)
+
+
+
+Beta Release 0.1.10 (16 November, 2010)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This release is featured as the first major improvement to the indel
+caller. The method is similar to the old one implemented in the pileup
+command, but the details are handled more carefully both in theory and
+in practice. As a result, the new indel caller usually gives more
+accurate indel calls, though at the cost of sensitivity. The caller is
+implemented in the mpileup command and is invoked by default. It works
+with multiple samples.
+
+Other notable changes:
+
+ * With the -r option, the calmd command writes the difference between
+   the original base quality and the BAQ capped base quality at the BQ
+   tag but does not modify the base quality. Please use -Ar to overwrite
+   the original base quality (the 0.1.9 behavior).
+
+ * Allow to set a maximum per-sample read depth to reduce memory. In
+   0.1.9, most of memory is wasted for the ultra high read depth in some
+   regions (e.g. the chr1 centromere).
+
+ * Optionally write per-sample read depth and per-sample strand bias
+   P-value.
+
+ * Compute equal-tail (Bayesian) credible interval of site allele
+   frequency at the CI95 VCF annotation.
+
+ * Merged the vcfutils.pl varFilter and filter4vcf for better SNP/indel
+   filtering.
+
+(0.1.10: 16 November 2010, r829)
+
+
+
+Beta Release 0.1.9 (27 October, 2010)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This release is featured as the first major improvement to the samtools'
+SNP caller.  It comes with a revised MAQ error model, the support of
+multi-sample SNP calling and the computation of base alignment quality
+(BAQ).
+
+The revised MAQ error model is based on the original model. It solves an
+issue of miscalling SNPs in repetitive regions. Althought such SNPs can
+usually be filtered at a later step, they mess up unfiltered calls. This
+is a theoretical flaw in the original model. The revised MAQ model
+deprecates the orginal MAQ model and the simplified SOAPsnp model.
+
+Multi-sample SNP calling is separated in two steps. The first is done by
+samtools mpileup and the second by a new program, bcftools, which is
+included in the samtools source code tree. Multi-sample SNP calling also
+works for single sample and has the advantage of enabling more powerful
+filtration. It is likely to deprecate pileup in future once a proper
+indel calling method is implemented.
+
+BAQ is the Phred-scaled probability of a read base being wrongly
+aligned. Capping base quality by BAQ has been shown to be very effective
+in suppressing false SNPs caused by misalignments around indels or in
+low-complexity regions with acceptable compromise on computation
+time. This strategy is highly recommended and can be used with other SNP
+callers as well.
+
+In addition to the three major improvements, other notable changes are:
+
+ * Changes to the pileup format. A reference skip (the N CIGAR operator)
+   is shown as '<' or '>' depending on the strand. Tview is also changed
+   accordingly.
+
+ * Accelerated pileup. The plain pileup is about 50% faster.
+
+ * Regional merge. The merge command now accepts a new option to merge
+   files in a specified region.
+
+ * Fixed a bug in bgzip and razip which causes source files to be
+   deleted even if option -c is applied.
+
+ * In APIs, propogate errors to downstream callers and make samtools
+   return non-zero values once errors occur.
+
+(0.1.9: 27 October 2010, r783)
+
+
+
 Beta Release 0.1.8 (11 July, 2010)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

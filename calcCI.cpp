@@ -50,7 +50,7 @@ ofstream ftmpOut;
 
 int *cvec;
 double *theta;
-CIType *iso_nrf, *gene_nrf, *iso_tau, *gene_tau;
+CIType *iso_tau, *gene_tau;
 
 engine_type engine(time(NULL));
 distribution_type **gammas;
@@ -263,45 +263,37 @@ void calcCI(int nSamples, float *samples, float &lb, float &ub) {
 }
 
 void generateResults(char* imdName) {
-	float *izsamples, *gzsamples, *itsamples, *gtsamples;
+	float *itsamples, *gtsamples;
 	ifstream fin;
 	FILE *fo;
 	char outF[STRLEN];
 
-	iso_nrf = new CIType[M + 1];
 	iso_tau = new CIType[M + 1];
-	gene_nrf = new CIType[m];
 	gene_tau = new CIType[m];
 
-	izsamples = new float[nSamples];
 	itsamples = new float[nSamples];
-	gzsamples = new float[nSamples];
 	gtsamples = new float[nSamples];
 
 	fin.open(tmpF, ios::binary);
 
-	for (int k = 0; k < nSamples; k++) fin.read((char*)(&izsamples[k]), FLOATSIZE);
-	calcCI(nSamples, izsamples, iso_nrf[0].lb, iso_nrf[0].ub);
+	//read sampled theta0 values
+	for (int k = 0; k < nSamples; k++) fin.read((char*)(&itsamples[k]), FLOATSIZE);
 
 	for (int i = 0; i < m; i++) {
 		int b = gi.spAt(i), e = gi.spAt(i + 1);
-		memset(gzsamples, 0, FLOATSIZE * nSamples);
 		memset(gtsamples, 0, FLOATSIZE * nSamples);
 		for (int j = b; j < e; j++) {
 			for (int k = 0; k < nSamples; k++) {
-				fin.read((char*)(&izsamples[k]), FLOATSIZE);
-				if (eel[j] > EPSILON && tau_denoms[k] > EPSILON) { itsamples[k] = izsamples[k] / eel[j] / tau_denoms[k]; }
+				fin.read((char*)(&itsamples[k]), FLOATSIZE);
+				if (eel[j] > EPSILON && tau_denoms[k] > EPSILON) { itsamples[k] = itsamples[k] / eel[j] / tau_denoms[k]; }
 				else {
-					if (izsamples[k] != 0.0) { fprintf(stderr, "K=%d, IZSAMPLES_K=%lf\n", k, izsamples[k]); exit(-1); }
+					if (itsamples[k] != 0.0) { fprintf(stderr, "Not equal to 0! K=%d, Sampled Theta Value=%lf\n", k, itsamples[k]); exit(-1); }
 					itsamples[k] = 0.0;
 				}
-				gzsamples[k] += izsamples[k];
 				gtsamples[k] += itsamples[k];
 			}
-			calcCI(nSamples, izsamples, iso_nrf[j].lb, iso_nrf[j].ub);
 			calcCI(nSamples, itsamples, iso_tau[j].lb, iso_tau[j].ub);
 		}
-		calcCI(nSamples, gzsamples, gene_nrf[i].lb, gene_nrf[i].ub);
 		calcCI(nSamples, gtsamples, gene_tau[i].lb, gene_tau[i].ub);
 
 		if (verbose && (i + 1) % 1000 == 0) { printf("%d genes are done!\n", i + 1); }
@@ -313,10 +305,6 @@ void generateResults(char* imdName) {
 	sprintf(outF, "%s.iso_res", imdName);
 	fo = fopen(outF, "a");
 	for (int i = 1; i <= M; i++)
-		fprintf(fo, "%.6g%c", iso_nrf[i].lb, (i < M ? '\t' : '\n'));
-	for (int i = 1; i <= M; i++)
-		fprintf(fo, "%.6g%c", iso_nrf[i].ub, (i < M ? '\t' : '\n'));
-	for (int i = 1; i <= M; i++)
 		fprintf(fo, "%.6g%c", iso_tau[i].lb, (i < M ? '\t' : '\n'));
 	for (int i = 1; i <= M; i++)
 		fprintf(fo, "%.6g%c", iso_tau[i].ub, (i < M ? '\t' : '\n'));
@@ -326,25 +314,15 @@ void generateResults(char* imdName) {
 	sprintf(outF, "%s.gene_res", imdName);
 	fo = fopen(outF, "a");
 	for (int i = 0; i < m; i++)
-		fprintf(fo, "%.6g%c", gene_nrf[i].lb, (i < m - 1 ? '\t' : '\n'));
-	for (int i = 0; i < m; i++)
-		fprintf(fo, "%.6g%c", gene_nrf[i].ub, (i < m - 1 ? '\t' : '\n'));
-	for (int i = 0; i < m; i++)
 		fprintf(fo, "%.6g%c", gene_tau[i].lb, (i < m - 1 ? '\t' : '\n'));
 	for (int i = 0; i < m; i++)
 		fprintf(fo, "%.6g%c", gene_tau[i].ub, (i < m - 1 ? '\t' : '\n'));
 	fclose(fo);
 
-	printf("CI of noise isoform is [%.6g, %.6g]\n", iso_nrf[0].lb, iso_nrf[0].ub);
-
-	delete[] izsamples;
 	delete[] itsamples;
-	delete[] gzsamples;
 	delete[] gtsamples;
 
-	delete[] iso_nrf;
 	delete[] iso_tau;
-	delete[] gene_nrf;
 	delete[] gene_tau;
 
 	if (verbose) { printf("All credibility intervals are calculated!\n"); }
@@ -355,7 +333,6 @@ void generateResults(char* imdName) {
         for (int i = 0; i < nSamples; i++) fprintf(fo, "%.15g ", tau_denoms[i]);
         fprintf(fo, "\n");
         fclose(fo);
-
 }
 
 int main(int argc, char* argv[]) {

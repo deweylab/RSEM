@@ -41,7 +41,7 @@ char cvsF[STRLEN];
 Refs refs;
 GroupInfo gi;
 
-vector<double> theta, pme_theta, eel;
+vector<double> theta, pme_theta, pme_c, eel;
 
 vector<int> s, z;
 vector<Item> hits;
@@ -183,6 +183,7 @@ void Gibbs(char* imdName) {
 	fprintf(fo, "%d %d\n", CHAINLEN / GAP, M + 1);
 	//fprintf(fo, "%d %d\n", CHAINLEN, M + 1);
 
+	pme_c.clear(); pme_c.resize(M + 1, 0.0);
 	pme_theta.clear(); pme_theta.resize(M + 1, 0.0);
 	for (int ROUND = 1; ROUND <= BURNIN + CHAINLEN; ROUND++) {
 
@@ -201,14 +202,20 @@ void Gibbs(char* imdName) {
 		if (ROUND > BURNIN) {
 			if ((ROUND - BURNIN -1) % GAP == 0) writeCountVector(fo);
 			writeCountVector(fo);
-			for (int i = 0; i <= M; i++) pme_theta[i] += counts[i] / totc;
+			for (int i = 0; i <= M; i++) { 
+			  pme_c[i] += counts[i] - 1;
+			  pme_theta[i] += counts[i] / totc;
+			}
 		}
 
 		if (verbose) { printf("ROUND %d is finished!\n", ROUND); }
 	}
 	fclose(fo);
 
-	for (int i = 0; i <= M; i++) pme_theta[i] /= CHAINLEN;
+	for (int i = 0; i <= M; i++) {
+	  pme_c[i] /= CHAINLEN;
+	  pme_theta[i] /= CHAINLEN;
+	}
 
 	if (verbose) { printf("Gibbs is finished!\n"); }
 }
@@ -272,14 +279,6 @@ void writeEstimatedParameters(char* modelF, char* imdName) {
 	assert(denom >= EPSILON);
 	for (int i = 0; i <= M; i++) pme_theta[i] /= denom;
 
-	//calculate normalized read fraction
-	double *nrf = new double[M + 1];
-	memset(nrf, 0, sizeof(double) * (M + 1));
-
-	denom = 1.0 - pme_theta[0];
-	if (denom <= 0) { fprintf(stderr, "No alignable reads?!\n"); exit(-1); }
-	for (int i = 1; i <= M; i++) nrf[i] = pme_theta[i] / denom;
-
 	//calculate tau values
 	double *tau = new double[M + 1];
 	memset(tau, 0, sizeof(double) * (M + 1));
@@ -301,7 +300,7 @@ void writeEstimatedParameters(char* modelF, char* imdName) {
 	fo = fopen(outF, "a");
 	if (fo == NULL) { fprintf(stderr, "Cannot open %s!\n", outF); exit(-1); }
 	for (int i = 1; i <= M; i++)
-		fprintf(fo, "%.15g%c", nrf[i], (i < M ? '\t' : '\n'));
+		fprintf(fo, "%.2f%c", pme_c[i], (i < M ? '\t' : '\n'));
 	for (int i = 1; i <= M; i++)
 		fprintf(fo, "%.15g%c", tau[i], (i < M ? '\t' : '\n'));
 	fclose(fo);
@@ -311,12 +310,12 @@ void writeEstimatedParameters(char* modelF, char* imdName) {
 	fo = fopen(outF, "a");
 	if (fo == NULL) { fprintf(stderr, "Cannot open %s!\n", outF); exit(-1); }
 	for (int i = 0; i < m; i++) {
-		double sumN = 0.0; //  sum of normalized read fraction
+		double sumC = 0.0; //  sum of pme counts
 		int b = gi.spAt(i), e = gi.spAt(i + 1);
 		for (int j = b; j < e; j++) {
-			sumN += nrf[j];
+			sumC += pme_c[j];
 		}
-		fprintf(fo, "%.15g%c", sumN, (i < m - 1 ? '\t' : '\n'));
+		fprintf(fo, "%.15g%c", sumC, (i < m - 1 ? '\t' : '\n'));
 	}
 	for (int i = 0; i < m; i++) {
 		double sumT = 0.0; //  sum of tau values
@@ -328,7 +327,6 @@ void writeEstimatedParameters(char* modelF, char* imdName) {
 	}
 	fclose(fo);
 
-	delete[] nrf;
 	delete[] tau;
 
 	if (verbose) { printf("Gibbs based expression values are written!\n"); }

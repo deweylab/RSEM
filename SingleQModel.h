@@ -63,7 +63,6 @@ public:
 		mw = NULL;
 
 		if (isMaster) {
-			ori = new Orientation(params.probF);
 			gld = new LenDist(params.minL, params.maxL);			
 			if (mean >= EPSILON) {
 				mld = new LenDist(params.mate_minL, params.mate_maxL);
@@ -72,6 +71,7 @@ public:
 			qd = new QualDist();
 		}
 
+		ori = new Orientation(params.probF);
 		if (estRSPD) { rspd = new RSPD(estRSPD, params.B); }
 		qpro = new QProfile();
 		nqpro = new NoiseQProfile();
@@ -158,7 +158,8 @@ public:
 	void update(const SingleReadQ& read, const SingleHit& hit, double frac) {
 		if (read.isLowQuality() || frac < EPSILON) return;
 
-		RefSeq& ref = refs->getRef(hit.getSid());
+		const RefSeq& ref = refs->getRef(hit.getSid());
+
 		int dir = hit.getDir();
 		int pos = hit.getPos();
 
@@ -464,7 +465,6 @@ void SingleQModel::calcMW() {
 
   memset(mw, 0, sizeof(double) * (M + 1));
   mw[0] = 1.0;
-
 
   probF = ori->getProb(0);
   probR = ori->getProb(1);

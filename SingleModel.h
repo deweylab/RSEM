@@ -61,7 +61,6 @@ public:
 		mw = NULL;
 
 		if (isMaster) {
-			ori = new Orientation(params.probF);
 			gld = new LenDist(params.minL, params.maxL);
 			if (mean >= EPSILON) {
 				mld = new LenDist(params.mate_minL, params.mate_maxL);
@@ -69,6 +68,7 @@ public:
 			if (!estRSPD) { rspd = new RSPD(estRSPD); }
 		}
 
+		ori = new Orientation(params.probF);
 		if (estRSPD) { rspd = new RSPD(estRSPD, params.B); }
 		pro = new Profile(params.maxL);
 		npro = new NoiseProfile();
