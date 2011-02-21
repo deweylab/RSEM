@@ -43,7 +43,7 @@ variable.
 To take advantage of RSEM's built-in support for the Bowtie alignment
 program, you must have [Bowtie](http://bowtie-bio.sourceforge.net) installed.
 
-<h2 id="usage">Usage</h2>
+## Usage <a name="usage"></a>
 
 ### I. Preparing Reference Sequences
 
@@ -62,7 +62,7 @@ To prepare the reference sequences, you should run the
     rsem-prepare-reference --help
 
 to get usage information or visit the [rsem-prepare-reference
-documentation page](rsem-prepare-reference.html).
+documentation page](http://deweylab.biostat.wisc.edu/rsem/rsem-prepare-reference.html).
 
 ### II. Calculating Expression Values
 
@@ -72,7 +72,7 @@ To calculate expression values, you should run the
     rsem-calculate-expression --help
 
 to get usage information or visit the [rsem-calculate-expression
-documentation page](rsem-calculate-expression.html).
+documentation page](http://deweylab.biostat.wisc.edu/rsem/rsem-calculate-expression.html).
 
 #### Calculating expression values from single-end data
 
