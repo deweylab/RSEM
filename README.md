@@ -18,7 +18,7 @@ Table of Contents
 
 * * *
 
-<h2 id="introduction">Introduction</h2>
+## Introduction <a name="introduction"></a>
 
 RSEM is a software package for estimating gene and isoform expression
 levels from RNA-Seq data.  The new RSEM package (rsem-1.x) provides an
@@ -29,7 +29,7 @@ genomic-coordinate BAM files and UCSC wiggle files for visualization. In
 addition, it provides posterior mean and 95% credibility interval
 estimates for expression levels.
 
-<h2 id="compilation">Compilation & Installation</h2>
+## Compilation & Installation <a name="compilation"></a>
 
 To compile RSEM, simply run
    
@@ -123,7 +123,7 @@ wiggle_name: the name the user wants to use for this wiggle plot
 
 Refer to the [UCSC custom track help page](http://genome.ucsc.edu/goldenPath/help/customTrack.html).
 
-<h2 id="example">Example</h2>
+## Example <a name="example"></a>
 
 Suppose we download the mouse genome from UCSC Genome Browser.  We will
 use a reference_name of 'mm9'.  We have a FASTQ-formatted file,
@@ -143,7 +143,7 @@ The commands for this scenario are as follows:
     rsem-calculate-expression --bowtie-path /sw/bowtie --phred64-quals --fragment-length-mean 150.0 --fragment-length-sd 35.0 -p 8 --out-bam --calc-ci --memory-allocate 1024 /data/mmliver.fq /ref/mm9 mmliver_single_quals
     rsem-bam2wig mmliver_single_quals.sorted.bam mmliver_single_quals.sorted.wig mmliver_single_quals
 
-<h2 id="simulation">Simulation</h2>
+## Simulation <a name="simulation"></a>
 
 ### Usage: 
 
@@ -168,13 +168,13 @@ output_name_1.fq & output_name_2.fq if paired-end with quality score.
 
 output_name.sim.isoforms.results, output_name.sim.genes.results : Results estimated based on sample values.
 
-<h2 id="acknowledgements">Acknowledgements</h2> 
+## Acknowledgements <a name="acknowledgements"></a> 
 
 RSEM uses randomc.h and mersenne.cpp from
 <http://lxnt.info/rng/randomc.htm> for random number generation. RSEM
 also uses the [Boost C++](http://www.boost.org) and
 [samtools](http://samtools.sourceforge.net) libraries.
 
-<h2 id="license">License</h2>
+## License <a name="license"></a>
 
 RSEM is licensed under the [GNU General Public License v3](http://www.gnu.org/licenses/gpl-3.0.html).
