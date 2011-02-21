@@ -43,7 +43,8 @@ variable.
 To take advantage of RSEM's built-in support for the Bowtie alignment
 program, you must have [Bowtie](http://bowtie-bio.sourceforge.net) installed.
 
-## Usage <a name="usage"></a>
+## <a name="usage"></a> Usage 
+
 
 ### I. Preparing Reference Sequences
 
