@@ -18,7 +18,7 @@ Table of Contents
 
 * * *
 
-## Introduction <a name="introduction"></a>
+## <a name="introduction"></a> Introduction
 
 RSEM is a software package for estimating gene and isoform expression
 levels from RNA-Seq data.  The new RSEM package (rsem-1.x) provides an
@@ -29,7 +29,7 @@ genomic-coordinate BAM files and UCSC wiggle files for visualization. In
 addition, it provides posterior mean and 95% credibility interval
 estimates for expression levels.
 
-## Compilation & Installation <a name="compilation"></a>
+## <a name="compilation"></a> Compilation & Installation
 
 To compile RSEM, simply run
    
@@ -43,8 +43,7 @@ variable.
 To take advantage of RSEM's built-in support for the Bowtie alignment
 program, you must have [Bowtie](http://bowtie-bio.sourceforge.net) installed.
 
-## <a name="usage"></a> Usage 
-
+## <a name="usage"></a> Usage
 
 ### I. Preparing Reference Sequences
 
@@ -124,7 +123,7 @@ wiggle_name: the name the user wants to use for this wiggle plot
 
 Refer to the [UCSC custom track help page](http://genome.ucsc.edu/goldenPath/help/customTrack.html).
 
-## Example <a name="example"></a>
+## <a name="example"></a> Example
 
 Suppose we download the mouse genome from UCSC Genome Browser.  We will
 use a reference_name of 'mm9'.  We have a FASTQ-formatted file,
@@ -144,7 +143,7 @@ The commands for this scenario are as follows:
     rsem-calculate-expression --bowtie-path /sw/bowtie --phred64-quals --fragment-length-mean 150.0 --fragment-length-sd 35.0 -p 8 --out-bam --calc-ci --memory-allocate 1024 /data/mmliver.fq /ref/mm9 mmliver_single_quals
     rsem-bam2wig mmliver_single_quals.sorted.bam mmliver_single_quals.sorted.wig mmliver_single_quals
 
-## Simulation <a name="simulation"></a>
+## <a name="simulation"></a> Simulation
 
 ### Usage: 
 
@@ -169,13 +168,13 @@ output_name_1.fq & output_name_2.fq if paired-end with quality score.
 
 output_name.sim.isoforms.results, output_name.sim.genes.results : Results estimated based on sample values.
 
-## Acknowledgements <a name="acknowledgements"></a> 
+## <a name="acknowledgements"></a> Acknowledgements
 
 RSEM uses randomc.h and mersenne.cpp from
 <http://lxnt.info/rng/randomc.htm> for random number generation. RSEM
 also uses the [Boost C++](http://www.boost.org) and
 [samtools](http://samtools.sourceforge.net) libraries.
 
-## License <a name="license"></a>
+## <a name="license"></a> License
 
 RSEM is licensed under the [GNU General Public License v3](http://www.gnu.org/licenses/gpl-3.0.html).
