@@ -344,7 +344,7 @@ sub collectResults {
 	++$cnt;
 	chomp($line);
 	my @local_arr = split(/\t/, $line);
-	if ($cnt == 3) { @comment = @local_arr; }
+	if ($cnt == 4) { @comment = @local_arr; }
 	else { push(@results, \@local_arr); }
     }
     
