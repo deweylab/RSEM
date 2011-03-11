@@ -1,0 +1,109 @@
+#!/usr/bin/env Rscript
+
+argv <- commandArgs(TRUE)
+if (length(argv) != 2) {
+  cat("Usage: plotModel.R modelF outF\n")
+  q(status = 1)
+}
+
+con <- file(argv[1], open = "r")	
+pdf(argv[2])
+
+# model type and forward probability
+model_type <- as.numeric(readLines(con, n = 4)[1])  
+
+# fragment length distribution
+strvec <- readLines(con, n = 3)
+vec <- as.numeric(strsplit(strvec[1], split = " ")[[1]])
+maxL <- vec[2] # maxL used for Profile
+x <- (vec[1] + 1) : vec[2]
+y <- as.numeric(strsplit(strvec[2], split = " ")[[1]])
+mean <- weighted.mean(x, y)
+std <- sqrt(weighted.mean((x - mean)^2, y))
+plot(x, y, type = "h", main = "Fragment Length Distribution", sub = paste("Mean = ", mean, ", Std = ", std), xlab = "Fragment Length", ylab = "Probability")  
+
+# mate length distribution
+bval <- as.numeric(readLines(con, n = 1)[1])
+if (bval == 1) {
+  list <- strsplit(readLines(con, n = 2), split = " ")
+  vec <- as.numeric(list[[1]])
+  maxL <- vec[2]
+  x <- (vec[1] + 1) : vec[2]
+  y <- as.numeric(list[[2]])
+  mean <- weighted.mean(x, y)
+  std <- sqrt(weighted.mean((x - mean)^2, y))
+  plot(x, y, type = "h", main = "Mate Length Distribution", sub = paste("Mean = ", mean, ", Std = ", std), xlab = "Mate Length", ylab = "Probability")  
+}
+strvec <- readLines(con, n = 1)
+
+# RSPD
+bval <- as.numeric(readLines(con, n = 1)[1])
+if (bval == 1) {
+  bin_size <- as.numeric(readLines(con, n = 1)[1])
+  y <- as.numeric(strsplit(readLines(con, n = 1), split = " ")[[1]])
+  barplot(y, space = 0, main = "Read Start Position Distribution", xlab = "Bin #", ylab = "Probability")
+}
+strvec <- readLines(con, n = 1)
+
+# plot sequencing errors
+if (model_type == 1 || model_type == 3) {
+  # skip QD
+  N <- as.numeric(readLines(con, n = 1)[1])
+  readLines(con, n = N + 1)
+  readLines(con, n = 1) # for the blank line
+  
+  # QProfile
+  readLines(con, n = 1)
+
+  peA <- c() # probability of sequencing error given reference base is A
+  peC <- c()
+  peG <- c()
+  peT <- c()
+
+  for (i in 1 : N) {
+    strvec <- readLines(con, n = 6)
+    list <- strsplit(strvec[1:4], split = " ")
+    vecA <- as.numeric(list[[1]])
+    vecC <- as.numeric(list[[2]])
+    vecG <- as.numeric(list[[3]])
+    vecT <- as.numeric(list[[4]])
+    if (sum(c(vecA, vecC, vecG, vecT)) < 1e-8) break
+    peA <- c(peA, ifelse(sum(vec) < 1e-8, NA, 1.0 - vecA[1]))
+    peC <- c(peC, ifelse(sum(vec) < 1e-8, NA, 1.0 - vecC[2]))
+    peG <- c(peG, ifelse(sum(vec) < 1e-8, NA, 1.0 - vecG[3]))
+    peT <- c(peT, ifelse(sum(vec) < 1e-8, NA, 1.0 - vecT[4]))
+  }
+
+  x <- 0 : (length(peA) - 1)
+  matplot(x, cbind(peA, peC, peG, peT), type = "b", lty = 1:4, pch = 0:3, main = "Quality Score v.s. Percentage Sequence Error", xlab = "Quality Score", ylab = "Percentage of Sequencing Error")
+  legend("topright", c("A", "C", "G", "T"), lty = 1:4, pch = 0:3)
+} else {
+  # Profile
+  readLines(con, n = 1)
+  
+  peA <- c() # probability of sequencing error given reference base is A
+  peC <- c()
+  peG <- c()
+  peT <- c()
+
+  for (i in 1: maxL) {
+    strvec <- readLines(con, n = 6)
+    list <- strsplit(strvec[1:4], split = " ")
+    vecA <- as.numeric(list[[1]])
+    vecC <- as.numeric(list[[2]])
+    vecG <- as.numeric(list[[3]])
+    vecT <- as.numeric(list[[4]])
+    if (sum(c(vecA, vecC, vecG, vecT)) < 1e-8) break
+    peA <- c(peA, ifelse(sum(vec) < 1e-8, NA, 1.0 - vecA[1]))
+    peC <- c(peC, ifelse(sum(vec) < 1e-8, NA, 1.0 - vecC[2]))
+    peG <- c(peG, ifelse(sum(vec) < 1e-8, NA, 1.0 - vecG[3]))
+    peT <- c(peT, ifelse(sum(vec) < 1e-8, NA, 1.0 - vecT[4]))
+  }
+
+  x <- 1 : length(peA)
+  matplot(x, cbind(peA, peC, peG, peT), type = "b", lty = 1:4, pch = 0:3, main = "Position v.s. Percentage Sequence Error", xlab = "Position", ylab = "Percentage of Sequencing Error")
+  legend("topleft", c("A", "C", "G", "T"), lty = 1:4, pch = 0:3)       
+}
+
+dev.off()
+close(con)
