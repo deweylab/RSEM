@@ -2,7 +2,7 @@
 
 argv <- commandArgs(TRUE)
 if (length(argv) != 2) {
-  cat("Usage: plotModel.R modelF outF\n")
+  cat("Usage: rsem-plot-model modelF outF\n")
   q(status = 1)
 }
 
