@@ -41,7 +41,7 @@ bval <- as.numeric(readLines(con, n = 1)[1])
 if (bval == 1) {
   bin_size <- as.numeric(readLines(con, n = 1)[1])
   y <- as.numeric(strsplit(readLines(con, n = 1), split = " ")[[1]])
-  barplot(y, space = 0, main = "Read Start Position Distribution", xlab = "Bin #", ylab = "Probability")
+  barplot(y, space = 0, names.arg = 1:bin_size, main = "Read Start Position Distribution", xlab = "Bin #", ylab = "Probability")
 }
 strvec <- readLines(con, n = 1)
 
@@ -68,15 +68,15 @@ if (model_type == 1 || model_type == 3) {
     vecG <- as.numeric(list[[3]])
     vecT <- as.numeric(list[[4]])
     if (sum(c(vecA, vecC, vecG, vecT)) < 1e-8) break
-    peA <- c(peA, ifelse(sum(vec) < 1e-8, NA, 1.0 - vecA[1]))
-    peC <- c(peC, ifelse(sum(vec) < 1e-8, NA, 1.0 - vecC[2]))
-    peG <- c(peG, ifelse(sum(vec) < 1e-8, NA, 1.0 - vecG[3]))
-    peT <- c(peT, ifelse(sum(vec) < 1e-8, NA, 1.0 - vecT[4]))
+    peA <- c(peA, ifelse(sum(vec) < 1e-8, NA, -10 * log(1.0 - vecA[1])))
+    peC <- c(peC, ifelse(sum(vec) < 1e-8, NA, -10 * log(1.0 - vecC[2])))
+    peG <- c(peG, ifelse(sum(vec) < 1e-8, NA, -10 * log(1.0 - vecG[3])))
+    peT <- c(peT, ifelse(sum(vec) < 1e-8, NA, -10 * log(1.0 - vecT[4])))
   }
 
   x <- 0 : (length(peA) - 1)
-  matplot(x, cbind(peA, peC, peG, peT), type = "b", lty = 1:4, pch = 0:3, main = "Quality Score v.s. Percentage Sequence Error", xlab = "Quality Score", ylab = "Percentage of Sequencing Error")
-  legend("topright", c("A", "C", "G", "T"), lty = 1:4, pch = 0:3)
+  matplot(x, cbind(peA, peC, peG, peT), type = "b", lty = 1:4, pch = 0:3, col = 1:4, main = "Quality Score vs. Observed Quality", xlab = "Quality Score", ylab = "Observed Quality")
+  legend("topleft", c("A", "C", "G", "T"), lty = 1:4, pch = 0:3, col = 1:4)
 } else {
   # Profile
   readLines(con, n = 1)
@@ -101,8 +101,8 @@ if (model_type == 1 || model_type == 3) {
   }
 
   x <- 1 : length(peA)
-  matplot(x, cbind(peA, peC, peG, peT), type = "b", lty = 1:4, pch = 0:3, main = "Position v.s. Percentage Sequence Error", xlab = "Position", ylab = "Percentage of Sequencing Error")
-  legend("topleft", c("A", "C", "G", "T"), lty = 1:4, pch = 0:3)       
+  matplot(x, cbind(peA, peC, peG, peT), type = "b", lty = 1:4, pch = 0:3, col = 1:4, main = "Position vs. Percentage Sequence Error", xlab = "Position", ylab = "Percentage of Sequencing Error")
+  legend("topleft", c("A", "C", "G", "T"), lty = 1:4, pch = 0:3, col = 1:4)       
 }
 
 dev.off()
