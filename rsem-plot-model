@@ -41,6 +41,7 @@ bval <- as.numeric(readLines(con, n = 1)[1])
 if (bval == 1) {
   bin_size <- as.numeric(readLines(con, n = 1)[1])
   y <- as.numeric(strsplit(readLines(con, n = 1), split = " ")[[1]])
+  par(cex.axis = 0.7)
   barplot(y, space = 0, names.arg = 1:bin_size, main = "Read Start Position Distribution", xlab = "Bin #", ylab = "Probability")
 }
 strvec <- readLines(con, n = 1)
