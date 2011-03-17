@@ -173,7 +173,7 @@ if (!$is_sam && !$is_bam) {
     if ($read_type == 2 || $read_type == 3) { $command .= " -I $minL -X $maxL"; }
     
     if ($strand_specific || $probF == 1.0) { $command .= " --norc"; }
-    elsif ($probF = 0.0) { $command .= " --nofw"; }
+    elsif ($probF == 0.0) { $command .= " --nofw"; }
 
     $command .= " -p $nThreads -a -m $maxHits -S";
     if ($quiet) { $command .= " --quiet"; }

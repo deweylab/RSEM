@@ -43,6 +43,7 @@ if (bval == 1) {
   y <- as.numeric(strsplit(readLines(con, n = 1), split = " ")[[1]])
   par(cex.axis = 0.7)
   barplot(y, space = 0, names.arg = 1:bin_size, main = "Read Start Position Distribution", xlab = "Bin #", ylab = "Probability")
+  par(cex.axis = 1.0)
 }
 strvec <- readLines(con, n = 1)
 

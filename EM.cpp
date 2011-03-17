@@ -64,6 +64,7 @@ bool genGibbsOut; // generate file for Gibbs sampler
 char refName[STRLEN], imdName[STRLEN], outName[STRLEN];
 char refF[STRLEN], groupF[STRLEN], cntF[STRLEN], tiF[STRLEN];
 char mparamsF[STRLEN], bmparamsF[STRLEN];
+char modelF[STRLEN], thetaF[STRLEN];
 
 char inpSamType;
 char *pt_fn_list, *pt_chr_list;
@@ -301,19 +302,11 @@ void calcExpectedEffectiveLengths(ModelType& model) {
 template<class ModelType>
 void writeResults(ModelType& model, double* counts) {
 	double denom;
-	char modelF[STRLEN], thetaF[STRLEN];
 	char outF[STRLEN];
 	FILE *fo;
 
 	sprintf(modelF, "%s.model", outName);
 	model.write(modelF);
-
-	sprintf(thetaF, "%s.theta", outName);
-	fo = fopen(thetaF, "w");
-	fprintf(fo, "%d\n", M + 1);
-	for (int i = 0; i < M; i++) fprintf(fo, "%.15g ", theta[i]);
-	fprintf(fo, "%.15g\n", theta[M]);
-	fclose(fo);
 
 	//calculate tau values
 	double *tau = new double[M + 1];
@@ -408,6 +401,8 @@ inline bool doesUpdateModel(int ROUND) {
 //Including initialize, algorithm and results saving
 template<class ReadType, class HitType, class ModelType>
 void EM() {
+	FILE *fo;
+
 	int ROUND;
 	double sum;
 
@@ -425,6 +420,7 @@ void EM() {
 	pthread_attr_t attr;
 	void *status;
 	int rc;
+
 
 	//initialize boolean variables
 	updateModel = calcExpectedWeights = false;
@@ -514,17 +510,6 @@ void EM() {
 
 	if (totNum > 0) fprintf(stderr, "Warning: RSEM reaches %d iterations before meeting the convergence criteria.\n", MAX_ROUND);
 
-	//calculate expected effective lengths for each isoform
-	calcExpectedEffectiveLengths<ModelType>(model);
-
-	//correct theta vector
-	sum = theta[0];
-	for (int i = 1; i <= M; i++) 
-	  if (eel[i] < EPSILON) { theta[i] = 0.0; }
-	  else sum += theta[i];
-	if (sum < EPSILON) { fprintf(stderr, "No Expected Effective Length is no less than %.6g?!\n", MINEEL); exit(-1); }
-	for (int i = 0; i <= M; i++) theta[i] /= sum;
-
 	//generate output file used by Gibbs sampler
 	if (genGibbsOut) {
 		if (model.getNeedCalcConPrb()) {
@@ -540,7 +525,7 @@ void EM() {
 		model.setNeedCalcConPrb(false);
 
 		sprintf(out_for_gibbs_F, "%s.ofg", imdName);
-		FILE *fo = fopen(out_for_gibbs_F, "w");
+		fo = fopen(out_for_gibbs_F, "w");
 		fprintf(fo, "%d %d\n", M, N0);
 		for (int i = 0; i < nThreads; i++) {
 			int numN = hitvs[i]->getN();
@@ -549,7 +534,7 @@ void EM() {
 				int to = hitvs[i]->getSAt(j + 1);
 				int totNum = 0;
 
-				if (ncpvs[i][j] > 0.0) { ++totNum; fprintf(fo, "%d %.15g ", 0, ncpvs[i][j]); }
+				if (ncpvs[i][j] >= EPSILON) { ++totNum; fprintf(fo, "%d %.15g ", 0, ncpvs[i][j]); }
 				for (int k = fr; k < to; k++) {
 					HitType &hit = hitvs[i]->getHitAt(k);
 					if (hit.getConPrb() >= EPSILON) {
@@ -562,7 +547,32 @@ void EM() {
 			}
 		}
 		fclose(fo);
+
+		char scoreF[STRLEN];
+		sprintf(scoreF, "%s.ns", imdName);
+		fo = fopen(scoreF, "w");
+		fprintf(fo, "%.15g\n", model.getLogP());
+		fclose(fo);
 	}
+
+	sprintf(thetaF, "%s.theta", outName);
+	fo = fopen(thetaF, "w");
+	fprintf(fo, "%d\n", M + 1);
+
+	// output theta'
+	for (int i = 0; i < M; i++) fprintf(fo, "%.15g ", theta[i]);
+	fprintf(fo, "%.15g\n", theta[M]);
+	
+	//calculate expected effective lengths for each isoform
+	calcExpectedEffectiveLengths<ModelType>(model);
+
+	//correct theta vector
+	sum = theta[0];
+	for (int i = 1; i <= M; i++) 
+	  if (eel[i] < EPSILON) { theta[i] = 0.0; }
+	  else sum += theta[i];
+	if (sum < EPSILON) { fprintf(stderr, "No Expected Effective Length is no less than %.6g?!\n", MINEEL); exit(-1); }
+	for (int i = 0; i <= M; i++) theta[i] /= sum;
 
 	//calculate expected weights and counts using learned parameters
 	updateModel = false; calcExpectedWeights = true;
@@ -587,8 +597,7 @@ void EM() {
 	/* destroy attribute */
 	pthread_attr_destroy(&attr);
 
-	
-	//for all
+	//convert theta' to theta
        	double *mw = model.getMW();
 	sum = 0.0;
 	for (int i = 0; i <= M; i++) {
@@ -597,6 +606,12 @@ void EM() {
 	}
 	assert(sum >= EPSILON);
 	for (int i = 0; i <= M; i++) theta[i] /= sum;
+
+	// output theta
+	for (int i = 0; i < M; i++) fprintf(fo, "%.15g ", theta[i]);
+	fprintf(fo, "%.15g\n", theta[M]);
+
+	fclose(fo);
 
 	writeResults<ModelType>(model, countvs[0]);
 

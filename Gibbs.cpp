@@ -200,8 +200,7 @@ void Gibbs(char* imdName) {
 		}
 
 		if (ROUND > BURNIN) {
-			if ((ROUND - BURNIN -1) % GAP == 0) writeCountVector(fo);
-			writeCountVector(fo);
+			if ((ROUND - BURNIN - 1) % GAP == 0) writeCountVector(fo);
 			for (int i = 0; i <= M; i++) { 
 			  pme_c[i] += counts[i] - 1;
 			  pme_theta[i] += counts[i] / totc;
