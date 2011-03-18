@@ -136,10 +136,18 @@ outF: the file name for plots generated from the model. It is a pdf file
 
 The plots generated depends on read type and user configuration. It
 may include fragment length distribution, mate length distribution,
-read start position distribution (RSPD), quality score vs percentage
-of sequecing error given the reference base, position vs percentage of
-sequencing error given the reference base.
+read start position distribution (RSPD), quality score vs observed
+quality given a reference base, position vs percentage of sequencing
+error given a reference base.
 
+fragment length distribution and mate length distribution: x-axis is fragment/mate length, y axis is the probability of generating a fragment/mate with the associated length
+
+RSPD: Read Start Position Distribution. x-axis is bin number, y-axis is the probability of each bin. RSPD can be used as an indicator of 3' bias
+
+Quality score vs. observed quality given a reference base: x-axis is Phred quality scores associated with data, y-axis is the "observed quality", Phred quality scores learned by RSEM from the data. Q = -10log_10(P), where Q is Phred quality score and P is the probability of sequencing error for a particular base
+
+Position vs. percentage sequencing error given a reference base: x-axis is position and y-axis is percentage sequencing error
+ 
 ## <a name="example"></a> Example
 
 Suppose we download the mouse genome from UCSC Genome Browser.  We will

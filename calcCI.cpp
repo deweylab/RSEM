@@ -378,7 +378,7 @@ int main(int argc, char* argv[]) {
 
 	delete[] tau_denoms;
 
-	sprintf(command, "rm -f %s", tmpF);
+       	sprintf(command, "rm -f %s", tmpF);
 	int status = system(command);
 	if (status != 0) {
 	  fprintf(stderr, "Cannot delete %s!\n", tmpF);
