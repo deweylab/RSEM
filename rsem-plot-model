@@ -23,7 +23,8 @@ std <- sqrt(weighted.mean((x - mean)^2, y))
 plot(x, y, type = "h", main = "Fragment Length Distribution", sub = paste("Mean = ", mean, ", Std = ", std), xlab = "Fragment Length", ylab = "Probability")  
 
 # mate length distribution
-bval <- as.numeric(readLines(con, n = 1)[1])
+if (model_type == 0 || model_type == 1) bval <- as.numeric(readLines(con, n = 1)[1]) else bval <- 1
+
 if (bval == 1) {
   list <- strsplit(readLines(con, n = 2), split = " ")
   vec <- as.numeric(list[[1]])
