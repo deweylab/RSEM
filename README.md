@@ -40,8 +40,12 @@ variable.
 
 ### Prerequisites
 
+C++ and Perl are required to be installed. 
+
 To take advantage of RSEM's built-in support for the Bowtie alignment
 program, you must have [Bowtie](http://bowtie-bio.sourceforge.net) installed.
+
+If you want to plot model learned by RSEM, you should also install R. 
 
 ## <a name="usage"></a> Usage
 
