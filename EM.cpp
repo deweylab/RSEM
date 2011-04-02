@@ -128,7 +128,7 @@ void init(ReadReader<ReadType> **&readers, HitContainer<HitType> **&hitvs, doubl
 		if (!readers[i]->locate(curnr)) { fprintf(stderr, "Read indices files do not match!\n"); exit(-1); }
 		//assert(readers[i]->locate(curnr));
 
-		while (nrLeft > ntLeft && hitvs[i]->getNHits() < nhT) {
+		while (nrLeft > ntLeft && (i == nThreads - 1 || hitvs[i]->getNHits() < nhT)) {
 			if (!hitvs[i]->read(fin)) { fprintf(stderr, "Cannot read alignments from .dat file!\n"); exit(-1); }
 			//assert(hitvs[i]->read(fin));
 			--nrLeft;
