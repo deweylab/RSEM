@@ -18,7 +18,7 @@ map<string, string> name2seq;
 map<string, string>::iterator iter;
 
 Transcripts transcripts;
-char groupF[STRLEN], tiF[STRLEN], refFastaF[STRLEN];
+char groupF[STRLEN], tiF[STRLEN], refFastaF[STRLEN], chromListF[STRLEN];
 
 bool hasMappingFile;
 char mappingFile[STRLEN];
@@ -56,12 +56,13 @@ char check(char c) {
 }
 
 void writeResults(char* refName) {
-	ofstream fout;
+	ofstream fout, fout2;
 	string cur_gene_id, name;
 
 	sprintf(groupF, "%s.grp", refName);
 	sprintf(tiF, "%s.ti", refName);
 	sprintf(refFastaF, "%s.transcripts.fa", refName);
+	sprintf(chromListF, "%s.chrlist", refName);
 
 	transcripts.writeTo(tiF);
 	if (verbose) { printf("Transcript Information File is generated!\n"); }
@@ -79,7 +80,7 @@ void writeResults(char* refName) {
 	fout.close();
 	if (verbose) { printf("Group File is generated!\n"); }
 
-	// We have to generate this .transcripts.fa, even reference_file is only one. Reason : polyA choice 2, need ">transcript_id"
+	fout2.open(chromListF);
 	fout.open(refFastaF);
 	for (int i = 1; i <= M; i++) {
 		name = transcripts.getTranscriptAt(i).getTranscriptID();
@@ -90,9 +91,16 @@ void writeResults(char* refName) {
 		}
 		fout<<">"<<name<<endl;
 		fout<<iter->second<<endl;
+
+		fout2<<name<<'\t'<<iter->second.length()<<endl;
 	}
 	fout.close();
-	if (verbose) { printf("Extracted Sequences File is generated!\n"); }
+	fout2.close();
+	
+	if (verbose) { 
+	  printf("Chromosome List File is generated!\n"); 
+	  printf("Extracted Sequences File is generated!\n"); 
+	}
 }
 
 int main(int argc, char* argv[]) {

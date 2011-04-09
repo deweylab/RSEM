@@ -174,6 +174,7 @@ BamWriter::BamWriter(char inpType, const char* inpF, const char* fn_list, const 
 		}
 	}
 
+
 	out = samopen(outF, "wb", out_header);
 	assert(out != 0);
 
