@@ -27,7 +27,7 @@
 #include "Transcript.h"
 #include "Transcripts.h"
 
-#include "simul_mersenne.h"
+#include "simul.h"
 
 using namespace std;
 
@@ -48,7 +48,7 @@ char outReadF[2][STRLEN];
 char refF[STRLEN], groupF[STRLEN], tiF[STRLEN];
 char geneResF[STRLEN], isoResF[STRLEN];
 
-simul_mersenne sampler;
+simul sampler;
 
 void genOutReadStreams(int type, char *outFN) {
 	switch(type) {

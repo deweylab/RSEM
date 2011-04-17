@@ -61,7 +61,8 @@ bool genBamF; // If user wants to generate bam file, true; otherwise, false.
 bool updateModel, calcExpectedWeights;
 bool genGibbsOut; // generate file for Gibbs sampler
 
-char refName[STRLEN], imdName[STRLEN], outName[STRLEN];
+char refName[STRLEN], outName[STRLEN];
+char imdName[STRLEN], statName[STRLEN];
 char refF[STRLEN], groupF[STRLEN], cntF[STRLEN], tiF[STRLEN];
 char mparamsF[STRLEN], bmparamsF[STRLEN];
 char modelF[STRLEN], thetaF[STRLEN];
@@ -305,7 +306,7 @@ void writeResults(ModelType& model, double* counts) {
 	char outF[STRLEN];
 	FILE *fo;
 
-	sprintf(modelF, "%s.model", outName);
+	sprintf(modelF, "%s.model", statName);
 	model.write(modelF);
 
 	//calculate tau values
@@ -547,15 +548,9 @@ void EM() {
 			}
 		}
 		fclose(fo);
-
-		char scoreF[STRLEN];
-		sprintf(scoreF, "%s.ns", imdName);
-		fo = fopen(scoreF, "w");
-		fprintf(fo, "%.15g\n", model.getLogP());
-		fclose(fo);
 	}
 
-	sprintf(thetaF, "%s.theta", outName);
+	sprintf(thetaF, "%s.theta", statName);
 	fo = fopen(thetaF, "w");
 	fprintf(fo, "%d\n", M + 1);
 
@@ -635,11 +630,11 @@ int main(int argc, char* argv[]) {
 	bool quiet = false;
 
 	if (argc < 5) {
-		printf("Usage : rsem-run-em refName read_type imdName outName [-p #Threads] [-b samInpType samInpF has_fn_list_? [fn_list]] [-q] [--gibbs-out]\n\n");
+		printf("Usage : rsem-run-em refName read_type sampleName sampleToken [-p #Threads] [-b samInpType samInpF has_fn_list_? [fn_list]] [-q] [--gibbs-out]\n\n");
 		printf("  refName: reference name\n");
 		printf("  read_type: 0 single read without quality score; 1 single read with quality score; 2 paired-end read without quality score; 3 paired-end read with quality score.\n");
-		printf("  imdName: name for all upstream/downstream user-unseen files. (different files have different suffices)\n");
-		printf("  outName: name for all output files. (different files have different suffices)\n");
+		printf("  samplePath: sample path.\n");
+		printf("  sampleName: sample name.\n");
 		printf("  -p: number of threads which user wants to use. (default: 1)\n");
 		printf("  -b: produce bam format output file. (default: off)\n");
 		printf("  -q: set it quiet\n");
@@ -652,8 +647,9 @@ int main(int argc, char* argv[]) {
 
 	strcpy(refName, argv[1]);
 	read_type = atoi(argv[2]);
-	strcpy(imdName, argv[3]);
-	strcpy(outName, argv[4]);
+	strcpy(outName, argv[3]);
+	sprintf(imdName, "%s.temp/%s", argv[3], argv[4]);
+	sprintf(statName, "%s.stat/%s", argv[3], argv[4]);
 
 	nThreads = 1;
 
@@ -691,7 +687,7 @@ int main(int argc, char* argv[]) {
 	sprintf(tiF, "%s.ti", refName);
 	transcripts.readFrom(tiF);
 
-	sprintf(cntF, "%s.cnt", imdName);
+	sprintf(cntF, "%s.cnt", statName);
 	fin.open(cntF);
 	if (!fin.is_open()) { fprintf(stderr, "Cannot open %s! It may not exist.\n", cntF); exit(-1); }
 	fin>>N0>>N1>>N2>>N_tot;

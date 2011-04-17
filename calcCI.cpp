@@ -59,6 +59,7 @@ generator_type **rgs;
 int M, m;
 Refs refs;
 GroupInfo gi;
+char imdName[STRLEN], statName[STRLEN];
 char modelF[STRLEN], groupF[STRLEN], refF[STRLEN];
 
 vector<double> eel; //expected effective lengths
@@ -327,17 +328,17 @@ void generateResults(char* imdName) {
 
 	if (verbose) { printf("All credibility intervals are calculated!\n"); }
 
-        sprintf(outF, "%s.tau_denoms", imdName);
-        fo = fopen(outF, "w");
-        fprintf(fo, "%d\n", nSamples);
-        for (int i = 0; i < nSamples; i++) fprintf(fo, "%.15g ", tau_denoms[i]);
-        fprintf(fo, "\n");
-        fclose(fo);
+	sprintf(outF, "%s.tau_denoms", imdName);
+	fo = fopen(outF, "w");
+	fprintf(fo, "%d\n", nSamples);
+	for (int i = 0; i < nSamples; i++) fprintf(fo, "%.15g ", tau_denoms[i]);
+	fprintf(fo, "\n");
+	fclose(fo);
 }
 
 int main(int argc, char* argv[]) {
 	if (argc < 7) {
-		printf("Usage: rsem-calculate-credibility-intervals reference_name sample_name imdName confidence nSpC nMB[-q]\n");
+		printf("Usage: rsem-calculate-credibility-intervals reference_name sample_name sampleToken confidence nSpC nMB[-q]\n");
 		exit(-1);
 	}
 
@@ -351,7 +352,10 @@ int main(int argc, char* argv[]) {
 	}
 	verbose = !quiet;
 
-	sprintf(modelF, "%s.model", argv[2]);
+	sprintf(imdName, "%s.temp/%s", argv[2], argv[3]);
+	sprintf(statName, "%s.stat/%s", argv[2], argv[3]);
+
+	sprintf(modelF, "%s.model", statName);
 	FILE *fi = fopen(modelF, "r");
 	if (fi == NULL) { fprintf(stderr, "Cannot open %s!\n", modelF); exit(-1); }
 	fscanf(fi, "%d", &model_type);
@@ -364,8 +368,8 @@ int main(int argc, char* argv[]) {
 	gi.load(groupF);
 	m = gi.getm();
 
-	sprintf(tmpF, "%s.tmp", argv[3]);
-	sprintf(cvsF, "%s.countvectors", argv[3]);
+	sprintf(tmpF, "%s.tmp", imdName);
+	sprintf(cvsF, "%s.countvectors", imdName);
 
 	switch(model_type) {
 	case 0 : sampling<SingleModel>(); break;
@@ -374,15 +378,15 @@ int main(int argc, char* argv[]) {
 	case 3 : sampling<PairedEndQModel>(); break;
 	}
 
-	generateResults(argv[3]);
+	generateResults(imdName);
 
 	delete[] tau_denoms;
 
-       	sprintf(command, "rm -f %s", tmpF);
+	sprintf(command, "rm -f %s", tmpF);
 	int status = system(command);
 	if (status != 0) {
-	  fprintf(stderr, "Cannot delete %s!\n", tmpF);
-	  exit(-1);
+		fprintf(stderr, "Cannot delete %s!\n", tmpF);
+		exit(-1);
 	}
 
 	return 0;

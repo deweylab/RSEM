@@ -8,10 +8,14 @@
 #include<iostream>
 #include<fstream>
 #include<string>
+#include<map>
 
 #include "utils.h"
 
 #include "GroupInfo.h"
+
+#include "Transcript.h"
+#include "Transcripts.h"
 
 #include "SingleRead.h"
 #include "SingleReadQ.h"
@@ -30,10 +34,12 @@ int N[3]; // note, N = N0 + N1 + N2 , but may not be equal to the total number o
 int nHits; // # of hits
 int nUnique, nMulti, nIsoMulti;
 char fn_list[STRLEN];
-char groupF[STRLEN];
+char groupF[STRLEN], tiF[STRLEN];
+char imdName[STRLEN];
 char datF[STRLEN], cntF[STRLEN];
 
 GroupInfo gi;
+Transcripts transcripts;
 
 SamParser *parser;
 ofstream hit_out;
@@ -42,14 +48,14 @@ int n_os; // number of ostreams
 ostream *cat[3][2]; // cat : category  1-dim 0 N0 1 N1 2 N2; 2-dim  0 mate1 1 mate2
 char readOutFs[3][2][STRLEN];
 
-void init(const char* imdName, char alignFType, const char* alignF) {
+map<int, int> counter;
+map<int, int>::iterator iter;
 
-	sprintf(datF, "%s.dat", imdName);
-	sprintf(cntF, "%s.cnt", imdName);
+void init(const char* imdName, char alignFType, const char* alignF) {
 
 	char* aux = 0;
 	if (strcmp(fn_list, "")) aux = fn_list;
-	parser = new SamParser(alignFType, alignF, aux);
+	parser = new SamParser(alignFType, alignF, transcripts, aux);
 
 	memset(cat, 0, sizeof(cat));
 	memset(readOutFs, 0, sizeof(readOutFs));
@@ -64,6 +70,8 @@ void init(const char* imdName, char alignFType, const char* alignF) {
 		for (int j = 0; j < n_os; j++)
 			cat[i][j] = new ofstream(readOutFs[i][j]);
 	}
+
+	counter.clear();
 }
 
 //Do not allow duplicate for unalignable reads and supressed reads in SAM input
@@ -93,6 +101,14 @@ void parseIt(SamParser *parser) {
 				nMulti += hits.calcNumGeneMultiReads(gi);
 				nIsoMulti += hits.calcNumIsoformMultiReads();
 				hits.write(hit_out);
+
+				iter = counter.find(hits.getNHits());
+				if (iter != counter.end()) {
+					iter->second++;
+				}
+				else {
+					counter[hits.getNHits()] = 1;
+				}
 			}
 
 			hits.clear();
@@ -116,6 +132,14 @@ void parseIt(SamParser *parser) {
 		nMulti += hits.calcNumGeneMultiReads(gi);
 		nIsoMulti += hits.calcNumIsoformMultiReads();
 		hits.write(hit_out);
+
+		iter = counter.find(hits.getNHits());
+		if (iter != counter.end()) {
+			iter->second++;
+		}
+		else {
+			counter[hits.getNHits()] = 1;
+		}
 	}
 
 	nUnique = N[1] - nMulti;
@@ -138,15 +162,15 @@ void release() {
 int main(int argc, char* argv[]) {
 	bool quiet = false;
 
-	if (argc < 5) {
-		printf("Usage : rsem-parse-alignments refName imdName alignFType('s' for sam, 'b' for bam) alignF [-t Type] [-l fn_list] [-tag tagName] [-q]\n");
+	if (argc < 6) {
+		printf("Usage : rsem-parse-alignments refName sampleName sampleToken alignFType('s' for sam, 'b' for bam) alignF [-t Type] [-l fn_list] [-tag tagName] [-q]\n");
 		exit(-1);
 	}
 
 	strcpy(fn_list, "");
 	read_type = 0;
-	if (argc > 5) {
-		for (int i = 5; i < argc; i++) {
+	if (argc > 6) {
+		for (int i = 6; i < argc; i++) {
 			if (!strcmp(argv[i], "-t")) {
 				read_type = atoi(argv[i + 1]);
 			}
@@ -162,10 +186,16 @@ int main(int argc, char* argv[]) {
 
 	verbose = !quiet;
 
-	init(argv[2], argv[3][0], argv[4]);
-
 	sprintf(groupF, "%s.grp", argv[1]);
 	gi.load(groupF);
+	sprintf(tiF, "%s.ti", argv[1]);
+	transcripts.readFrom(tiF);
+
+	sprintf(imdName, "%s.temp/%s", argv[2], argv[3]);
+	sprintf(datF, "%s.dat", imdName);
+	sprintf(cntF, "%s.stat/%s.cnt", argv[2], argv[3]);
+
+	init(imdName, argv[4][0], argv[5]);
 
 	hit_out.open(datF);
 
@@ -190,6 +220,9 @@ int main(int argc, char* argv[]) {
 	fout<<N[0]<<" "<<N[1]<<" "<<N[2]<<" "<<(N[0] + N[1] + N[2])<<endl;
 	fout<<nUnique<<" "<<nMulti<<" "<<nIsoMulti<<endl;
 	fout<<nHits<<" "<<read_type<<endl;
+	for (iter = counter.begin(); iter != counter.end(); iter++) {
+		fout<<iter->first<<'\t'<<iter->second<<endl;
+	}
 	fout.close();
 
 	release();

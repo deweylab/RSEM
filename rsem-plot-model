@@ -2,12 +2,19 @@
 
 argv <- commandArgs(TRUE)
 if (length(argv) != 2) {
-  cat("Usage: rsem-plot-model modelF outF\n")
+  cat("Usage: rsem-plot-model sample_name outF\n")
   q(status = 1)
 }
 
-con <- file(argv[1], open = "r")	
+strvec <- strsplit(argv[1], split = "/")[[1]]
+token <- strvec[length(strvec)]
+
+modelF <- paste(argv[1], ".stat/", token, ".model")
+cntF <- paste(argv[1], ".stat/", token, ".cnt")
+
 pdf(argv[2])
+
+con <- file(modelF, open = "r")	
 
 # model type and forward probability
 model_type <- as.numeric(readLines(con, n = 4)[1])  
@@ -108,5 +115,9 @@ if (model_type == 1 || model_type == 3) {
   legend("topleft", c("A", "C", "G", "T"), lty = 1:4, pch = 0:3, col = 1:4)       
 }
 
-dev.off()
 close(con)
+
+pair <- read.table(file = cntF, skip = 3, sep = "\t")
+plot(pair[,1], pair[,2], xlab = "Number of Alignments", ylab = "Number of Reads", main = "Among alignable reads, distribution of # of alignments")
+
+dev.off()

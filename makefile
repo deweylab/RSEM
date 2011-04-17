@@ -48,13 +48,13 @@ PairedEndHit.h : SingleHit.h
 HitContainer.h : GroupInfo.h
 
 
-SamParser.h : sam/sam.h sam/bam.h utils.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h
+SamParser.h : sam/sam.h sam/bam.h utils.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h Transcript.h Transcripts.h
 
 
 rsem-parse-alignments : parseIt.o sam/libbam.a
 	$(CC) -o rsem-parse-alignments parseIt.o sam/libbam.a -lz 
 
-parseIt.o : utils.h GroupInfo.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h HitContainer.h SamParser.h parseIt.cpp
+parseIt.o : utils.h GroupInfo.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h HitContainer.h SamParser.h Transcript.h Transcripts.h sam/sam.h sam/bam.h parseIt.cpp
 	$(CC) $(COFLAGS) parseIt.cpp
 
 
@@ -85,22 +85,17 @@ EM.o : utils.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.
 rsem-bam2wig : sam/bam.h sam/sam.h sam/libbam.a bam2wig.cpp
 	$(CC) -O3 -Wall bam2wig.cpp sam/libbam.a -lz -o rsem-bam2wig
 
-mersenne.o : mersenne.cpp randomc.h
-	$(CC) $(COFLAGS) mersenne.cpp
+rsem-simulate-reads : simulation.o
+	$(CC) -o rsem-simulate-reads simulation.o
 
-simul_mersenne.h : simul.h randomc.h
-
-rsem-simulate-reads : simulation.o mersenne.o
-	$(CC) -o rsem-simulate-reads simulation.o mersenne.o
-
-simulation.o : utils.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h Refs.h RefSeq.h GroupInfo.h Transcript.h Transcripts.h Orientation.h LenDist.h RSPD.h QualDist.h QProfile.h NoiseQProfile.h Profile.h NoiseProfile.h simul.h simul_mersenne.h randomc.h simulation.cpp
+simulation.o : utils.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h Refs.h RefSeq.h GroupInfo.h Transcript.h Transcripts.h Orientation.h LenDist.h RSPD.h QualDist.h QProfile.h NoiseQProfile.h Profile.h NoiseProfile.h simul.h boost/random.hpp simulation.cpp
 	$(CC) $(COFLAGS) simulation.cpp
 
-rsem-run-gibbs : Gibbs.o mersenne.o
-	$(CC) -o rsem-run-gibbs Gibbs.o mersenne.o 
+rsem-run-gibbs : Gibbs.o
+	$(CC) -o rsem-run-gibbs Gibbs.o 
 
 #some header files are omitted
-Gibbs.o : randomc.h utils.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h RefSeq.h RefSeqPolicy.h PolyARules.h Refs.h GroupInfo.h Gibbs.cpp
+Gibbs.o : utils.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h RefSeq.h RefSeqPolicy.h PolyARules.h Refs.h GroupInfo.h boost/random.hpp Gibbs.cpp 
 	$(CC) $(COFLAGS) Gibbs.cpp
 
 rsem-calculate-credibility-intervals : calcCI.o

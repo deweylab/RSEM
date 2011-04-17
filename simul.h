@@ -1,13 +1,17 @@
 #ifndef SIMUL_H_
 #define SIMUL_H_
 
+#include<ctime>
 #include<cassert>
 
+#include "boost/random.hpp"
 
 class simul {
 public:
 
-        virtual ~simul() {}
+	simul() : rg(boost::mt19937(time(NULL))) {
+	}
+
 	// interval : [,)
 	// random number should be in [0, arr[len - 1])
 	// If by chance arr[len - 1] == 0.0, one possibility is to sample uniformly from 0 ... len - 1
@@ -29,9 +33,10 @@ public:
 	  return l;
 	}
 
-	virtual double random() { return 0.0; };
+	double random() { return rg(); };
 
 private:
+	boost::uniform_01<boost::mt19937> rg;
 };
 
 #endif /* SIMUL_H_ */

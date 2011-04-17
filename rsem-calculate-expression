@@ -113,7 +113,7 @@ my $mate1_list = "";
 my $mate2_list = "";
 my $inpF = "";
 
-my ($refName, $taskName, $tmp_dir, $imdName) = ();
+my ($refName, $sampleName, $sampleToken, $temp_dir, $stat_dir, $imdName) = ();
 my $gap = 32;
 
 if ($paired_end) {
@@ -129,29 +129,30 @@ if (scalar(@ARGV) == 3) {
     if ($is_sam || $is_bam) { $inpF = $ARGV[0]; } 
     else {$mate1_list = $ARGV[0]; }
     $refName = $ARGV[1];
-    $taskName = $ARGV[2];
+    $sampleName = $ARGV[2];
 }
 else {
     $mate1_list = $ARGV[0];
     $mate2_list = $ARGV[1];
     $refName = $ARGV[2];
-    $taskName = $ARGV[3];
+    $sampleName = $ARGV[3];
 }
 
-$tmp_dir = $taskName.".temp";
-my $pos = rindex($taskName, '/');
-if ($pos < 0) {
-    $imdName = "$tmp_dir/$taskName"; 
-}
-else {
-    $imdName = $tmp_dir."/".substr($taskName, $pos + 1);
-}
+my $pos = rindex($sampleName, '/');
+if ($pos < 0) { $sampleToken = $sampleName; }
+else { $sampleToken = substr($sampleName, $pos + 1); }
+
+$temp_dir = "$sampleName.temp";
+$stat_dir = "$sampleName.stat";
+
+if (!(-d $temp_dir) && !mkdir($temp_dir)) { print "Fail to create folder $temp_dir.\n"; exit(-1); }
+if (!(-d $stat_dir) && !mkdir($stat_dir)) { print "Fail to create folder $stat_dir.\n"; exit(-1); }
+
+$imdName = "$temp_dir/$sampleToken";
 
 if (!$is_sam && !$is_bam && $phred33 + $phred64 + $solexa == 0) { $phred33 = 1; }
 
 my ($mate_minL, $mate_maxL) = (1, $maxL);
-
-if (!(-d $tmp_dir) && !mkdir($tmp_dir)) { print "Fail to create the directory.\n"; exit(-1); }
 
 if ($bowtie_path ne "") { $bowtie_path .= "/"; }
 
@@ -199,7 +200,7 @@ if (!$is_sam && !$is_bam) {
     $is_sam = 1; # output of bowtie is a sam file
 }
 
-$command = $dir."rsem-parse-alignments $refName $imdName";
+$command = $dir."rsem-parse-alignments $refName $sampleName $sampleToken";
 
 my $samInpType;
 if ($is_sam) { $samInpType = "s"; } 
@@ -244,7 +245,7 @@ print OUTPUT "$mean $sd\n";
 print OUTPUT "$L\n";
 close(OUTPUT);  
 
-$command = $dir."rsem-run-em $refName $read_type $imdName $taskName -p $nThreads";
+$command = $dir."rsem-run-em $refName $read_type $sampleName $sampleToken -p $nThreads";
 if ($genBamF) { 
     $command .= " -b $samInpType $inpF";
     if ($fn_list ne "") { $command .= " 1 $fn_list"; }
@@ -262,7 +263,7 @@ if ($status != 0) {
 print "\n";
 
 if ($genBamF) {
-    $command = $dir."sam/samtools sort $taskName.bam $taskName.sorted";
+    $command = $dir."sam/samtools sort $sampleName.bam $sampleName.sorted";
     print "$command\n";
     $status = system($command);
     if ($status != 0) {
@@ -270,7 +271,7 @@ if ($genBamF) {
 	exit(-1);
     }
     print "\n";
-    $command = $dir."sam/samtools index $taskName.sorted.bam";
+    $command = $dir."sam/samtools index $sampleName.sorted.bam";
     print "$command\n";
     $status = system($command);
     if ($status != 0) {
@@ -280,11 +281,11 @@ if ($genBamF) {
     print "\n";
 }
 
-&collectResults("$imdName.iso_res", "$taskName.isoforms.results"); # isoform level
-&collectResults("$imdName.gene_res", "$taskName.genes.results"); # gene level
+&collectResults("$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
+&collectResults("$imdName.gene_res", "$sampleName.genes.results"); # gene level
 
 if ($calcCI) {
-    $command = $dir."rsem-run-gibbs $refName $taskName $imdName $BURNIN $CHAINLEN $SAMPLEGAP";
+    $command = $dir."rsem-run-gibbs $refName $sampleName $sampleToken $BURNIN $CHAINLEN $SAMPLEGAP";
     if ($quiet) { $command .= " -q"; }
     print "$command\n";
     $status = system($command);
@@ -294,12 +295,12 @@ if ($calcCI) {
     }
     print "\n";
 
-    system("mv $taskName.isoforms.results $imdName.isoforms.results.bak1");
-    system("mv $taskName.genes.results $imdName.genes.results.bak1");
-    &collectResults("$imdName.iso_res", "$taskName.isoforms.results"); # isoform level
-    &collectResults("$imdName.gene_res", "$taskName.genes.results"); # gene level
+    system("mv $sampleName.isoforms.results $imdName.isoforms.results.bak1");
+    system("mv $sampleName.genes.results $imdName.genes.results.bak1");
+    &collectResults("$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
+    &collectResults("$imdName.gene_res", "$sampleName.genes.results"); # gene level
 
-    $command = $dir."rsem-calculate-credibility-intervals $refName $taskName $imdName $CONFIDENCE $NSPC $NMB";
+    $command = $dir."rsem-calculate-credibility-intervals $refName $sampleName $sampleToken $CONFIDENCE $NSPC $NMB";
     if ($quiet) { $command .= " -q"; }
     print "$command\n";
     $status = system($command);
@@ -309,10 +310,10 @@ if ($calcCI) {
     }
     print "\n";
 
-    system("mv $taskName.isoforms.results $imdName.isoforms.results.bak2");
-    system("mv $taskName.genes.results $imdName.genes.results.bak2");
-    &collectResults("$imdName.iso_res", "$taskName.isoforms.results"); # isoform level
-    &collectResults("$imdName.gene_res", "$taskName.genes.results"); # gene level
+    system("mv $sampleName.isoforms.results $imdName.isoforms.results.bak2");
+    system("mv $sampleName.genes.results $imdName.genes.results.bak2");
+    &collectResults("$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
+    &collectResults("$imdName.gene_res", "$sampleName.genes.results"); # gene level
 }
 
 if (!$keep_intermediate_files) {
@@ -582,11 +583,6 @@ file. If no other attributes are given or no GTF file is provided in
 'rsem-prepare-reference', there will be no tab after the
 tau_value field.
 
-=item B<sample_name.model> and B<sample_name.theta>
-
-Output files used by RSEM internally for tasks like simulation,
-compute credibility intervals etc.
-
 =item B<sample_name.bam, sample_name.sorted.bam and sample_name.sorted.bam.bai>
 
 Only generated when --out-bam is specified.
@@ -604,6 +600,9 @@ representing the posterior probability.
 'sample_name.sorted.bam' and 'sample_name.sorted.bam.bai' are the
 sorted BAM file and indices generated by samtools (included in RSEM package).
 
+=item B<sample_name.stat>
+
+This is a folder instead of a file. All model related statistics are stored in this folder. Use 'rsem-plot-model' can generate plots using this folder.
 
 =back
 

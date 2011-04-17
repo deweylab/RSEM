@@ -1,4 +1,4 @@
-/* ReadType here means if the read is unalignable, alignable or aligned too much. It is NOT single read or paired-end read */
+/* ReadType here means if the read is unalignable, alignable or aligned too much. It is NOT siheaderngle read or paired-end read */
 #ifndef SAMPARSER_H_
 #define SAMPARSER_H_
 
@@ -10,7 +10,12 @@
 
 #include "sam/bam.h"
 #include "sam/sam.h"
+
 #include "utils.h"
+
+#include "Transcript.h"
+#include "Transcripts.h"
+
 #include "SingleRead.h"
 #include "SingleReadQ.h"
 #include "PairedEndRead.h"
@@ -20,7 +25,7 @@
 
 class SamParser {
 public:
-	SamParser(char, const char*, const char* = 0);
+	SamParser(char, const char*, Transcripts&, const char* = 0);
 	~SamParser();
 
 	/**
@@ -46,6 +51,7 @@ private:
 	bam_header_t *header;
 	bam1_t *b, *b2;
 
+
 	//tag used by aligner
 	static char rtTag[STRLEN];
 
@@ -64,12 +70,16 @@ private:
 	//0 ~ N0 1 ~ N1 2 ~ N2
 	int getReadType(const bam1_t*);
 	int getReadType(const bam1_t*, const bam1_t*); // for paired-end reads
+
+	bool check(bam1_t *b) {
+		return (b->core.n_cigar == 1) && ((*bam1_cigar(b) & BAM_CIGAR_MASK) == BAM_CMATCH) && (b->core.l_qseq == (int32_t)(*bam1_cigar(b) >> BAM_CIGAR_SHIFT));
+	}
 };
 
 char SamParser::rtTag[STRLEN] = ""; // default : no tag, thus no Type 2 reads
 
 // aux, if not 0, points to the file name of fn_list
-SamParser::SamParser(char inpType, const char* inpF, const char* aux) {
+SamParser::SamParser(char inpType, const char* inpF, Transcripts& transcripts, const char* aux) {
 	switch(inpType) {
 	case 'b': sam_in = samopen(inpF, "rb", aux); break;
 	case 's': sam_in = samopen(inpF, "r", aux); break;
@@ -79,6 +89,20 @@ SamParser::SamParser(char inpType, const char* inpF, const char* aux) {
 	if (sam_in == 0) { fprintf(stderr, "Cannot open %s! It may not exist.\n", inpF); exit(-1); }
     header = sam_in->header;
     if (header == 0) { fprintf(stderr, "Fail to parse sam header!\n"); exit(-1); }
+
+    // Check if the reference used for aligner is the transcript set RSEM generated
+    if (transcripts.getM() != header->n_targets) {
+    	fprintf(stderr, "Number of transcripts does not match! Please align reads against the transcript set and use RSEM generated reference for your aligner!\n");
+    	exit(-1);
+    }
+    for (int i = 0; i < header->n_targets; i++) {
+    	const Transcript& transcript = transcripts.getTranscriptAt(i + 1);
+    	// If update int to long, chance the (int) conversion
+    	if (transcript.getTranscriptID().compare(header->target_name[i]) != 0 || transcript.getLength() != (int)header->target_len[i]) {
+    		fprintf(stderr, "Transcript information does not match! Please align reads against the transcript set and use RSEM generated reference for your aligner!\n");
+    		exit(-1);
+    	}
+    }
 
     b = bam_init1();
     b2 = bam_init1();
@@ -110,6 +134,8 @@ int SamParser::parseNext(SingleRead& read, SingleHit& hit) {
 	else val = 5;
 
 	if (readType == 1) {
+		if (!check(b)) { fprintf(stderr, "RSEM does not support gapped alignments, sorry!\n"); exit(-1); }
+
 		if (getDir(b) > 0) {
 			hit = SingleHit(b->core.tid + 1, b->core.pos);
 		}
@@ -139,6 +165,8 @@ int SamParser::parseNext(SingleReadQ& read, SingleHit& hit) {
 	else val = 5;
 
 	if (readType == 1) {
+		if (!check(b)) { fprintf(stderr, "RSEM does not support gapped alignments, sorry!\n"); exit(-1); }
+
 		if (getDir(b) > 0) {
 			hit = SingleHit(b->core.tid + 1, b->core.pos);
 		}
@@ -184,6 +212,8 @@ int SamParser::parseNext(PairedEndRead& read, PairedEndHit& hit) {
 	else val = 5;
 
 	if (readType == 1) {
+		if (!check(mp1) || !check(mp2)) { fprintf(stderr, "RSEM does not support gapped alignments, sorry!\n"); exit(-1); }
+
 		if (mp1->core.tid != mp2->core.tid) {
 			fprintf(stderr, "The two reads do not come from the same pair!");
 			exit(-1);
@@ -233,6 +263,8 @@ int SamParser::parseNext(PairedEndReadQ& read, PairedEndHit& hit) {
 	else val = 5;
 
 	if (readType == 1) {
+		if (!check(mp1) || !check(mp2)) { fprintf(stderr, "RSEM does not support gapped alignments, sorry!\n"); exit(-1); }
+
 		if (mp1->core.tid != mp2->core.tid) {
 			fprintf(stderr, "The two reads do not come from the same pair!");
 			exit(-1);

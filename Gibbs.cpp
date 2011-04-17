@@ -7,7 +7,8 @@
 #include<sstream>
 #include<vector>
 
-#include "randomc.h"
+#include "boost/random.hpp"
+
 #include "utils.h"
 
 #include "Model.h"
@@ -35,6 +36,7 @@ int model_type;
 int m, M, N0, N1, nHits;
 double totc;
 int BURNIN, CHAINLEN, GAP;
+char imdName[STRLEN], statName[STRLEN];
 char thetaF[STRLEN], ofgF[STRLEN], groupF[STRLEN], refF[STRLEN], modelF[STRLEN];
 char cvsF[STRLEN];
 
@@ -50,9 +52,11 @@ vector<int> counts;
 bool quiet;
 
 vector<double> arr;
-CRandomMersenne rg(time(NULL));
 
-void load_data(char* reference_name, char* sample_name, char* imdName) {
+boost::mt19937 rng(time(NULL));
+boost::uniform_01<boost::mt19937> rg(rng);
+
+void load_data(char* reference_name, char* statName, char* imdName) {
 	ifstream fin;
 	string line;
 	int tmpVal;
@@ -68,7 +72,7 @@ void load_data(char* reference_name, char* sample_name, char* imdName) {
 	m = gi.getm();
 
 	//load thetaF
-	sprintf(thetaF, "%s.theta",sample_name);
+	sprintf(thetaF, "%s.theta",statName);
 	fin.open(thetaF);
 	if (!fin.is_open()) {
 		fprintf(stderr, "Cannot open %s!\n", thetaF);
@@ -123,7 +127,7 @@ void load_data(char* reference_name, char* sample_name, char* imdName) {
 // If by chance arr[len - 1] == 0.0, one possibility is to sample uniformly from 0...len-1
 int sample(vector<double>& arr, int len) {
   int l, r, mid;
-  double prb = rg.Random() * arr[len - 1];
+  double prb = rg() * arr[len - 1];
 
   l = 0; r = len - 1;
   while (l <= r) {
@@ -334,14 +338,16 @@ void writeEstimatedParameters(char* modelF, char* imdName) {
 
 int main(int argc, char* argv[]) {
 	if (argc < 7) {
-		printf("Usage: rsem-run-gibbs reference_name sample_name imdName BURNIN CHAINLEN GAP [-q]\n");
+		printf("Usage: rsem-run-gibbs reference_name sample_name sampleToken BURNIN CHAINLEN GAP [-q]\n");
 		exit(-1);
 	}
 
 	BURNIN = atoi(argv[4]);
 	CHAINLEN = atoi(argv[5]);
 	GAP = atoi(argv[6]);
-	load_data(argv[1], argv[2], argv[3]);
+	sprintf(imdName, "%s.temp/%s", argv[2], argv[3]);
+	sprintf(statName, "%s.stat/%s", argv[2], argv[3]);
+	load_data(argv[1], statName, imdName);
 
 	quiet = false;
 	if (argc > 7 && !strcmp(argv[7], "-q")) {
@@ -350,19 +356,19 @@ int main(int argc, char* argv[]) {
 	verbose = !quiet;
 
 	init();
-	Gibbs(argv[3]);
+	Gibbs(imdName);
 
-	sprintf(modelF, "%s.model", argv[2]);
+	sprintf(modelF, "%s.model", statName);
 	FILE *fi = fopen(modelF, "r");
 	if (fi == NULL) { fprintf(stderr, "Cannot open %s!\n", modelF); exit(-1); }
 	fscanf(fi, "%d", &model_type);
 	fclose(fi);
 
 	switch(model_type) {
-	case 0 : writeEstimatedParameters<SingleModel>(modelF, argv[3]); break;
-	case 1 : writeEstimatedParameters<SingleQModel>(modelF, argv[3]); break;
-	case 2 : writeEstimatedParameters<PairedEndModel>(modelF, argv[3]); break;
-	case 3 : writeEstimatedParameters<PairedEndQModel>(modelF, argv[3]); break;
+	case 0 : writeEstimatedParameters<SingleModel>(modelF, imdName); break;
+	case 1 : writeEstimatedParameters<SingleQModel>(modelF, imdName); break;
+	case 2 : writeEstimatedParameters<PairedEndModel>(modelF, imdName); break;
+	case 3 : writeEstimatedParameters<PairedEndQModel>(modelF, imdName); break;
 	}
 
 	return 0;
