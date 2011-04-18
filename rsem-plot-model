@@ -124,6 +124,6 @@ if (model_type == 1 || model_type == 3) {
 close(con)
 
 pair <- read.table(file = cntF, skip = 3, sep = "\t")
-barplot(pair[,2], names.arg = pair[,1], xlab = "Number of Alignments", ylab = "Number of Reads", main = "Histogram of Read Alignments")
+barplot(pair[,2], names.arg = pair[,1], xlab = "Number of Alignments", ylab = "Number of Reads", main = "Histogram of Reads with Different Number of  Alignments")
 
 dev.off()

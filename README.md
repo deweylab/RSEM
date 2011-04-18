@@ -148,7 +148,8 @@ The plots generated depends on read type and user configuration. It
 may include fragment length distribution, mate length distribution,
 read start position distribution (RSPD), quality score vs observed
 quality given a reference base, position vs percentage of sequencing
-error given a reference base and histogram of read alignments.
+error given a reference base and histogram of reads with different
+number of alignments.
 
 fragment length distribution and mate length distribution: x-axis is fragment/mate length, y axis is the probability of generating a fragment/mate with the associated length
 
@@ -158,7 +159,7 @@ Quality score vs. observed quality given a reference base: x-axis is Phred quali
 
 Position vs. percentage sequencing error given a reference base: x-axis is position and y-axis is percentage sequencing error
 
-Histogram of read alignments: x-axis is the number of alignments a read has and y-axis is the number of such reads
+Histogram of reads with different number of alignments: x-axis is the number of alignments a read has and y-axis is the number of such reads. The inf in x-axis means number of reads filtered due to too many alignments
  
 ## <a name="example"></a> Example
 
