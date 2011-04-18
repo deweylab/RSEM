@@ -14,8 +14,8 @@
 
 #include "GroupInfo.h"
 
-#include "Transcript.h"
-#include "Transcripts.h"
+#include "RefSeq.h"
+#include "Refs.h"
 
 #include "SingleRead.h"
 #include "SingleReadQ.h"
@@ -34,12 +34,12 @@ int N[3]; // note, N = N0 + N1 + N2 , but may not be equal to the total number o
 int nHits; // # of hits
 int nUnique, nMulti, nIsoMulti;
 char fn_list[STRLEN];
-char groupF[STRLEN], tiF[STRLEN];
+char refF[STRLEN], groupF[STRLEN];
 char imdName[STRLEN];
 char datF[STRLEN], cntF[STRLEN];
 
+Refs refs;
 GroupInfo gi;
-Transcripts transcripts;
 
 SamParser *parser;
 ofstream hit_out;
@@ -55,7 +55,7 @@ void init(const char* imdName, char alignFType, const char* alignF) {
 
 	char* aux = 0;
 	if (strcmp(fn_list, "")) aux = fn_list;
-	parser = new SamParser(alignFType, alignF, transcripts, aux);
+	parser = new SamParser(alignFType, alignF, refs, aux);
 
 	memset(cat, 0, sizeof(cat));
 	memset(readOutFs, 0, sizeof(readOutFs));
@@ -96,6 +96,9 @@ void parseIt(SamParser *parser) {
 			if (record_val >= 0) {
 				record_read.write(n_os, cat[record_val]);
 				++N[record_val];
+			}
+			// flush out previous read's hits if the read is alignable reads
+			if (record_val == 1) {
 				hits.updateRI();
 				nHits += hits.getNHits();
 				nMulti += hits.calcNumGeneMultiReads(gi);
@@ -127,6 +130,9 @@ void parseIt(SamParser *parser) {
 	if (record_val >= 0) {
 		record_read.write(n_os, cat[record_val]);
 		++N[record_val];
+	}
+
+	if (record_val == 1) {
 		hits.updateRI();
 		nHits += hits.getNHits();
 		nMulti += hits.calcNumGeneMultiReads(gi);
@@ -186,10 +192,10 @@ int main(int argc, char* argv[]) {
 
 	verbose = !quiet;
 
+	sprintf(refF, "%s.seq", argv[1]);
+	refs.loadRefs(refF, 1);
 	sprintf(groupF, "%s.grp", argv[1]);
 	gi.load(groupF);
-	sprintf(tiF, "%s.ti", argv[1]);
-	transcripts.readFrom(tiF);
 
 	sprintf(imdName, "%s.temp/%s", argv[2], argv[3]);
 	sprintf(datF, "%s.dat", imdName);
@@ -220,9 +226,11 @@ int main(int argc, char* argv[]) {
 	fout<<N[0]<<" "<<N[1]<<" "<<N[2]<<" "<<(N[0] + N[1] + N[2])<<endl;
 	fout<<nUnique<<" "<<nMulti<<" "<<nIsoMulti<<endl;
 	fout<<nHits<<" "<<read_type<<endl;
+	fout<<"0\t"<<N[0]<<endl;
 	for (iter = counter.begin(); iter != counter.end(); iter++) {
 		fout<<iter->first<<'\t'<<iter->second<<endl;
 	}
+	fout<<"Inf\t"<<N[2]<<endl;
 	fout.close();
 
 	release();

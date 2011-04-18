@@ -13,8 +13,8 @@
 
 #include "utils.h"
 
-#include "Transcript.h"
-#include "Transcripts.h"
+#include "RefSeq.h"
+#include "Refs.h"
 
 #include "SingleRead.h"
 #include "SingleReadQ.h"
@@ -25,7 +25,7 @@
 
 class SamParser {
 public:
-	SamParser(char, const char*, Transcripts&, const char* = 0);
+	SamParser(char, const char*, Refs&, const char* = 0);
 	~SamParser();
 
 	/**
@@ -79,7 +79,7 @@ private:
 char SamParser::rtTag[STRLEN] = ""; // default : no tag, thus no Type 2 reads
 
 // aux, if not 0, points to the file name of fn_list
-SamParser::SamParser(char inpType, const char* inpF, Transcripts& transcripts, const char* aux) {
+SamParser::SamParser(char inpType, const char* inpF, Refs& refs, const char* aux) {
 	switch(inpType) {
 	case 'b': sam_in = samopen(inpF, "rb", aux); break;
 	case 's': sam_in = samopen(inpF, "r", aux); break;
@@ -91,14 +91,14 @@ SamParser::SamParser(char inpType, const char* inpF, Transcripts& transcripts, c
     if (header == 0) { fprintf(stderr, "Fail to parse sam header!\n"); exit(-1); }
 
     // Check if the reference used for aligner is the transcript set RSEM generated
-    if (transcripts.getM() != header->n_targets) {
+    if (refs.getM() != header->n_targets) {
     	fprintf(stderr, "Number of transcripts does not match! Please align reads against the transcript set and use RSEM generated reference for your aligner!\n");
     	exit(-1);
     }
     for (int i = 0; i < header->n_targets; i++) {
-    	const Transcript& transcript = transcripts.getTranscriptAt(i + 1);
+    	const RefSeq& refseq = refs.getRef(i + 1);
     	// If update int to long, chance the (int) conversion
-    	if (transcript.getTranscriptID().compare(header->target_name[i]) != 0 || transcript.getLength() != (int)header->target_len[i]) {
+    	if (refseq.getName().compare(header->target_name[i]) != 0 || refseq.getTotLen() != (int)header->target_len[i]) {
     		fprintf(stderr, "Transcript information does not match! Please align reads against the transcript set and use RSEM generated reference for your aligner!\n");
     		exit(-1);
     	}

@@ -107,7 +107,7 @@ void Refs::makeRefs(char *inpF, RefSeqPolicy& policy, PolyARules& rules) {
 }
 
 //inpF in fasta format, with sequence all in one line together
-//option 0 read all, 1 do not read sequences and names
+//option 0 read all, 1 do not read sequences
 void Refs::loadRefs(char *inpF, int option) {
   std::ifstream fin;
   RefSeq seq;

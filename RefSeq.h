@@ -105,7 +105,7 @@ class RefSeq {
   std::vector<unsigned int> fmasks; // record masks for forward strand, each position occupies 1 bit 
 };
 
-//internal read; option 0 : read all 1 : do not read seqence and name
+//internal read; option 0 : read all 1 : do not read seqences
 bool RefSeq::read(std::ifstream& fin, int option) {
   std::string line;
 
@@ -122,7 +122,7 @@ bool RefSeq::read(std::ifstream& fin, int option) {
   getline(fin, line);
 
   assert(option == 0 || option == 1);
-  if (option == 1) { name = seq = ""; }
+  if (option == 1) { seq = ""; }
 
   return true;
 }

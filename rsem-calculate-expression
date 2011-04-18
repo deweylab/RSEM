@@ -317,7 +317,7 @@ if ($calcCI) {
 }
 
 if (!$keep_intermediate_files) {
-    $status = system ("rm -rf $tmp_dir");
+    $status = system ("rm -rf $temp_dir");
     if ($status != 0) {
 	print "Fail to delete the temporary folder!\n";
 	exit(-1);

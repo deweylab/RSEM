@@ -48,13 +48,13 @@ PairedEndHit.h : SingleHit.h
 HitContainer.h : GroupInfo.h
 
 
-SamParser.h : sam/sam.h sam/bam.h utils.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h Transcript.h Transcripts.h
+SamParser.h : sam/sam.h sam/bam.h utils.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h RefSeq.h Refs.h
 
 
 rsem-parse-alignments : parseIt.o sam/libbam.a
 	$(CC) -o rsem-parse-alignments parseIt.o sam/libbam.a -lz 
 
-parseIt.o : utils.h GroupInfo.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h HitContainer.h SamParser.h Transcript.h Transcripts.h sam/sam.h sam/bam.h parseIt.cpp
+parseIt.o : utils.h GroupInfo.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h HitContainer.h SamParser.h RefSeq.h Refs.h sam/sam.h sam/bam.h parseIt.cpp
 	$(CC) $(COFLAGS) parseIt.cpp
 
 
