@@ -633,8 +633,8 @@ int main(int argc, char* argv[]) {
 		printf("Usage : rsem-run-em refName read_type sampleName sampleToken [-p #Threads] [-b samInpType samInpF has_fn_list_? [fn_list]] [-q] [--gibbs-out]\n\n");
 		printf("  refName: reference name\n");
 		printf("  read_type: 0 single read without quality score; 1 single read with quality score; 2 paired-end read without quality score; 3 paired-end read with quality score.\n");
-		printf("  samplePath: sample path.\n");
-		printf("  sampleName: sample name.\n");
+		printf("  sampleName: sample's name, including the path\n");
+		printf("  sampleToken: sampleName excludes the path\n");
 		printf("  -p: number of threads which user wants to use. (default: 1)\n");
 		printf("  -b: produce bam format output file. (default: off)\n");
 		printf("  -q: set it quiet\n");

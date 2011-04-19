@@ -102,7 +102,7 @@ rsem-calculate-credibility-intervals : calcCI.o
 	$(CC) -o rsem-calculate-credibility-intervals calcCI.o
 
 #some header files are omitted
-calcCI.o : utils.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h RefSeq.h RefSeqPolicy.h PolyARules.h Refs.h GroupInfo.h calcCI.cpp
+calcCI.o : utils.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h RefSeq.h RefSeqPolicy.h PolyARules.h Refs.h GroupInfo.h calcCI.cpp boost/random.hpp
 	$(CC) $(COFLAGS) calcCI.cpp
 
 clean:
