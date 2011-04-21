@@ -157,30 +157,18 @@ void writeResFiles(char* outFN) {
 	FILE *fo;
 	double denom;
 
-	//calculate normalized read fraction
-	double *nrf = new double[M + 1];
-	memset(nrf, 0, sizeof(double) * (M + 1));
-	denom = 0.0;
-	for (int i = 1; i <= M; i++)
-	  if (eel[i] > EPSILON) {
-	    nrf[i] = counts[i];
-	    denom += nrf[i];
-	  }
-	  else {
-	    if (counts[i] > EPSILON) { printf("Warning: An isoform which EEL is less than %.6g gets sampled!\n", MINEEL); }
-	  }
-	assert(denom > 0.0);
-	for (int i = 1; i <= M; i++) nrf[i] /= denom;
-
 	//calculate tau values
 	double *tau = new double[M + 1];
 	memset(tau, 0, sizeof(double) * (M + 1));
 	denom = 0.0;
 	for (int i = 1; i <= M; i++) 
-	  if (eel[i] > EPSILON) {
-	    tau[i] = nrf[i] / eel[i];
-	    denom += tau[i];
-	  }   
+		if (eel[i] > EPSILON) {
+			tau[i] = counts[i] / eel[i];
+			denom += tau[i];
+		}
+		else {
+		    if (counts[i] > EPSILON) { printf("Warning: An isoform which EEL is less than %.6g gets sampled!\n", MINEEL); }
+		}
 	assert(denom > 0.0);
 	for (int i = 1; i <= M; i++) tau[i] /= denom;
 
@@ -189,7 +177,7 @@ void writeResFiles(char* outFN) {
 	fo = fopen(isoResF, "w");
 	for (int i = 1; i <= M; i++) {
 		const Transcript& transcript = transcripts.getTranscriptAt(i);
-		fprintf(fo, "%s\t%.2f\t%.15g\t%.15g", transcript.getTranscriptID().c_str(), counts[i], nrf[i], tau[i]);
+		fprintf(fo, "%s\t%.2f\t%.15g", transcript.getTranscriptID().c_str(), counts[i], tau[i]);
 		
 		if (transcript.getLeft() != "") { fprintf(fo, "\t%s", transcript.getLeft().c_str()); }
 		fprintf(fo, "\n");
@@ -200,22 +188,20 @@ void writeResFiles(char* outFN) {
 	sprintf(geneResF, "%s.sim.genes.results", outFN);
 	fo = fopen(geneResF, "w");
 	for (int i = 0; i < m; i++) {
-	  double sum_c = 0.0, sum_nrf = 0.0, sum_tau = 0.0;
+	  double sum_c = 0.0, sum_tau = 0.0;
 		int b = gi.spAt(i), e = gi.spAt(i + 1);
 		for (int j = b; j < e; j++) {
 			sum_c += counts[j];
-			sum_nrf += nrf[j];
 			sum_tau += tau[j];
 		}
 		const string& gene_id = transcripts.getTranscriptAt(b).getGeneID();
-		fprintf(fo, "%s\t%.2f\t%.15g\t%.15g\t", gene_id.c_str(), sum_c, sum_nrf, sum_tau);
+		fprintf(fo, "%s\t%.2f\t%.15g\t", gene_id.c_str(), sum_c, sum_tau);
 		for (int j = b; j < e; j++) {
 			fprintf(fo, "%s%c", transcripts.getTranscriptAt(j).getTranscriptID().c_str(), (j < e - 1 ? ',' : '\n'));
 		}
 	}
 	fclose(fo);
 
-	delete[] nrf;
 	delete[] tau;
 }
 
