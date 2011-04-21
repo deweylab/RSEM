@@ -315,6 +315,7 @@ void SingleModel::collect(const SingleModel& o) {
 	npro->collect(*(o.npro));
 }
 
+//Only master node can call
 void SingleModel::read(const char* inpF) {
 	int val;
 	FILE *fi = fopen(inpF, "r");
@@ -334,14 +335,18 @@ void SingleModel::read(const char* inpF) {
 	pro->read(fi);
 	npro->read(fi);
 
-	if (fscanf(fi, "%d", &M) == 1) {
-	  mw = new double[M + 1];
-	  for (int i = 0; i <= M; i++) fscanf(fi, "%lf", &mw[i]);
+	if (fscanf(fi, "%d", &val) == 1) {
+		if (M == 0) M = val;
+		if (M == val) {
+			mw = new double[M + 1];
+			for (int i = 0; i <= M; i++) fscanf(fi, "%lf", &mw[i]);
+		}
 	}
 
 	fclose(fi);
 }
 
+//Only master node can call. Only be called at EM.cpp
 void SingleModel::write(const char* outF) {
 	FILE *fo = fopen(outF, "w");
 

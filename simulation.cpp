@@ -127,7 +127,7 @@ void simulate(char* modelF, char* resultsF) {
 	for (int i = 1; i <= M; i++) {
 	  getline(fin, line);
 	  size_t pos = 0;
-	  for (int j = 0; j < 3; j++) pos = line.find_first_of('\t', pos) + 1;
+	  for (int j = 0; j < 2; j++) pos = line.find_first_of('\t', pos) + 1;
 	  size_t pos2 = line.find_first_of('\t', pos);
 	  if (pos2 == string::npos) pos2 = line.length();
 	  tau = atof(line.substr(pos, pos2 - pos).c_str());
