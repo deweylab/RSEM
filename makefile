@@ -92,7 +92,7 @@ simulation.o : utils.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedE
 	$(CC) $(COFLAGS) simulation.cpp
 
 rsem-run-gibbs : Gibbs.o
-	$(CC) -o rsem-run-gibbs Gibbs.o 
+	$(CC) -o rsem-run-gibbs Gibbs.o -lpthread
 
 #some header files are omitted
 Gibbs.o : utils.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h RefSeq.h RefSeqPolicy.h PolyARules.h Refs.h GroupInfo.h boost/random.hpp Gibbs.cpp 

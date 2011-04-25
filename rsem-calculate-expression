@@ -8,7 +8,7 @@ use strict;
 
 #const
 my $BURNIN = 200;
-my $CHAINLEN = 1000;
+my $NSAMPLES = 1000;
 my $SAMPLEGAP = 1;
 my $CONFIDENCE = 0.95;
 my $NSPC = 50;
@@ -285,7 +285,8 @@ if ($genBamF) {
 &collectResults("$imdName.gene_res", "$sampleName.genes.results"); # gene level
 
 if ($calcCI) {
-    $command = $dir."rsem-run-gibbs $refName $sampleName $sampleToken $BURNIN $CHAINLEN $SAMPLEGAP";
+    $command = $dir."rsem-run-gibbs $refName $sampleName $sampleToken $BURNIN $NSAMPLES $SAMPLEGAP";
+    $command .= " -p $nThreads";
     if ($quiet) { $command .= " -q"; }
     print "$command\n";
     $status = system($command);
