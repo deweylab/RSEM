@@ -286,7 +286,7 @@ if ($genBamF) {
 
 if ($calcCI) {
     $command = $dir."rsem-run-gibbs $refName $sampleName $sampleToken $BURNIN $NSAMPLES $SAMPLEGAP";
-    $command .= " -p $nThreads";
+#    $command .= " -p $nThreads";
     if ($quiet) { $command .= " -q"; }
     print "$command\n";
     $status = system($command);
