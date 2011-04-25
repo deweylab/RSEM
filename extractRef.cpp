@@ -113,6 +113,7 @@ void parse_gtf_file(char* gtfF) {
 
 	items.clear();
  	while (getline(fin, line)) {
+ 		if (line[0] == '#') continue; // if this line is comment, jump it
  		item.parse(line);
  		string feature = item.getFeature();
  		if (feature == "exon") {

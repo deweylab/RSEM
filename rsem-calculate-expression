@@ -8,7 +8,7 @@ use strict;
 
 #const
 my $BURNIN = 200;
-my $NSAMPLES = 1000;
+my $CHAINLEN = 1000;
 my $SAMPLEGAP = 1;
 my $CONFIDENCE = 0.95;
 my $NSPC = 50;
@@ -285,7 +285,7 @@ if ($genBamF) {
 &collectResults("$imdName.gene_res", "$sampleName.genes.results"); # gene level
 
 if ($calcCI) {
-    $command = $dir."rsem-run-gibbs $refName $sampleName $sampleToken $BURNIN $NSAMPLES $SAMPLEGAP";
+    $command = $dir."rsem-run-gibbs $refName $sampleName $sampleToken $BURNIN $CHAINLEN $SAMPLEGAP";
 #    $command .= " -p $nThreads";
     if ($quiet) { $command .= " -q"; }
     print "$command\n";
@@ -661,3 +661,5 @@ Assume the path to the bowtie executables is in the user's PATH environment vari
                            mmliver_paired_end_quals
 
 =cut
+
+#  LocalWords:  usr
