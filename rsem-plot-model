@@ -2,15 +2,21 @@
 
 argv <- commandArgs(TRUE)
 if (length(argv) != 2) {
-  cat("Usage: rsem-plot-model sample_name outF\n")
+  cat("Usage: rsem-plot-model sample_name output_plot_file\n")
   q(status = 1)
 }
 
 strvec <- strsplit(argv[1], split = "/")[[1]]
 token <- strvec[length(strvec)]
 
-modelF <- paste(argv[1], ".stat/", token, ".model", sep = "")
-cntF <- paste(argv[1], ".stat/", token, ".cnt", sep = "")
+stat.dir <- paste(argv[1], ".stat", sep = "")
+if (!file.exists(stat.dir)) {
+  cat("Error: directory does not exist: ", stat.dir, "\n", sep = "")
+  cat(strwrap("This version of rsem-plot-model only works with the output of RSEM versions >= 1.1.8"), sep="\n")
+  q(status = 1)
+}
+modelF <- paste(stat.dir, "/", token, ".model", sep = "")
+cntF <- paste(stat.dir, "/", token, ".cnt", sep = "")
 
 pdf(argv[2])
 
