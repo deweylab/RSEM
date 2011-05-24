@@ -2,15 +2,21 @@
 
 argv <- commandArgs(TRUE)
 if (length(argv) != 2) {
-  cat("Usage: rsem-plot-model sample_name outF\n")
+  cat("Usage: rsem-plot-model sample_name output_plot_file\n")
   q(status = 1)
 }
 
 strvec <- strsplit(argv[1], split = "/")[[1]]
 token <- strvec[length(strvec)]
 
-modelF <- paste(argv[1], ".stat/", token, ".model", sep = "")
-cntF <- paste(argv[1], ".stat/", token, ".cnt", sep = "")
+stat.dir <- paste(argv[1], ".stat", sep = "")
+if (!file.exists(stat.dir)) {
+  cat("Error: directory does not exist: ", stat.dir, "\n", sep = "")
+  cat(strwrap("This version of rsem-plot-model only works with the output of RSEM versions >= 1.1.8"), sep="\n")
+  q(status = 1)
+}
+modelF <- paste(stat.dir, "/", token, ".model", sep = "")
+cntF <- paste(stat.dir, "/", token, ".cnt", sep = "")
 
 pdf(argv[2])
 
@@ -27,7 +33,11 @@ x <- (vec[1] + 1) : vec[2]
 y <- as.numeric(strsplit(strvec[2], split = " ")[[1]])
 mean <- weighted.mean(x, y)
 std <- sqrt(weighted.mean((x - mean)^2, y))
-plot(x, y, type = "h", main = "Fragment Length Distribution", sub = paste("Mean = ", mean, ", Std = ", std), xlab = "Fragment Length", ylab = "Probability")  
+plot(x, y, type = "h",
+     main = "Fragment Length Distribution",
+     sub = paste("Mean = ", round(mean, 1), ", Std = ", round(std, 1)),
+     xlab = "Fragment Length",
+     ylab = "Probability")
 
 # mate length distribution
 if (model_type == 0 || model_type == 1) bval <- as.numeric(readLines(con, n = 1)[1]) else bval <- 1
@@ -40,7 +50,11 @@ if (bval == 1) {
   y <- as.numeric(list[[2]])
   mean <- weighted.mean(x, y)
   std <- sqrt(weighted.mean((x - mean)^2, y))
-  plot(x, y, type = "h", main = "Mate Length Distribution", sub = paste("Mean = ", mean, ", Std = ", std), xlab = "Mate Length", ylab = "Probability")  
+  plot(x, y, type = "h",
+       main = "Read Length Distribution",
+       sub=paste("Mean = ", round(mean, 1), ", Std = ", round(std, 1)),
+       xlab = "Read Length",
+       ylab = "Probability")
 }
 strvec <- readLines(con, n = 1)
 
@@ -88,7 +102,10 @@ if (model_type == 1 || model_type == 3) {
     peT <- c(peT, ifelse(sum(vecT) < 1e-8, NA, -10 * log10(1.0 - vecT[4])))
   }
 
-  matplot(x, cbind(peA, peC, peG, peT), type = "b", lty = 1:4, pch = 0:3, col = 1:4, main = "Phred Quality Score vs. Observed Quality", xlab = "Quality Score", ylab = "Observed Quality")
+  matplot(x, cbind(peA, peC, peG, peT), type = "b", lty = 1:4, pch = 0:3, col = 1:4,
+          main = "Observed Quality vs. Phred Quality Score",
+          xlab = "Phred Quality Score",
+          ylab = "Observed Quality")
   legend("topleft", c("A", "C", "G", "T"), lty = 1:4, pch = 0:3, col = 1:4)
 } else {
   # Profile
@@ -124,6 +141,9 @@ if (model_type == 1 || model_type == 3) {
 close(con)
 
 pair <- read.table(file = cntF, skip = 3, sep = "\t")
-barplot(pair[,2], names.arg = pair[,1], xlab = "Number of Alignments", ylab = "Number of Reads", main = "Histogram of Reads with Different Number of  Alignments")
+barplot(pair[,2], names.arg = pair[,1],
+        xlab = "Alignments per fragment",
+        ylab = "Number of fragments",
+        main = "Histogram of Alignments per Fragment")
 
 dev.off()

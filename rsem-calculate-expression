@@ -15,7 +15,7 @@ my $NSPC = 50;
 
 my $NMB = 1024; # default
 
-my $status;
+my $status = 0;
 
 my $read_type = 1; # default, single end with qual
 
@@ -55,6 +55,9 @@ my $keep_intermediate_files = 0;
 
 my $strand_specific = 0;
 
+my $mTime = 0;
+my ($time_start, $time_end, $time_alignment, $time_rsem, $time_ci) = (0, 0, 0, 0, 0);
+
 GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "no-qualities" => \$no_qual,
 	   "paired-end" => \$paired_end,
@@ -82,6 +85,7 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "out-bam" => \$genBamF,
 	   "calc-ci" => \$calcCI,
 	   "ci-memory=i" => \$NMB,
+	   "time" => \$mTime,
 	   "q|quiet" => \$quiet,
 	   "h|help" => \$help) or pod2usage(-exitval => 2, -verbose => 2);
 
@@ -189,7 +193,13 @@ if (!$is_sam && !$is_bam) {
 
     $command .= " | gzip > $imdName.sam.gz";
     print "$command\n";
+
+    if ($mTime) { $time_start = time(); }
+
     $status = system($command);
+
+    if ($mTime) { $time_end = time(); $time_alignment = $time_end - $time_start; }
+
     if ($status != 0) {
 	print "bowtie failed! Please check if you provide correct parameters/options for the pipeline!\n";
 	exit(-1);
@@ -199,6 +209,8 @@ if (!$is_sam && !$is_bam) {
     $inpF = "$imdName.sam.gz";
     $is_sam = 1; # output of bowtie is a sam file
 }
+
+if ($mTime) { $time_start = time(); }
 
 $command = $dir."rsem-parse-alignments $refName $sampleName $sampleToken";
 
@@ -234,8 +246,8 @@ if ($status != 0) {
 }
 print "\n";
 
-$status = open(OUTPUT, ">$imdName.mparams");
-if ($status == 0) { print "Cannot generate $imdName.mparams!\n"; exit(-1); }
+my $doesOpen = open(OUTPUT, ">$imdName.mparams");
+if ($doesOpen == 0) { print "Cannot generate $imdName.mparams!\n"; exit(-1); }
 print OUTPUT "$minL $maxL\n";
 print OUTPUT "$probF\n";
 print OUTPUT "$estRSPD\n";
@@ -284,6 +296,10 @@ if ($genBamF) {
 &collectResults("$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
 &collectResults("$imdName.gene_res", "$sampleName.genes.results"); # gene level
 
+if ($mTime) { $time_end = time(); $time_rsem = $time_end - $time_start; }
+
+if ($mTime) { $time_start = time(); }
+
 if ($calcCI) {
     $command = $dir."rsem-run-gibbs $refName $sampleName $sampleToken $BURNIN $CHAINLEN $SAMPLEGAP";
 #    $command .= " -p $nThreads";
@@ -317,12 +333,28 @@ if ($calcCI) {
     &collectResults("$imdName.gene_res", "$sampleName.genes.results"); # gene level
 }
 
+if ($mTime) { $time_end = time(); $time_ci = $time_end - $time_start; }
+
+if ($mTime) { $time_start = time(); }
+
 if (!$keep_intermediate_files) {
-    $status = system ("rm -rf $temp_dir");
+    $status = system("rm -rf $temp_dir");
     if ($status != 0) {
 	print "Fail to delete the temporary folder!\n";
 	exit(-1);
     }
+}
+
+if ($mTime) { $time_end = time(); }
+
+if ($mTime) { 
+    open(OUTPUT, ">$sampleName.time");
+    print OUTPUT "Alignment: $time_alignment s.\n";
+    print OUTPUT "RSEM: $time_rsem s.\n";
+    print OUTPUT "CI: $time_ci s.\n";
+    my $time_del = $time_end - $time_start;
+    print OUTPUT "Delete: $time_del s.\n";
+    close(OUTPUT);
 }
 
 # inpF, outF

@@ -138,19 +138,19 @@ void simulate(char* modelF, char* resultsF) {
 	fin.close();
 	for (int i = 1; i <= M; i++) theta[i] = theta[i] / denom * (1.0 - theta[0]);
 	
-	int tmp2140 = 0;
+	int resimulation_count = 0;
 
 	//simulating...
 	model.startSimulation(&sampler, theta);
 	for (int i = 0; i < N; i++) {
-	  while (!model.simulate(i, read, sid)) { ++tmp2140; }//;
+		while (!model.simulate(i, read, sid)) { ++resimulation_count; }
 		read.write(n_os, os);
 		++counts[sid];
 		if ((i + 1) % 1000000 == 0 && verbose) printf("GEN %d\n", i + 1);
 	}
 	model.finishSimulation();
 
-	printf("Total number of resimulation is %d\n", tmp2140);
+	printf("Total number of resimulation is %d\n", resimulation_count);
 }
 
 void writeResFiles(char* outFN) {

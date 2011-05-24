@@ -443,9 +443,8 @@ bool SingleQModel::simulate(int rid, SingleReadQ& read, int& sid) {
 		}
 	}
 
-	std::ostringstream stdout;
-	stdout<<rid<<"_"<<dir<<"_"<<sid<<"_"<<pos;
-	name = stdout.str();
+	strout<<rid<<"_"<<dir<<"_"<<sid<<"_"<<pos;
+	name = strout.str();
 
 	read = SingleReadQ(name, readseq, qual);
 

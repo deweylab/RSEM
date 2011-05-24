@@ -199,8 +199,6 @@ public:
 	}
 
 	int getModelType() const { return model_type; }
-
-	bool simulate(int, PairedEndReadQ&, SingleReadQ&, int&);
  
 private:
 	static const int model_type = 3;
@@ -405,9 +403,8 @@ bool PairedEndQModel::simulate(int rid, PairedEndReadQ& read, int& sid) {
 		readseq2 = qpro->simulate(sampler, mateL2, m2pos, m2dir, qual2, ref);
 	}
 
-	std::ostringstream stdout;
-	stdout<<rid<<"_"<<dir<<"_"<<sid<<"_"<<pos<<"_"<<insertL;
-	name = stdout.str();
+	strout<<rid<<"_"<<dir<<"_"<<sid<<"_"<<pos<<"_"<<insertL;
+	name = strout.str();
 
 	read = PairedEndReadQ(SingleReadQ(name + "/1", readseq1, qual1), SingleReadQ(name + "/2", readseq2, qual2));
 

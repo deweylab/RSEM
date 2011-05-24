@@ -385,9 +385,8 @@ bool PairedEndModel::simulate(int rid, PairedEndRead& read, int& sid) {
 		readseq2 = pro->simulate(sampler, mateL2, m2pos, m2dir, ref);
 	}
 
-	std::ostringstream stdout;
-	stdout<<rid<<"_"<<dir<<"_"<<sid<<"_"<<pos<<"_"<<insertL;
-	name = stdout.str();
+	strout<<rid<<"_"<<dir<<"_"<<sid<<"_"<<pos<<"_"<<insertL;
+	name = strout.str();
 
 	read = PairedEndRead(SingleRead(name + "/1", readseq1), SingleRead(name + "/2", readseq2));
 

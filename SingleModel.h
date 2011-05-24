@@ -423,9 +423,8 @@ bool SingleModel::simulate(int rid, SingleRead& read, int& sid) {
 		}
 	}
 
-	std::ostringstream stdout;
-	stdout<<rid<<"_"<<dir<<"_"<<sid<<"_"<<pos;
-	name = stdout.str();
+	strout<<rid<<"_"<<dir<<"_"<<sid<<"_"<<pos;
+	name = strout.str();
 
 	read = SingleRead(name, readseq);
 
