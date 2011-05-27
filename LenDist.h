@@ -177,13 +177,9 @@ void LenDist::setAsNormal(double mean, double sd, int minL, int maxL) {
   trim();
 }
 
-int bo = 0; // need delete
-  
 void LenDist::init() {
 	memset(pdf, 0, sizeof(double) * (span + 1));
 	memset(cdf, 0, sizeof(double) * (span + 1));
-
-	bo = 0;
 }
 
 void LenDist::finish() {
@@ -210,10 +206,6 @@ void LenDist::collect(const LenDist& o) {
 	  cdf = new double[span + 1];
 	  memset(pdf, 0, sizeof(double) * (span + 1));
 	  memset(cdf, 0, sizeof(double) * (span + 1));
-	  
-	  //need delete
-	  ++bo;
-	  assert(bo < 2);
 	}
 	for (int i = 1; i <= span; i++) {
 		pdf[i] += o.pdf[i];
