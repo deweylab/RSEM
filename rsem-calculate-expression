@@ -624,7 +624,7 @@ Only generated when --out-bam is specified.
 genomic coordinates. Alignments of reads that have identical genomic
 coordinates (i.e., alignments to different isoforms that share the
 same genomic region) are collapsed into one alignment.  The MAPQ field
-of each alignment is set to max(100, floor(-10 * log10(1.0 - w) +
+of each alignment is set to min(100, floor(-10 * log10(1.0 - w) +
 0.5)), where w is the posterior probability of that alignment being
 the true mapping of a read.  In addition, RSEM pads a new tag
 ZW:f:value, where value is a single precision floating number
