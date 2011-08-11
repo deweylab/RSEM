@@ -506,7 +506,7 @@ void EM() {
 			}
 
 		if (verbose) printf("ROUND = %d, SUM = %.15g, bChange = %f, totNum = %d\n", ROUND, sum, bChange, totNum);
-	} while (ROUND < MIN_ROUND || totNum > 0 && ROUND < MAX_ROUND);
+	} while (ROUND < MIN_ROUND || (totNum > 0 && ROUND < MAX_ROUND));
 	  //while (ROUND < MAX_ROUND);
 
 	if (totNum > 0) fprintf(stderr, "Warning: RSEM reaches %d iterations before meeting the convergence criteria.\n", MAX_ROUND);

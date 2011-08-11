@@ -43,7 +43,7 @@ private:
 };
 
 QProfile::QProfile() {
-	memset(p, sizeof(p), 0);
+	memset(p, 0, sizeof(p));
 
 	//make initialized parameters
 	//ASSUME order of A, C, G, T, N

@@ -104,7 +104,7 @@ void writeResults(char* refName) {
 }
 
 int main(int argc, char* argv[]) {
-	if (argc < 5 || (hasMappingFile = atoi(argv[3])) && argc < 6) {
+  if (argc < 5 || ((hasMappingFile = atoi(argv[3])) && argc < 6)) {
 		printf("Usage: synthesisRef refName quiet hasMappingFile [mappingFile] reference_file_1 [reference_file_2 ...]\n");
 		exit(-1);
 	}

@@ -49,7 +49,7 @@ public:
 	}
 
 	bool operator< (const Transcript& o) const {
-		return gene_id < o.gene_id || gene_id == o.gene_id && transcript_id < o.transcript_id;
+	  return gene_id < o.gene_id || (gene_id == o.gene_id && transcript_id < o.transcript_id);
 	}
 
 	const std::string& getTranscriptID() const { return transcript_id; }

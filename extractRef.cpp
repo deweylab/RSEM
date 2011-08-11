@@ -86,8 +86,14 @@ bool buildTranscript(int sp, int ep) {
 		int start = items[i].getStart();
 		int end = items[i].getEnd();
 
-		assert(strand == items[i].getStrand());
-		assert(seqname == items[i].getSeqName());
+		if (strand != items[i].getStrand()) {
+		  fprintf(stderr, "According to the GTF file given, a transcript has exons from different orientations!\n");
+		  exit(-1);
+		}
+		if (seqname != items[i].getSeqName()) {
+		  fprintf(stderr, "According to the GTF file given, a transcript has exons on multiple chromosomes!\n");
+		  exit(-1);
+		}
 
 		if (cur_e + 1 < start) {
 			if (cur_s > 0) vec.push_back(Interval(cur_s, cur_e));
@@ -241,7 +247,7 @@ void writeResults(char* refName) {
 }
 
 int main(int argc, char* argv[]) {
-	if (argc < 6 || (hasMappingFile = atoi(argv[4])) && argc < 7) {
+  if (argc < 6 || ((hasMappingFile = atoi(argv[4])) && argc < 7)) {
 		printf("Usage: rsem-extract-reference-transcripts refName quiet gtfF hasMappingFile [mappingFile] chromosome_file_1 [chromosome_file_2 ...]\n");
 		exit(-1);
 	}

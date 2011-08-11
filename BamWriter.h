@@ -227,7 +227,7 @@ void BamWriter::work(HitWrapper<SingleHit> wrapper, Transcripts& transcripts) {
 
 			uint16_t rstrand = b->core.flag & 0x0010; // read strand
 			b->core.flag -= rstrand;
-			rstrand = (!rstrand && transcript.getStrand() == '+' || rstrand && transcript.getStrand() == '-' ? 0 : 0x0010);
+			rstrand = (((!rstrand && transcript.getStrand() == '+') || (rstrand && transcript.getStrand() == '-')) ? 0 : 0x0010);
 			b->core.flag += rstrand;
 
 			push_qname(qname, b->core.l_qname, data);
@@ -356,7 +356,7 @@ void BamWriter::work(HitWrapper<PairedEndHit> wrapper, Transcripts& transcripts)
 			b2->core.flag = b2->core.flag - (b2->core.flag & 0x0010) - (b2->core.flag & 0x0020);
 
 			uint16_t add, add2;
-			if (!rstrand && transcript.getStrand() == '+' || rstrand && transcript.getStrand() == '-') {
+			if ((!rstrand && transcript.getStrand() == '+') || (rstrand && transcript.getStrand() == '-')) {
 				add = 0x0020; add2 = 0x0010;
 			}
 			else {

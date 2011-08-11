@@ -52,7 +52,7 @@ class Refs {
   }
 
   bool isValid(int sid, int dir, int pos, const std::string& readseq, int LEN, int C) {
-    if (sid <= 0 || sid > M || dir != 0 && dir != 1 ||  pos < 0 || pos + LEN > seqs[sid].getTotLen() || LEN > (int)readseq.length()) return false;
+    if (sid <= 0 || sid > M || (dir != 0 && dir != 1) ||  pos < 0 || pos + LEN > seqs[sid].getTotLen() || LEN > (int)readseq.length()) return false;
     const std::string& seq = seqs[sid].getSeq(dir);
     return countMismatch(seq, pos, readseq, LEN, C) <= C;
   }
