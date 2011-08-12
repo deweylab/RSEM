@@ -571,6 +571,7 @@ void EM() {
 
 	//calculate expected weights and counts using learned parameters
 	updateModel = false; calcExpectedWeights = true;
+	for (int i = 0; i <= M; i++) probv[i] = theta[i];
 	for (int i = 0; i < nThreads; i++) {
 		rc = pthread_create(&threads[i], &attr, E_STEP<ReadType, HitType, ModelType>, (void*)(&fparams[i]));
 		if (rc != 0) { fprintf(stderr, "Cannot create thread %d when calculate expected weights! (numbered from 0)\n", i); exit(-1); }
