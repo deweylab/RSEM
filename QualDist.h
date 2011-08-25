@@ -94,12 +94,12 @@ double QualDist::getProb(const std::string& qual) {
 void QualDist::read(FILE *fi) {
 	int tmp_size;
 
-	fscanf(fi, "%d", &tmp_size);
+	assert(fscanf(fi, "%d", &tmp_size) == 1);
 	assert(tmp_size == SIZE);
 
-	for (int i = 0; i < SIZE; i++) { fscanf(fi, "%lf", &p_init[i]); }
+	for (int i = 0; i < SIZE; i++) { assert(fscanf(fi, "%lf", &p_init[i]) == 1); }
 	for (int i = 0; i < SIZE; i++) {
-		for (int j = 0; j < SIZE; j++) { fscanf(fi, "%lf", &p_tran[i][j]); }
+		for (int j = 0; j < SIZE; j++) { assert(fscanf(fi, "%lf", &p_tran[i][j]) == 1); }
 	}
 }
 

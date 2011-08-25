@@ -128,12 +128,12 @@ void QProfile::collect(const QProfile& o) {
 
 void QProfile::read(FILE *fi) {
 	int tmp_size, tmp_ncodes;
-	fscanf(fi, "%d %d", &tmp_size, &tmp_ncodes);
+	assert(fscanf(fi, "%d %d", &tmp_size, &tmp_ncodes) == 2);
 	assert(tmp_size == SIZE && tmp_ncodes == NCODES);
 	for (int i = 0; i < SIZE; i++)
 		for (int j = 0; j < NCODES; j++)
 			for (int k = 0; k < NCODES; k++)
-				fscanf(fi, "%lf", &p[i][j][k]);
+			  assert(fscanf(fi, "%lf", &p[i][j][k]) == 1);
 }
 
 void QProfile::write(FILE *fo) {

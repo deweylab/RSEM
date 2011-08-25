@@ -334,7 +334,7 @@ void SingleQModel::read(const char* inpF) {
 	FILE *fi = fopen(inpF, "r");
 	if (fi == NULL) { fprintf(stderr, "Cannot open %s! It may not exist.\n", inpF); exit(-1); }
 
-	fscanf(fi, "%d", &val);
+	assert(fscanf(fi, "%d", &val) == 1);
 	assert(val == model_type);
 
 	ori->read(fi);
@@ -353,7 +353,7 @@ void SingleQModel::read(const char* inpF) {
 		if (M == 0) M = val;
 		if (M == val) {
 			mw = new double[M + 1];
-			for (int i = 0; i <= M; i++) fscanf(fi, "%lf", &mw[i]);
+			for (int i = 0; i <= M; i++) assert(fscanf(fi, "%lf", &mw[i]) == 1);
 		}
 	}
 

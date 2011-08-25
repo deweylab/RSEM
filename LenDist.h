@@ -217,12 +217,12 @@ void LenDist::read(FILE *fi) {
 	delete[] pdf;
 	delete[] cdf;
 
-	fscanf(fi, "%d %d %d", &lb, &ub, &span);
+	assert(fscanf(fi, "%d %d %d", &lb, &ub, &span) == 3);
 	pdf = new double[span + 1];
 	cdf = new double[span + 1];
 	pdf[0] = cdf[0] = 0.0;
 	for (int i = 1; i <= span; i++) {
-		fscanf(fi, "%lf", &pdf[i]);
+	        assert(fscanf(fi, "%lf", &pdf[i]) == 1);
 		cdf[i] = cdf[i - 1] + pdf[i];
 	}
 

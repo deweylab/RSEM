@@ -5,6 +5,7 @@
 #include<cstdio>
 #include<cstring>
 #include<string>
+#include<cassert>
 
 #include "utils.h"
 #include "RefSeq.h"
@@ -131,20 +132,13 @@ void NoiseQProfile::collect(const NoiseQProfile& o) {
 void NoiseQProfile::read(FILE *fi) {
 	int tmp_size, tmp_ncodes;
 
-	/* DEBUG */
 	memset(c, 0, sizeof(c));
-	//logp = 0.0;
-	/* END */
 
-	fscanf(fi, "%d %d", &tmp_size, &tmp_ncodes);
+	assert(fscanf(fi, "%d %d", &tmp_size, &tmp_ncodes) == 2);
 	assert(tmp_size == SIZE && tmp_ncodes == NCODES);
 	for (int i = 0; i < SIZE; i++) {
-		for (int j = 0; j < NCODES; j++) {
-			fscanf(fi, "%lf", &p[i][j]);
-			/* DEBUG */
-			//if (c[i][j] > 0) logp += c[i][j] * log(p[i][j]);
-			/* END */
-		}
+		for (int j = 0; j < NCODES; j++) 
+		  assert(fscanf(fi, "%lf", &p[i][j]) == 1);
 	}
 }
 

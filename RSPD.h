@@ -1,6 +1,10 @@
 #ifndef RSPD_H_
 #define RSPD_H_
 
+#include<cstdio>
+#include<cstring>
+#include<cassert>
+
 #include "utils.h"
 #include "RefSeq.h"
 #include "Refs.h"
@@ -137,17 +141,17 @@ void RSPD::read(FILE *fi) {
 	delete[] cdf;
 
 	int val;
-	fscanf(fi, "%d", &val);
+	assert(fscanf(fi, "%d", &val) == 1);
 	estRSPD = (val != 0);
 
 	if (estRSPD) {
-		fscanf(fi, "%d", &B);
+		assert(fscanf(fi, "%d", &B) == 1);
 		pdf = new double[B + 2];
 		cdf = new double[B + 2];
 		memset(pdf, 0, sizeof(double) * (B + 2));
 		memset(cdf, 0, sizeof(double) * (B + 2));
 		for (int i = 1; i <= B; i++) {
-			fscanf(fi, "%lf", &pdf[i]);
+			assert(fscanf(fi, "%lf", &pdf[i]) == 1);
 			cdf[i] = cdf[i - 1] + pdf[i];
 		}
 	}

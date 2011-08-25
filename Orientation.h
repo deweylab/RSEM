@@ -3,6 +3,7 @@
 
 #include<cstdio>
 #include<cstring>
+#include<cassert>
 
 #include "simul.h"
 
@@ -23,7 +24,7 @@ public:
 	double getProb(int dir) { return prob[dir]; }
 
 	void read(FILE* fi) {
-		fscanf(fi, "%lf", &prob[0]);
+		assert(fscanf(fi, "%lf", &prob[0]) == 1);
 		prob[1] = 1.0 - prob[0];
 	}
 

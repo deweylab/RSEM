@@ -132,7 +132,7 @@ void Profile::collect(const Profile& o) {
 
 void Profile::read(FILE *fi) {
 	int tmp_prolen, tmp_ncodes;
-	fscanf(fi, "%d %d", &tmp_prolen, &tmp_ncodes);
+	assert(fscanf(fi, "%d %d", &tmp_prolen, &tmp_ncodes) == 2);
 	assert(tmp_ncodes == NCODES);
 	if (tmp_prolen != proLen) {
 		delete[] p;
@@ -145,7 +145,7 @@ void Profile::read(FILE *fi) {
 	for (int i = 0; i < proLen; i++)
 		for (int j = 0; j < NCODES; j++)
 			for (int k = 0; k < NCODES; k++)
-				fscanf(fi, "%lf", &p[i][j][k]);
+			  assert(fscanf(fi, "%lf", &p[i][j][k]) == 1);
 }
 
 void Profile::write(FILE* fo) {

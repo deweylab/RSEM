@@ -5,6 +5,7 @@
 #include<cstdio>
 #include<cstring>
 #include<string>
+#include<cassert>
 
 #include "utils.h"
 #include "RefSeq.h"
@@ -119,10 +120,10 @@ void NoiseProfile::read(FILE *fi) {
 	int tmp_ncodes;
 
 	memset(c, 0, sizeof(c));
-	fscanf(fi, "%d", &tmp_ncodes);
+	assert(fscanf(fi, "%d", &tmp_ncodes) == 1);
 	assert(tmp_ncodes == NCODES);
 	for (int i = 0; i < NCODES; i++)
-		fscanf(fi, "%lf", &p[i]);
+	  assert(fscanf(fi, "%lf", &p[i]) == 1);
 }
 
 void NoiseProfile::write(FILE *fo) {

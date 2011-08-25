@@ -109,7 +109,7 @@ if (!$no_bowtie) {
     print "$command\n";
     $status = system($command);
     if ($status != 0) {
-	print "bowtie-build failed! Please check if you provide correct parameters/options for the pipeline!\n";
+	print "bowtie-build failed! Please check if you have a copy of bowtie-build in the path you specified!\n";
 	exit(-1);
     }
     print "\n";
