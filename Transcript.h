@@ -113,7 +113,10 @@ void Transcript::read(std::ifstream& fin) {
 	int s;
 	std::string tmp;
 
-	fin>>transcript_id>>gene_id>>seqname>>tmp>>length;
+	getline(fin, transcript_id);
+	getline(fin, gene_id);
+	getline(fin, seqname);
+	fin>>tmp>>length;
 	assert(tmp.length() == 1 && (tmp[0] == '+' || tmp[0] == '-'));
 	strand = tmp[0];
 	structure.clear();
@@ -130,7 +133,10 @@ void Transcript::read(std::ifstream& fin) {
 void Transcript::write(std::ofstream& fout) {
 	int s = structure.size();
 
-	fout<<transcript_id<<" "<<gene_id<<" "<<seqname<<" "<<strand<<" "<<length<<" ";
+	fout<<transcript_id<<std::endl;
+	fout<<gene_id<<std::endl;
+	fout<<seqname<<std::endl;
+	fout<<strand<<" "<<length<<std::endl;
 	fout<<s;
 	for (int i = 0; i < s; i++) fout<<" "<<structure[i].start<<" "<<structure[i].end;
 	fout<<std::endl;

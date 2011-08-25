@@ -479,7 +479,7 @@ void BamWriter::work(HitWrapper<PairedEndHit> wrapper, Transcripts& transcripts)
 	bam_destroy1(b);
 	bam_destroy1(b2);
 
-	if (verbose) { printf("Bam output file is generated!"); }
+	if (verbose) { printf("Bam output file is generated!\n"); }
 }
 
 void BamWriter::tr2chr(const Transcript& transcript, int sp, int ep, int& pos, int& n_cigar, std::vector<uint8_t>& data) {
