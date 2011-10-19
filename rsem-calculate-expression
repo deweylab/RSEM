@@ -484,7 +484,7 @@ Calculate 95% credibility intervals and posterior mean estimates.  (Default: off
 
 =item B<--seed-length> <int>
 
-Seed length used by the read aligner.  Providing the correct value for this parameter is important for RSEM's accuracy if the data are single-end reads.  If RSEM runs Bowtie, it uses this value for Bowtie's seed length parameter.  (Default: 25)
+Seed length used by the read aligner.  Providing the correct value for this parameter is important for RSEM's accuracy if the data are single-end reads.  If RSEM runs Bowtie, it uses this value for Bowtie's seed length parameter. The minimum value is 25. (Default: 25)
 
 =item B<--tag> <string>
 

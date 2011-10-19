@@ -97,7 +97,10 @@ void Refs::makeRefs(char *inpF, RefSeqPolicy& policy, PolyARules& rules) {
     while((pt = getline(fin, line)) && line[0] != '>') {
       rawseq += line;
     }
-    assert(rawseq.size() > 0);
+    if (rawseq.size() <= 0) {
+      printf("Warning: Fasta entry %s has an empty sequence! It is omitted!\n", tag.c_str()); 
+      continue;
+    }
     ++M;
     seqs.push_back(RefSeq(tag, policy.convert(rawseq), rules.getLenAt(tag)));
   }

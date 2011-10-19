@@ -1,0 +1,34 @@
+#!/usr/bin/perl
+
+use strict;
+
+if (scalar(@ARGV) != 2) {
+    print "Usage: extract-transcript-to-gene-map-from-trinity trinity_fasta_file map_file\n";
+    exit(-1);
+}
+
+open(INPUT, $ARGV[0]);
+open(OUTPUT, ">$ARGV[1]");
+
+my ($tag, $line);
+$tag = <INPUT>; chomp($tag);
+while (substr($tag, 0, 1) eq ">") {
+    $tag = substr($tag, 1);
+    my $cnt = 0;
+    while (($line = <INPUT>) && substr($line, 0, 1) ne ">") {
+	$cnt++;
+    }
+    if ($cnt == 0) { print "Warning: Fasta entry $tag has an empty sequence, it is omitted.\n"; }
+    else {
+	my ($tid, $gid) = split(/ /, $tag);
+	my ($comp, $c, @tmp) = split(/_/, $gid);
+	$gid = join("_", $comp, $c);
+	print OUTPUT "$gid\t$tid\n";
+    }
+    $tag = $line; chomp($tag);
+} 
+
+close(INPUT);
+close(OUTPUT);
+
+ 
