@@ -20,9 +20,9 @@ while (substr($tag, 0, 1) eq ">") {
     }
     if ($cnt == 0) { print "Warning: Fasta entry $tag has an empty sequence, it is omitted.\n"; }
     else {
-	my ($tid, $gid) = split(/ /, $tag);
-	my ($comp, $c, @tmp) = split(/_/, $gid);
-	$gid = join("_", $comp, $c);
+	my ($tid, @tmp) = split(/ /, $tag);
+	my ($comp, $c, @tmp) = split(/_/, $tag);
+	my $gid = join("_", $comp, $c);
 	print OUTPUT "$gid\t$tid\n";
     }
     $tag = $line; chomp($tag);
