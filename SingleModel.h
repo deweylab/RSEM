@@ -273,8 +273,11 @@ void SingleModel::estimateFromReads(const char* readFN) {
 
 			int cnt = 0;
 			while (reader.next(read)) {
-				mld != NULL ? mld->update(read.getReadLength(), 1.0) : gld->update(read.getReadLength(), 1.0);
-				if (i == 0) { npro->updateC(read.getReadSeq()); }
+				if (!read.isLowQuality()) {
+				  mld != NULL ? mld->update(read.getReadLength(), 1.0) : gld->update(read.getReadLength(), 1.0);
+				  if (i == 0) { npro->updateC(read.getReadSeq()); }
+				}
+				else if (verbose && read.getReadLength() < OLEN) { printf("Warning: Read %s is ignored due to read length < %d!\n", read.getName().c_str(), OLEN); }
 
 				++cnt;
 				if (verbose && cnt % 1000000 == 0) { printf("%d READS PROCESSED\n", cnt); }
@@ -441,7 +444,7 @@ void SingleModel::finishSimulation() {
 
 void SingleModel::calcMW() {
   double probF, probR;
-  
+
   assert(seedLen >= OLEN && (mld == NULL ? gld->getMinL() : mld->getMinL()) >= seedLen);
   
   memset(mw, 0, sizeof(double) * (M + 1));

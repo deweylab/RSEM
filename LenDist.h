@@ -3,6 +3,7 @@
 
 #include<cstdio>
 #include<cstring>
+#include<cstdlib>
 #include<cassert>
 #include<algorithm>
 
@@ -188,6 +189,8 @@ void LenDist::finish() {
 	for (int i = 1; i <= span; i++) {
 		sum += pdf[i];
 	}
+
+	if (sum <= EPSILON) { fprintf(stderr, "No valid read to estimate the length distribution!\n"); exit(-1); }
 
 	for (int i = 1; i <= span; i++) {
 		pdf[i] = pdf[i] / sum;

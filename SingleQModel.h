@@ -283,9 +283,12 @@ void SingleQModel::estimateFromReads(const char* readFN) {
 
 			int cnt = 0;
 			while (reader.next(read)) {
-				mld != NULL ? mld->update(read.getReadLength(), 1.0) : gld->update(read.getReadLength(), 1.0);
-				qd->update(read.getQScore());
-				if (i == 0) { nqpro->updateC(read.getReadSeq(), read.getQScore()); }
+				if (!read.isLowQuality()) {
+				  mld != NULL ? mld->update(read.getReadLength(), 1.0) : gld->update(read.getReadLength(), 1.0);
+				  qd->update(read.getQScore());
+				  if (i == 0) { nqpro->updateC(read.getReadSeq(), read.getQScore()); }
+				}
+				else if (verbose && read.getReadLength() < OLEN) { printf("Warning: Read %s is ignored due to read length < %d!\n", read.getName().c_str(), OLEN); }
 
 				++cnt;
 				if (verbose && cnt % 1000000 == 0) { printf("%d READS PROCESSED\n", cnt); }
@@ -339,7 +342,7 @@ void SingleQModel::read(const char* inpF) {
 
 	ori->read(fi);
 	gld->read(fi);
-	fscanf(fi, "%d", &val);
+	assert(fscanf(fi, "%d", &val) == 1);
 	if (val > 0) {
 		if (mld == NULL) mld = new LenDist();
 		mld->read(fi);

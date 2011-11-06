@@ -81,7 +81,7 @@ void NoiseProfile::finish() {
 	logp = 0.0;
 	sum = 0.0;
 	for (int i = 0; i < NCODES; i++) sum += (p[i] + c[i]);
-	if (sum <= 0.0) return;
+	if (sum <= EPSILON) return;
 	for (int i = 0; i < NCODES; i++) {
 		p[i] = (p[i] + c[i]) / sum;
 		if (c[i] > 0.0) { logp += c[i] * log(p[i]); }

@@ -61,6 +61,7 @@ void PairedEndReadQ::write(int argc, std::ostream* argv[]) {
 
 void PairedEndReadQ::calc_lq() {
 	low_quality = mate1.isLowQuality() && mate2.isLowQuality();
+	if (mate1.getReadLength() < OLEN || mate2.getReadLength() < OLEN) low_quality = true;
 }
 
 #endif /* PAIREDENDREADQ_H_ */

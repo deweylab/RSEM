@@ -53,7 +53,7 @@ void buildIndex(char* readF, int gap, bool hasQ) {
 		}
 		++nReads;
 
-		if (verbose && nReads % 1000000 == 0) { printf("FIN %lld\n", nReads); }
+		if (verbose && nReads % 1000000 == 0) { printf("FIN %lld\n", (long long)nReads); }
 	} while (success);
 
 	fout.seekp(startPos);

@@ -67,6 +67,8 @@ void SingleReadQ::calc_lq() {
   int numA = 0, numT = 0, numAO = 0, numTO = 0; // numAO : number of A in overlap seed region
   int threshold_1, threshold_2;
 
+  if (len < OLEN) { low_quality = true; return; }
+
   threshold_1 = int(0.9 * len - 1.5 * sqrt(len * 1.0) + 0.5);
   threshold_2 = (OLEN - 1) / 2 + 1;
   for (int i = 0; i < len; i++) {

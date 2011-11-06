@@ -110,6 +110,7 @@ pod2usage(-msg => "Min fragment length should be at least 1!", -exitval => 2, -v
 pod2usage(-msg => "Min fragment length should be smaller or equal to max fragment length!", -exitval => 2, -verbose => 2) if ($minL > $maxL);
 pod2usage(-msg => "The memory allocated for calculating credibility intervals should be at least 1 MB!\n", -exitval => 2, -verbose => 2) if ($NMB < 1);
 pod2usage(-msg => "Number of threads should be at least 1!\n", -exitval => 2, -verbose => 2) if ($nThreads < 1);
+pod2usage(-msg => "Seed length should be at least 25!\n", -exitval => 2, -verbose => 2) if ($L < 25);
 
 if ($strand_specific) { $probF = 1.0; }
 
@@ -484,7 +485,7 @@ Calculate 95% credibility intervals and posterior mean estimates.  (Default: off
 
 =item B<--seed-length> <int>
 
-Seed length used by the read aligner.  Providing the correct value for this parameter is important for RSEM's accuracy if the data are single-end reads.  If RSEM runs Bowtie, it uses this value for Bowtie's seed length parameter. The minimum value is 25. (Default: 25)
+Seed length used by the read aligner.  Providing the correct value for this parameter is important for RSEM's accuracy if the data are single-end reads.  If RSEM runs Bowtie, it uses this value for Bowtie's seed length parameter. The minimum value is 25. Any read with its or at least one of its mates' (for paired-end reads) length less than 25 will be ignored. (Default: 25)
 
 =item B<--tag> <string>
 
@@ -694,4 +695,3 @@ Assume the path to the bowtie executables is in the user's PATH environment vari
 
 =cut
 
-#  LocalWords:  usr

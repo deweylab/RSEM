@@ -236,14 +236,19 @@ void PairedEndModel::estimateFromReads(const char* readFN) {
     		while (reader.next(read)) {
     			SingleRead mate1 = read.getMate1();
     			SingleRead mate2 = read.getMate2();
-
-    			mld->update(mate1.getReadLength(), 1.0);
-    			mld->update(mate2.getReadLength(), 1.0);
-
-    			if (i == 0) {
-    				npro->updateC(mate1.getReadSeq());
-    				npro->updateC(mate2.getReadSeq());
-    			}
+			
+			if (!read.isLowQuality()) {
+			  mld->update(mate1.getReadLength(), 1.0);
+			  mld->update(mate2.getReadLength(), 1.0);
+			  
+			  if (i == 0) {
+			    npro->updateC(mate1.getReadSeq());
+			    npro->updateC(mate2.getReadSeq());
+			  }
+			}
+			else if (verbose && (mate1.getReadLength() < OLEN || mate2.getReadLength() < OLEN)) { 
+			  printf("Warning: Read %s is ignored due to at least one of the mates' length < %d!\n", read.getName().c_str(), OLEN);
+			}
 
     			++cnt;
     			if (verbose && cnt % 1000000 == 0) { printf("%d READS PROCESSED\n", cnt); }

@@ -394,9 +394,11 @@ void release(ReadReader<ReadType> **readers, HitContainer<HitType> **hitvs, doub
 	delete[] mhps;
 }
 
+int tmp_n;
+
 inline bool doesUpdateModel(int ROUND) {
-	//return false; // never update, for debugging only
-	return ROUND <= 20 || ROUND % 100 == 0;
+  //  return ROUND <= 20 || ROUND % 100 == 0;
+  return ROUND <= 10;
 }
 
 //Including initialize, algorithm and results saving
