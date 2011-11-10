@@ -45,6 +45,7 @@ my $B = 20;
 
 my $nThreads = 1;
 my $genBamF = 0;
+my $sampling = 0;
 my $calcCI = 0;
 my $quiet = 0;
 my $help = 0;
@@ -83,6 +84,7 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "num-rspd-bins=i" => \$B,
 	   "p|num-threads=i" => \$nThreads,
 	   "out-bam" => \$genBamF,
+	   "sampling-for-bam" => \$sampling,
 	   "calc-ci" => \$calcCI,
 	   "ci-memory=i" => \$NMB,
 	   "time" => \$mTime,
@@ -111,6 +113,7 @@ pod2usage(-msg => "Min fragment length should be smaller or equal to max fragmen
 pod2usage(-msg => "The memory allocated for calculating credibility intervals should be at least 1 MB!\n", -exitval => 2, -verbose => 2) if ($NMB < 1);
 pod2usage(-msg => "Number of threads should be at least 1!\n", -exitval => 2, -verbose => 2) if ($nThreads < 1);
 pod2usage(-msg => "Seed length should be at least 25!\n", -exitval => 2, -verbose => 2) if ($L < 25);
+pod2usage(-msg => "--sampling-for-bam cannot be specified if --out-bam is not specified!\n", -exitval => 2, -verbose => 2) if ($sampling && !$genBamF);
 
 if ($strand_specific) { $probF = 1.0; }
 
@@ -263,6 +266,7 @@ if ($genBamF) {
     $command .= " -b $samInpType $inpF";
     if ($fn_list ne "") { $command .= " 1 $fn_list"; }
     else { $command .= " 0"; }
+    if ($sampling) { $command .= " --sampling"; }
 }
 if ($calcCI) { $command .= " --gibbs-out"; }
 if ($quiet) { $command .= " -q"; }
@@ -479,6 +483,10 @@ Number of threads to use. Both Bowtie and expression estimation will use this ma
 
 Generate a BAM file, 'sample_name.bam', with alignments mapped to genomic coordinates and annotated with their posterior probabilities. In addition, RSEM will call samtools (included in RSEM package) to sort and index the bam file. 'sample_name.sorted.bam' and 'sample_name.sorted.bam.bai' will be generated. (Default: off)
 
+=item B<--sampling-for-bam>
+
+When RSEM generates a BAM file, instead of outputing all alignments a read has with their posterior probabilities, one alignment is sampled and outputed according to the posterior probabilities. If the sampling result is that the read comes from the "noise" transcript, nothing is outputed. It cannot be specified unless --out-bam is specified. (Default: off)
+ 
 =item B<--calc-ci>
 
 Calculate 95% credibility intervals and posterior mean estimates.  (Default: off)

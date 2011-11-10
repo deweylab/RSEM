@@ -10,6 +10,7 @@
 #include<pthread.h>
 
 #include "utils.h"
+#include "sampling.h"
 
 #include "Read.h"
 #include "SingleRead.h"
@@ -58,6 +59,7 @@ int nThreads;
 
 
 bool genBamF; // If user wants to generate bam file, true; otherwise, false.
+bool bamSampling; // true if sampling from read posterior distribution when bam file is generated
 bool updateModel, calcExpectedWeights;
 bool genGibbsOut; // generate file for Gibbs sampler
 
@@ -394,8 +396,6 @@ void release(ReadReader<ReadType> **readers, HitContainer<HitType> **hitvs, doub
 	delete[] mhps;
 }
 
-int tmp_n;
-
 inline bool doesUpdateModel(int ROUND) {
   //  return ROUND <= 20 || ROUND % 100 == 0;
   return ROUND <= 10;
@@ -619,6 +619,29 @@ void EM() {
 			sprintf(chr_list, "%s.chrlist", refName);
 			pt_chr_list = (char*)(&chr_list);
 		}
+		
+		if (bamSampling) {
+		  int local_N;
+		  int fr, to, len, id;
+		  vector<double> arr;
+		  arr.clear();
+
+		  if (verbose) printf("Begin to sample reads from their posteriors.\n");
+		  for (int i = 0; i < nThreads; i++) {
+		    local_N = hitvs[i]->getN();
+		    for (int j = 0; j < local_N; j++) {
+		      fr = hitvs[i]->getSAt(j);
+		      to = hitvs[i]->getSAt(j + 1);
+		      len = to - fr + 1;
+		      arr.resize(len);
+		      arr[0] = ncpvs[i][j];
+		      for (int k = fr; k < to; k++) arr[k - fr + 1] = arr[k - fr] + hitvs[i]->getHitAt(k).getConPrb();
+		      id = (arr[len - 1] < EPSILON ? -1 : sample(arr, len)); // if all entries in arr are 0, let id be -1
+		      for (int k = fr; k < to; k++) hitvs[i]->getHitAt(k).setConPrb(k - fr + 1 == id ? 1.0 : 0.0);
+		    }
+		  }
+		}
+		if (verbose) printf("Sampling is finished.\n");
 
 		BamWriter writer(inpSamType, inpSamF, pt_fn_list, outBamF, pt_chr_list);
 		HitWrapper<HitType> wrapper(nThreads, hitvs);
@@ -633,7 +656,7 @@ int main(int argc, char* argv[]) {
 	bool quiet = false;
 
 	if (argc < 5) {
-		printf("Usage : rsem-run-em refName read_type sampleName sampleToken [-p #Threads] [-b samInpType samInpF has_fn_list_? [fn_list]] [-q] [--gibbs-out]\n\n");
+		printf("Usage : rsem-run-em refName read_type sampleName sampleToken [-p #Threads] [-b samInpType samInpF has_fn_list_? [fn_list]] [-q] [--gibbs-out] [--sampling]\n\n");
 		printf("  refName: reference name\n");
 		printf("  read_type: 0 single read without quality score; 1 single read with quality score; 2 paired-end read without quality score; 3 paired-end read with quality score.\n");
 		printf("  sampleName: sample's name, including the path\n");
@@ -641,7 +664,8 @@ int main(int argc, char* argv[]) {
 		printf("  -p: number of threads which user wants to use. (default: 1)\n");
 		printf("  -b: produce bam format output file. (default: off)\n");
 		printf("  -q: set it quiet\n");
-		printf("  --gibbs-out: generate output file use by Gibbs sampler. (default: off)\n");
+		printf("  --gibbs-out: generate output file used by Gibbs sampler. (default: off)\n");
+		printf("  --sampling: sample each read from its posterior distribution when bam file is generated. (default: off)\n");
 		printf("// model parameters should be in imdName.mparams.\n");
 		exit(-1);
 	}
@@ -657,6 +681,7 @@ int main(int argc, char* argv[]) {
 	nThreads = 1;
 
 	genBamF = false;
+	bamSampling = false;
 	genGibbsOut = false;
 	pt_fn_list = pt_chr_list = NULL;
 
@@ -673,6 +698,7 @@ int main(int argc, char* argv[]) {
 		}
 		if (!strcmp(argv[i], "-q")) { quiet = true; }
 		if (!strcmp(argv[i], "--gibbs-out")) { genGibbsOut = true; }
+		if (!strcmp(argv[i], "--sampling")) { bamSampling = true; }
 	}
 	if (nThreads <= 0) { fprintf(stderr, "Number of threads should be bigger than 0!\n"); exit(-1); }
 	//assert(nThreads > 0);

@@ -4,6 +4,8 @@
 #include<cassert>
 #include<string>
 
+#include<stdint.h>
+
 #include "sam/bam.h"
 #include "sam/sam.h"
 
@@ -61,6 +63,8 @@ int main(int argc, char* argv[]) {
 	cur_tid = -1;
 	wig_arr = NULL;
 	while (samread(bam_in, b) >= 0) {
+		if (b->core.flag & 0x0004) continue;
+		
 		if (b->core.tid != cur_tid) {
 			if (cur_tid >= 0) generateWiggle(cur_tid);
 			cur_tid = b->core.tid;
@@ -69,7 +73,8 @@ int main(int argc, char* argv[]) {
 			memset(wig_arr, 0, len);
 		}
 
-		float w = bam_aux2f(bam_aux_get(b, "ZW"));
+		uint8_t *p_tag = bam_aux_get(b, "ZW");
+		float w = (p_tag != NULL ? bam_aux2f(p_tag) : 1.0);
 		int pos = b->core.pos;
 		uint32_t *p = bam1_cigar(b);
 

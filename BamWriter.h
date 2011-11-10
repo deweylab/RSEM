@@ -263,7 +263,7 @@ void BamWriter::work(HitWrapper<SingleHit> wrapper, Transcripts& transcripts) {
 					*p = 'Z'; ++p; *p = 'W'; ++p; *p = 'f'; ++p;
 					float val = (float)hmapIter->second;
 					memcpy(p, &val, 4);
-					samwrite(out, tmp_b);
+					if (tmp_b->core.qual > 0) samwrite(out, tmp_b); // output only when MAPQ > 0
 					bam_destroy1(tmp_b); // now hmapIter->b makes no sense
 				}
 				hmap.clear();
@@ -290,7 +290,7 @@ void BamWriter::work(HitWrapper<SingleHit> wrapper, Transcripts& transcripts) {
 			*p = 'Z'; ++p; *p = 'W'; ++p; *p = 'f'; ++p;
 			float val = (float)hmapIter->second;
 			memcpy(p, &val, 4);
-			samwrite(out, tmp_b);
+			if (tmp_b->core.qual > 0) samwrite(out, tmp_b); // If MAPQ is equal to 0, do not output this alignment
 			bam_destroy1(tmp_b); // now hmapIter->b makes no sense
 		}
 		hmap.clear();
@@ -429,9 +429,12 @@ void BamWriter::work(HitWrapper<PairedEndHit> wrapper, Transcripts& transcripts)
 					float val = (float)hmapIter->second;
 					memcpy(p, &val, 4);
 					memcpy(p2, &val, 4);
-
-					samwrite(out, tmp_b);
-					samwrite(out, tmp_b2);
+					
+					// If MAPQ is equal to 0, do not output this alignment pair
+					if (tmp_b->core.qual > 0) {
+					  samwrite(out, tmp_b);
+					  samwrite(out, tmp_b2);
+					}
 
 					bam_destroy1(tmp_b);
 					bam_destroy1(tmp_b2);
@@ -467,8 +470,10 @@ void BamWriter::work(HitWrapper<PairedEndHit> wrapper, Transcripts& transcripts)
 			memcpy(p, &val, 4);
 			memcpy(p2, &val, 4);
 
-			samwrite(out, tmp_b);
-			samwrite(out, tmp_b2);
+			if (tmp_b->core.qual > 0) {
+			  samwrite(out, tmp_b);
+			  samwrite(out, tmp_b2);
+			}
 
 			bam_destroy1(tmp_b);
 			bam_destroy1(tmp_b2);

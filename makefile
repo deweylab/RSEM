@@ -62,6 +62,8 @@ rsem-build-read-index : utils.h buildReadIndex.cpp
 	$(CC) -O3 buildReadIndex.cpp -o rsem-build-read-index
 
 
+simul.h : boost/random.hpp
+
 ReadReader.h : SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h ReadIndex.h
 
 SingleModel.h : utils.h Orientation.h LenDist.h RSPD.h Profile.h NoiseProfile.h ModelParams.h RefSeq.h Refs.h SingleRead.h SingleHit.h ReadReader.h simul.h
@@ -76,10 +78,12 @@ HitWrapper.h : HitContainer.h
 
 BamWriter.h : sam/sam.h sam/bam.h utils.h SingleHit.h PairedEndHit.h HitWrapper.h Transcript.h Transcripts.h
 
+sampling.h : boost/random.hpp
+
 rsem-run-em : EM.o sam/libbam.a
 	$(CC) -o rsem-run-em EM.o sam/libbam.a -lz -lpthread
 
-EM.o : utils.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h Refs.h GroupInfo.h HitContainer.h ReadIndex.h ReadReader.h Orientation.h LenDist.h RSPD.h QualDist.h QProfile.h NoiseQProfile.h ModelParams.h RefSeq.h RefSeqPolicy.h PolyARules.h Profile.h NoiseProfile.h Transcript.h Transcripts.h HitWrapper.h BamWriter.h sam/bam.h sam/sam.h EM.cpp simul.h
+EM.o : utils.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h Refs.h GroupInfo.h HitContainer.h ReadIndex.h ReadReader.h Orientation.h LenDist.h RSPD.h QualDist.h QProfile.h NoiseQProfile.h ModelParams.h RefSeq.h RefSeqPolicy.h PolyARules.h Profile.h NoiseProfile.h Transcript.h Transcripts.h HitWrapper.h BamWriter.h sam/bam.h sam/sam.h simul.h sampling.h boost/random.hpp EM.cpp
 	$(CC) $(COFLAGS) EM.cpp
 
 rsem-bam2wig : sam/bam.h sam/sam.h sam/libbam.a bam2wig.cpp
@@ -95,7 +99,7 @@ rsem-run-gibbs : Gibbs.o
 	$(CC) -o rsem-run-gibbs Gibbs.o -lpthread
 
 #some header files are omitted
-Gibbs.o : utils.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h RefSeq.h RefSeqPolicy.h PolyARules.h Refs.h GroupInfo.h boost/random.hpp Gibbs.cpp 
+Gibbs.o : utils.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h RefSeq.h RefSeqPolicy.h PolyARules.h Refs.h GroupInfo.h sampling.h boost/random.hpp Gibbs.cpp 
 	$(CC) $(COFLAGS) Gibbs.cpp
 
 rsem-calculate-credibility-intervals : calcCI.o
