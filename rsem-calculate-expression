@@ -520,11 +520,11 @@ The path to the bowtie executables. (Default: the path to the bowtie executables
 Input quality scores are encoded as Phred+33. (Default: on)
 
 =item B<--phred64-quals>
-          
+
 Input quality scores are encoded as Phred+64 (default for GA Pipeline ver. >= 1.3). (Default: off)
 
 =item B<--solexa-quals>
-                             
+
 Input quality scores are solexa encoded (from GA Pipeline ver. < 1.3). (Default: off)
 
 =item B<--forward-prob> <double>
