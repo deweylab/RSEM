@@ -240,29 +240,30 @@ void BamWriter::work(HitWrapper<SingleHit> wrapper, Transcripts& transcripts) {
 			push_qual(qual, readlen, transcript.getStrand(), data);
 
 			free(b->data);
-			b->m_data = b->data_len = data.size() + 7; // 7 extra bytes for ZW tag
-			b->l_aux = 7;
+			b->m_data = b->data_len = data.size();
+			b->l_aux = 0;
 			b->data = (uint8_t*)malloc(b->m_data);
 			for (int i = 0; i < b->data_len; i++) b->data[i] = data[i];
 
 			b->core.bin = bam_reg2bin(b->core.pos, bam_calend(&(b->core), bam1_cigar(b)));
+
+			char strand = transcript.getStrand();
+			bam_aux_append(b, "XS", 'A', 1, (uint8_t*)&strand);
+
 		}
 		else {
-			b->m_data = b->data_len = b->data_len - b->l_aux + 7; // 7 extra bytes for ZW tag
-			b->l_aux = 7;
+			b->m_data = b->data_len = b->data_len - b->l_aux;
+			b->l_aux = 0;
 			b->data = (uint8_t*)realloc(b->data, b->m_data);
 		}
-
-
+		
 		if (cqname != bam1_qname(b)) {
 			if (!hmap.empty()) {
 				for (hmapIter = hmap.begin(); hmapIter != hmap.end(); hmapIter++) {
 					bam1_t *tmp_b = hmapIter->first.b;
 					tmp_b->core.qual = getMAPQ(hmapIter->second);
-					uint8_t *p = bam1_aux(tmp_b);
-					*p = 'Z'; ++p; *p = 'W'; ++p; *p = 'f'; ++p;
 					float val = (float)hmapIter->second;
-					memcpy(p, &val, 4);
+					bam_aux_append(tmp_b, "ZW", 'f', 4, (uint8_t*)&val);
 					if (tmp_b->core.qual > 0) samwrite(out, tmp_b); // output only when MAPQ > 0
 					bam_destroy1(tmp_b); // now hmapIter->b makes no sense
 				}
@@ -286,10 +287,8 @@ void BamWriter::work(HitWrapper<SingleHit> wrapper, Transcripts& transcripts) {
 		for (hmapIter = hmap.begin(); hmapIter != hmap.end(); hmapIter++) {
 			bam1_t *tmp_b = hmapIter->first.b;
 			tmp_b->core.qual = getMAPQ(hmapIter->second);
-			uint8_t *p = bam1_aux(tmp_b);
-			*p = 'Z'; ++p; *p = 'W'; ++p; *p = 'f'; ++p;
 			float val = (float)hmapIter->second;
-			memcpy(p, &val, 4);
+			bam_aux_append(tmp_b, "ZW", 'f', 4, (uint8_t*)&val);
 			if (tmp_b->core.qual > 0) samwrite(out, tmp_b); // If MAPQ is equal to 0, do not output this alignment
 			bam_destroy1(tmp_b); // now hmapIter->b makes no sense
 		}
@@ -367,7 +366,6 @@ void BamWriter::work(HitWrapper<PairedEndHit> wrapper, Transcripts& transcripts)
 
 			b->core.qual = b2->core.qual = 255;
 
-			//Do I really need this? The insert size uses transcript coordinates
 			if (transcript.getStrand() == '-') {
 				b->core.isize = -b->core.isize;
 				b2->core.isize = -b2->core.isize;
@@ -390,27 +388,31 @@ void BamWriter::work(HitWrapper<PairedEndHit> wrapper, Transcripts& transcripts)
 			push_qual(qual2, readlen2, transcript.getStrand(), data2);
 
 			free(b->data);
-			b->m_data = b->data_len = data.size() + 7; // 7 extra bytes for ZW tag
-			b->l_aux = 7;
+			b->m_data = b->data_len = data.size(); 
+			b->l_aux = 0;
 			b->data = (uint8_t*)malloc(b->m_data);
 			for (int i = 0; i < b->data_len; i++) b->data[i] = data[i];
 
 			free(b2->data);
-			b2->m_data = b2->data_len = data2.size() + 7; // 7 extra bytes for ZW tag
-			b2->l_aux = 7;
+			b2->m_data = b2->data_len = data2.size();
+			b2->l_aux = 0;
 			b2->data = (uint8_t*)malloc(b2->m_data);
 			for (int i = 0; i < b2->data_len; i++) b2->data[i] = data2[i];
 
 			b->core.bin = bam_reg2bin(b->core.pos, bam_calend(&(b->core), bam1_cigar(b)));
 			b2->core.bin = bam_reg2bin(b2->core.pos, bam_calend(&(b2->core), bam1_cigar(b2)));
+
+			char strand = transcript.getStrand();
+			bam_aux_append(b, "XS", 'A', 1, (uint8_t*)&strand);
+			bam_aux_append(b2, "XS", 'A', 1, (uint8_t*)&strand);
 		}
 		else {
-			b->m_data = b->data_len = b->data_len - b->l_aux + 7; // 7 extra bytes for ZW tag
-			b->l_aux = 7;
+			b->m_data = b->data_len = b->data_len - b->l_aux; 
+			b->l_aux = 0;
 			b->data = (uint8_t*)realloc(b->data, b->m_data);
 
-			b2->m_data = b2->data_len = b2->data_len - b2->l_aux + 7; // 7 extra bytes for ZW tag
-			b2->l_aux = 7;
+			b2->m_data = b2->data_len = b2->data_len - b2->l_aux; 
+			b2->l_aux = 0;
 			b2->data = (uint8_t*)realloc(b2->data, b2->m_data);
 		}
 
@@ -422,13 +424,9 @@ void BamWriter::work(HitWrapper<PairedEndHit> wrapper, Transcripts& transcripts)
 
 					tmp_b->core.qual = tmp_b2->core.qual = getMAPQ(hmapIter->second);
 
-					uint8_t *p = bam1_aux(tmp_b), *p2 = bam1_aux(tmp_b2);
-					*p = 'Z'; ++p; *p = 'W'; ++p; *p = 'f'; ++p;
-					*p2 = 'Z'; ++p2; *p2 = 'W'; ++p2; *p2 = 'f'; ++p2;
-
 					float val = (float)hmapIter->second;
-					memcpy(p, &val, 4);
-					memcpy(p2, &val, 4);
+					bam_aux_append(tmp_b, "ZW", 'f', 4, (uint8_t*)&val);
+					bam_aux_append(tmp_b2, "ZW", 'f', 4, (uint8_t*)&val);
 					
 					// If MAPQ is equal to 0, do not output this alignment pair
 					if (tmp_b->core.qual > 0) {
@@ -462,13 +460,9 @@ void BamWriter::work(HitWrapper<PairedEndHit> wrapper, Transcripts& transcripts)
 
 			tmp_b->core.qual = tmp_b2->core.qual = getMAPQ(hmapIter->second);
 
-			uint8_t *p = bam1_aux(tmp_b), *p2 = bam1_aux(tmp_b2);
-			*p = 'Z'; ++p; *p = 'W'; ++p; *p = 'f'; ++p;
-			*p2 = 'Z'; ++p2; *p2 = 'W'; ++p2; *p2 = 'f'; ++p2;
-
 			float val = (float)hmapIter->second;
-			memcpy(p, &val, 4);
-			memcpy(p2, &val, 4);
+			bam_aux_append(tmp_b, "ZW", 'f', 4, (uint8_t*)&val);
+			bam_aux_append(tmp_b2, "ZW", 'f', 4, (uint8_t*)&val);
 
 			if (tmp_b->core.qual > 0) {
 			  samwrite(out, tmp_b);
