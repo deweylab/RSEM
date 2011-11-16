@@ -2,7 +2,7 @@ CC = g++
 #LFLAGS = -Wall -O3 -ffast-math
 CFLAGS = -Wall -c -I.
 COFLAGS = -Wall -O3 -ffast-math -c -I.
-PROGRAMS = rsem-bam2wig rsem-build-read-index rsem-run-em rsem-extract-reference-transcripts rsem-synthesis-reference-transcripts rsem-parse-alignments rsem-preref rsem-simulate-reads rsem-run-gibbs rsem-calculate-credibility-intervals
+PROGRAMS = rsem-bam2wig rsem-bam2readdepth rsem-build-read-index rsem-run-em rsem-extract-reference-transcripts rsem-synthesis-reference-transcripts rsem-parse-alignments rsem-preref rsem-simulate-reads rsem-run-gibbs rsem-calculate-credibility-intervals
 
 
 all : build-sam $(PROGRAMS)
@@ -82,8 +82,14 @@ rsem-run-em : EM.o sam/libbam.a
 EM.o : utils.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h Refs.h GroupInfo.h HitContainer.h ReadIndex.h ReadReader.h Orientation.h LenDist.h RSPD.h QualDist.h QProfile.h NoiseQProfile.h ModelParams.h RefSeq.h RefSeqPolicy.h PolyARules.h Profile.h NoiseProfile.h Transcript.h Transcripts.h HitWrapper.h BamWriter.h sam/bam.h sam/sam.h EM.cpp simul.h
 	$(CC) $(COFLAGS) EM.cpp
 
-rsem-bam2wig : sam/bam.h sam/sam.h sam/libbam.a bam2wig.cpp
-	$(CC) -O3 -Wall bam2wig.cpp sam/libbam.a -lz -o rsem-bam2wig
+rsem-bam2wig : wiggle.h wiggle.o sam/libbam.a bam2wig.cpp
+	$(CC) -O3 -Wall bam2wig.cpp wiggle.o sam/libbam.a -lz -o $@
+
+rsem-bam2readdepth : wiggle.h wiggle.o sam/libbam.a bam2readdepth.cpp
+	$(CC) -O3 -Wall bam2readdepth.cpp wiggle.o sam/libbam.a -lz -o $@
+
+wiggle.o: sam/bam.h sam/sam.h wiggle.cpp wiggle.h
+	$(CC) $(COFLAGS) wiggle.cpp
 
 rsem-simulate-reads : simulation.o
 	$(CC) -o rsem-simulate-reads simulation.o
