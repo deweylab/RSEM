@@ -614,38 +614,34 @@ void EM() {
 	writeResults<ModelType>(model, countvs[0]);
 
 	if (genBamF) {
-		sprintf(outBamF, "%s.bam", outName);
-		if (transcripts.getType() == 0) {
-			sprintf(chr_list, "%s.chrlist", refName);
-			pt_chr_list = (char*)(&chr_list);
-		}
+		sprintf(outBamF, "%s.transcript.bam", outName);
 		
 		if (bamSampling) {
-		  int local_N;
-		  int fr, to, len, id;
-		  vector<double> arr;
-		  arr.clear();
+			int local_N;
+			int fr, to, len, id;
+			vector<double> arr;
+			arr.clear();
 
-		  if (verbose) printf("Begin to sample reads from their posteriors.\n");
-		  for (int i = 0; i < nThreads; i++) {
-		    local_N = hitvs[i]->getN();
-		    for (int j = 0; j < local_N; j++) {
-		      fr = hitvs[i]->getSAt(j);
-		      to = hitvs[i]->getSAt(j + 1);
-		      len = to - fr + 1;
-		      arr.resize(len);
-		      arr[0] = ncpvs[i][j];
-		      for (int k = fr; k < to; k++) arr[k - fr + 1] = arr[k - fr] + hitvs[i]->getHitAt(k).getConPrb();
-		      id = (arr[len - 1] < EPSILON ? -1 : sample(arr, len)); // if all entries in arr are 0, let id be -1
-		      for (int k = fr; k < to; k++) hitvs[i]->getHitAt(k).setConPrb(k - fr + 1 == id ? 1.0 : 0.0);
-		    }
-		  }
+			if (verbose) printf("Begin to sample reads from their posteriors.\n");
+			for (int i = 0; i < nThreads; i++) {
+				local_N = hitvs[i]->getN();
+				for (int j = 0; j < local_N; j++) {
+					fr = hitvs[i]->getSAt(j);
+					to = hitvs[i]->getSAt(j + 1);
+					len = to - fr + 1;
+					arr.resize(len);
+					arr[0] = ncpvs[i][j];
+					for (int k = fr; k < to; k++) arr[k - fr + 1] = arr[k - fr] + hitvs[i]->getHitAt(k).getConPrb();
+					id = (arr[len - 1] < EPSILON ? -1 : sample(arr, len)); // if all entries in arr are 0, let id be -1
+					for (int k = fr; k < to; k++) hitvs[i]->getHitAt(k).setConPrb(k - fr + 1 == id ? 1.0 : 0.0);
+				}
+			}
+			if (verbose) printf("Sampling is finished.\n");
 		}
-		if (verbose) printf("Sampling is finished.\n");
 
-		BamWriter writer(inpSamType, inpSamF, pt_fn_list, outBamF, pt_chr_list);
+		BamWriter writer(inpSamType, inpSamF, pt_fn_list, outBamF, transcripts);
 		HitWrapper<HitType> wrapper(nThreads, hitvs);
-		writer.work(wrapper, transcripts);
+		writer.work(wrapper);
 	}
 
 	release<ReadType, HitType, ModelType>(readers, hitvs, ncpvs, mhps);

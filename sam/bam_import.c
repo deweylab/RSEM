@@ -14,7 +14,7 @@
 #include "kseq.h"
 #include "khash.h"
 
-KSTREAM_INIT(gzFile, gzread, 8192)
+KSTREAM_INIT(gzFile, gzread, 16384)
 KHASH_MAP_INIT_STR(ref, uint64_t)
 
 void bam_init_header_hash(bam_header_t *header);
@@ -292,20 +292,22 @@ int sam_read1(tamFile fp, bam_header_t *header, bam1_t *b)
 		z += str->l + 1;
 		if (str->s[0] != '*') {
 			for (s = str->s; *s; ++s) {
-				if (isalpha(*s)) ++c->n_cigar;
+				if ((isalpha(*s)) || (*s=='=')) ++c->n_cigar;
 				else if (!isdigit(*s)) parse_error(fp->n_lines, "invalid CIGAR character");
 			}
 			b->data = alloc_data(b, doff + c->n_cigar * 4);
 			for (i = 0, s = str->s; i != c->n_cigar; ++i) {
 				x = strtol(s, &t, 10);
 				op = toupper(*t);
-				if (op == 'M' || op == '=' || op == 'X') op = BAM_CMATCH;
+				if (op == 'M') op = BAM_CMATCH;
 				else if (op == 'I') op = BAM_CINS;
 				else if (op == 'D') op = BAM_CDEL;
 				else if (op == 'N') op = BAM_CREF_SKIP;
 				else if (op == 'S') op = BAM_CSOFT_CLIP;
 				else if (op == 'H') op = BAM_CHARD_CLIP;
 				else if (op == 'P') op = BAM_CPAD;
+				else if (op == '=') op = BAM_CEQUAL;
+				else if (op == 'X') op = BAM_CDIFF;
 				else parse_error(fp->n_lines, "invalid CIGAR operation");
 				s = t + 1;
 				bam1_cigar(b)[i] = x << BAM_CIGAR_SHIFT | op;
@@ -337,8 +339,11 @@ int sam_read1(tamFile fp, bam_header_t *header, bam1_t *b)
 		z += str->l + 1;
 		if (strcmp(str->s, "*")) {
 			c->l_qseq = strlen(str->s);
-			if (c->n_cigar && c->l_qseq != (int32_t)bam_cigar2qlen(c, bam1_cigar(b)))
-				parse_error(fp->n_lines, "CIGAR and sequence length are inconsistent");
+			if (c->n_cigar && c->l_qseq != (int32_t)bam_cigar2qlen(c, bam1_cigar(b))) {
+			  fprintf(stderr, "Line %ld, sequence length %i vs %i from CIGAR\n",
+				  (long)fp->n_lines, c->l_qseq, (int32_t)bam_cigar2qlen(c, bam1_cigar(b)));
+			  parse_error(fp->n_lines, "CIGAR and sequence length are inconsistent");
+			}
 			p = (uint8_t*)alloc_data(b, doff + c->l_qseq + (c->l_qseq+1)/2) + doff;
 			memset(p, 0, (c->l_qseq+1)/2);
 			for (i = 0; i < c->l_qseq; ++i)
@@ -427,6 +432,27 @@ int sam_read1(tamFile fp, bam_header_t *header, bam1_t *b)
 				memcpy(s, str->s + 5, str->l - 5);
 				s[str->l - 5] = 0;
 				doff += size;
+			} else if (type == 'B') {
+				int32_t n = 0, Bsize, k = 0, size;
+				char *p;
+				if (str->l < 8) parse_error(fp->n_lines, "too few values in aux type B");
+				Bsize = bam_aux_type2size(str->s[5]); // the size of each element
+				for (p = (char*)str->s + 6; *p; ++p) // count the number of elements in the array
+					if (*p == ',') ++n;
+				p = str->s + 7; // now p points to the first number in the array
+				size = 6 + Bsize * n; // total number of bytes allocated to this tag
+				s = alloc_data(b, doff + 6 * Bsize * n) + doff; // allocate memory
+				*s++ = 'B'; *s++ = str->s[5];
+				memcpy(s, &n, 4); s += 4; // write the number of elements
+				if (str->s[5] == 'c')      while (p < str->s + str->l) ((int8_t*)s)[k++]   = (int8_t)strtol(p, &p, 0),   ++p;
+				else if (str->s[5] == 'C') while (p < str->s + str->l) ((uint8_t*)s)[k++]  = (uint8_t)strtol(p, &p, 0),  ++p;
+				else if (str->s[5] == 's') while (p < str->s + str->l) ((int16_t*)s)[k++]  = (int16_t)strtol(p, &p, 0),  ++p; // FIXME: avoid unaligned memory
+				else if (str->s[5] == 'S') while (p < str->s + str->l) ((uint16_t*)s)[k++] = (uint16_t)strtol(p, &p, 0), ++p;
+				else if (str->s[5] == 'i') while (p < str->s + str->l) ((int32_t*)s)[k++]  = (int32_t)strtol(p, &p, 0),  ++p;
+				else if (str->s[5] == 'I') while (p < str->s + str->l) ((uint32_t*)s)[k++] = (uint32_t)strtol(p, &p, 0), ++p;
+				else if (str->s[5] == 'f') while (p < str->s + str->l) ((float*)s)[k++]    = (float)strtod(p, &p),       ++p;
+				else parse_error(fp->n_lines, "unrecognized array type");
+				s += Bsize * n; doff += size;
 			} else parse_error(fp->n_lines, "unrecognized type");
 			if (dret == '\n' || dret == '\r') break;
 		}

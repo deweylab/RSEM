@@ -7,7 +7,7 @@
 #include "kstring.h"
 #include "sam_header.h"
 
-int bam_is_be = 0;
+int bam_is_be = 0, bam_verbose = 2;
 char *bam_flag2char_table = "pPuUrR12sfd\0\0\0\0\0";
 
 /**************************
@@ -32,7 +32,7 @@ int32_t bam_cigar2qlen(const bam1_core_t *c, const uint32_t *cigar)
 	int32_t l = 0;
 	for (k = 0; k < c->n_cigar; ++k) {
 		int op = cigar[k] & BAM_CIGAR_MASK;
-		if (op == BAM_CMATCH || op == BAM_CINS || op == BAM_CSOFT_CLIP)
+		if (op == BAM_CMATCH || op == BAM_CINS || op == BAM_CSOFT_CLIP || op == BAM_CEQUAL || op == BAM_CDIFF)
 			l += cigar[k] >> BAM_CIGAR_SHIFT;
 	}
 	return l;
@@ -79,7 +79,7 @@ bam_header_t *bam_header_read(bamFile fp)
 		// with ESPIPE.  Suppress the error message in this case.
 		if (errno != ESPIPE) perror("[bam_header_read] bgzf_check_EOF");
 	}
-	else if (i == 0) fprintf(stderr, "[bam_header_read] EOF marker is absent.\n");
+	else if (i == 0) fprintf(stderr, "[bam_header_read] EOF marker is absent. The input is probably truncated.\n");
 	// read "BAM1"
 	magic_len = bam_read(fp, buf, 4);
 	if (magic_len != 4 || strncmp(buf, "BAM\001", 4) != 0) {
@@ -160,6 +160,19 @@ static void swap_endian_data(const bam1_core_t *c, int data_len, uint8_t *data)
 		else if (type == 'I' || type == 'F') { bam_swap_endian_4p(s); s += 4; }
 		else if (type == 'D') { bam_swap_endian_8p(s); s += 8; }
 		else if (type == 'Z' || type == 'H') { while (*s) ++s; ++s; }
+		else if (type == 'B') {
+			int32_t n, Bsize = bam_aux_type2size(*s);
+			memcpy(&n, s + 1, 4);
+			if (1 == Bsize) {
+			} else if (2 == Bsize) {
+				for (i = 0; i < n; i += 2)
+					bam_swap_endian_2p(s + 5 + i);
+			} else if (4 == Bsize) {
+				for (i = 0; i < n; i += 4)
+					bam_swap_endian_4p(s + 5 + i);
+			}
+			bam_swap_endian_4p(s+1); 
+		}
 	}
 }
 
@@ -255,7 +268,7 @@ char *bam_format1_core(const bam_header_t *header, const bam1_t *b, int of)
 	else {
 		for (i = 0; i < c->n_cigar; ++i) {
 			kputw(bam1_cigar(b)[i]>>BAM_CIGAR_SHIFT, &str);
-			kputc("MIDNSHP"[bam1_cigar(b)[i]&BAM_CIGAR_MASK], &str);
+			kputc("MIDNSHP=X"[bam1_cigar(b)[i]&BAM_CIGAR_MASK], &str);
 		}
 	}
 	kputc('\t', &str);
@@ -289,6 +302,23 @@ char *bam_format1_core(const bam_header_t *header, const bam1_t *b, int of)
 		else if (type == 'f') { ksprintf(&str, "f:%g", *(float*)s); s += 4; }
 		else if (type == 'd') { ksprintf(&str, "d:%lg", *(double*)s); s += 8; }
 		else if (type == 'Z' || type == 'H') { kputc(type, &str); kputc(':', &str); while (*s) kputc(*s++, &str); ++s; }
+		else if (type == 'B') {
+			uint8_t sub_type = *(s++);
+			int32_t n;
+			memcpy(&n, s, 4);
+			s += 4; // no point to the start of the array
+			kputc(type, &str); kputc(':', &str); kputc(sub_type, &str); // write the typing
+			for (i = 0; i < n; ++i) {
+				kputc(',', &str);
+				if ('c' == sub_type || 'c' == sub_type) { kputw(*(int8_t*)s, &str); ++s; }
+				else if ('C' == sub_type) { kputw(*(uint8_t*)s, &str); ++s; }
+				else if ('s' == sub_type) { kputw(*(int16_t*)s, &str); s += 2; }
+				else if ('S' == sub_type) { kputw(*(uint16_t*)s, &str); s += 2; }
+				else if ('i' == sub_type) { kputw(*(int32_t*)s, &str); s += 4; }
+				else if ('I' == sub_type) { kputuw(*(uint32_t*)s, &str); s += 4; }
+				else if ('f' == sub_type) { ksprintf(&str, "%g", *(float*)s); s += 4; }
+			}
+		}
 	}
 	return str.s;
 }

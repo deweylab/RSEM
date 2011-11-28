@@ -51,6 +51,8 @@ if ($size == 1 && (-d $list[0])) {
     $size = scalar(@list);
 }
 
+pod2usage(-msg => "reference_fasta_file(s) is empty! Please check if you provide the correct folder name or file suffixes!", -exitval => 2, -verbose => 2) if ($size <= 0);
+
 if ($no_polyA) { $polyAChoice = 1 }
 elsif ($subsetFile ne "") { $polyAChoice = 2; }
 
@@ -65,13 +67,7 @@ if ($type == 0) {
     if ($mappingF ne "") { $command .= " 1 $mappingF"; }
     else { $command .= " 0"; }
     $command .= " @list";
-    print "$command\n";
-    $status = system($command);
-    if ($status != 0) {
-	print "rsem-extract-reference-transcripts failed! Please check if you provide correct parameters/options for the pipeline!\n";
-	exit(-1);
-    }
-    print "\n";
+    &runCommand($command);
 }
 else {
     $"=" ";
@@ -79,37 +75,33 @@ else {
     if ($mappingF ne "") { $command .= " 1 $mappingF"; }
     else { $command .= " 0"; } 
     $command .= " @list";
-    print "$command\n";
-    $status = system($command);
-    if ($status != 0) {
-	print "rsem-synthesis-reference-transcripts failed! Please check if you provide correct parameters/options for the pipeline!\n";
-	exit(-1);
-    }
-    print "\n";
+    &runCommand($command);
 }
 
 $command = $dir."rsem-preref $ARGV[1].transcripts.fa $polyAChoice $ARGV[1] -l $polyALen";
 if ($polyAChoice == 2) { $command .= " -f $subsetFile"; }
 if ($no_ntog) { $command .= " --no-ntog"; }
 if ($quiet) { $command .= " -q"; }
- 
-print "$command\n";
-$status = system($command);
-if ($status != 0) {
-    print "rsem-preref failed! Please check if you provide correct parameters/options for the pipeline!\n";
-    exit(-1);
-}
-print "\n";
+
+&runCommand($command);
 
 if (!$no_bowtie) {
     $command = $bowtie_path."bowtie-build -f";
     if ($quiet) { $command .= " -q"; }
     $command .= " $ARGV[1].idx.fa $ARGV[1]";
-    
-    print "$command\n";
-    $status = system($command);
-    if ($status != 0) {
-	print "bowtie-build failed! Please check if you have a copy of bowtie-build in the path you specified!\n";
+
+    &runCommand($command);
+}
+
+# command, {err_msg}
+sub runCommand {
+    print $_[0]."\n";
+    my $status = system($_[0]);
+    if ($status != 0) { 
+	my $errmsg;
+	if (scalar(@_) > 1) { $errmsg = $_[1]; }
+	else { $errmsg = "$command failed! Plase check if you provide correct parameters/options for the pipeline!"; }
+	print $errmsg."\n";
 	exit(-1);
     }
     print "\n";

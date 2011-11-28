@@ -33,12 +33,14 @@
 
   BAM library provides I/O and various operations on manipulating files
   in the BAM (Binary Alignment/Mapping) or SAM (Sequence Alignment/Map)
-  format. It now supports importing from or exporting to TAM, sorting,
+  format. It now supports importing from or exporting to SAM, sorting,
   merging, generating pileup, and quickly retrieval of reads overlapped
   with a specified region.
 
   @copyright Genome Research Ltd.
  */
+
+#define BAM_VERSION "0.1.18 (r982:295)"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -132,20 +134,25 @@ typedef struct {
 /*
   CIGAR operations.
  */
-/*! @abstract CIGAR: match */
+/*! @abstract CIGAR: M = match or mismatch*/
 #define BAM_CMATCH      0
-/*! @abstract CIGAR: insertion to the reference */
+/*! @abstract CIGAR: I = insertion to the reference */
 #define BAM_CINS        1
-/*! @abstract CIGAR: deletion from the reference */
+/*! @abstract CIGAR: D = deletion from the reference */
 #define BAM_CDEL        2
-/*! @abstract CIGAR: skip on the reference (e.g. spliced alignment) */
+/*! @abstract CIGAR: N = skip on the reference (e.g. spliced alignment) */
 #define BAM_CREF_SKIP   3
-/*! @abstract CIGAR: clip on the read with clipped sequence present in qseq */
+/*! @abstract CIGAR: S = clip on the read with clipped sequence
+  present in qseq */
 #define BAM_CSOFT_CLIP  4
-/*! @abstract CIGAR: clip on the read with clipped sequence trimmed off */
+/*! @abstract CIGAR: H = clip on the read with clipped sequence trimmed off */
 #define BAM_CHARD_CLIP  5
-/*! @abstract CIGAR: padding */
+/*! @abstract CIGAR: P = padding */
 #define BAM_CPAD        6
+/*! @abstract CIGAR: equals = match */
+#define BAM_CEQUAL        7
+/*! @abstract CIGAR: X = mismatch */
+#define BAM_CDIFF        8
 
 /*! @typedef
   @abstract Structure for core alignment information.
@@ -261,6 +268,12 @@ typedef struct __bam_iter_t *bam_iter_t;
   bam_header_init().
  */
 extern int bam_is_be;
+
+/*!
+  @abstract Verbose level between 0 and 3; 0 is supposed to disable all
+  debugging information, though this may not have been implemented.
+ */
+extern int bam_verbose;
 
 /*! @abstract Table for converting a nucleotide character to the 4-bit encoding. */
 extern unsigned char bam_nt16_table[256];
@@ -737,5 +750,14 @@ static inline bam1_t *bam_dup1(const bam1_t *src)
 	memcpy(b->data, src->data, b->data_len);
 	return b;
 }
+
+static inline int bam_aux_type2size(int x)
+{
+	if (x == 'C' || x == 'c' || x == 'A') return 1;
+	else if (x == 'S' || x == 's') return 2;
+	else if (x == 'I' || x == 'i' || x == 'f') return 4;
+	else return 0;
+}
+
 
 #endif

@@ -17,7 +17,7 @@ int M;
 map<string, string> name2seq;
 map<string, string>::iterator iter;
 
-Transcripts transcripts;
+Transcripts transcripts(1); // no genome, just transcript set
 char groupF[STRLEN], tiF[STRLEN], refFastaF[STRLEN], chromListF[STRLEN];
 
 bool hasMappingFile;

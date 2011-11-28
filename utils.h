@@ -156,4 +156,9 @@ void genReadFileNames(const char* readFN, int tagType, int read_type, int& s, ch
 	}
 }
 
+void exitWithError(const char* errmsg) {
+	fprintf(stderr, "%s\n", errmsg);
+	exit(-1);
+}
+
 #endif
