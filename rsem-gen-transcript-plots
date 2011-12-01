@@ -1,0 +1,124 @@
+#!/usr/bin/env Rscript
+
+nrow_per_page <- 3 # if input_list is composed of transcript ids
+ncol_per_page <- 2 # if input_list is composed of transcript ids
+num_plots_per_page <- nrow_per_page * ncol_per_page # if input_list is composed of transcript ids
+
+
+exit_with_error <- function(errmsg) {
+  cat(errmsg, "\n", sep = "", file = stderr())
+  quit(save = "no", status = 1)
+}
+
+
+args <- commandArgs(TRUE)
+if (length(args) != 5) 
+  exit_with_error("Usage: rsem-gen-transcript-plots sample_name input_list is_gene show_uniq output_plot_file")
+
+sample_name <- args[1]
+input_list <- args[2]
+is_gene <- args[3]
+show_uniq <- args[4]
+output_plot_file <- args[5]
+
+
+
+load_readdepth_file <- function(filename) {
+  data <- read.table(file = filename, sep = "\t", stringsAsFactors = FALSE)
+  nrow <- dim(data)[1]
+  readdepth <- list()
+  for (i in 1:nrow) {
+    readdepth[[data[i, 1]]] <- data[i, c(2, 3)]
+  }
+  readdepth
+}
+
+build_t2gmap <- function(filename) {
+  data <- read.table(file = filename, sep = "\t", stringsAsFactors = FALSE)
+  t2gmap <- list()
+
+  nrow <- dim(data)[1]
+  ncol <- dim(data)[2]
+
+  gene_id <- ""
+  tids <- c()
+  for (i in 1:nrow) {
+    if (gene_id != data[i, ncol]) {
+      if (gene_id != "") { 
+        t2gmap[[gene_id]] <- tids
+      }
+      gene_id <- data[i, ncol]
+      tids <- c()
+    }
+    tids <- c(tids, data[i, 1])
+  }
+  if (gene_id != "") t2gmap[[gene_id]] <- tids
+  
+  t2gmap
+}
+
+generate_a_page <- function(tids, gene_id = NULL) {
+  n <- length(tids)
+  ncol <- ifelse(is_gene, floor(sqrt(n)), ncol_per_page)
+  nrow <- ifelse(is_gene, ceiling(n / ncol), nrow_per_page)
+
+  par(mfrow = c(nrow, ncol), mar = c(1, 1, 2, 1))
+  if (is_gene) par(oma = c(0, 0, 3, 0)) 
+
+  for (i in 1:n) {
+    vec <- readdepth[[tids[i]]]
+    if (is.null(vec)) exit_with_error(paste("Cannot find transcript", tids[i], sep = ""))
+    wiggle <- ifelse(vec[2] == "NA", rep(0, vec[1]), as.numeric(unlist(strsplit(vec[2], split = " "))))
+    len <- length(wiggle)
+    if (!show_uniq) {
+      plot(wiggle, type = 'h')
+    }
+    else {
+      vec <- readdepth_uniq[[tids[i]]]
+      stopifnot(!is.null(vec))
+      wiggle_uniq <- ifelse(vec[2] == "NA", rep(0, vec[1]), as.numeric(unlist(strsplit(vec[2], split = " "))))
+      stopifnot(len == length(wiggle_uniq), len == sum(wiggle >= wiggle_uniq))
+      heights <- rbind(wiggle_uniq, wiggle - wiggle_uniq)	
+      barplot(heights, space = 0, border = NA, names.arg = 1:len) 
+    }
+    title(main = tids[i], xlab = "Position in transcript", ylab = "Read depth")
+  }
+
+  if (is_gene) mtext(gene_id, outer = TRUE, line = 1)
+}
+
+readdepth <- load_readdepth_file(paste(sample_name, ".transcript.readdepth", sep = ""))
+
+if (show_uniq) {
+  readdepth_uniq <- load_readdepth_file(paste(sample_name, ".uniq.transcript.readdepth", sep = ""))
+}
+
+ids <- scan(file = input_list, what = "", sep = "\n")
+
+if (is_gene) {
+  t2gmap <- build_t2gmap(paste(sample_name, ".isoforms.results", sep = ""))
+}
+
+pdf(output_plot_file)
+
+if (!is_gene) {	
+  n <- length(ids)
+  ub <- (n - 1) %/% num_plots_per_page + 1
+  for (i in 1:ub) {
+    fr <- (i - 1) * num_plots_per_page + 1
+    to <- min(i * num_plots_per_page, n)
+    generate_a_page(ids[fr:to])
+  }
+}
+else {
+  for (gene_id in ids) {
+    if (is.null(t2gmap[[gene_id]])) exit_with_error(paste("Cannot find gene", gene_id, sep = ""))
+    generate_a_page(t2gmap[[gene_id]], gene_id)
+  }
+}
+
+dev.off.output <- dev.off()
+
+
+
+

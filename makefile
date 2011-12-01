@@ -1,8 +1,7 @@
 CC = g++
-#LFLAGS = -Wall -O3 -ffast-math
 CFLAGS = -Wall -c -I.
 COFLAGS = -Wall -O3 -ffast-math -c -I.
-PROGRAMS = rsem-tbam2gbam rsem-bam2wig rsem-bam2readdepth rsem-build-read-index rsem-run-em rsem-extract-reference-transcripts rsem-synthesis-reference-transcripts rsem-parse-alignments rsem-preref rsem-simulate-reads rsem-run-gibbs rsem-calculate-credibility-intervals
+PROGRAMS = rsem-extract-reference-transcripts rsem-synthesis-reference-transcripts rsem-preref rsem-parse-alignments rsem-build-read-index rsem-run-em rsem-tbam2gbam rsem-run-gibbs rsem-calculate-credibility-intervals rsem-simulate-reads rsem-bam2wig rsem-get-unique rsem-bam2readdepth  
 
 
 all : build-sam $(PROGRAMS)
@@ -94,7 +93,7 @@ bc_aux.h : sam/bam.h
 
 BamConverter.h : utils.h sam/sam.h sam/bam.h sam_rsem_aux.h sam_rsem_cvt.h bc_aux.h Transcript.h Transcripts.h
 
-rsem-tbam2gbam : utils.h Transcripts.h Transcript.h bc_aux.h BamConverter.h sam/sam.h sam/bam.h sam/libbam.a sam_rsem_aux.h sam_rsem_cvt.h tbam2gbam.cpp
+rsem-tbam2gbam : utils.h Transcripts.h Transcript.h bc_aux.h BamConverter.h sam/sam.h sam/bam.h sam/libbam.a sam_rsem_aux.h sam_rsem_cvt.h tbam2gbam.cpp sam/libbam.a
 	$(CC) -O3 -Wall tbam2gbam.cpp sam/libbam.a -lz -o $@
 
 rsem-bam2wig : wiggle.h wiggle.o sam/libbam.a bam2wig.cpp
@@ -126,6 +125,9 @@ rsem-calculate-credibility-intervals : calcCI.o
 calcCI.o : utils.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h RefSeq.h RefSeqPolicy.h PolyARules.h Refs.h GroupInfo.h calcCI.cpp boost/random.hpp
 	$(CC) $(COFLAGS) calcCI.cpp
 
+rsem-get-unique : sam/bam.h sam/sam.h getUnique.cpp sam/libbam.a
+	$(CC) -O3 -Wall getUnique.cpp sam/libbam.a -lz -o $@
+	
 clean:
 	rm -f *.o *~ $(PROGRAMS)
 	cd sam ; ${MAKE} clean

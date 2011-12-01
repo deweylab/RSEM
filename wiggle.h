@@ -6,6 +6,7 @@
 struct Wiggle {
     std::string name;
     std::vector<float> read_depth;
+    size_t length;
 };
 
 class WiggleProcessor {

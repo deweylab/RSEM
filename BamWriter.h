@@ -123,7 +123,7 @@ void BamWriter::work(HitWrapper<PairedEndHit> wrapper) {
 		cnt += 2;
 		if (verbose && cnt % 1000000 == 0) { printf("%d alignment lines are loaded!\n", cnt); }
 
-		if (!((b->core.flag & 0x0002) && (b2->core.flag & 0x0002))) continue;
+		if ((b->core.flag & 0x0004) || (b2->core.flag & 0x0004)) continue;
 
 		//swap if b is mate 2
 		if (b->core.flag & 0x0080) {

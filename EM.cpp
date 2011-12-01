@@ -340,7 +340,7 @@ void writeResults(ModelType& model, double* counts) {
 		fprintf(fo, "%.15g%c", tau[i], (i < M ? '\t' : '\n'));
 	for (int i = 1; i <= M; i++) {
 		const Transcript& transcript = transcripts.getTranscriptAt(i);
-		fprintf(fo, "%s%c", transcript.getLeft().c_str(), (i < M ? '\t' : '\n'));
+		fprintf(fo, "%s%c", transcript.getGeneID().c_str(), (i < M ? '\t' : '\n'));
 	}
 	fclose(fo);
 

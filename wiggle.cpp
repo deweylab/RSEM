@@ -36,7 +36,10 @@ void build_wiggles(const std::string& bam_filename,
                    WiggleProcessor& processor) {
     samfile_t *bam_in = samopen(bam_filename.c_str(), "rb", NULL);
 	if (bam_in == 0) { fprintf(stderr, "Cannot open %s!\n", bam_filename.c_str()); exit(-1); }
-	//assert(bam_in != 0);
+
+	bam_header_t *header = bam_in->header;
+	bool *used = new bool[header->n_targets];
+	memset(used, 0, sizeof(bool) * header->n_targets);
 
     int cur_tid = -1; //current tid;
 	int cnt = 0;
@@ -46,19 +49,29 @@ void build_wiggles(const std::string& bam_filename,
 		if (b->core.flag & 0x0004) continue;
 
 		if (b->core.tid != cur_tid) {
-			if (cur_tid >= 0) processor.process(wiggle);
+			if (cur_tid >= 0) { used[cur_tid] = true; processor.process(wiggle); }
 			cur_tid = b->core.tid;
-            wiggle.name = bam_in->header->target_name[cur_tid];
-            wiggle.read_depth.assign(bam_in->header->target_len[cur_tid], 0.0);
+            wiggle.name = header->target_name[cur_tid];
+            wiggle.length = header->target_len[cur_tid];
+            wiggle.read_depth.assign(wiggle.length, 0.0);
 		}
         add_bam_record_to_wiggle(b, wiggle);
 		++cnt;
 		if (cnt % 1000000 == 0) fprintf(stderr, "%d FIN\n", cnt);
 	}
-	if (cur_tid >= 0) processor.process(wiggle);
+	if (cur_tid >= 0) { used[cur_tid] = true; processor.process(wiggle); }
+
+	for (int32_t i = 0; i < header->n_targets; i++)
+		if (!used[i]) {
+			wiggle.name = header->target_name[i];
+			wiggle.length = header->target_len[i];
+			wiggle.read_depth.clear();
+			processor.process(wiggle);
+		}
 
 	samclose(bam_in);
 	bam_destroy1(b);
+	delete[] used;
 }
 
 UCSCWiggleTrackWriter::UCSCWiggleTrackWriter(const std::string& output_filename,
@@ -75,9 +88,11 @@ UCSCWiggleTrackWriter::~UCSCWiggleTrackWriter() {
 
 void UCSCWiggleTrackWriter::process(const Wiggle& wiggle) {
     int sp, ep;
+
+    if (wiggle.read_depth.empty()) return;
     
     sp = ep = -1;
-    for (size_t i = 0; i < wiggle.read_depth.size(); i++) {
+    for (size_t i = 0; i < wiggle.length; i++) {
         if (wiggle.read_depth[i] > 0) {
             ep = i;
         }
@@ -102,9 +117,13 @@ ReadDepthWriter::ReadDepthWriter(std::ostream& stream)
 }
 
 void ReadDepthWriter::process(const Wiggle& wiggle) {
+
     stream_ << wiggle.name << '\t'
-            << wiggle.read_depth.size() << '\t';
-    for (size_t i = 0; i < wiggle.read_depth.size(); ++i) {
+            << wiggle.length << '\t';
+
+    if (wiggle.read_depth.empty()) { stream_ << "NA\n"; return; }
+
+    for (size_t i = 0; i < wiggle.length; ++i) {
         if (i > 0) stream_ << ' ';
         stream_ << wiggle.read_depth[i];
     }

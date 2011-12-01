@@ -1,0 +1,119 @@
+#!/usr/bin/perl
+
+use Getopt::Long;
+use Pod::Usage;
+use File::Basename;
+use strict;
+
+my $gene_list = 0; # default is 0, means input is a transcript list; 1 means input is a gene list
+my $show_unique = 0; # 0, default value, means do not show unique transcript wiggles; 1 means show unique transcript wiggles
+my $help = 0;
+
+GetOptions("gene-list" => \$gene_list,
+	   "show-unique" => \$show_unique,
+	   "h|help" => \$help) or pod2usage(-exitval => 2, -verbose => 2);
+
+pod2usage(-verbose => 2) if ($help == 1);
+pod2usage(-msg => "Invalid number of arguments!", -exitval => 2, -verbose => 2) if (scalar(@ARGV) != 3);
+
+my ($fn, $dir, $suf) = fileparse($0);
+my $command = "";
+
+unless (-e "$ARGV[0].transcript.readdepth") {
+    $command = $dir."rsem-bam2readdepth $ARGV[0].transcript.sorted.bam > $ARGV[0].transcript.readdepth";
+    &runCommand($command);
+}
+
+if ($show_unique) {
+    unless (-e "$ARGV[0].uniq.transcript.bam") {
+	$command = $dir."rsem-get-unique $ARGV[0].transcript.bam $ARGV[0].uniq.transcript.bam";
+	&runCommand($command);
+    }
+    unless (-e "$ARGV[0].uniq.transcript.sorted.bam") {
+	$command = $dir."sam/samtools sort $ARGV[0].uniq.transcript.bam $ARGV[0].uniq.transcript.sorted";
+	&runCommand($command);
+    }
+    unless (-e "$ARGV[0].uniq.transcript.readdepth") {
+	$command = $dir."rsem-bam2readdepth $ARGV[0].uniq.transcript.sorted.bam > $ARGV[0].uniq.transcript.readdepth";
+	&runCommand($command);
+    }
+}
+
+$command = $dir."rsem-gen-transcript-plots $ARGV[0] $ARGV[1] $gene_list $show_unique $ARGV[2]";
+&runCommand($command);
+
+# command, {err_msg}
+sub runCommand {
+    print $_[0]."\n";
+    my $status = system($_[0]);
+    if ($status != 0) { 
+	my $errmsg;
+	if (scalar(@_) > 1) { $errmsg = $_[1]; }
+	else { $errmsg = "\"$command\" failed! Plase check if you provide correct parameters/options for the pipeline!"; }
+	print $errmsg."\n";
+	exit(-1);
+    }
+    print "\n";
+}
+
+__END__
+
+=head1 NAME
+
+rsem-plot-transcript-wiggles
+
+=head1 SYNOPSIS
+
+=over
+
+ rsem-plot-transcript-wiggles [options] sample_name input_list output_plot_file
+
+=back
+
+=head1 ARGUMENTS
+
+=over
+
+=item B<sample_name>
+
+blablabla
+
+=item B<input_list>
+
+blablabla
+
+=item B<output_plot_file>
+
+blablabla
+
+=back
+
+=head1 OPTIONS
+
+=over
+
+=item B<--gene-list>
+
+blablabla
+
+=item B<--show-unique>
+
+blablabla
+
+=item B<-h/--help>
+
+Show help information.
+
+=back
+
+=head1 DESCRIPTION
+
+blablabla
+
+=head1 OUTPUT
+
+blablabla
+
+=head1 EXAMPLES
+
+=cut
