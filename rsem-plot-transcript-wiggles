@@ -76,15 +76,15 @@ rsem-plot-transcript-wiggles
 
 =item B<sample_name>
 
-blablabla
+The name of the sample analyzed.
 
 =item B<input_list>
 
-blablabla
+A list of transcript ids or gene ids. But it cannot be a mixture of transcript & gene ids.
 
 =item B<output_plot_file>
 
-blablabla
+The file name for the plots.
 
 =back
 
@@ -94,11 +94,11 @@ blablabla
 
 =item B<--gene-list>
 
-blablabla
+The input-list is a list of gene ids. (Default: off)
 
 =item B<--show-unique>
 
-blablabla
+Show unique wiggle. (Default: off)
 
 =item B<-h/--help>
 
@@ -115,5 +115,7 @@ blablabla
 blablabla
 
 =head1 EXAMPLES
+
+blablabla
 
 =cut

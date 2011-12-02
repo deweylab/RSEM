@@ -17,8 +17,8 @@ if (length(args) != 5)
 
 sample_name <- args[1]
 input_list <- args[2]
-is_gene <- args[3]
-show_uniq <- args[4]
+is_gene <- as.numeric(args[3])
+show_uniq <- as.numeric(args[4])
 output_plot_file <- args[5]
 
 
@@ -62,26 +62,25 @@ generate_a_page <- function(tids, gene_id = NULL) {
   ncol <- ifelse(is_gene, floor(sqrt(n)), ncol_per_page)
   nrow <- ifelse(is_gene, ceiling(n / ncol), nrow_per_page)
 
-  par(mfrow = c(nrow, ncol), mar = c(1, 1, 2, 1))
+  par(mfrow = c(nrow, ncol), mar = c(2, 2, 2, 2))
   if (is_gene) par(oma = c(0, 0, 3, 0)) 
 
   for (i in 1:n) {
     vec <- readdepth[[tids[i]]]
     if (is.null(vec)) exit_with_error(paste("Cannot find transcript", tids[i], sep = ""))
-    wiggle <- ifelse(vec[2] == "NA", rep(0, vec[1]), as.numeric(unlist(strsplit(vec[2], split = " "))))
+    if (is.na(vec[[2]])) wiggle <- rep(0, vec[[1]]) else wiggle <- as.numeric(unlist(strsplit(vec[[2]], split = " ")))
     len <- length(wiggle)
     if (!show_uniq) {
-      plot(wiggle, type = 'h')
-    }
-    else {
+      plot(wiggle, type = "h")
+    } else {
       vec <- readdepth_uniq[[tids[i]]]
       stopifnot(!is.null(vec))
-      wiggle_uniq <- ifelse(vec[2] == "NA", rep(0, vec[1]), as.numeric(unlist(strsplit(vec[2], split = " "))))
+      if (is.na(vec[[2]])) wiggle_uniq <- rep(0, vec[[1]]) else wiggle_uniq <- as.numeric(unlist(strsplit(vec[[2]], split = " ")))
       stopifnot(len == length(wiggle_uniq), len == sum(wiggle >= wiggle_uniq))
       heights <- rbind(wiggle_uniq, wiggle - wiggle_uniq)	
-      barplot(heights, space = 0, border = NA, names.arg = 1:len) 
+      barplot(heights, space = 0, border = NA, names.arg = 1:len, col = c("black", "red")) 
     }
-    title(main = tids[i], xlab = "Position in transcript", ylab = "Read depth")
+    title(main = tids[i]) #, xlab = "Position in transcript", ylab = "Read depth")
   }
 
   if (is_gene) mtext(gene_id, outer = TRUE, line = 1)
@@ -95,8 +94,11 @@ if (show_uniq) {
 
 ids <- scan(file = input_list, what = "", sep = "\n")
 
+cat("Loading files is done!\n")
+
 if (is_gene) {
   t2gmap <- build_t2gmap(paste(sample_name, ".isoforms.results", sep = ""))
+  cat("Building transcript to gene map is done!\n")
 }
 
 pdf(output_plot_file)
@@ -109,15 +111,18 @@ if (!is_gene) {
     to <- min(i * num_plots_per_page, n)
     generate_a_page(ids[fr:to])
   }
-}
-else {
+} else {
   for (gene_id in ids) {
     if (is.null(t2gmap[[gene_id]])) exit_with_error(paste("Cannot find gene", gene_id, sep = ""))
     generate_a_page(t2gmap[[gene_id]], gene_id)
   }
 }
 
+cat("Plots are generated!\n)
+
 dev.off.output <- dev.off()
+
+
 
 
 
