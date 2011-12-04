@@ -80,11 +80,11 @@ The name of the sample analyzed.
 
 =item B<input_list>
 
-A list of transcript ids or gene ids. But it cannot be a mixture of transcript & gene ids.
+A list of transcript ids or gene ids. But it cannot be a mixture of transcript & gene ids. Each id occupies one line without extra spaces.
 
 =item B<output_plot_file>
 
-The file name for the plots.
+The file name of the pdf file which contains all plots.
 
 =back
 
@@ -98,7 +98,7 @@ The input-list is a list of gene ids. (Default: off)
 
 =item B<--show-unique>
 
-Show unique wiggle. (Default: off)
+Show the wiggle plots as stacked bar plots. See description section for details. (Default: off)
 
 =item B<-h/--help>
 
@@ -108,14 +108,36 @@ Show help information.
 
 =head1 DESCRIPTION
 
-blablabla
+This program generates transcript wiggle plots and outputs them in a pdf file. This program can accept either a list of transcript ids or gene ids (if transcript to gene mapping information is provided) and has two modes of showing wiggle plots. If '--show-unique' is not specified, the wiggle plot for each transcript is a histogram where each position has the expected read depth at this position as its height. If '--show-unique' is specified, for each transcript a stacked bar plot is generated. For each position, the read depth of unique reads, which have only one alignment, is showed in black. The read depth of multi-reads, which align to more than one places, is showed in red on top of the read depth of unique reads.This program will use some files RSEM generated previouslly. So please do not delete/move any file 'rsem-calculate-expression' generated.
 
 =head1 OUTPUT
 
-blablabla
+=over
+
+=item B<output_plot_file>
+
+This is a pdf file containing all plots generated. If a list of transcript ids is provided, each page display at most 6 plots in 3 rows and 2 columns. If gene ids are provided, each page display a gene. The gene's id is showed at the top and all its transcripts' wiggle plots are showed in this page. The arrangment of plots is determined automatically. For each transcript wiggle plot, the transcript id is displayed as title. x-axis is position in the transcript and y-axis is read depth. 
+
+=item B<sample_name.transcript.sorted.bam and sample_name.transcript.readdepth>
+
+If these files do not exist, 'rsem-plot-transcript-wiggles' will automatically generate them.
+
+=item B<sample_name.uniq.transcript.bam, sample_name.uniq.transcript.sorted.bam and sample_name.uniq.transcript.readdepth>
+
+If '--show-unique' option is specified and these files do not exist, 'rsem-plot-transcript-wiggles' will automatically generate them. 
+
+=back
 
 =head1 EXAMPLES
 
-blablabla
+Suppose sample_name and output_plot_file are set to 'mmliver_single_quals' and 'output.pdf' respectively. input_list is set to 'transcript_ids.txt' if transcript ids are provided, and is set to 'gene_ids.txt' if gene ids are provided.
+
+1) Transcript ids are provided and we just want normal wiggle plots:
+
+ rsem-plot-transcript-wiggles mmliver_single_quals transcript_ids.txt output.pdf
+
+2) Gene ids are provided and we want to show stacked bar plots:
+
+ rsem-plot-transcript-wiggles --gene-list --show-unique mmliver_single_quals gene_ids.txt output.pdf 
 
 =cut

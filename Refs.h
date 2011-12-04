@@ -20,6 +20,7 @@ class Refs {
   Refs() {
     M = 0;
     seqs.clear();
+    has_polyA = false;
   }
 
   ~Refs() {}
@@ -35,6 +36,8 @@ class Refs {
   RefSeq& getRef(int sid) { return seqs[sid]; } // get a particular reference
 
   std::vector<RefSeq>& getRefs() { return seqs; } // may be slow, for copying the whole thing
+
+  bool hasPolyA() { return has_polyA; } // if any of sequence has poly(A) tail added
 
   //lim : >=0 If mismatch > lim , return; -1 find all mismatches
   int countMismatch(const std::string& seq, int pos, const std::string& readseq, int LEN, int lim = -1) {
@@ -73,7 +76,7 @@ class Refs {
  private:
   int M; // # of isoforms, id starts from 1
   std::vector<RefSeq> seqs;  // reference sequences, starts from 1; 0 is for noise gene
-
+  bool has_polyA; // if at least one sequence has polyA added, the value is true; otherwise, the value is false
 };
 
 //inpF in fasta format
@@ -87,6 +90,7 @@ void Refs::makeRefs(char *inpF, RefSeqPolicy& policy, PolyARules& rules) {
   seqs.push_back(RefSeq()); // noise isoform
 
   M = 0;
+  has_polyA = false;
 
   fin.open(inpF);
   if (!fin.is_open()) { fprintf(stderr, "Cannot open %s! It may not exist.\n", inpF); exit(-1); }
@@ -103,6 +107,7 @@ void Refs::makeRefs(char *inpF, RefSeqPolicy& policy, PolyARules& rules) {
     }
     ++M;
     seqs.push_back(RefSeq(tag, policy.convert(rawseq), rules.getLenAt(tag)));
+    has_polyA = has_polyA || seqs[M].getFullLen() < seqs[M].getTotLen();
   }
   fin.close();
 
@@ -121,6 +126,7 @@ void Refs::loadRefs(char *inpF, int option) {
   seqs.push_back(RefSeq());
 
   M = 0;
+  has_polyA = false;
 
   bool success;
   do {
@@ -128,6 +134,7 @@ void Refs::loadRefs(char *inpF, int option) {
     if (success) {
     	seqs.push_back(seq);
         ++M;
+    	has_polyA = has_polyA || seq.getFullLen() < seq.getTotLen();
     }
   } while (success);
 

@@ -19,8 +19,8 @@
 template<class ReadType>
 class ReadReader {
 public:
-	ReadReader() { s = 0; indices = NULL; arr = NULL; }
-	ReadReader(int s, char readFs[][STRLEN]);
+	ReadReader() { s = 0; indices = NULL; arr = NULL; hasPolyA = false; seedLen = -1; }
+	ReadReader(int s, char readFs[][STRLEN], bool hasPolyA = false, int seedLen = -1);
 	~ReadReader();
 
 	void setIndices(ReadIndex** indices) {
@@ -31,7 +31,9 @@ public:
 	void reset();
 
 	bool next(ReadType& read, int flags = 7) {
-		return read.read(s, (std::istream**)arr, flags);
+		bool success = read.read(s, (std::istream**)arr, flags);
+		if (success && seedLen > 0) { read.calc_lq(hasPolyA, seedLen); }
+		return success;
 	}
 
 private:
@@ -39,10 +41,13 @@ private:
 	ReadIndex **indices;
 	std::ifstream** arr;
 	std::streampos *locations;
+
+	bool hasPolyA;
+	int seedLen;
 };
 
 template<class ReadType>
-ReadReader<ReadType>::ReadReader(int s, char readFs[][STRLEN]) {
+ReadReader<ReadType>::ReadReader(int s, char readFs[][STRLEN], bool hasPolyA, int seedLen) {
 	assert(s > 0);
 	this->s = s;
 	arr = new std::ifstream*[s];
@@ -53,6 +58,8 @@ ReadReader<ReadType>::ReadReader(int s, char readFs[][STRLEN]) {
 		if (!arr[i]->is_open()) { fprintf(stderr, "Cannot open %s! It may not exist.\n", readFs[i]); exit(-1); }
 		locations[i] = arr[i]->tellg();
 	}
+	this->hasPolyA = hasPolyA;
+	this->seedLen = seedLen;
 }
 
 template<class ReadType>

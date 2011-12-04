@@ -279,16 +279,18 @@ void SingleQModel::estimateFromReads(const char* readFN) {
 	for (int i = 0; i < 3; i++)
 		if (N[i] > 0) {
 			genReadFileNames(readFN, i, read_type, s, readFs);
-			ReadReader<SingleReadQ> reader(s, readFs);
+			ReadReader<SingleReadQ> reader(s, readFs, refs->hasPolyA(), seedLen); // allow calculation of calc_lq() function
 
 			int cnt = 0;
 			while (reader.next(read)) {
 				if (!read.isLowQuality()) {
-				  mld != NULL ? mld->update(read.getReadLength(), 1.0) : gld->update(read.getReadLength(), 1.0);
-				  qd->update(read.getQScore());
-				  if (i == 0) { nqpro->updateC(read.getReadSeq(), read.getQScore()); }
+					mld != NULL ? mld->update(read.getReadLength(), 1.0) : gld->update(read.getReadLength(), 1.0);
+					qd->update(read.getQScore());
+					if (i == 0) { nqpro->updateC(read.getReadSeq(), read.getQScore()); }
 				}
-				else if (verbose && read.getReadLength() < OLEN) { printf("Warning: Read %s is ignored due to read length < %d!\n", read.getName().c_str(), OLEN); }
+				else if (verbose && read.getReadLength() < seedLen) {
+					printf("Warning: Read %s is ignored due to read length %d < seed length %d!\n", read.getName().c_str(), read.getReadLength(), seedLen);
+				}
 
 				++cnt;
 				if (verbose && cnt % 1000000 == 0) { printf("%d READS PROCESSED\n", cnt); }
@@ -464,67 +466,67 @@ void SingleQModel::finishSimulation() {
 }
 
 void SingleQModel::calcMW() {
-  double probF, probR;
+	double probF, probR;
 
-  assert(seedLen >= OLEN && (mld == NULL ? gld->getMinL() : mld->getMinL()) >= seedLen);
+	assert((mld == NULL ? gld->getMinL() : mld->getMinL()) >= seedLen);
 
-  memset(mw, 0, sizeof(double) * (M + 1));
-  mw[0] = 1.0;
+	memset(mw, 0, sizeof(double) * (M + 1));
+	mw[0] = 1.0;
 
-  probF = ori->getProb(0);
-  probR = ori->getProb(1);
+	probF = ori->getProb(0);
+	probR = ori->getProb(1);
 
-  for (int i = 1; i <= M; i++) { 
-    RefSeq& ref = refs->getRef(i);
-    int totLen = ref.getTotLen();
-    int fullLen = ref.getFullLen();
-    double value = 0.0;
-    int minL, maxL;
-    int effL, pfpos;
-    int end = std::min(fullLen, totLen - seedLen + 1);
-    double factor;
+	for (int i = 1; i <= M; i++) {
+		RefSeq& ref = refs->getRef(i);
+		int totLen = ref.getTotLen();
+		int fullLen = ref.getFullLen();
+		double value = 0.0;
+		int minL, maxL;
+		int effL, pfpos;
+		int end = std::min(fullLen, totLen - seedLen + 1);
+		double factor;
 
-    for (int seedPos = 0; seedPos < end; seedPos++) 
-      if (ref.getMask(seedPos)) {
-	//forward
-	minL = gld->getMinL();
-	maxL = std::min(gld->getMaxL(), totLen - seedPos);
-	pfpos = seedPos;
-	for (int fragLen = minL; fragLen <= maxL; fragLen++) {
-	  effL = std::min(fullLen, totLen - fragLen + 1); 
-	  factor = (mld == NULL ? 1.0 : mld->getAdjustedCumulativeProb(std::min(mld->getMaxL(), fragLen), fragLen)); 
-	  value += probF * gld->getAdjustedProb(fragLen, totLen) * rspd->getAdjustedProb(pfpos, effL, fullLen) * factor; 
+		for (int seedPos = 0; seedPos < end; seedPos++)
+			if (ref.getMask(seedPos)) {
+				//forward
+				minL = gld->getMinL();
+				maxL = std::min(gld->getMaxL(), totLen - seedPos);
+				pfpos = seedPos;
+				for (int fragLen = minL; fragLen <= maxL; fragLen++) {
+					effL = std::min(fullLen, totLen - fragLen + 1);
+					factor = (mld == NULL ? 1.0 : mld->getAdjustedCumulativeProb(std::min(mld->getMaxL(), fragLen), fragLen));
+					value += probF * gld->getAdjustedProb(fragLen, totLen) * rspd->getAdjustedProb(pfpos, effL, fullLen) * factor;
+				}
+				//reverse
+				minL = gld->getMinL();
+				maxL = std::min(gld->getMaxL(), seedPos + seedLen);
+				for (int fragLen = minL; fragLen <= maxL; fragLen++) {
+					pfpos = seedPos - (fragLen - seedLen);
+					effL = std::min(fullLen, totLen - fragLen + 1);
+					factor = (mld == NULL ? 1.0 : mld->getAdjustedCumulativeProb(std::min(mld->getMaxL(), fragLen), fragLen));
+					value += probR * gld->getAdjustedProb(fragLen, totLen) * rspd->getAdjustedProb(pfpos, effL, fullLen) * factor;
+				}
+			}
+
+		//for reverse strand masking
+		for (int seedPos = end; seedPos <= totLen - seedLen; seedPos++) {
+			minL = std::max(gld->getMinL(), seedPos + seedLen - fullLen + 1);
+			maxL = std::min(gld->getMaxL(), seedPos + seedLen);
+			for (int fragLen = minL; fragLen <= maxL; fragLen++) {
+				pfpos = seedPos - (fragLen - seedLen);
+				effL = std::min(fullLen, totLen - fragLen + 1);
+				factor = (mld == NULL ? 1.0 : mld->getAdjustedCumulativeProb(std::min(mld->getMaxL(), fragLen), fragLen));
+				value += probR * gld->getAdjustedProb(fragLen, totLen) * rspd->getAdjustedProb(pfpos, effL, fullLen) * factor;
+			}
+		}
+
+		mw[i] = 1.0 - value;
+
+		if (mw[i] < 1e-8) {
+			//      fprintf(stderr, "Warning: %dth reference sequence is masked for almost all positions!\n", i);
+			mw[i] = 0.0;
+		}
 	}
-	//reverse
-	minL = gld->getMinL();
-	maxL = std::min(gld->getMaxL(), seedPos + seedLen);
-	for (int fragLen = minL; fragLen <= maxL; fragLen++) {
-	  pfpos = seedPos - (fragLen - seedLen);
-	  effL = std::min(fullLen, totLen - fragLen + 1);
-	  factor = (mld == NULL ? 1.0 : mld->getAdjustedCumulativeProb(std::min(mld->getMaxL(), fragLen), fragLen)); 
-	  value += probR * gld->getAdjustedProb(fragLen, totLen) * rspd->getAdjustedProb(pfpos, effL, fullLen) * factor;
-	}
-      }
-    
-    //for reverse strand masking
-    for (int seedPos = end; seedPos <= totLen - seedLen; seedPos++) {
-      minL = std::max(gld->getMinL(), seedPos + seedLen - fullLen + 1);
-      maxL = std::min(gld->getMaxL(), seedPos + seedLen);
-      for (int fragLen = minL; fragLen <= maxL; fragLen++) {
-	pfpos = seedPos - (fragLen - seedLen);
-	effL = std::min(fullLen, totLen - fragLen + 1);
-	factor = (mld == NULL ? 1.0 : mld->getAdjustedCumulativeProb(std::min(mld->getMaxL(), fragLen), fragLen)); 
-	value += probR * gld->getAdjustedProb(fragLen, totLen) * rspd->getAdjustedProb(pfpos, effL, fullLen) * factor;
-      }
-    }
-    
-    mw[i] = 1.0 - value;
-
-    if (mw[i] < 1e-8) { 
-      //      fprintf(stderr, "Warning: %dth reference sequence is masked for almost all positions!\n", i);
-      mw[i] = 0.0;
-    }
-  }
 }
 
 #endif /* SINGLEQMODEL_H_ */

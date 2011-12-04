@@ -236,28 +236,28 @@ void PairedEndQModel::estimateFromReads(const char* readFN) {
     for (int i = 0; i < 3; i++)
     	if (N[i] > 0) {
     		genReadFileNames(readFN, i, read_type, s, readFs);
-    		ReadReader<PairedEndReadQ> reader(s, readFs);
+    		ReadReader<PairedEndReadQ> reader(s, readFs, refs->hasPolyA(), seedLen); // allow calculation of calc_lq() function
 
     		int cnt = 0;
     		while (reader.next(read)) {
     			SingleReadQ mate1 = read.getMate1();
     			SingleReadQ mate2 = read.getMate2();
 
-			if (!read.isLowQuality()) {
-			  mld->update(mate1.getReadLength(), 1.0);
-			  mld->update(mate2.getReadLength(), 1.0);
+    			if (!read.isLowQuality()) {
+    				mld->update(mate1.getReadLength(), 1.0);
+    				mld->update(mate2.getReadLength(), 1.0);
 
-			  qd->update(mate1.getQScore());
-			  qd->update(mate2.getQScore());
+    				qd->update(mate1.getQScore());
+    				qd->update(mate2.getQScore());
 			  
-			  if (i == 0) {
-			    nqpro->updateC(mate1.getReadSeq(), mate1.getQScore());
-			    nqpro->updateC(mate2.getReadSeq(), mate2.getQScore());
-			  }
-			}
-			else if (verbose && (mate1.getReadLength() < OLEN || mate2.getReadLength() < OLEN)) { 
-			  printf("Warning: Read %s is ignored due to at least one of the mates' length < %d!\n", read.getName().c_str(), OLEN);
-			}
+    				if (i == 0) {
+    					nqpro->updateC(mate1.getReadSeq(), mate1.getQScore());
+    					nqpro->updateC(mate2.getReadSeq(), mate2.getQScore());
+    				}
+    			}
+    			else if (verbose && (mate1.getReadLength() < seedLen || mate2.getReadLength() < seedLen)) {
+    				printf("Warning: Read %s is ignored due to at least one of the mates' length < seed length %d!\n", read.getName().c_str(), seedLen);
+    			}
 
     			++cnt;
     			if (verbose && cnt % 1000000 == 0) { printf("%d READS PROCESSED\n", cnt); }
@@ -427,39 +427,39 @@ void PairedEndQModel::finishSimulation() {
 
 
 void PairedEndQModel::calcMW() {
-  assert(seedLen >= OLEN && mld->getMinL() >= seedLen);
+	assert(mld->getMinL() >= seedLen);
 
-  memset(mw, 0, sizeof(double) * (M + 1));
-  mw[0] = 1.0;
+	memset(mw, 0, sizeof(double) * (M + 1));
+	mw[0] = 1.0;
 
-  for (int i = 1; i <= M; i++) { 
-    RefSeq& ref = refs->getRef(i);
-    int totLen = ref.getTotLen();
-    int fullLen = ref.getFullLen();
-    int end = std::min(fullLen, totLen - gld->getMinL() + 1);
-    double value = 0.0;
-    int minL, maxL;
-    int effL, pfpos;
+	for (int i = 1; i <= M; i++) {
+		RefSeq& ref = refs->getRef(i);
+		int totLen = ref.getTotLen();
+		int fullLen = ref.getFullLen();
+		int end = std::min(fullLen, totLen - gld->getMinL() + 1);
+		double value = 0.0;
+		int minL, maxL;
+		int effL, pfpos;
 
-    //seedPos is fpos here
-    for (int seedPos = 0; seedPos < end; seedPos++) 
-      if (ref.getMask(seedPos)) {
-	minL = gld->getMinL();
-	maxL = std::min(gld->getMaxL(), totLen - seedPos);
-	pfpos = seedPos;
-	for (int fragLen = minL; fragLen <= maxL; fragLen++) {
-	  effL = std::min(fullLen, totLen - fragLen + 1); 
-	  value += gld->getAdjustedProb(fragLen, totLen) * rspd->getAdjustedProb(pfpos, effL, fullLen); 
-	}
-      }
+		//seedPos is fpos here
+		for (int seedPos = 0; seedPos < end; seedPos++)
+			if (ref.getMask(seedPos)) {
+				minL = gld->getMinL();
+				maxL = std::min(gld->getMaxL(), totLen - seedPos);
+				pfpos = seedPos;
+				for (int fragLen = minL; fragLen <= maxL; fragLen++) {
+					effL = std::min(fullLen, totLen - fragLen + 1);
+					value += gld->getAdjustedProb(fragLen, totLen) * rspd->getAdjustedProb(pfpos, effL, fullLen);
+				}
+			}
     
-    mw[i] = 1.0 - value;
+		mw[i] = 1.0 - value;
 
-    if (mw[i] < 1e-8) { 
-      //      fprintf(stderr, "Warning: %dth reference sequence is masked for almost all positions!\n", i);
-      mw[i] = 0.0;
-    }
-  }
+		if (mw[i] < 1e-8) {
+			//      fprintf(stderr, "Warning: %dth reference sequence is masked for almost all positions!\n", i);
+			mw[i] = 0.0;
+		}
+	}
 }
 
 #endif /* PAIREDENDQMODEL_H_ */

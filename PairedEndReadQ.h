@@ -15,8 +15,6 @@ public:
 		this->mate1 = mate1;
 		this->mate2 = mate2;
 		this->name = mate1.getName();
-
-		calc_lq();
 	}
 
 	bool read(int argc, std::istream* argv[], int flags = 7);
@@ -29,10 +27,10 @@ public:
 		else return mate2;
 	}
 
+	void calc_lq(bool, int); // calculate if this read is low quality. Without calling this function, isLowQuality() will always be false
+
 private:
 	SingleReadQ mate1, mate2;
-
-	void calc_lq();
 };
 
 bool PairedEndReadQ::read(int argc, std::istream* argv[], int flags) {
@@ -44,8 +42,6 @@ bool PairedEndReadQ::read(int argc, std::istream* argv[], int flags) {
 	success = mate1.read(1, inpMate1, flags) && mate2.read(1, inpMate2, flags);
 	name = "";
 	if (flags & 4) { name = mate1.getName(); } //May chop 1 char later if we want
-
-	if (flags & 1) calc_lq();
 
 	return success;
 }
@@ -59,9 +55,13 @@ void PairedEndReadQ::write(int argc, std::ostream* argv[]) {
 	mate2.write(1, outMate2);
 }
 
-void PairedEndReadQ::calc_lq() {
-	low_quality = mate1.isLowQuality() && mate2.isLowQuality();
-	if (mate1.getReadLength() < OLEN || mate2.getReadLength() < OLEN) low_quality = true;
+//calculate if this read is low quality
+void PairedEndReadQ::calc_lq(bool hasPolyA, int seedLen) {
+	low_quality = false;
+	mate1.calc_lq(hasPolyA, seedLen);
+	mate2.calc_lq(hasPolyA, seedLen);
+	if (mate1.getReadLength() < seedLen || mate2.getReadLength() < seedLen) low_quality = true;
+	else low_quality = mate1.isLowQuality() && mate2.isLowQuality();
 }
 
 #endif /* PAIREDENDREADQ_H_ */

@@ -102,7 +102,7 @@ void init(ReadReader<ReadType> **&readers, HitContainer<HitType> **&hitvs, doubl
 		indices[i] = new ReadIndex(readFs[i]);
 	}
 	for (int i = 0; i < nThreads; i++) {
-		readers[i] = new ReadReader<ReadType>(s, readFs);
+		readers[i] = new ReadReader<ReadType>(s, readFs, refs.hasPolyA(), mparams.seedLen); // allow calculation of calc_lq() function
 		readers[i]->setIndices(indices);
 	}
 
