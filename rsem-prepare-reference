@@ -211,7 +211,7 @@ B<'reference_name.transcripts.fa'> contains the extracted reference transcripts 
 
 =head1 EXAMPLES
 
-1) Suppose we have mouse RNA-Seq data and want to use the UCSC mm9 version of the mouse genome. We have downloaded the UCSC Genes transcript annotations in GTF format (as mm9.gtf) using the Table Browser and the knownIsoforms.txt file for mm9 from the UCSC Downloads. We also have all chromosome files for mm9 in the directory '/data/mm9'.  We want to put the generated reference files under '/ref' with name 'mm9'. We'll add poly(A) tails with length 125. Please note that GTF files generated from UCSC's Table Browser do not contain isoform-gene relationship information.  For the UCSC Genes annotation, this information can be obtained from the knownIsoforms.txt file.  Suppose we want to build Bowtie indices and Bowtie executables are found in '/sw/bowtie'.
+1) Suppose we have mouse RNA-Seq data and want to use the UCSC mm9 version of the mouse genome. We have downloaded the UCSC Genes transcript annotations in GTF format (as mm9.gtf) using the Table Browser and the knownIsoforms.txt file for mm9 from the UCSC Downloads. We also have all chromosome files for mm9 in the directory '/data/mm9'.  We want to put the generated reference files under '/ref' with name 'mouse_125'. We'll add poly(A) tails with length 125. Please note that GTF files generated from UCSC's Table Browser do not contain isoform-gene relationship information.  For the UCSC Genes annotation, this information can be obtained from the knownIsoforms.txt file.  Suppose we want to build Bowtie indices and Bowtie executables are found in '/sw/bowtie'.
 
 There are two ways to write the command:
 
@@ -219,7 +219,7 @@ There are two ways to write the command:
                         --transcript-to-gene-map knownIsoforms.txt \
                         --bowtie-path /sw/bowtie \                  
                         /data/mm9/chr1.fa,/data/mm9/chr2.fa,...,/data/mm9/chrM.fa \
-                        /ref/mm9
+                        /ref/mouse_125
 
 OR
 
@@ -227,14 +227,14 @@ OR
                         --transcript-to-gene-map knownIsoforms.txt \
                         --bowtie-path /sw/bowtie \
                         /data/mm9 \
-                        /ref/mm9
+                        /ref/mouse_125
 
-2) Suppose we only have transcripts from EST tags in 'mm9.fasta'. In addition, we also have isoform-gene information in 'mapping.txt'. We do not want to add any poly(A) tails. The reference_name will be set to 'mm9'. In addition, we do not want to build Bowtie indices, and will use an alternative aligner to align reads against the 'mm9.idx.fa' output file:
+2) Suppose we only have transcripts from EST tags in 'mm9.fasta'. In addition, we also have isoform-gene information in 'mapping.txt'. We do not want to add any poly(A) tails. The reference_name will be set to 'mouse_0'. In addition, we do not want to build Bowtie indices, and will use an alternative aligner to align reads against the 'mouse_0.idx.fa' output file:
 
  rsem-prepare-reference --transcript-to-gene-map mapping.txt \
                         --no-polyA \
                         --no-bowtie \
                         mm9.fasta \
-                        mm9
+                        mouse_0
 
 =cut
