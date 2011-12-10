@@ -176,7 +176,7 @@ The length of the poly(A) tails to be added. (Default: 125)
 
 =item B<--bowtie-path> <path>
 
-The path to the bowtie executables. (Default: the path to bowtie executables is assumed to be in the user's PATH environment variable)
+The path to the Bowtie executables. (Default: the path to Bowtie executables is assumed to be in the user's PATH environment variable)
 
 =item B<--no-bowtie>
 
