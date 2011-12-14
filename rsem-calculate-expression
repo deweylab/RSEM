@@ -191,16 +191,14 @@ if (!$is_sam && !$is_bam) {
     else { print "Oh, no!!!"; exit(2); }
     
     $command .= " -n $C -e $E -l $L";
-    
     if ($read_type == 2 || $read_type == 3) { $command .= " -I $minL -X $maxL"; }
+    if ($chunkMbs > 0) { $command .= " --chunkmbs $chunkMbs"; }
     
     if ($strand_specific || $probF == 1.0) { $command .= " --norc"; }
     elsif ($probF == 0.0) { $command .= " --nofw"; }
 
     $command .= " -p $nThreads -a -m $maxHits -S";
-    if ($quiet) { $command .= " --quiet"; }
-    
-    $command .= " --chunkmbs $chunkMbs" if $chunkMbs > 0;
+    if ($quiet) { $command .= " --quiet"; }    
 
     $command .= " $refName";
     if ($read_type == 0 || $read_type == 1) {

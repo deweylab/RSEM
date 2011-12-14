@@ -304,8 +304,7 @@ int main(int argc, char* argv[]) {
 	for (int i = 1; i <= M; i++) {
 		if (seqs[i] == "") {
 			const Transcript& transcript = transcripts.getTranscriptAt(i);
-			fprintf(stderr, "Cannot extract transcript %s's sequence from chromosome %s, whose information might not be provided! \"
-					"Please check if the chromosome directory is set correctly or the list of chromosome files is complete.\n", \
+			fprintf(stderr, "Cannot extract transcript %s's sequence from chromosome %s, whose information might not be provided! Please check if the chromosome directory is set correctly or the list of chromosome files is complete.\n", \
 					transcript.getTranscriptID().c_str(), transcript.getGeneID().c_str());
 			exit(-1);
 		}
