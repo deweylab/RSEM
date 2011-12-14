@@ -24,6 +24,7 @@ my $C = 2;
 my $E = 99999999;
 my $L = 25;
 my $maxHits = 200;
+my $chunkMbs = 0;	# 0 = use bowtie default
 my $phred33 = 0;
 my $phred64 = 0;
 my $solexa = 0;
@@ -71,6 +72,7 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "bowtie-n=i" => \$C,
 	   "bowtie-e=i" => \$E,
 	   "bowtie-m=i" => \$maxHits,
+	   "bowtie-chunkmbs=i" => \$chunkMbs,
 	   "phred33-quals" => \$phred33,
 	   "phred64-quals" => \$phred64, #solexa1.3-quals" => \$phred64,
 	   "solexa-quals" => \$solexa,
@@ -184,6 +186,8 @@ if (!$is_sam && !$is_bam) {
     $command .= " -p $nThreads -a -m $maxHits -S";
     if ($quiet) { $command .= " --quiet"; }
     
+    $command .= " --chunkmbs $chunkMbs" if $chunkMbs > 0;
+
     $command .= " $refName";
     if ($read_type == 0 || $read_type == 1) {
 	$command .= " $mate1_list"; 
@@ -506,6 +510,10 @@ The path to the bowtie executables. (Default: the path to the bowtie executables
 =item B<--bowtie-m> <int>
 
 (Bowtie parameter) suppress all alignments for a read if > <int> valid alignments exist. (Default: 200)
+
+=item B<--bowtie-chunkmbs> <int>
+
+(Bowtie parameter) memory allocated for best first alignment calculation (Default: 0 - use bowtie's default)
 
 =item B<--phred33-quals>
 
