@@ -465,14 +465,18 @@ void EM() {
 		//E step
 		for (int i = 0; i < nThreads; i++) {
 			rc = pthread_create(&threads[i], &attr, E_STEP<ReadType, HitType, ModelType>, (void*)(&fparams[i]));
-			if (rc != 0) { fprintf(stderr, "Cannot create thread %d at ROUND %d! (numbered from 0)\n", i, ROUND); exit(-1); }
-			//assert(rc == 0);
+			if (rc != 0) {
+				fprintf(stderr, "Cannot create thread %d at ROUND %d! (numbered from 0)", i, ROUND);
+				pthread_exception(rc);
+			}
 		}
 
 		for (int i = 0; i < nThreads; i++) {
 			rc = pthread_join(threads[i], &status);
-			if (rc != 0) { fprintf(stderr, "Cannot join thread %d at ROUND %d! (numbered from 0)\n", i, ROUND); exit(-1); }
-			//assert(rc == 0);
+			if (rc != 0) {
+				fprintf(stderr, "Cannot join thread %d at ROUND %d! (numbered from 0)\n", i, ROUND);
+				pthread_exception(rc);
+			}
 		}
 
 		model.setNeedCalcConPrb(false);
@@ -518,11 +522,17 @@ void EM() {
 		if (model.getNeedCalcConPrb()) {
 			for (int i = 0; i < nThreads; i++) {
 				rc = pthread_create(&threads[i], &attr, calcConProbs<ReadType, HitType, ModelType>, (void*)(&fparams[i]));
-				if (rc != 0) { fprintf(stderr, "Cannot create thread %d when generate files for Gibbs sampler! (numbered from 0)\n", i); exit(-1); }
+				if (rc != 0) {
+					fprintf(stderr, "Cannot create thread %d when generate files for Gibbs sampler! (numbered from 0)\n", i);
+					pthread_exception(rc);
+				}
 			}
 			for (int i = 0; i < nThreads; i++) {
 				rc = pthread_join(threads[i], &status);
-				if (rc != 0) { fprintf(stderr, "Cannot join thread %d when generate files for Gibbs sampler! (numbered from 0)\n", i); exit(-1); }
+				if (rc != 0) {
+					fprintf(stderr, "Cannot join thread %d when generate files for Gibbs sampler! (numbered from 0)\n", i);
+					pthread_exception(rc);
+				}
 			}
 		}
 		model.setNeedCalcConPrb(false);
@@ -576,13 +586,17 @@ void EM() {
 	for (int i = 0; i <= M; i++) probv[i] = theta[i];
 	for (int i = 0; i < nThreads; i++) {
 		rc = pthread_create(&threads[i], &attr, E_STEP<ReadType, HitType, ModelType>, (void*)(&fparams[i]));
-		if (rc != 0) { fprintf(stderr, "Cannot create thread %d when calculate expected weights! (numbered from 0)\n", i); exit(-1); }
-		//assert(rc == 0);
+		if (rc != 0) {
+			fprintf(stderr, "Cannot create thread %d when calculate expected weights! (numbered from 0)\n", i);
+			pthread_exception(rc);
+		}
 	}
 	for (int i = 0; i < nThreads; i++) {
 		rc = pthread_join(threads[i], &status);
-		if (rc != 0) { fprintf(stderr, "Cannot join thread %d! (numbered from 0) when calculate expected weights!\n", i); exit(-1); }
-		//assert(rc == 0);
+		if (rc != 0) {
+			fprintf(stderr, "Cannot join thread %d! (numbered from 0) when calculate expected weights!\n", i);
+			pthread_exception(rc);
+		}
 	}
 	model.setNeedCalcConPrb(false);
 	for (int i = 1; i < nThreads; i++) {
@@ -596,7 +610,7 @@ void EM() {
 	pthread_attr_destroy(&attr);
 
 	//convert theta' to theta
-       	double *mw = model.getMW();
+    double *mw = model.getMW();
 	sum = 0.0;
 	for (int i = 0; i <= M; i++) {
 	  theta[i] = (mw[i] < EPSILON ? 0.0 : theta[i] / mw[i]);

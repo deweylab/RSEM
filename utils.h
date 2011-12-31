@@ -10,6 +10,7 @@
 #include<cassert>
 #include<string>
 #include<vector>
+#include<cerrno>
 
 const int STRLEN = 10005 ;
 const double EPSILON = 1e-300;
@@ -158,6 +159,28 @@ void genReadFileNames(const char* readFN, int tagType, int read_type, int& s, ch
 
 void exitWithError(const char* errmsg) {
 	fprintf(stderr, "%s\n", errmsg);
+	exit(-1);
+}
+
+void pthread_exception(int rc) {
+	switch(rc) {
+	case EAGAIN:
+		fprintf(stderr, "Error code: EAGAIN. Insufficient resources to create another thread, or a system-imposed limit on the number of threads was encountered.\n");
+		break;
+	case EINVAL:
+		fprintf(stderr, "Error code: EINVAL. Invalid settings in attr if pthread_create() is called. Or the implementation has detected that the value specified by thread_id does not refer to a joinable thread if pthread_join() is called.\n");
+		break;
+	case EPERM:
+		fprintf(stderr, "Error code: EPERM. No permission to set the scheduling policy and parameters specified in attr.\n");
+		break;
+	case EDEADLK:
+		fprintf(stderr, "Error code: EDEADLK. A deadlock was detected (e.g., two threads tried to join with each other); or thread_id specifies the calling thread.");
+		break;
+	case ESRCH:
+		fprintf(stderr, "Error code: ESRCH. No thread with thread_id could be found.\n");
+		break;
+	default: fprintf(stderr, "Unknown error code: %d\n", rc);
+	}
 	exit(-1);
 }
 

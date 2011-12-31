@@ -54,19 +54,34 @@ class GTFItem {
     strand = tmp[0];
     getline(strin, frame, '\t');
 
-    getline(strin, tmp, ';'); tmp = cleanStr(tmp);
-    my_assert((tmp.substr(0, 7) == "gene_id"), line, "Identifier should be gene_id!");
-    tmp = cleanStr(tmp.substr(7));
-    my_assert((tmp[0] == '"' && tmp[tmp.length() - 1] == '"'), line, "Textual attributes should be surrounded by doublequotes!");
-    gene_id = tmp.substr(1, tmp.length() - 2);
+    getline(strin, left); // assign attributes and possible comments into "left"
 
-    getline(strin, tmp, ';'); tmp = cleanStr(tmp);
-    my_assert((tmp.substr(0, 13) == "transcript_id"), line, "Identifier should be transcript_id!");
-    tmp = cleanStr(tmp.substr(13));
-    my_assert((tmp[0] == '"' && tmp[tmp.length() - 1] == '"'), line, "Textual attributes should be surrounded by doublequotes!");
-    transcript_id = tmp.substr(1, tmp.length() - 2);
+    strin.clear(); strin.str(left);
+    bool find_gene_id = false, find_transcript_id = false;
 
-    getline(strin, left);
+    while (getline(strin, tmp, ';') && (!find_gene_id || !find_transcript_id)) {
+    	tmp = cleanStr(tmp);
+    	size_t pos = tmp.find(' ');
+    	my_assert((pos != std::string::npos), line, "Cannot separate the identifier from the value for attribute " + tmp + "!");
+    	std::string identifier = tmp.substr(0, pos);
+
+    	if (identifier == "gene_id") {
+    		my_assert(!find_gene_id, line, "gene_id appear more than once!");
+    	    tmp = cleanStr(tmp.substr(pos));
+    	    my_assert((tmp[0] == '"' && tmp[tmp.length() - 1] == '"'), line, "Textual attributes should be surrounded by doublequotes!");
+    	    gene_id = tmp.substr(1, tmp.length() - 2);
+    	    find_gene_id = true;
+    	} else if (identifier == "transcript_id") {
+    		my_assert(!find_transcript_id, line, "transcript_id appear more than once!");
+    	    tmp = cleanStr(tmp.substr(pos));
+    	    my_assert((tmp[0] == '"' && tmp[tmp.length() - 1] == '"'), line, "Textual attributes should be surrounded by doublequotes!");
+    	    transcript_id = tmp.substr(1, tmp.length() - 2);
+    	    find_transcript_id = true;
+    	}
+    }
+
+    my_assert(find_gene_id, line, "Cannot find gene_id!");
+    my_assert(find_transcript_id, line, "Cannot find transcript_id!");
   }
 
   std::string getSeqName() { return seqname; }
