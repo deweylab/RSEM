@@ -119,13 +119,13 @@ __END__
 
 =head1 NAME
 
-convert_sam_for_rsem
+convert-sam-for-rsem
 
 =head1 SYNOPSIS
 
 =over
 
- convert_sam_for_rsem [options] reference_name input_sam
+ convert-sam-for-rsem [options] reference_name input_sam
 
 =back
 
@@ -153,7 +153,7 @@ Output the converted SAM file into <file>. (Default: STDOUT)
 
 =item B<-T/--temporary-directory> <directory>
 
-'convert_sam_for_rsem' will call 'sort' command and this is the '-T/--temporary-directory' option of 'sort' command. The following is the description from 'sort' : "use DIR for temporaries, not $TMPDIR or /tmp; multiple options specify multiple directories". 
+'convert-sam-for-rsem' will call 'sort' command and this is the '-T/--temporary-directory' option of 'sort' command. The following is the description from 'sort' : "use DIR for temporaries, not $TMPDIR or /tmp; multiple options specify multiple directories". 
 
 =item B<-h/--help>
 
@@ -175,10 +175,10 @@ Suppose reference_name and input_sam are set to '/ref/mouse_125' and 'input.sam'
 
 1) Output to standard output and gzip the output to 'input_for_rsem.sam.gz':
 
- convert_sam_for_rsem /ref/mouse_125 input.sam | gzip > input_for_rsem.sam.gz
+ convert-sam-for-rsem /ref/mouse_125 input.sam | gzip > input_for_rsem.sam.gz
 
 2) Output to 'input_for_rsem.sam' directly:
 
- convert_sam_for_rsem /ref/mouse_125 input.sam -o input_for_rsem.sam
+ convert-sam-for-rsem /ref/mouse_125 input.sam -o input_for_rsem.sam
 
 =cut
