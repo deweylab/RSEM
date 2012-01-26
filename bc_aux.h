@@ -46,7 +46,7 @@ struct PairedEndT {
 
 	bool operator< (const PairedEndT& o) const {
 		int value = mate1.compare(o.mate1);
-		return value < 0 || value == 0 && mate2 < o.mate2;
+		return value < 0 || (value == 0 && mate2 < o.mate2);
 	}
 };
 

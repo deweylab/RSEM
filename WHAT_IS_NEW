@@ -1,4 +1,11 @@
-In this version of RSEM, several things are updated:
+
+RSEM v1.1.15
+
+- Fixed several bugs causing compilation error
+- Modified samtools' Makefile for cygwin. For cygwin users, please uncomment the 4th and 8th lines in sam/Makefile before compiling RSEM
+
+--------------------------------------------------------------------------------------------
+RSEM v1.1.14
 
 - Added --chunkmbs option to rsem-calculate-expression (patch contributed by earonesty)
 - Added --sampling-for-bam option to rsem-calculate-expression, in the bam file, instead of providing expected weights, for each read RSEM samples one alignment based on the expected weights
@@ -6,5 +13,5 @@ In this version of RSEM, several things are updated:
 - Added rsem-plot-transcript-wiggles. This script can generate transcript-coordinate wiggle plots in pdf format. One unique feature is, a stacked plot can be generated, with unique read contribution shown as black and multi-read contribution shown as red
 - Added convert_sam_for_rsem script for users do not use bowtie aligner
 - Modified RSEM's GTF file parser. Now RSEM does not require "transcript_id" and "gene_id" be the first two attributes shown
-- Improved descriptions for thread related errors. 
+- Improved descriptions for thread related errors 
 

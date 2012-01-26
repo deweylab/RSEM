@@ -91,7 +91,7 @@ void BamConverter::process() {
 		if (cnt % 1000000 == 0) { printf("."); fflush(stdout); }
 
 		// at least one segment is not properly mapped
-		if ((b->core.flag & 0x0004) || isPaired && (b2->core.flag & 0x0004)) continue;
+		if ((b->core.flag & 0x0004) || (isPaired && (b2->core.flag & 0x0004))) continue;
 
 		const Transcript& transcript = transcripts.getTranscriptAt(b->core.tid + 1);
 

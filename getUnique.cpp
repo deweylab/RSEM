@@ -20,7 +20,7 @@ bool unaligned;
 void output() {
 	if (unaligned || arr.size() == 0) return;
 	bool isPaired = (arr[0]->core.flag & 0x0001);
-	if (isPaired && arr.size() != 2 || !isPaired && arr.size() != 1) return;
+	if ((isPaired && arr.size() != 2) || (!isPaired && arr.size() != 1)) return;
 	for (int i = 0; i < (int)arr.size(); i++) samwrite(out, arr[i]);
 }
 

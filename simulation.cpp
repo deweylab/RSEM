@@ -237,7 +237,7 @@ int main(int argc, char* argv[]) {
 	//read model type from modelF
 	fi = fopen(argv[2], "r");
 	if (fi == NULL) { fprintf(stderr, "Cannot open %s! It may not exist.\n", argv[2]); exit(-1); }
-	fscanf(fi, "%d", &model_type);
+	assert(fscanf(fi, "%d", &model_type) == 1);
 	fclose(fi);
 
 	theta = new double[M + 1];
