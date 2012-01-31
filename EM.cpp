@@ -10,6 +10,7 @@
 #include<pthread.h>
 
 #include "utils.h"
+#include "my_assert.h"
 #include "sampling.h"
 
 #include "Read.h"
@@ -113,12 +114,11 @@ void init(ReadReader<ReadType> **&readers, HitContainer<HitType> **&hitvs, doubl
 
 	sprintf(datF, "%s.dat", imdName);
 	fin.open(datF);
-	if (!fin.is_open()) { fprintf(stderr, "Cannot open %s! It may not exist.\n", datF); exit(-1); }
+	general_assert(fin.is_open(), "Cannot open " + cstrtos(datF) + "! It may not exist.");
 	fin>>nReads>>nHits>>rt;
-	if (nReads != N1) { fprintf(stderr, "Number of alignable reads does not match!\n"); exit(-1); }
-	//assert(nReads == N1);
-	if (rt != read_type) { fprintf(stderr, "Data file (.dat) does not have the right read type!\n"); exit(-1); }
-	//assert(rt == read_type);
+	general_assert(nReads == N1, "Number of alignable reads does not match!");
+	general_assert(rt == read_type, "Data file (.dat) does not have the right read type!");
+
 
 	//A just so so strategy for paralleling
 	nhT = nHits / nThreads;
@@ -128,12 +128,12 @@ void init(ReadReader<ReadType> **&readers, HitContainer<HitType> **&hitvs, doubl
 	ncpvs = new double*[nThreads];
 	for (int i = 0; i < nThreads; i++) {
 		int ntLeft = nThreads - i - 1; // # of threads left
-		if (!readers[i]->locate(curnr)) { fprintf(stderr, "Read indices files do not match!\n"); exit(-1); }
-		//assert(readers[i]->locate(curnr));
+
+		general_assert(readers[i]->locate(curnr), "Read indices files do not match!");
 
 		while (nrLeft > ntLeft && (i == nThreads - 1 || hitvs[i]->getNHits() < nhT)) {
-			if (!hitvs[i]->read(fin)) { fprintf(stderr, "Cannot read alignments from .dat file!\n"); exit(-1); }
-			//assert(hitvs[i]->read(fin));
+			general_assert(hitvs[i]->read(fin), "Cannot read alignments from .dat file!");
+
 			--nrLeft;
 			if (verbose && nrLeft % 1000000 == 0) { printf("DAT %d reads left!\n", nrLeft); }
 		}
@@ -186,12 +186,9 @@ void* E_STEP(void* arg) {
 	memset(countv, 0, sizeof(double) * (M + 1));
 	for (int i = 0; i < N; i++) {
 		if (needCalcConPrb || updateModel) {
-			if (!reader->next(read)) {
-				fprintf(stderr, "Can not load a read!\n");
-				exit(-1);
-			}
-			//assert(reader->next(read));
+			general_assert(reader->next(read), "Can not load a read!");
 		}
+
 		fr = hitv->getSAt(i);
 		to = hitv->getSAt(i + 1);
 		fracs.resize(to - fr + 1);
@@ -253,10 +250,8 @@ void* calcConProbs(void* arg) {
 	reader->reset();
 
 	for (int i = 0; i < N; i++) {
-		if (!reader->next(read)) {
-			fprintf(stderr, "Can not load a read!\n");
-			exit(-1);
-		}
+		general_assert(reader->next(read), "Can not load a read!");
+
 		fr = hitv->getSAt(i);
 		to = hitv->getSAt(i + 1);
 
@@ -321,8 +316,9 @@ void writeResults(ModelType& model, double* counts) {
 	    tau[i] = theta[i] / eel[i];
 	    denom += tau[i];
 	  }   
-	if (denom <= 0) { fprintf(stderr, "No alignable reads?!\n"); exit(-1); }
-	//assert(denom > 0);
+
+	general_assert(denom > 0, "No alignable reads?!");
+
 	for (int i = 1; i <= M; i++) {
 		tau[i] /= denom;
 	}
@@ -465,18 +461,12 @@ void EM() {
 		//E step
 		for (int i = 0; i < nThreads; i++) {
 			rc = pthread_create(&threads[i], &attr, E_STEP<ReadType, HitType, ModelType>, (void*)(&fparams[i]));
-			if (rc != 0) {
-				fprintf(stderr, "Cannot create thread %d at ROUND %d! (numbered from 0)", i, ROUND);
-				pthread_exception(rc);
-			}
+			pthread_assert(rc, "pthread_create", "Cannot create thread " + itos(i) + " (numbered from 0) at ROUND " + itos(ROUND) + "!");
 		}
 
 		for (int i = 0; i < nThreads; i++) {
 			rc = pthread_join(threads[i], &status);
-			if (rc != 0) {
-				fprintf(stderr, "Cannot join thread %d at ROUND %d! (numbered from 0)\n", i, ROUND);
-				pthread_exception(rc);
-			}
+			pthread_assert(rc, "pthread_join", "Cannot join thread " + itos(i) + " (numbered from 0) at ROUND " + itos(ROUND) + "!");
 		}
 
 		model.setNeedCalcConPrb(false);
@@ -522,17 +512,11 @@ void EM() {
 		if (model.getNeedCalcConPrb()) {
 			for (int i = 0; i < nThreads; i++) {
 				rc = pthread_create(&threads[i], &attr, calcConProbs<ReadType, HitType, ModelType>, (void*)(&fparams[i]));
-				if (rc != 0) {
-					fprintf(stderr, "Cannot create thread %d when generate files for Gibbs sampler! (numbered from 0)\n", i);
-					pthread_exception(rc);
-				}
+				pthread_assert(rc, "pthread_create", "Cannot create thread " + itos(i) + " (numbered from 0) when generating files for Gibbs sampler!");
 			}
 			for (int i = 0; i < nThreads; i++) {
 				rc = pthread_join(threads[i], &status);
-				if (rc != 0) {
-					fprintf(stderr, "Cannot join thread %d when generate files for Gibbs sampler! (numbered from 0)\n", i);
-					pthread_exception(rc);
-				}
+				pthread_assert(rc, "pthread_join", "Cannot join thread " + itos(i) + " (numbered from 0) when generating files for Gibbs sampler!");
 			}
 		}
 		model.setNeedCalcConPrb(false);
@@ -578,7 +562,9 @@ void EM() {
 	for (int i = 1; i <= M; i++) 
 	  if (eel[i] < EPSILON) { theta[i] = 0.0; }
 	  else sum += theta[i];
-	if (sum < EPSILON) { fprintf(stderr, "No Expected Effective Length is no less than %.6g?!\n", MINEEL); exit(-1); }
+
+	general_assert(sum >= EPSILON, "No Expected Effective Length is no less than" + ftos(MINEEL, 6) + "?!");
+
 	for (int i = 0; i <= M; i++) theta[i] /= sum;
 
 	//calculate expected weights and counts using learned parameters
@@ -586,17 +572,11 @@ void EM() {
 	for (int i = 0; i <= M; i++) probv[i] = theta[i];
 	for (int i = 0; i < nThreads; i++) {
 		rc = pthread_create(&threads[i], &attr, E_STEP<ReadType, HitType, ModelType>, (void*)(&fparams[i]));
-		if (rc != 0) {
-			fprintf(stderr, "Cannot create thread %d when calculate expected weights! (numbered from 0)\n", i);
-			pthread_exception(rc);
-		}
+		pthread_assert(rc, "pthread_create", "Cannot create thread " + itos(i) + " (numbered from 0) when calculating expected weights!");
 	}
 	for (int i = 0; i < nThreads; i++) {
 		rc = pthread_join(threads[i], &status);
-		if (rc != 0) {
-			fprintf(stderr, "Cannot join thread %d! (numbered from 0) when calculate expected weights!\n", i);
-			pthread_exception(rc);
-		}
+		pthread_assert(rc, "pthread_join", "Cannot join thread " + itos(i) + " (numbered from 0) when calculating expected weights!");
 	}
 	model.setNeedCalcConPrb(false);
 	for (int i = 1; i < nThreads; i++) {
@@ -610,7 +590,7 @@ void EM() {
 	pthread_attr_destroy(&attr);
 
 	//convert theta' to theta
-    double *mw = model.getMW();
+	double *mw = model.getMW();
 	sum = 0.0;
 	for (int i = 0; i <= M; i++) {
 	  theta[i] = (mw[i] < EPSILON ? 0.0 : theta[i] / mw[i]);
@@ -634,7 +614,7 @@ void EM() {
 			int local_N;
 			int fr, to, len, id;
 			vector<double> arr;
-			arr.clear();
+			uniform01 rg(engine_type(time(NULL)));
 
 			if (verbose) printf("Begin to sample reads from their posteriors.\n");
 			for (int i = 0; i < nThreads; i++) {
@@ -643,13 +623,14 @@ void EM() {
 					fr = hitvs[i]->getSAt(j);
 					to = hitvs[i]->getSAt(j + 1);
 					len = to - fr + 1;
-					arr.resize(len);
+					arr.assign(len, 0);
 					arr[0] = ncpvs[i][j];
 					for (int k = fr; k < to; k++) arr[k - fr + 1] = arr[k - fr] + hitvs[i]->getHitAt(k).getConPrb();
-					id = (arr[len - 1] < EPSILON ? -1 : sample(arr, len)); // if all entries in arr are 0, let id be -1
+					id = (arr[len - 1] < EPSILON ? -1 : sample(rg, arr, len)); // if all entries in arr are 0, let id be -1
 					for (int k = fr; k < to; k++) hitvs[i]->getHitAt(k).setConPrb(k - fr + 1 == id ? 1.0 : 0.0);
 				}
 			}
+
 			if (verbose) printf("Sampling is finished.\n");
 		}
 
@@ -710,8 +691,8 @@ int main(int argc, char* argv[]) {
 		if (!strcmp(argv[i], "--gibbs-out")) { genGibbsOut = true; }
 		if (!strcmp(argv[i], "--sampling")) { bamSampling = true; }
 	}
-	if (nThreads <= 0) { fprintf(stderr, "Number of threads should be bigger than 0!\n"); exit(-1); }
-	//assert(nThreads > 0);
+
+	general_assert(nThreads > 0, "Number of threads should be bigger than 0!");
 
 	verbose = !quiet;
 
@@ -728,11 +709,13 @@ int main(int argc, char* argv[]) {
 
 	sprintf(cntF, "%s.cnt", statName);
 	fin.open(cntF);
-	if (!fin.is_open()) { fprintf(stderr, "Cannot open %s! It may not exist.\n", cntF); exit(-1); }
+
+	general_assert(fin.is_open(), "Cannot open " + cstrtos(cntF) + "! It may not exist.");
+
 	fin>>N0>>N1>>N2>>N_tot;
 	fin.close();
 
-	if (N1 <= 0) { fprintf(stderr, "There are no alignable reads!\n"); exit(-1); }
+	general_assert(N1 > 0, "There are no alignable reads!");
 
 	if (nThreads > N1) nThreads = N1;
 
@@ -743,7 +726,9 @@ int main(int argc, char* argv[]) {
 
 	sprintf(mparamsF, "%s.mparams", imdName);
 	fin.open(mparamsF);
-	if (!fin.is_open()) { fprintf(stderr, "Cannot open %s! It may not exist.\n", mparamsF); exit(-1); }
+
+	general_assert(fin.is_open(), "Cannot open " + cstrtos(mparamsF) + "It may not exist.");
+
 	fin>> mparams.minL>> mparams.maxL>> mparams.probF;
 	int val; // 0 or 1 , for estRSPD
 	fin>>val;

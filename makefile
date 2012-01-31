@@ -1,7 +1,7 @@
 CC = g++
 CFLAGS = -Wall -c -I.
 COFLAGS = -Wall -O3 -ffast-math -c -I.
-PROGRAMS = rsem-extract-reference-transcripts rsem-synthesis-reference-transcripts rsem-preref rsem-parse-alignments rsem-build-read-index rsem-run-em rsem-tbam2gbam rsem-run-gibbs rsem-calculate-credibility-intervals rsem-simulate-reads rsem-bam2wig rsem-get-unique rsem-bam2readdepth  
+PROGRAMS = rsem-extract-reference-transcripts rsem-synthesis-reference-transcripts rsem-preref rsem-parse-alignments rsem-build-read-index rsem-run-em rsem-tbam2gbam rsem-run-gibbs rsem-calculate-credibility-intervals rsem-simulate-reads rsem-bam2wig rsem-get-unique rsem-bam2readdepth
 
 
 all : build-sam $(PROGRAMS)
@@ -86,12 +86,12 @@ sampling.h : boost/random.hpp
 rsem-run-em : EM.o sam/libbam.a
 	$(CC) -o rsem-run-em EM.o sam/libbam.a -lz -lpthread
 
-EM.o : utils.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h Refs.h GroupInfo.h HitContainer.h ReadIndex.h ReadReader.h Orientation.h LenDist.h RSPD.h QualDist.h QProfile.h NoiseQProfile.h ModelParams.h RefSeq.h RefSeqPolicy.h PolyARules.h Profile.h NoiseProfile.h Transcript.h Transcripts.h HitWrapper.h BamWriter.h sam/bam.h sam/sam.h simul.h sam_rsem_aux.h sampling.h boost/random.hpp EM.cpp
+EM.o : utils.h my_assert.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h Refs.h GroupInfo.h HitContainer.h ReadIndex.h ReadReader.h Orientation.h LenDist.h RSPD.h QualDist.h QProfile.h NoiseQProfile.h ModelParams.h RefSeq.h RefSeqPolicy.h PolyARules.h Profile.h NoiseProfile.h Transcript.h Transcripts.h HitWrapper.h BamWriter.h sam/bam.h sam/sam.h simul.h sam_rsem_aux.h sampling.h boost/random.hpp EM.cpp
 	$(CC) $(COFLAGS) EM.cpp
 
 bc_aux.h : sam/bam.h
 
-BamConverter.h : utils.h sam/sam.h sam/bam.h sam_rsem_aux.h sam_rsem_cvt.h bc_aux.h Transcript.h Transcripts.h
+BamConverter.h : utils.h my_assert.h sam/sam.h sam/bam.h sam_rsem_aux.h sam_rsem_cvt.h bc_aux.h Transcript.h Transcripts.h
 
 rsem-tbam2gbam : utils.h Transcripts.h Transcript.h bc_aux.h BamConverter.h sam/sam.h sam/bam.h sam/libbam.a sam_rsem_aux.h sam_rsem_cvt.h tbam2gbam.cpp sam/libbam.a
 	$(CC) -O3 -Wall tbam2gbam.cpp sam/libbam.a -lz -o $@
@@ -112,22 +112,24 @@ simulation.o : utils.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedE
 	$(CC) $(COFLAGS) simulation.cpp
 
 rsem-run-gibbs : Gibbs.o
-	$(CC) -o rsem-run-gibbs Gibbs.o
+	$(CC) -o rsem-run-gibbs Gibbs.o -lpthread
 
 #some header files are omitted
-Gibbs.o : utils.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h RefSeq.h RefSeqPolicy.h PolyARules.h Refs.h GroupInfo.h sampling.h boost/random.hpp Gibbs.cpp 
+Gibbs.o : utils.h my_assert.h boost/random.hpp sampling.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h RefSeq.h RefSeqPolicy.h PolyARules.h Refs.h GroupInfo.h Gibbs.cpp 
 	$(CC) $(COFLAGS) Gibbs.cpp
 
+Buffer.h : my_assert.h
+
 rsem-calculate-credibility-intervals : calcCI.o
-	$(CC) -o rsem-calculate-credibility-intervals calcCI.o
+	$(CC) -o rsem-calculate-credibility-intervals calcCI.o -lpthread
 
 #some header files are omitted
-calcCI.o : utils.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h RefSeq.h RefSeqPolicy.h PolyARules.h Refs.h GroupInfo.h calcCI.cpp boost/random.hpp
+calcCI.o : utils.h my_assert.h boost/random.hpp sampling.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h RefSeq.h RefSeqPolicy.h PolyARules.h Refs.h GroupInfo.h Buffer.h calcCI.cpp
 	$(CC) $(COFLAGS) calcCI.cpp
 
 rsem-get-unique : sam/bam.h sam/sam.h getUnique.cpp sam/libbam.a
 	$(CC) -O3 -Wall getUnique.cpp sam/libbam.a -lz -o $@
-	
+
 clean:
 	rm -f *.o *~ $(PROGRAMS)
 	cd sam ; ${MAKE} clean

@@ -14,6 +14,7 @@
 #include "sam_rsem_cvt.h"
 
 #include "utils.h"
+#include "my_assert.h"
 #include "bc_aux.h"
 #include "Transcript.h"
 #include "Transcripts.h"
@@ -44,8 +45,7 @@ private:
 BamConverter::BamConverter(const char* inpF, const char* outF, const char* chr_list, Transcripts& transcripts)
 	: transcripts(transcripts)
 {
-	if (transcripts.getType() != 0)
-		exitWithError("Genome information is not provided! RSEM cannot convert the transcript bam file!");
+	general_assert(transcripts.getType() == 0, "Genome information is not provided! RSEM cannot convert the transcript bam file!");
 
 	in = samopen(inpF, "rb", NULL);
 	assert(in != 0);
@@ -123,7 +123,7 @@ void BamConverter::convert(bam1_t* b, const Transcript& transcript) {
 	int pos = b->core.pos;
 	int readlen = b->core.l_qseq;
 
-	if (readlen == 0) exitWithError("One alignment line has SEQ field as *. RSEM does not support this currently!");
+	general_assert(readlen > 0, "One alignment line has SEQ field as *. RSEM does not support this currently!");
 
 	iter = refmap.find(transcript.getSeqName());
 	assert(iter != refmap.end());

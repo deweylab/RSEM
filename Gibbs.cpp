@@ -5,8 +5,10 @@
 #include<fstream>
 #include<sstream>
 #include<vector>
+#include<pthread.h>
 
 #include "utils.h"
+#include "my_assert.h"
 #include "sampling.h"
 
 #include "Model.h"
@@ -20,6 +22,15 @@
 
 using namespace std;
 
+struct Params {
+	int no, nsamples;
+	FILE *fo;
+	engine_type *engine;
+	double *pme_c, *pve_c; //posterior mean and variance vectors on counts
+	double *pme_theta;
+};
+
+
 struct Item {
 	int sid;
 	double conprb;
@@ -30,10 +41,12 @@ struct Item {
 	}
 };
 
+int nThreads;
+
 int model_type;
 int m, M, N0, N1, nHits;
 double totc;
-int BURNIN, CHAINLEN, GAP;
+int BURNIN, NSAMPLES, GAP;
 char imdName[STRLEN], statName[STRLEN];
 char thetaF[STRLEN], ofgF[STRLEN], groupF[STRLEN], refF[STRLEN], modelF[STRLEN];
 char cvsF[STRLEN];
@@ -41,15 +54,22 @@ char cvsF[STRLEN];
 Refs refs;
 GroupInfo gi;
 
-vector<double> theta, pme_theta, pme_c, eel;
-
-vector<int> s, z;
+vector<int> s;
 vector<Item> hits;
-vector<int> counts;
 
+vector<double> theta;
+
+vector<double> pme_c, pve_c; //global posterior mean and variance vectors on counts
+vector<double> pme_theta, eel;
+
+bool var_opt;
 bool quiet;
 
-vector<double> arr;
+Params *paramsArray;
+pthread_t *threads;
+pthread_attr_t attr;
+void *status;
+int rc;
 
 void load_data(char* reference_name, char* statName, char* imdName) {
 	ifstream fin;
@@ -69,31 +89,19 @@ void load_data(char* reference_name, char* statName, char* imdName) {
 	//load thetaF
 	sprintf(thetaF, "%s.theta",statName);
 	fin.open(thetaF);
-	if (!fin.is_open()) {
-		fprintf(stderr, "Cannot open %s!\n", thetaF);
-		exit(-1);
-	}
+	general_assert(fin.is_open(), "Cannot open " + cstrtos(thetaF) + "!");
 	fin>>tmpVal;
-	if (tmpVal != M + 1) {
-		fprintf(stderr, "Number of transcripts is not consistent in %s and %s!\n", refF, thetaF);
-		exit(-1);
-	}
-	theta.clear(); theta.resize(M + 1);
+	general_assert(tmpVal == M + 1, "Number of transcripts is not consistent in " + cstrtos(refF) + " and " + cstrtos(thetaF) + "!");
+	theta.assign(M + 1, 0);
 	for (int i = 0; i <= M; i++) fin>>theta[i];
 	fin.close();
 
 	//load ofgF;
 	sprintf(ofgF, "%s.ofg", imdName);
 	fin.open(ofgF);
-	if (!fin.is_open()) {
-		fprintf(stderr, "Cannot open %s!\n", ofgF);
-		exit(-1);
-	}
+	general_assert(fin.is_open(), "Cannot open " + cstrtos(ofgF) + "!");
 	fin>>tmpVal>>N0;
-	if (tmpVal != M) {
-		fprintf(stderr, "M in %s is not consistent with %s!\n", ofgF, refF);
-		exit(-1);
-	}
+	general_assert(tmpVal == M, "M in " + cstrtos(ofgF) + " is not consistent with " + cstrtos(refF) + "!");
 	getline(fin, line);
 
 	s.clear(); hits.clear();
@@ -113,120 +121,214 @@ void load_data(char* reference_name, char* statName, char* imdName) {
 	N1 = s.size() - 1;
 	nHits = hits.size();
 
+	totc = N0 + N1 + (M + 1);
+
 	if (verbose) { printf("Loading Data is finished!\n"); }
 }
 
+// assign threads
 void init() {
-	int len, fr, to;
+	int quotient, left;
+	char outF[STRLEN];
 
-	arr.clear();
-	z.clear();
-	counts.clear();
+	quotient = NSAMPLES / nThreads;
+	left = NSAMPLES % nThreads;
 
-	z.resize(N1);
-	counts.resize(M + 1, 1); // 1 pseudo count
-	counts[0] += N0;
+	sprintf(cvsF, "%s.countvectors", imdName);
+	paramsArray = new Params[nThreads];
+	threads = new pthread_t[nThreads];
 
-	for (int i = 0; i < N1; i++) {
-		fr = s[i]; to = s[i + 1];
-		len = to - fr;
-		arr.resize(len);
-		for (int j = fr; j < to; j++) {
-			arr[j - fr] = theta[hits[j].sid] * hits[j].conprb;
-			if (j > fr) arr[j - fr] += arr[j - fr - 1];  // cumulative
-		}
-		z[i] = hits[fr + sample(arr, len)].sid;
-		++counts[z[i]];
+	for (int i = 0; i < nThreads; i++) {
+		paramsArray[i].no = i;
+
+		paramsArray[i].nsamples = quotient;
+		if (i < left) paramsArray[i].nsamples++;
+
+		sprintf(outF, "%s%d", cvsF, i);
+		paramsArray[i].fo = fopen(outF, "w");
+
+		paramsArray[i].engine = engineFactory::new_engine();
+		paramsArray[i].pme_c = new double[M + 1];
+		memset(paramsArray[i].pme_c, 0, sizeof(double) * (M + 1));
+		paramsArray[i].pve_c = new double[M + 1];
+		memset(paramsArray[i].pve_c, 0, sizeof(double) * (M + 1));
+		paramsArray[i].pme_theta = new double[M + 1];
+		memset(paramsArray[i].pme_theta, 0, sizeof(double) * (M + 1));
 	}
 
-	totc = N0 + N1 + (M + 1);
+	/* set thread attribute to be joinable */
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
-	if (verbose) { printf("Initialization is finished!\n"); }
+	if (verbose) { printf("Initialization finished!"); }
 }
 
-void writeCountVector(FILE* fo) {
+//sample theta from Dir(1)
+void sampleTheta(engine_type& engine, vector<double>& theta) {
+	gamma_dist gm(1);
+	gamma_generator gmg(engine, gm);
+	double denom;
+
+	theta.assign(M + 1, 0);
+	denom = 0.0;
+	for (int i = 0; i <= M; i++) {
+		theta[i] = gmg();
+		denom += theta[i];
+	}
+	assert(denom > EPSILON);
+	for (int i = 0; i <= M; i++) theta[i] /= denom;
+}
+
+void writeCountVector(FILE* fo, vector<int>& counts) {
 	for (int i = 0; i < M; i++) {
 		fprintf(fo, "%d ", counts[i]);
 	}
 	fprintf(fo, "%d\n", counts[M]);
 }
 
-void Gibbs(char* imdName) {
-	FILE *fo;
-	int fr, to, len;
+void* Gibbs(void* arg) {
+	int len, fr, to;
+	int CHAINLEN;
+	Params *params = (Params*)arg;
 
-	sprintf(cvsF, "%s.countvectors", imdName);
-	fo = fopen(cvsF, "w");
-	assert(CHAINLEN % GAP == 0);
-	fprintf(fo, "%d %d\n", CHAINLEN / GAP, M + 1);
-	//fprintf(fo, "%d %d\n", CHAINLEN, M + 1);
+	vector<double> theta;
+	vector<int> z, counts;
+	vector<double> arr;
 
-	pme_c.clear(); pme_c.resize(M + 1, 0.0);
-	pme_theta.clear(); pme_theta.resize(M + 1, 0.0);
+	uniform01 rg(*params->engine);
+
+	// generate initial state
+	sampleTheta(*params->engine, theta);
+
+	z.assign(N1, 0);
+
+	counts.assign(M + 1, 1); // 1 pseudo count
+	counts[0] += N0;
+
+	for (int i = 0; i < N1; i++) {
+		fr = s[i]; to = s[i + 1];
+		len = to - fr;
+		arr.assign(len, 0);
+		for (int j = fr; j < to; j++) {
+			arr[j - fr] = theta[hits[j].sid] * hits[j].conprb;
+			if (j > fr) arr[j - fr] += arr[j - fr - 1];  // cumulative
+		}
+		z[i] = hits[fr + sample(rg, arr, len)].sid;
+		++counts[z[i]];
+	}
+
+	// Gibbs sampling
+	CHAINLEN = 1 + (params->nsamples - 1) * GAP;
 	for (int ROUND = 1; ROUND <= BURNIN + CHAINLEN; ROUND++) {
 
 		for (int i = 0; i < N1; i++) {
 			--counts[z[i]];
 			fr = s[i]; to = s[i + 1]; len = to - fr;
-			arr.resize(len);
+			arr.assign(len, 0);
 			for (int j = fr; j < to; j++) {
 				arr[j - fr] = counts[hits[j].sid] * hits[j].conprb;
 				if (j > fr) arr[j - fr] += arr[j - fr - 1]; //cumulative
 			}
-			z[i] = hits[fr + sample(arr, len)].sid;
+			z[i] = hits[fr + sample(rg, arr, len)].sid;
 			++counts[z[i]];
 		}
 
 		if (ROUND > BURNIN) {
-			if ((ROUND - BURNIN - 1) % GAP == 0) writeCountVector(fo);
-			for (int i = 0; i <= M; i++) { 
-			  pme_c[i] += counts[i] - 1;
-			  pme_theta[i] += counts[i] / totc;
+			if ((ROUND - BURNIN - 1) % GAP == 0) {
+				writeCountVector(params->fo, counts);
+				for (int i = 0; i <= M; i++) {
+					params->pme_c[i] += counts[i] - 1;
+					params->pve_c[i] += (counts[i] - 1) * (counts[i] - 1);
+					params->pme_theta[i] += counts[i] / totc;
+				}
 			}
 		}
 
-		if (verbose) { printf("ROUND %d is finished!\n", ROUND); }
+		if (verbose && ROUND % 100 == 0) { printf("Thread %d, ROUND %d is finished!\n", params->no, ROUND); }
 	}
-	fclose(fo);
+
+	return NULL;
+}
+
+void release() {
+//	char inpF[STRLEN], command[STRLEN];
+	string line;
+
+	/* destroy attribute */
+	pthread_attr_destroy(&attr);
+	delete[] threads;
+
+	pme_c.assign(M + 1, 0);
+	pve_c.assign(M + 1, 0);
+	pme_theta.assign(M + 1, 0);
+	for (int i = 0; i < nThreads; i++) {
+		fclose(paramsArray[i].fo);
+		delete paramsArray[i].engine;
+		for (int j = 0; j <= M; j++) {
+			pme_c[j] += paramsArray[i].pme_c[j];
+			pve_c[j] += paramsArray[i].pve_c[j];
+			pme_theta[j] += paramsArray[i].pme_theta[j];
+		}
+		delete[] paramsArray[i].pme_c;
+		delete[] paramsArray[i].pve_c;
+		delete[] paramsArray[i].pme_theta;
+	}
+	delete[] paramsArray;
+
 
 	for (int i = 0; i <= M; i++) {
-	  pme_c[i] /= CHAINLEN;
-	  pme_theta[i] /= CHAINLEN;
+		pme_c[i] /= NSAMPLES;
+		pve_c[i] = (pve_c[i] - NSAMPLES * pme_c[i] * pme_c[i]) / (NSAMPLES - 1);
+		pme_theta[i] /= NSAMPLES;
 	}
 
-	if (verbose) { printf("Gibbs is finished!\n"); }
+	/*
+	// combine files
+	FILE *fo = fopen(cvsF, "a");
+	for (int i = 1; i < nThreads; i++) {
+		sprintf(inpF, "%s%d", cvsF, i);
+		ifstream fin(inpF);
+		while (getline(fin, line)) {
+			fprintf(fo, "%s\n", line.c_str());
+		}
+		fin.close();
+		sprintf(command, "rm -f %s", inpF);
+		int status = system(command);
+		general_assert(status == 0, "Fail to delete file " + cstrtos(inpF) + "!");
+	}
+	fclose(fo);
+	*/
 }
 
 template<class ModelType>
 void calcExpectedEffectiveLengths(ModelType& model) {
-  int lb, ub, span;
-  double *pdf = NULL, *cdf = NULL, *clen = NULL; // clen[i] = sigma_{j=1}^{i}pdf[i]*(lb+i)
+	int lb, ub, span;
+	double *pdf = NULL, *cdf = NULL, *clen = NULL; // clen[i] = \sigma_{j=1}^{i}pdf[i]*(lb+i)
   
-  model.getGLD().copyTo(pdf, cdf, lb, ub, span);
-  clen = new double[span + 1];
-  clen[0] = 0.0;
-  for (int i = 1; i <= span; i++) {
-    clen[i] = clen[i - 1] + pdf[i] * (lb + i);
-  }
+	model.getGLD().copyTo(pdf, cdf, lb, ub, span);
+	clen = new double[span + 1];
+	clen[0] = 0.0;
+	for (int i = 1; i <= span; i++) {
+		clen[i] = clen[i - 1] + pdf[i] * (lb + i);
+	}
 
-  eel.clear();
-  eel.resize(M + 1, 0.0);
-  for (int i = 1; i <= M; i++) {
-    int totLen = refs.getRef(i).getTotLen();
-    int fullLen = refs.getRef(i).getFullLen();
-    int pos1 = max(min(totLen - fullLen + 1, ub) - lb, 0);
-    int pos2 = max(min(totLen, ub) - lb, 0);
+	eel.assign(M + 1, 0.0);
+	for (int i = 1; i <= M; i++) {
+		int totLen = refs.getRef(i).getTotLen();
+		int fullLen = refs.getRef(i).getFullLen();
+		int pos1 = max(min(totLen - fullLen + 1, ub) - lb, 0);
+		int pos2 = max(min(totLen, ub) - lb, 0);
 
-    if (pos2 == 0) { eel[i] = 0.0; continue; }
+		if (pos2 == 0) { eel[i] = 0.0; continue; }
     
-    eel[i] = fullLen * cdf[pos1] + ((cdf[pos2] - cdf[pos1]) * (totLen + 1) - (clen[pos2] - clen[pos1]));
-    assert(eel[i] >= 0);
-    if (eel[i] < MINEEL) { eel[i] = 0.0; }
-  }
+		eel[i] = fullLen * cdf[pos1] + ((cdf[pos2] - cdf[pos1]) * (totLen + 1) - (clen[pos2] - clen[pos1]));
+		assert(eel[i] >= 0);
+		if (eel[i] < MINEEL) { eel[i] = 0.0; }
+	}
   
-  delete[] pdf;
-  delete[] cdf;
-  delete[] clen;
+	delete[] pdf;
+	delete[] cdf;
+	delete[] clen;
 }
 
 template<class ModelType>
@@ -244,7 +346,9 @@ void writeEstimatedParameters(char* modelF, char* imdName) {
 	for (int i = 1; i <= M; i++)
 	  if (eel[i] < EPSILON) pme_theta[i] = 0.0;
 	  else denom += pme_theta[i];
-	if (denom <= 0) { fprintf(stderr, "No Expected Effective Length is no less than %.6g?!\n", MINEEL); exit(-1); }
+
+	general_assert(denom >= EPSILON, "No Expected Effective Length is no less than " + ftos(MINEEL, 6) + "?!");
+
 	for (int i = 0; i <= M; i++) pme_theta[i] /= denom;
 
 	denom = 0.0;
@@ -266,8 +370,9 @@ void writeEstimatedParameters(char* modelF, char* imdName) {
 	    tau[i] = pme_theta[i] / eel[i];
 	    denom += tau[i];
 	  }
-	if (denom <= 0) { fprintf(stderr, "No alignable reads?!\n"); exit(-1); }
-	//assert(denom > 0);
+
+	general_assert(denom >= EPSILON, "No alignable reads?!");
+
 	for (int i = 1; i <= M; i++) {
 		tau[i] /= denom;
 	}
@@ -275,17 +380,20 @@ void writeEstimatedParameters(char* modelF, char* imdName) {
 	//isoform level results
 	sprintf(outF, "%s.iso_res", imdName);
 	fo = fopen(outF, "a");
-	if (fo == NULL) { fprintf(stderr, "Cannot open %s!\n", outF); exit(-1); }
+	general_assert(fo != NULL, "Cannot open " + cstrtos(outF) + "!");
+
 	for (int i = 1; i <= M; i++)
 		fprintf(fo, "%.2f%c", pme_c[i], (i < M ? '\t' : '\n'));
 	for (int i = 1; i <= M; i++)
 		fprintf(fo, "%.15g%c", tau[i], (i < M ? '\t' : '\n'));
+
 	fclose(fo);
 
 	//gene level results
 	sprintf(outF, "%s.gene_res", imdName);
 	fo = fopen(outF, "a");
-	if (fo == NULL) { fprintf(stderr, "Cannot open %s!\n", outF); exit(-1); }
+	general_assert(fo != NULL, "Cannot open " + cstrtos(outF) + "!");
+
 	for (int i = 0; i < m; i++) {
 		double sumC = 0.0; //  sum of pme counts
 		int b = gi.spAt(i), e = gi.spAt(i + 1);
@@ -309,33 +417,56 @@ void writeEstimatedParameters(char* modelF, char* imdName) {
 	if (verbose) { printf("Gibbs based expression values are written!\n"); }
 }
 
-
 int main(int argc, char* argv[]) {
 	if (argc < 7) {
-		printf("Usage: rsem-run-gibbs reference_name sample_name sampleToken BURNIN CHAINLEN GAP [-q]\n");
+		printf("Usage: rsem-run-gibbs-multi reference_name sample_name sampleToken BURNIN NSAMPLES GAP [-p #Threads] [--var] [-q]\n");
 		exit(-1);
 	}
 
 	BURNIN = atoi(argv[4]);
-	CHAINLEN = atoi(argv[5]);
+	NSAMPLES = atoi(argv[5]);
 	GAP = atoi(argv[6]);
 	sprintf(imdName, "%s.temp/%s", argv[2], argv[3]);
 	sprintf(statName, "%s.stat/%s", argv[2], argv[3]);
 	load_data(argv[1], statName, imdName);
 
+	nThreads = 1;
+	var_opt = false;
 	quiet = false;
-	if (argc > 7 && !strcmp(argv[7], "-q")) {
-		quiet = true;
+
+	for (int i = 7; i < argc; i++) {
+		if (!strcmp(argv[i], "-p")) nThreads = atoi(argv[i + 1]);
+		if (!strcmp(argv[i], "--var")) var_opt = true;
+		if (!strcmp(argv[i], "-q")) quiet = true;
 	}
 	verbose = !quiet;
 
+	assert(NSAMPLES > 1); // Otherwise, we cannot calculate posterior variance
+
+	if (nThreads > NSAMPLES) {
+		nThreads = NSAMPLES;
+		printf("Warning: Number of samples is less than number of threads! Change the number of threads to %d!\n", nThreads);
+	}
+
+	if (verbose) printf("Gibbs started!\n");
+
 	init();
-	Gibbs(imdName);
+	for (int i = 0; i < nThreads; i++) {
+		rc = pthread_create(&threads[i], &attr, Gibbs, (void*)(&paramsArray[i]));
+		pthread_assert(rc, "pthread_create", "Cannot create thread " + itos(i) + " (numbered from 0)!");
+	}
+	for (int i = 0; i < nThreads; i++) {
+		rc = pthread_join(threads[i], &status);
+		pthread_assert(rc, "pthread_join", "Cannot join thread " + itos(i) + " (numbered from 0)!");
+	}
+	release();
+
+	if (verbose) printf("Gibbs finished!\n");
 
 	sprintf(modelF, "%s.model", statName);
 	FILE *fi = fopen(modelF, "r");
-	if (fi == NULL) { fprintf(stderr, "Cannot open %s!\n", modelF); exit(-1); }
-	fscanf(fi, "%d", &model_type);
+	general_assert(fi != NULL, "Cannot open " + cstrtos(modelF) + "!");
+	assert(fscanf(fi, "%d", &model_type) == 1);
 	fclose(fi);
 
 	switch(model_type) {
@@ -343,6 +474,21 @@ int main(int argc, char* argv[]) {
 	case 1 : writeEstimatedParameters<SingleQModel>(modelF, imdName); break;
 	case 2 : writeEstimatedParameters<PairedEndModel>(modelF, imdName); break;
 	case 3 : writeEstimatedParameters<PairedEndQModel>(modelF, imdName); break;
+	}
+
+	if (var_opt) {
+		char varF[STRLEN];
+
+		sprintf(varF, "%s.var", statName);
+		FILE *fo = fopen(varF, "w");
+		general_assert(fo != NULL, "Cannot open " + cstrtos(varF) + "!");
+		for (int i = 0; i < m; i++) {
+			int b = gi.spAt(i), e = gi.spAt(i + 1), number_of_isoforms = e - b;
+			for (int j = b; j < e; j++) {
+				fprintf(fo, "%s\t%d\t%.15g\t%.15g\n", refs.getRef(j).getName().c_str(), number_of_isoforms, pme_c[j], pve_c[j]);
+			}
+		}
+		fclose(fo);
 	}
 
 	return 0;

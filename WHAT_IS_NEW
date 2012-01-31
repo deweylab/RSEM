@@ -1,3 +1,10 @@
+RSEM v1.1.16
+
+- Added --time option to show time consumed by each phase
+- Moved the alignment file out of the temporary folder
+- Enabled pthreads for calculating credibility intervals
+
+--------------------------------------------------------------------------------------------
 
 RSEM v1.1.15
 
@@ -5,6 +12,7 @@ RSEM v1.1.15
 - Modified samtools' Makefile for cygwin. For cygwin users, please uncomment the 4th and 8th lines in sam/Makefile before compiling RSEM
 
 --------------------------------------------------------------------------------------------
+
 RSEM v1.1.14
 
 - Added --chunkmbs option to rsem-calculate-expression (patch contributed by earonesty)
