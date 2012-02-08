@@ -130,6 +130,7 @@ void load_data(char* reference_name, char* statName, char* imdName) {
 void init() {
 	int quotient, left;
 	char outF[STRLEN];
+	char splitF[STRLEN];
 
 	quotient = NSAMPLES / nThreads;
 	left = NSAMPLES % nThreads;
@@ -155,6 +156,14 @@ void init() {
 		paramsArray[i].pme_theta = new double[M + 1];
 		memset(paramsArray[i].pme_theta, 0, sizeof(double) * (M + 1));
 	}
+
+	// output task splitting information
+	sprintf(splitF, "%s.split", imdName);
+	FILE *fo = fopen(splitF, "w");
+	fprintf(fo, "%d", nThreads);
+	for (int i = 0; i < nThreads; i++) fprintf(fo, " %d", paramsArray[i].nsamples);
+	fprintf(fo, "\n");
+	fclose(fo);
 
 	/* set thread attribute to be joinable */
 	pthread_attr_init(&attr);
