@@ -545,7 +545,7 @@ Number of bins in the RSPD. Only relevant when '--estimate-rspd' is specified.  
 
 =item B<--ci-memory> <int>
 
-Amount of memory (in MB) RSEM is allowed to use for computing credibility intervals. (Default: 1024)
+Maximum size (in memory, MB) of the auxiliary buffer used for computing credibility intervals (CI). Set it larger for a faster CI calculation. However, leaving 2 GB memory free for other usage is recommended. (Default: 1024)
 
 =item B<--keep-intermediate-files>
 

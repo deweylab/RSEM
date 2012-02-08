@@ -118,6 +118,8 @@ rsem-run-gibbs : Gibbs.o
 Gibbs.o : utils.h my_assert.h boost/random.hpp sampling.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h RefSeq.h RefSeqPolicy.h PolyARules.h Refs.h GroupInfo.h Gibbs.cpp 
 	$(CC) $(COFLAGS) Gibbs.cpp
 
+Buffer.h : my_assert.h
+
 rsem-calculate-credibility-intervals : calcCI.o
 	$(CC) -o rsem-calculate-credibility-intervals calcCI.o -lpthread
 
