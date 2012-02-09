@@ -120,20 +120,6 @@ inline std::string cleanStr(const std::string& str) {
   return (fr <= to ? str.substr(fr, to - fr + 1) : "");
 }
 
-void printTimeUsed(const time_t& a, const time_t& b, const char* filename = "") {
-	int hh = (b - a) / 3600;
-	int mm = (b - a) % 3600 / 60;
-	int ss = (b - a) % 60;
-
-	printf("Time Used : %d h %02d m %02d s\n", hh, mm, ss);
-
-	if (strcmp(filename, "")) {
-		FILE *fo = fopen(filename, "w");
-		fprintf(fo, "Time Used : %d h %02d m %02d s\n", hh, mm, ss);
-		fclose(fo);
-	}
-}
-
 void genReadFileNames(const char* readFN, int tagType, int read_type, int& s, char readFs[][STRLEN]){
 	const char tags[3][STRLEN] = {"un", "alignable", "max"};
 	char suffix[STRLEN];
@@ -154,6 +140,14 @@ void genReadFileNames(const char* readFN, int tagType, int read_type, int& s, ch
 		sprintf(readFs[0], "%s_%s_1.%s", readFN, tags[tagType], suffix);
 		sprintf(readFs[1], "%s_%s_2.%s", readFN, tags[tagType], suffix);
 	}
+}
+
+void printTimeUsed(const time_t& a, const time_t& b, const char* program_name) {
+	int hh = (b - a) / 3600;
+	int mm = (b - a) % 3600 / 60;
+	int ss = (b - a) % 60;
+
+	printf("Time Used for %s : %d h %02d m %02d s\n", program_name, hh, mm, ss);
 }
 
 #endif

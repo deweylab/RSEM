@@ -13,9 +13,7 @@
 #include "utils.h"
 
 #include "GroupInfo.h"
-
-#include "RefSeq.h"
-#include "Refs.h"
+#include "Transcripts.h"
 
 #include "SingleRead.h"
 #include "SingleReadQ.h"
@@ -34,12 +32,12 @@ int N[3]; // note, N = N0 + N1 + N2 , but may not be equal to the total number o
 int nHits; // # of hits
 int nUnique, nMulti, nIsoMulti;
 char fn_list[STRLEN];
-char refF[STRLEN], groupF[STRLEN];
+char groupF[STRLEN], tiF[STRLEN];
 char imdName[STRLEN];
 char datF[STRLEN], cntF[STRLEN];
 
-Refs refs;
 GroupInfo gi;
+Transcripts transcripts;
 
 SamParser *parser;
 ofstream hit_out;
@@ -55,7 +53,7 @@ void init(const char* imdName, char alignFType, const char* alignF) {
 
 	char* aux = 0;
 	if (strcmp(fn_list, "")) aux = fn_list;
-	parser = new SamParser(alignFType, alignF, refs, aux);
+	parser = new SamParser(alignFType, alignF, transcripts, aux);
 
 	memset(cat, 0, sizeof(cat));
 	memset(readOutFs, 0, sizeof(readOutFs));
@@ -192,10 +190,10 @@ int main(int argc, char* argv[]) {
 
 	verbose = !quiet;
 
-	sprintf(refF, "%s.seq", argv[1]);
-	refs.loadRefs(refF, 1);
 	sprintf(groupF, "%s.grp", argv[1]);
 	gi.load(groupF);
+	sprintf(tiF, "%s.ti", argv[1]);
+	transcripts.readFrom(tiF);
 
 	sprintf(imdName, "%s.temp/%s", argv[2], argv[3]);
 	sprintf(datF, "%s.dat", imdName);

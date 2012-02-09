@@ -1,3 +1,11 @@
+RSEM v1.1.17
+
+- Fixed a bug related to parallezation of credibility intervals calculation
+- Added --no-bam-output option to rsem-calculate-expression
+- The order of @SQ tags in SAM/BAM files can be arbitrary now 
+
+--------------------------------------------------------------------------------------------
+  
 RSEM v1.1.16
 
 - Added --time option to show time consumed by each phase

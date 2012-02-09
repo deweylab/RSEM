@@ -11,7 +11,7 @@ build-sam :
 
 Transcript.h : utils.h
 
-Transcripts.h : Transcript.h
+Transcripts.h : my_assert.h Transcript.h
 
 rsem-extract-reference-transcripts : utils.h GTFItem.h Transcript.h Transcripts.h extractRef.cpp
 	$(CC) -Wall -O3 extractRef.cpp -o rsem-extract-reference-transcripts
@@ -47,13 +47,13 @@ PairedEndHit.h : SingleHit.h
 HitContainer.h : GroupInfo.h
 
 
-SamParser.h : sam/sam.h sam/bam.h utils.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h RefSeq.h Refs.h
+SamParser.h : sam/sam.h sam/bam.h utils.h my_assert.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h Transcripts.h
 
 
 rsem-parse-alignments : parseIt.o sam/libbam.a
 	$(CC) -o rsem-parse-alignments parseIt.o sam/libbam.a -lz 
 
-parseIt.o : utils.h GroupInfo.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h HitContainer.h SamParser.h RefSeq.h Refs.h sam/sam.h sam/bam.h parseIt.cpp
+parseIt.o : utils.h GroupInfo.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h HitContainer.h SamParser.h Transcripts.h sam/sam.h sam/bam.h parseIt.cpp
 	$(CC) $(COFLAGS) parseIt.cpp
 
 

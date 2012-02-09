@@ -109,8 +109,10 @@ and provide the SAM or BAM file as an argument.  When using an
 alternative aligner, you may also want to provide the '--no-bowtie' option
 to 'rsem-prepare-reference' so that the Bowtie indices are not built.
 
-Some aligners' (other than Bowtie) output might need to be converted
-so that RSEM can use. For conversion, please run
+RSEM requires all alignments of the same read group together. For
+paired-end reads, RSEM also requires the two mates of any alignment be
+adjacent. If the alternative aligner does not satisfy the first
+requirement, you can use 'convert-sam-for-rsem' for conversion. Please run
  
    convert-sam-for-rsem --help
 

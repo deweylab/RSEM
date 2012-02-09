@@ -47,23 +47,13 @@ BamWriter::BamWriter(char inpType, const char* inpF, const char* fn_list, const 
 	}
 	assert(in != 0);
 
+	//build mappings from external sid to internal sid
+	transcripts.buildMappings(in->header->n_targets, in->header->target_name);
+
 	//generate output's header
 	bam_header_t *out_header = bam_header_dwt(in->header);
-
-	if (out_header->n_targets != transcripts.getM()) {
-		fprintf(stderr, "Number of reference sequences recorded in the header is not correct! The header contains %d sequences while there should be %d sequences\n", out_header->n_targets, transcripts.getM());
-		exit(-1);
-	}
-
 	for (int i = 0; i < out_header->n_targets; i++) {
-		const Transcript& transcript = transcripts.getTranscriptAt(i + 1);
-		if (out_header->target_name[i] != transcript.getTranscriptID()) {
-			fprintf(stderr, "Reference sequence %d's name recorded in the header is not correct! \n", i);
-			fprintf(stderr, "Name in the header: %s\n", out_header->target_name[i]);
-			fprintf(stderr, "Should be: %s\n", transcript.getTranscriptID().c_str());
-			exit(-1);
-		}
-		out_header->target_len[i] = transcript.getLength();  // transcript length without poly(A) tail
+		out_header->target_len[i] = transcripts.getTranscriptViaEid(i + 1).getLength();  // transcript length without poly(A) tail
 	}
 
 	std::ostringstream strout;
@@ -99,7 +89,7 @@ void BamWriter::work(HitWrapper<SingleHit> wrapper) {
 		hit = wrapper.getNextHit();
 		assert(hit != NULL);
 
-		assert(b->core.tid + 1 == hit->getSid());
+		assert(transcripts.getInternalSid(b->core.tid + 1) == hit->getSid());
 		convert(b, hit->getConPrb());
 		if (b->core.qual > 0) samwrite(out, b); // output only when MAPQ > 0
 	}
@@ -135,8 +125,8 @@ void BamWriter::work(HitWrapper<PairedEndHit> wrapper) {
 		hit = wrapper.getNextHit();
 		assert(hit != NULL);
 
-		assert(b->core.tid + 1 == hit->getSid());
-		assert(b2->core.tid + 1 == hit->getSid());
+		assert(transcripts.getInternalSid(b->core.tid + 1) == hit->getSid());
+		assert(transcripts.getInternalSid(b2->core.tid + 1) == hit->getSid());
 
 		convert(b, hit->getConPrb());
 		convert(b2, hit->getConPrb());
@@ -159,8 +149,7 @@ void BamWriter::work(HitWrapper<PairedEndHit> wrapper) {
 }
 
 void BamWriter::convert(bam1_t *b, double prb) {
-	int sid = b->core.tid + 1;
-	const Transcript& transcript = transcripts.getTranscriptAt(sid);
+	const Transcript& transcript = transcripts.getTranscriptViaEid(b->core.tid + 1);
 
 	int pos = b->core.pos;
 	int readlen = b->core.l_qseq;

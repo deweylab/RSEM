@@ -748,7 +748,7 @@ int main(int argc, char* argv[]) {
 
 	time_t b = time(NULL);
 
-	printTimeUsed(a, b);
+	printTimeUsed(a, b, "EM.cpp");
 
 	return 0;
 }

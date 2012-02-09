@@ -12,9 +12,7 @@
 #include "sam/sam.h"
 
 #include "utils.h"
-
-#include "RefSeq.h"
-#include "Refs.h"
+#include "my_assert.h"
 
 #include "SingleRead.h"
 #include "SingleReadQ.h"
@@ -23,9 +21,11 @@
 #include "SingleHit.h"
 #include "PairedEndHit.h"
 
+#include "Transcripts.h"
+
 class SamParser {
 public:
-	SamParser(char, const char*, Refs&, const char* = 0);
+	SamParser(char, const char*, Transcripts&, const char* = 0);
 	~SamParser();
 
 	/**
@@ -51,6 +51,7 @@ private:
 	bam_header_t *header;
 	bam1_t *b, *b2;
 
+	Transcripts& transcripts;
 
 	//tag used by aligner
 	static char rtTag[STRLEN];
@@ -79,33 +80,23 @@ private:
 char SamParser::rtTag[STRLEN] = ""; // default : no tag, thus no Type 2 reads
 
 // aux, if not 0, points to the file name of fn_list
-SamParser::SamParser(char inpType, const char* inpF, Refs& refs, const char* aux) {
+SamParser::SamParser(char inpType, const char* inpF, Transcripts& transcripts, const char* aux)
+	: transcripts(transcripts)
+{
 	switch(inpType) {
 	case 'b': sam_in = samopen(inpF, "rb", aux); break;
 	case 's': sam_in = samopen(inpF, "r", aux); break;
 	default: assert(false);
 	}
 
-	if (sam_in == 0) { fprintf(stderr, "Cannot open %s! It may not exist.\n", inpF); exit(-1); }
-    header = sam_in->header;
-    if (header == 0) { fprintf(stderr, "Fail to parse sam header!\n"); exit(-1); }
+	general_assert(sam_in != 0, "Cannot open " + cstrtos(inpF) + "! It may not exist.");
+	header = sam_in->header;
+	general_assert(header != 0, "Fail to parse sam header!");
 
-    // Check if the reference used for aligner is the transcript set RSEM generated
-    if (refs.getM() != header->n_targets) {
-    	fprintf(stderr, "Number of transcripts does not match! Please align reads against the transcript set and use RSEM generated reference for your aligner!\n");
-    	exit(-1);
-    }
-    for (int i = 0; i < header->n_targets; i++) {
-    	const RefSeq& refseq = refs.getRef(i + 1);
-    	// If update int to long, chance the (int) conversion
-    	if (refseq.getName().compare(header->target_name[i]) != 0 || refseq.getTotLen() != (int)header->target_len[i]) {
-    		fprintf(stderr, "Transcript information does not match! Please align reads against the transcript set and use RSEM generated reference for your aligner!\n");
-    		exit(-1);
-    	}
-    }
+	transcripts.buildMappings(header->n_targets, header->target_name);
 
-    b = bam_init1();
-    b2 = bam_init1();
+	b = bam_init1();
+	b2 = bam_init1();
 }
 
 SamParser::~SamParser() {
@@ -137,10 +128,10 @@ int SamParser::parseNext(SingleRead& read, SingleHit& hit) {
 		if (!check(b)) { fprintf(stderr, "RSEM does not support gapped alignments, sorry!\n"); exit(-1); }
 
 		if (getDir(b) > 0) {
-			hit = SingleHit(b->core.tid + 1, b->core.pos);
+			hit = SingleHit(transcripts.getInternalSid(b->core.tid + 1), b->core.pos);
 		}
 		else {
-			hit = SingleHit(-(b->core.tid + 1), header->target_len[b->core.tid] - b->core.pos - b->core.l_qseq);
+			hit = SingleHit(-transcripts.getInternalSid(b->core.tid + 1), header->target_len[b->core.tid] - b->core.pos - b->core.l_qseq);
 		}
 	}
 
@@ -168,10 +159,10 @@ int SamParser::parseNext(SingleReadQ& read, SingleHit& hit) {
 		if (!check(b)) { fprintf(stderr, "RSEM does not support gapped alignments, sorry!\n"); exit(-1); }
 
 		if (getDir(b) > 0) {
-			hit = SingleHit(b->core.tid + 1, b->core.pos);
+			hit = SingleHit(transcripts.getInternalSid(b->core.tid + 1), b->core.pos);
 		}
 		else {
-			hit = SingleHit(-(b->core.tid + 1), header->target_len[b->core.tid] - b->core.pos - b->core.l_qseq);
+			hit = SingleHit(-transcripts.getInternalSid(b->core.tid + 1), header->target_len[b->core.tid] - b->core.pos - b->core.l_qseq);
 		}
 	}
 
@@ -220,10 +211,10 @@ int SamParser::parseNext(PairedEndRead& read, PairedEndHit& hit) {
 		}
 		//assert(mp1->core.tid == mp2->core.tid);
 		if (getDir(mp1) > 0) {
-			hit = PairedEndHit(mp1->core.tid + 1, mp1->core.pos, mp2->core.pos + mp2->core.l_qseq - mp1->core.pos);
+			hit = PairedEndHit(transcripts.getInternalSid(mp1->core.tid + 1), mp1->core.pos, mp2->core.pos + mp2->core.l_qseq - mp1->core.pos);
 		}
 		else {
-			hit = PairedEndHit(-(mp1->core.tid + 1), header->target_len[mp1->core.tid] - mp1->core.pos - mp1->core.l_qseq, mp1->core.pos + mp1->core.l_qseq - mp2->core.pos);
+			hit = PairedEndHit(-transcripts.getInternalSid(mp1->core.tid + 1), header->target_len[mp1->core.tid] - mp1->core.pos - mp1->core.l_qseq, mp1->core.pos + mp1->core.l_qseq - mp2->core.pos);
 		}
 	}
 
@@ -271,10 +262,10 @@ int SamParser::parseNext(PairedEndReadQ& read, PairedEndHit& hit) {
 		}
 		//assert(mp1->core.tid == mp2->core.tid);
 		if (getDir(mp1) > 0) {
-			hit = PairedEndHit(mp1->core.tid + 1, mp1->core.pos, mp2->core.pos + mp2->core.l_qseq - mp1->core.pos);
+			hit = PairedEndHit(transcripts.getInternalSid(mp1->core.tid + 1), mp1->core.pos, mp2->core.pos + mp2->core.l_qseq - mp1->core.pos);
 		}
 		else {
-			hit = PairedEndHit(-(mp1->core.tid + 1), header->target_len[mp1->core.tid] - mp1->core.pos - mp1->core.l_qseq, mp1->core.pos + mp1->core.l_qseq - mp2->core.pos);
+			hit = PairedEndHit(-transcripts.getInternalSid(mp1->core.tid + 1), header->target_len[mp1->core.tid] - mp1->core.pos - mp1->core.l_qseq, mp1->core.pos + mp1->core.l_qseq - mp2->core.pos);
 		}
 	}
 

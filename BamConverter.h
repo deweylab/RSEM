@@ -50,6 +50,8 @@ BamConverter::BamConverter(const char* inpF, const char* outF, const char* chr_l
 	in = samopen(inpF, "rb", NULL);
 	assert(in != 0);
 
+	transcripts.buildMappings(in->header->n_targets, in->header->target_name);
+
 	bam_header_t *out_header = sam_header_read2(chr_list);
 	refmap.clear();
 	for (int i = 0; i < out_header->n_targets; i++) {
@@ -93,7 +95,7 @@ void BamConverter::process() {
 		// at least one segment is not properly mapped
 		if ((b->core.flag & 0x0004) || (isPaired && (b2->core.flag & 0x0004))) continue;
 
-		const Transcript& transcript = transcripts.getTranscriptAt(b->core.tid + 1);
+		const Transcript& transcript = transcripts.getTranscriptViaEid(b->core.tid + 1);
 
 		convert(b, transcript);
 		if (isPaired) {

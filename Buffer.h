@@ -62,15 +62,15 @@ private:
 		std::streampos gap2 = std::streampos(nSamples - to) * FLOATSIZE;
 		float *p = NULL;
 
-		ftmpOut.seekp(0, std::ios_base::beg);
+		ftmpOut.seekp(0, std::ios::beg);
 		for (int i = 0; i < cvlen; i++) {
 			p = buffer + i;
-			ftmpOut.seekp(gap1, std::ios_base::cur);
+			ftmpOut.seekp(gap1, std::ios::cur);
 			for (int j = fr; j < to; j++) {
 				ftmpOut.write((char*)p, FLOATSIZE);
 				p += cvlen;
 			}
-			ftmpOut.seekp(gap2, std::ios_base::cur);
+			ftmpOut.seekp(gap2, std::ios::cur);
 		}
 
 		cpos = 0;
