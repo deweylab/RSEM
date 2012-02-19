@@ -173,7 +173,7 @@ if (!(-d $stat_dir) && !mkdir($stat_dir)) { print "Fail to create folder $stat_d
 
 $imdName = "$temp_dir/$sampleToken";
 
-if (!$is_sam && !$is_bam && $phred33 + $phred64 + $solexa == 0) { $phred33 = 1; }
+if (!$is_sam && !$is_bam && !$no_qual && ($phred33 + $phred64 + $solexa == 0)) { $phred33 = 1; }
 
 my ($mate_minL, $mate_maxL) = (1, $maxL);
 
@@ -184,13 +184,12 @@ my $command = "";
 
 if (!$is_sam && !$is_bam) {
     $command = $bowtie_path."bowtie";
-    if ($read_type == 0 || $read_type == 2) { $command .= " -f"; }
+    if ($no_qual) { $command .= " -f"; }
     else { $command .= " -q"; }
     
     if ($phred33) { $command .= " --phred33-quals"; }
     elsif ($phred64) { $command .= " --phred64-quals"; }
     elsif ($solexa) { $command .= " --solexa-quals"; }
-    else { print "Oh, no!!!"; exit(2); }
     
     $command .= " -n $C -e $E -l $L";
     if ($read_type == 2 || $read_type == 3) { $command .= " -I $minL -X $maxL"; }
