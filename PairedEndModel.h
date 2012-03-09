@@ -10,6 +10,7 @@
 #include<sstream>
 
 #include "utils.h"
+#include "my_assert.h"
 #include "Orientation.h"
 #include "LenDist.h"
 #include "RSPD.h"
@@ -99,7 +100,15 @@ public:
 		int fpos = (dir == 0 ? pos : totLen - pos - insertLen); // the aligned position reported in SAM file, should be a coordinate in forward strand
 		int effL = std::min(fullLen, totLen - insertLen + 1);
 		
-		assert(fpos >= 0 && fpos + insertLen <= totLen && insertLen <= totLen);
+		general_assert(fpos >= 0, "The alignment of fragment " + read.getName() + " to transcript " + itos(sid) + " starts at " + itos(fpos) + \
+				" from the forward direction, which should be a non-negative number! " + \
+				"It is possible that the aligner you use gave different read lengths for a same read in SAM file.");
+		general_assert(fpos + insertLen <= totLen,"Fragment " + read.getName() + " is hung over the end of transcript " + itos(sid) + "! " \
+				+ "It is possible that the aligner you use gave different read lengths for a same read in SAM file.");
+		general_assert(insertLen <= totLen, "Fragment " + read.getName() + " has length " + itos(insertLen) + ", but it is aligned to transcript " \
+				+ itos(sid) + ", whose length (" + itos(totLen) + ") is shorter than the fragment's length!");
+
+
 		if (fpos >= fullLen || ref.getMask(fpos)) return 0.0; // For paired-end model, fpos is the seedPos
 
 		prob = ori->getProb(dir) * gld->getAdjustedProb(insertLen, totLen) *

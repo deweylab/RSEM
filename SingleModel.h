@@ -10,6 +10,7 @@
 #include<sstream>
 
 #include "utils.h"
+#include "my_assert.h"
 #include "Orientation.h"
 #include "LenDist.h"
 #include "RSPD.h"
@@ -102,7 +103,14 @@ public:
 		int readLen = read.getReadLength();
 		int fpos = (dir == 0 ? pos : totLen - pos - readLen); // the aligned position reported in SAM file, should be a coordinate in forward strand
 
-		assert(fpos >= 0 && fpos + readLen <= totLen && readLen <= totLen);
+		general_assert(fpos >= 0, "The alignment of read " + read.getName() + " to transcript " + itos(sid) + " starts at " + itos(fpos) + \
+				" from the forward direction, which should be a non-negative number! " + \
+				"It is possible that the aligner you use gave different read lengths for a same read in SAM file.");
+		general_assert(fpos + readLen <= totLen,"Read " + read.getName() + " is hung over the end of transcript " + itos(sid) + "! " \
+				+ "It is possible that the aligner you use gave different read lengths for a same read in SAM file.");
+		general_assert(readLen <= totLen, "Read " + read.getName() + " has length " + itos(readLen) + ", but it is aligned to transcript " \
+				+ itos(sid) + ", whose length (" + itos(totLen) + ") is shorter than the read's length!");
+
 		int seedPos = (dir == 0 ? pos : totLen - pos - seedLen); // the aligned position of the seed in forward strand coordinates
 		if (seedPos >= fullLen || ref.getMask(seedPos)) return 0.0;
 
