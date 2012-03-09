@@ -67,7 +67,7 @@ generate_a_page <- function(tids, gene_id = NULL) {
 
   for (i in 1:n) {
     vec <- readdepth[[tids[i]]]
-    if (is.null(vec)) exit_with_error(paste("Cannot find transcript", tids[i], sep = ""))
+    if (is.null(vec)) exit_with_error(paste("Unknown transcript detected,", tids[i], "is not included in RSEM's indices."))
     if (is.na(vec[[2]])) wiggle <- rep(0, vec[[1]]) else wiggle <- as.numeric(unlist(strsplit(vec[[2]], split = " ")))
     len <- length(wiggle)
     if (!show_uniq) {
@@ -113,7 +113,7 @@ if (!is_gene) {
   }
 } else {
   for (gene_id in ids) {
-    if (is.null(t2gmap[[gene_id]])) exit_with_error(paste("Cannot find gene", gene_id, sep = ""))
+    if (is.null(t2gmap[[gene_id]])) exit_with_error(paste("Unknown gene detected,", gene_id, "is not included in RSEM's in indices."))
     generate_a_page(t2gmap[[gene_id]], gene_id)
   }
 }
@@ -121,9 +121,3 @@ if (!is_gene) {
 cat("Plots are generated!\n)
 
 dev.off.output <- dev.off()
-
-
-
-
-
-

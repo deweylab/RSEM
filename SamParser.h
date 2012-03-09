@@ -112,8 +112,7 @@ int SamParser::parseNext(SingleRead& read, SingleHit& hit) {
 	bool canR = (samread(sam_in, b) >= 0);
 	if (!canR) return -1;
 
-	if (b->core.flag & 0x0001) { fprintf(stderr, "Find a paired end read in the file!\n"); exit(-1); }
-	//(b->core.flag & 0x0100) &&  && !(b->core.flag & 0x0004)
+	general_assert(!(b->core.flag & 0x0001), "Find a paired end read in the file!");
 
 	int readType = getReadType(b);
 	std::string name = getName(b);
@@ -143,8 +142,7 @@ int SamParser::parseNext(SingleReadQ& read, SingleHit& hit) {
 	bool canR = (samread(sam_in, b) >= 0);
 	if (!canR) return -1;
 
-	if (b->core.flag & 0x0001) { fprintf(stderr, "Find a paired end read in the file!\n"); exit(-1); }
-	//assert(!(b->core.flag & 0x0001)); //(b->core.flag & 0x0100) &&  && !(b->core.flag & 0x0004)
+	general_assert(!(b->core.flag & 0x0001), "Find a paired end read in the file!");
 
 	int readType = getReadType(b);
 	std::string name = getName(b);
@@ -175,11 +173,8 @@ int SamParser::parseNext(PairedEndRead& read, PairedEndHit& hit) {
 	bool canR = ((samread(sam_in, b) >= 0) && (samread(sam_in, b2) >= 0));
 	if (!canR) return -1;
 
-	if (!((b->core.flag & 0x0001) && (b2->core.flag & 0x0001))) {
-		fprintf(stderr, "One of the mate is not paired-end! (RSEM assumes the two mates of a paired-end read should be adjacent)\n");
-		exit(-1);
-	}
-	//assert((b->core.flag & 0x0001) && (b2->core.flag & 0x0001));
+	general_assert((b->core.flag & 0x0001) && (b2->core.flag & 0x0001), \
+			"One of the mate is not paired-end! (RSEM assumes the two mates of a paired-end read should be adjacent)");
 
 	bam1_t *mp1 = NULL, *mp2 = NULL;
 
@@ -226,11 +221,8 @@ int SamParser::parseNext(PairedEndReadQ& read, PairedEndHit& hit) {
 	bool canR = ((samread(sam_in, b) >= 0) && (samread(sam_in, b2) >= 0));
 	if (!canR) return -1;
 
-	if (!((b->core.flag & 0x0001) && (b2->core.flag & 0x0001))) {
-		fprintf(stderr, "One of the mate is not paired-end! (RSEM assumes the two mates of a paired-end read should be adjacent)\n");
-		exit(-1);
-	}
-	//assert((b->core.flag & 0x0001) && (b2->core.flag & 0x0001));
+	general_assert((b->core.flag & 0x0001) && (b2->core.flag & 0x0001), \
+			"One of the mate is not paired-end! (RSEM assumes the two mates of a paired-end read should be adjacent)");
 
 	bam1_t *mp1 = NULL, *mp2 = NULL;
 
