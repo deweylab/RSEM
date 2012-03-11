@@ -1,3 +1,11 @@
+RSEM v1.1.18
+
+- Added some user-friendly error messages
+- Added program 'rsem-sam-validator', users can use this program to check if RSEM can process their SAM/BAM files
+- Modified 'convert-sam-for-rsem' so that this program will convert users' SAM/BAM files into acceptable BAM files for RSEM
+
+--------------------------------------------------------------------------------------------
+
 RSEM v1.1.17
 
 - Fixed a bug related to parallezation of credibility intervals calculation

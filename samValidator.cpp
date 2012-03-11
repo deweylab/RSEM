@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
 	uint64_t creadlen = 0, readlen;
 	bool cispaired = false, ispaired;
 
-	printf(".");
+	printf("."); fflush(stdout);
 	do {
 		if (samread(in, b) < 0) break;
 		assert(b->core.l_qseq > 0);
@@ -60,11 +60,16 @@ int main(int argc, char* argv[]) {
 		// if this is a paired-end read
 		ispaired = b->core.flag & 0x0001;
 		if (ispaired) {
+
 			isValid = (samread(in, b2) >= 0) && (qname == bam1_qname(b2)) && (b2->core.flag & 0x0001);
 			if (!isValid) { printf("\nOnly find one mate for paired-end read %s!\n", qname.c_str()); continue; }
 			assert(b2->core.l_qseq > 0);
+			isValid = !((b->core.flag & 0x0040) && (b->core.flag & 0x0080)) && !((b2->core.flag & 0x0040) & (b2->core.flag & 0x0080));
+			if (!isValid) { printf("\nRead %s has more than 2 segments (e.g. tripled or more ended reads)!\n", qname.c_str()); continue; }
 			isValid = !(((b->core.flag & 0x0040) && (b2->core.flag & 0x0040)) || ((b->core.flag & 0x0080) && (b2->core.flag & 0x0080)));
 			if (!isValid) { printf("\nThe two mates of paired-end read %s are not adjacent!\n", qname.c_str()); continue; }
+
+
 			// both mates are mapped
 			if (!(b->core.flag & 0x0004) && !(b2->core.flag & 0x0004)) {
 				isValid = (b->core.tid == b2->core.tid) && (b->core.pos == b2->core.mpos) && (b2->core.pos == b->core.mpos);
@@ -92,7 +97,7 @@ int main(int argc, char* argv[]) {
 		}
 
 		++cnt;
-		if (cnt % 1000000 == 0) printf(".");
+		if (cnt % 1000000 == 0) { printf("."); fflush(stdout); }
 
 	} while(isValid);
 

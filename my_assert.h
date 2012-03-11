@@ -31,9 +31,10 @@ std::string cstrtos(const char* s) {
 }
 
 
-void general_assert(int expr, const std::string& errmsg) {
+void general_assert(int expr, const std::string& errmsg, bool putEnter = false) {
 	if (expr) return;
 
+	if (putEnter) printf("\n");
 	fprintf(stderr, "%s\n", errmsg.c_str());
 	exit(-1);
 }
