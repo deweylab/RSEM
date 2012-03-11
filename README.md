@@ -121,7 +121,7 @@ If your file does not satisfy the requirements, you can use
 'convert-sam-for-rsem' to convert it into a BAM file which RSEM can
 process. Please run
  
-   convert-sam-for-rsem --help
+    convert-sam-for-rsem --help
 
 to get usage information or visit the [convert-sam-for-rsem
 documentation

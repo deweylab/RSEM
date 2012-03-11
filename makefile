@@ -54,7 +54,7 @@ rsem-parse-alignments : parseIt.o sam/libbam.a
 	$(CC) -o rsem-parse-alignments parseIt.o sam/libbam.a -lz 
 
 parseIt.o : utils.h GroupInfo.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h HitContainer.h SamParser.h Transcripts.h sam/sam.h sam/bam.h parseIt.cpp
-	$(CC) $(COFLAGS) parseIt.cpp
+	$(CC) -Wall -O2 -c -I. parseIt.cpp
 
 
 rsem-build-read-index : utils.h buildReadIndex.cpp
@@ -132,10 +132,10 @@ rsem-get-unique : sam/bam.h sam/sam.h getUnique.cpp sam/libbam.a
 
 rsem-sam-validator : sam/bam.h sam/sam.h my_assert.h samValidator.cpp sam/libbam.a
 	$(CC) -O3 -Wall samValidator.cpp sam/libbam.a -lz -o $@
-	
+
 rsem-scan-for-paired-end-reads : sam/bam.h sam/sam.h my_assert.h scanForPairedEndReads.cpp sam/libbam.a
 	$(CC) -O3 -Wall scanForPairedEndReads.cpp sam/libbam.a -lz -o $@
-	
+
 clean:
 	rm -f *.o *~ $(PROGRAMS)
 	cd sam ; ${MAKE} clean
