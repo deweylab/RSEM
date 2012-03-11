@@ -1,5 +1,6 @@
 *.o
 *.a
+*~
 rsem-bam2readdepth
 rsem-bam2wig
 rsem-build-read-index
@@ -13,4 +14,7 @@ rsem-run-gibbs
 rsem-simulate-reads
 rsem-synthesis-reference-transcripts
 rsem-tbam2gbam
+rsem-sam-validator
 sam/samtools
+.project
+.cproject

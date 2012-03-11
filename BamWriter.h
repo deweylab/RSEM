@@ -113,6 +113,9 @@ void BamWriter::work(HitWrapper<PairedEndHit> wrapper) {
 		cnt += 2;
 		if (verbose && cnt % 1000000 == 0) { printf("%d alignment lines are loaded!\n", cnt); }
 
+		//mate info is not complete, skip
+		if (!(((b->core.flag & 0x0040) && (b2->core.flag & 0x0080)) || ((b->core.flag & 0x0080) && (b2->core.flag & 0x0040)))) continue;
+		//unalignable reads, skip
 		if ((b->core.flag & 0x0004) || (b2->core.flag & 0x0004)) continue;
 
 		//swap if b is mate 2

@@ -178,13 +178,17 @@ int SamParser::parseNext(PairedEndRead& read, PairedEndHit& hit) {
 
 	bam1_t *mp1 = NULL, *mp2 = NULL;
 
-	if ((b->core.flag & 0x0040) && (b2->core.flag & 0x0080)) {
+	// If lose mate info, discard. is it necessary?
+	if (!((b->core.flag & 0x0040) && (b2->core.flag & 0x0080)) && !((b->core.flag & 0x0080) && (b2->core.flag & 0x0040))) return 4;
+	// If only one mate is mapped, discard
+	if (((b->core.flag & 0x0004) && !(b2->core.flag & 0x0004)) || (!(b->core.flag & 0x0004) && (b2->core.flag & 0x0004))) return 4;
+
+	if (b->core.flag & 0x0040) {
 		mp1 = b; mp2 = b2;
 	}
-	else if ((b->core.flag & 0x0080) && (b2->core.flag & 0x0040)) {
+	else  {
 		mp1 = b2; mp2 = b;
 	}
-	else return 4; // If lose mate info, discard. is it necessary?
 
 	int readType = getReadType(mp1, mp2);
 	std::string name = getName(mp1);
@@ -226,13 +230,17 @@ int SamParser::parseNext(PairedEndReadQ& read, PairedEndHit& hit) {
 
 	bam1_t *mp1 = NULL, *mp2 = NULL;
 
-	if ((b->core.flag & 0x0040) && (b2->core.flag & 0x0080)) {
+	// If lose mate info, discard. is it necessary?
+	if (!((b->core.flag & 0x0040) && (b2->core.flag & 0x0080)) && !((b->core.flag & 0x0080) && (b2->core.flag & 0x0040))) return 4;
+	// If only one mate is mapped, discard
+	if (((b->core.flag & 0x0004) && !(b2->core.flag & 0x0004)) || (!(b->core.flag & 0x0004) && (b2->core.flag & 0x0004))) return 4;
+
+	if (b->core.flag & 0x0040) {
 		mp1 = b; mp2 = b2;
 	}
-	else if ((b->core.flag & 0x0080) && (b2->core.flag & 0x0040)) {
+	else  {
 		mp1 = b2; mp2 = b;
 	}
-	else return 4;
 
 	int readType = getReadType(mp1, mp2);
 	std::string name = getName(mp1);
