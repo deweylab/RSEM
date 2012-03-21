@@ -10,6 +10,10 @@
 #include<cassert>
 #include<string>
 #include<vector>
+#include<stdint.h>
+
+typedef uint64_t HIT_INT_TYPE;
+typedef uint64_t READ_INT_TYPE;
 
 const int STRLEN = 10005 ;
 const double EPSILON = 1e-300;

@@ -10,6 +10,7 @@
 #include "sam/bam.h"
 #include "sam/sam.h"
 
+#include "utils.h"
 #include "my_assert.h"
 
 using namespace std;
@@ -55,7 +56,7 @@ int main(int argc, char* argv[]) {
 	string qname;
 	bool go_on = (samread(in, b) >= 0);
 	bool isPaired;
-	long cnt = 0;
+	HIT_INT_TYPE cnt = 0;
 
 	printf("."); fflush(stdout);
 

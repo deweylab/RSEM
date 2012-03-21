@@ -4,8 +4,9 @@
 #include<cassert>
 #include<iostream>
 #include<vector>
-
 #include<algorithm>
+
+#include "utils.h"
 #include "GroupInfo.h"
 
 template<class HitType>
@@ -39,32 +40,32 @@ public:
 		}
 	}
 
-	int getN() { return n; }
+	READ_INT_TYPE getN() { return n; }
 
-	int getNHits() { return nhits; }
+	HIT_INT_TYPE getNHits() { return nhits; }
 
-	int calcNumGeneMultiReads(const GroupInfo&);
-	int calcNumIsoformMultiReads();
+	READ_INT_TYPE calcNumGeneMultiReads(const GroupInfo&);
+	READ_INT_TYPE calcNumIsoformMultiReads();
 
-	int getSAt(int pos) { assert(pos >= 0 && pos <= n); return s[pos]; }
+	HIT_INT_TYPE getSAt(READ_INT_TYPE pos) { assert(pos >= 0 && pos <= n); return s[pos]; }
 
-	HitType& getHitAt(int pos) { assert(pos >= 0 && pos < nhits); return hits[pos]; }
+	HitType& getHitAt(HIT_INT_TYPE pos) { assert(pos >= 0 && pos < nhits); return hits[pos]; }
 
 private:
-	int n; // n reads in total
-	int nhits; // # of hits
-	std::vector<int> s;
+	READ_INT_TYPE n; // n reads in total
+	HIT_INT_TYPE nhits; // # of hits
+	std::vector<HIT_INT_TYPE> s;
 	std::vector<HitType> hits;
 };
 
 //Each time only read one read's hits. If you want to start over, must call clear() first!
 template<class HitType>
 bool HitContainer<HitType>::read(std::istream& in) {
-	int tot;
+	HIT_INT_TYPE tot;
 
 	if (!(in>>tot)) return false;
 	assert(tot > 0);
-	for (int i = 0; i < tot; i++) {
+	for (HIT_INT_TYPE i = 0; i < tot; i++) {
 		HitType hit;
 		if (!hit.read(in)) return false;
 		hits.push_back(hit);
@@ -80,9 +81,9 @@ bool HitContainer<HitType>::read(std::istream& in) {
 template<class HitType>
 void HitContainer<HitType>::write(std::ostream& out) {
 	if (n <= 0) return;
-	for (int i = 0; i < n; i++) {
+	for (READ_INT_TYPE i = 0; i < n; i++) {
 		out<<s[i + 1] - s[i];
-		for (int j = s[i]; j < s[i + 1]; j++) {
+		for (HIT_INT_TYPE j = s[i]; j < s[i + 1]; j++) {
 			hits[j].write(out);
 		}
 		out<<std::endl;
@@ -90,14 +91,14 @@ void HitContainer<HitType>::write(std::ostream& out) {
 }
 
 template<class HitType>
-int HitContainer<HitType>::calcNumGeneMultiReads(const GroupInfo& gi) {
-	int res = 0;
+READ_INT_TYPE HitContainer<HitType>::calcNumGeneMultiReads(const GroupInfo& gi) {
+	READ_INT_TYPE res = 0;
 	int *sortgids = NULL;
 
-	for (int i = 0; i < n; i++) {
-		int num = s[i + 1] - s[i];
+	for (READ_INT_TYPE i = 0; i < n; i++) {
+		HIT_INT_TYPE num = s[i + 1] - s[i];
 		sortgids = new int[num];
-		for (int j = s[i]; j < s[i + 1]; j++) sortgids[j] = gi.gidAt(hits[j].getSid());
+		for (HIT_INT_TYPE j = s[i]; j < s[i + 1]; j++) sortgids[j] = gi.gidAt(hits[j].getSid());
 		std::sort(sortgids, sortgids + num);
 		if (std::unique(sortgids, sortgids + num) - sortgids > 1) ++res;
 		delete[] sortgids;
@@ -107,9 +108,9 @@ int HitContainer<HitType>::calcNumGeneMultiReads(const GroupInfo& gi) {
 }
 
 template<class HitType>
-int HitContainer<HitType>::calcNumIsoformMultiReads() {
-	int res = 0;
-	for (int i = 0; i < n; i++)
+READ_INT_TYPE HitContainer<HitType>::calcNumIsoformMultiReads() {
+	READ_INT_TYPE res = 0;
+	for (READ_INT_TYPE i = 0; i < n; i++)
 		if (s[i + 1] - s[i] > 1) ++res;
 	return res;
 }

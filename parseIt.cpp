@@ -28,9 +28,9 @@
 using namespace std;
 
 int read_type; // 0 SingleRead, 1 SingleReadQ, 2 PairedEndRead, 3 PairedEndReadQ
-int N[3]; // note, N = N0 + N1 + N2 , but may not be equal to the total number of reads in data
-int nHits; // # of hits
-int nUnique, nMulti, nIsoMulti;
+READ_INT_TYPE N[3]; // note, N = N0 + N1 + N2 , but may not be equal to the total number of reads in data
+HIT_INT_TYPE nHits; // # of hits
+READ_INT_TYPE nUnique, nMulti, nIsoMulti;
 char fn_list[STRLEN];
 char groupF[STRLEN], tiF[STRLEN];
 char imdName[STRLEN];
@@ -46,8 +46,8 @@ int n_os; // number of ostreams
 ostream *cat[3][2]; // cat : category  1-dim 0 N0 1 N1 2 N2; 2-dim  0 mate1 1 mate2
 char readOutFs[3][2][STRLEN];
 
-map<int, int> counter;
-map<int, int>::iterator iter;
+map<int, READ_INT_TYPE> counter;
+map<int, READ_INT_TYPE>::iterator iter;
 
 void init(const char* imdName, char alignFType, const char* alignF) {
 
@@ -85,7 +85,7 @@ void parseIt(SamParser *parser) {
 	nUnique = nMulti = nIsoMulti = 0;
 	memset(N, 0, sizeof(N));
 
-	long long cnt = 0;
+	READ_INT_TYPE cnt = 0;
 
 	record_val = -2; //indicate no recorded read now
 	while ((val = parser->parseNext(read, hit)) >= 0) {
@@ -122,7 +122,7 @@ void parseIt(SamParser *parser) {
 		}
 
 		++cnt;
-		if (verbose && (cnt % 1000000 == 0)) { printf("Parsed %lld entries\n", cnt); }
+		if (verbose && (cnt % 1000000 == 0)) { cout<< "Parsed "<< cnt<< " entries"<< endl; }
 	}
 
 	if (record_val >= 0) {
@@ -203,7 +203,7 @@ int main(int argc, char* argv[]) {
 
 	hit_out.open(datF);
 
-	string firstLine(59, ' ');
+	string firstLine(99, ' ');
 	firstLine.append(1, '\n');		//May be dangerous!
 	hit_out<<firstLine;
 

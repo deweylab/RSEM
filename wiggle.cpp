@@ -1,11 +1,13 @@
 #include <cstring>
 #include <cstdlib>
 #include <cassert>
+#include <iostream>
 
 #include <stdint.h>
 #include "sam/bam.h"
 #include "sam/sam.h"
 
+#include "utils.h"
 #include "wiggle.h"
 
 void add_bam_record_to_wiggle(const bam1_t *b, Wiggle& wiggle) {
@@ -42,7 +44,7 @@ void build_wiggles(const std::string& bam_filename,
 	memset(used, 0, sizeof(bool) * header->n_targets);
 
     int cur_tid = -1; //current tid;
-	int cnt = 0;
+    HIT_INT_TYPE cnt;
     bam1_t *b = bam_init1();
     Wiggle wiggle;
 	while (samread(bam_in, b) >= 0) {
@@ -57,7 +59,7 @@ void build_wiggles(const std::string& bam_filename,
 		}
         add_bam_record_to_wiggle(b, wiggle);
 		++cnt;
-		if (cnt % 1000000 == 0) fprintf(stderr, "%d FIN\n", cnt);
+		if (cnt % 1000000 == 0) std::cout<< cnt<< std::endl;
 	}
 	if (cur_tid >= 0) { used[cur_tid] = true; processor.process(wiggle); }
 

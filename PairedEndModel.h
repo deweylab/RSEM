@@ -8,6 +8,7 @@
 #include<string>
 #include<algorithm>
 #include<sstream>
+#include<iostream>
 
 #include "utils.h"
 #include "my_assert.h"
@@ -193,7 +194,7 @@ public:
 	const LenDist& getGLD() { return *gld; }
 
 	void startSimulation(simul*, double*);
-	bool simulate(int, PairedEndRead&, int&);
+	bool simulate(READ_INT_TYPE, PairedEndRead&, int&);
 	void finishSimulation();
 
 	//Use it after function 'read' or 'estimateFromReads'
@@ -209,7 +210,7 @@ private:
 	static const int read_type = 2;
 
 	int M;
-	int N[3];
+	READ_INT_TYPE N[3];
 	Refs *refs;
 	int seedLen;
 
@@ -241,7 +242,7 @@ void PairedEndModel::estimateFromReads(const char* readFN) {
     		genReadFileNames(readFN, i, read_type, s, readFs);
     		ReadReader<PairedEndRead> reader(s, readFs, refs->hasPolyA(), seedLen); // allow calculation of calc_lq() function
 
-    		int cnt = 0;
+    		READ_INT_TYPE cnt = 0;
     		while (reader.next(read)) {
     			SingleRead mate1 = read.getMate1();
     			SingleRead mate2 = read.getMate2();
@@ -256,14 +257,14 @@ void PairedEndModel::estimateFromReads(const char* readFN) {
     				}
     			}
     			else if (verbose && (mate1.getReadLength() < seedLen || mate2.getReadLength() < seedLen)) {
-    				printf("Warning: Read %s is ignored due to at least one of the mates' length < seed length %d!\n", read.getName().c_str(), seedLen);
+				std::cout<< "Warning: Read "<< read.getName()<< " is ignored due to at least one of the mates' length < seed length "<< seedLen<< "!"<< std::endl;
     			}
 
     			++cnt;
-    			if (verbose && cnt % 1000000 == 0) { printf("%d READS PROCESSED\n", cnt); }
+    			if (verbose && cnt % 1000000 == 0) { std::cout<< cnt<< " READS PROCESSED"<< std::endl; }
     		}
 
-    		if (verbose) { printf("estimateFromReads, N%d finished.\n", i); }
+    		if (verbose) { std::cout<< "estimateFromReads, N"<< i<< " finished."<< std::endl; }
     	}
 
     mld->finish();
@@ -362,7 +363,7 @@ void PairedEndModel::startSimulation(simul* sampler, double* theta) {
 	npro->startSimulation();
 }
 
-bool PairedEndModel::simulate(int rid, PairedEndRead& read, int& sid) {
+bool PairedEndModel::simulate(READ_INT_TYPE rid, PairedEndRead& read, int& sid) {
 	int dir, pos;
 	int insertL, mateL1, mateL2;
 	std::string name;

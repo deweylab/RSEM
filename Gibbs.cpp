@@ -44,7 +44,9 @@ struct Item {
 int nThreads;
 
 int model_type;
-int m, M, N0, N1, nHits;
+int m, M;
+READ_INT_TYPE N0, N1;
+HIT_INT_TYPE nHits;
 double totc;
 int BURNIN, NSAMPLES, GAP;
 char imdName[STRLEN], statName[STRLEN];
@@ -54,7 +56,7 @@ char cvsF[STRLEN];
 Refs refs;
 GroupInfo gi;
 
-vector<int> s;
+vector<HIT_INT_TYPE> s;
 vector<Item> hits;
 
 vector<double> theta;
@@ -160,7 +162,7 @@ void init() {
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
-	if (verbose) { printf("Initialization finished!"); }
+	if (verbose) { printf("Initialization finished!\n"); }
 }
 
 //sample theta from Dir(1)
@@ -187,8 +189,8 @@ void writeCountVector(FILE* fo, vector<int>& counts) {
 }
 
 void* Gibbs(void* arg) {
-	int len, fr, to;
 	int CHAINLEN;
+	HIT_INT_TYPE len, fr, to;
 	Params *params = (Params*)arg;
 
 	vector<double> theta;
@@ -205,11 +207,11 @@ void* Gibbs(void* arg) {
 	counts.assign(M + 1, 1); // 1 pseudo count
 	counts[0] += N0;
 
-	for (int i = 0; i < N1; i++) {
+	for (READ_INT_TYPE i = 0; i < N1; i++) {
 		fr = s[i]; to = s[i + 1];
 		len = to - fr;
 		arr.assign(len, 0);
-		for (int j = fr; j < to; j++) {
+		for (HIT_INT_TYPE j = fr; j < to; j++) {
 			arr[j - fr] = theta[hits[j].sid] * hits[j].conprb;
 			if (j > fr) arr[j - fr] += arr[j - fr - 1];  // cumulative
 		}
@@ -221,11 +223,11 @@ void* Gibbs(void* arg) {
 	CHAINLEN = 1 + (params->nsamples - 1) * GAP;
 	for (int ROUND = 1; ROUND <= BURNIN + CHAINLEN; ROUND++) {
 
-		for (int i = 0; i < N1; i++) {
+		for (READ_INT_TYPE i = 0; i < N1; i++) {
 			--counts[z[i]];
 			fr = s[i]; to = s[i + 1]; len = to - fr;
 			arr.assign(len, 0);
-			for (int j = fr; j < to; j++) {
+			for (HIT_INT_TYPE j = fr; j < to; j++) {
 				arr[j - fr] = counts[hits[j].sid] * hits[j].conprb;
 				if (j > fr) arr[j - fr] += arr[j - fr - 1]; //cumulative
 			}
@@ -281,23 +283,6 @@ void release() {
 		pve_c[i] = (pve_c[i] - NSAMPLES * pme_c[i] * pme_c[i]) / (NSAMPLES - 1);
 		pme_theta[i] /= NSAMPLES;
 	}
-
-	/*
-	// combine files
-	FILE *fo = fopen(cvsF, "a");
-	for (int i = 1; i < nThreads; i++) {
-		sprintf(inpF, "%s%d", cvsF, i);
-		ifstream fin(inpF);
-		while (getline(fin, line)) {
-			fprintf(fo, "%s\n", line.c_str());
-		}
-		fin.close();
-		sprintf(command, "rm -f %s", inpF);
-		int status = system(command);
-		general_assert(status == 0, "Fail to delete file " + cstrtos(inpF) + "!");
-	}
-	fclose(fo);
-	*/
 }
 
 template<class ModelType>

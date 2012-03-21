@@ -9,6 +9,8 @@
 #include "sam/bam.h"
 #include "sam/sam.h"
 
+#include "utils.h"
+
 using namespace std;
 
 string cqname;
@@ -21,7 +23,7 @@ void output() {
 	if (unaligned || arr.size() == 0) return;
 	bool isPaired = (arr[0]->core.flag & 0x0001);
 	if ((isPaired && arr.size() != 2) || (!isPaired && arr.size() != 1)) return;
-	for (int i = 0; i < (int)arr.size(); i++) samwrite(out, arr[i]);
+	for (size_t i = 0; i < arr.size(); i++) samwrite(out, arr[i]);
 }
 
 int main(int argc, char* argv[]) {
@@ -35,7 +37,7 @@ int main(int argc, char* argv[]) {
 	out = samopen(argv[2], "wb", in->header);
 	assert(out != 0);
 
-	int cnt = 0;
+	HIT_INT_TYPE cnt = 0;
 
 	cqname = "";
 	arr.clear();
@@ -46,7 +48,7 @@ int main(int argc, char* argv[]) {
 		if (cqname != bam1_qname(b)) {
 			output();
 			cqname = bam1_qname(b);
-			for (int i = 0; i < (int)arr.size(); i++) bam_destroy1(arr[i]);
+			for (size_t i = 0; i < arr.size(); i++) bam_destroy1(arr[i]);
 			arr.clear();
 			unaligned = false;
 		}

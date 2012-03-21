@@ -23,7 +23,7 @@ public:
 	//makes no sense for noise gene
 	int getDir() const { return sid < 0; }
 
-    int getSid() const { return abs(sid); }
+	int getSid() const { return abs(sid); }
 
 	int getPos() const { return pos; }
 

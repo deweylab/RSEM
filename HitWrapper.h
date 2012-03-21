@@ -1,6 +1,7 @@
 #ifndef HITWRAPPER_H_
 #define HITWRAPPER_H_
 
+#include "utils.h"
 #include "HitContainer.h"
 
 // assume each hit vector contains at least one hit
@@ -26,8 +27,8 @@ public:
 	}
 
 private:
-	int i, j;
-	int nThreads;
+	int i, nThreads;
+	HIT_INT_TYPE j;
 	HitContainer<HitType> **hitvs;
 };
 

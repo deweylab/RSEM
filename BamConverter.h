@@ -76,7 +76,7 @@ void BamConverter::process() {
 	std::string cqname;
 	bool isPaired = false;
 
-	int cnt = 0;
+	HIT_INT_TYPE cnt = 0;
 
 	cqname = "";
 	b = bam_init1(); b2 = bam_init1();

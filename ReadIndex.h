@@ -9,7 +9,7 @@
 #include "utils.h"
 
 struct ReadIndex {
-	long nReads;
+	READ_INT_TYPE nReads;
 	int gap, nPos;
 	std::streampos *index;
 
@@ -45,7 +45,7 @@ struct ReadIndex {
 	}
 
 	//rid  0-based , return crid : current seeked rid
-	long locate(long rid, std::ifstream& out) {
+	READ_INT_TYPE locate(READ_INT_TYPE rid, std::ifstream& out) {
 		if (index == NULL) {
 			out.seekg(0, std::ios::beg);
 			return 0;

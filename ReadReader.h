@@ -27,7 +27,7 @@ public:
 		this->indices = indices;
 	}
 
-	bool locate(long); // You should guarantee that indices exist and rid is valid, otherwise return false; If it fails, you should reset it manually!
+	bool locate(READ_INT_TYPE); // You should guarantee that indices exist and rid is valid, otherwise return false; If it fails, you should reset it manually!
 	void reset();
 
 	bool next(ReadType& read, int flags = 7) {
@@ -78,15 +78,15 @@ ReadReader<ReadType>::~ReadReader() {
 }
 
 template<class ReadType>
-bool ReadReader<ReadType>::locate(long rid) {
-	long crid = -1;
+bool ReadReader<ReadType>::locate(READ_INT_TYPE rid) {
+	READ_INT_TYPE crid = -1;
 	ReadType read;
 
 	if (indices == NULL) return false;
 
 	//We should make sure that crid returned by each indices is the same
 	for (int i = 0; i < s; i++) {
-		long val = indices[i]->locate(rid, *arr[i]);
+		READ_INT_TYPE val = indices[i]->locate(rid, *arr[i]);
 		if (i == 0) { crid = val; } else { assert(crid == val); }
 	}
 	assert(crid <= rid);

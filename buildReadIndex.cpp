@@ -13,7 +13,7 @@ bool hasQ;
 
 void buildIndex(char* readF, int gap, bool hasQ) {
 	int nPos;
-	long nReads;
+	READ_INT_TYPE nReads;
 	bool success;
 	string line;
 	char idxF[STRLEN];
@@ -53,7 +53,7 @@ void buildIndex(char* readF, int gap, bool hasQ) {
 		}
 		++nReads;
 
-		if (verbose && nReads % 1000000 == 0) { printf("FIN %lld\n", (long long)nReads); }
+		if (verbose && nReads % 1000000 == 0) { cout<< "FIN "<< nReads<< endl; }
 	} while (success);
 
 	fout.seekp(startPos);
@@ -64,7 +64,7 @@ void buildIndex(char* readF, int gap, bool hasQ) {
 	fin.close();
 	fout.close();
 
-	if (verbose) { printf("Build Index %s is Done!\n", readF); }
+	if (verbose) { cout<< "Build Index "<< readF<< " is Done!"<< endl; }
 }
 
 int main(int argc, char* argv[]) {

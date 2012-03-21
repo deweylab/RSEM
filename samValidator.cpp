@@ -9,6 +9,7 @@
 #include "sam/bam.h"
 #include "sam/sam.h"
 
+#include "utils.h"
 #include "my_assert.h"
 
 using namespace std;
@@ -45,7 +46,7 @@ int main(int argc, char* argv[]) {
 
 	isValid = true;
 
-	long cnt = 0;
+	HIT_INT_TYPE cnt = 0;
 	string cqname(""), qname;
 	uint64_t creadlen = 0, readlen;
 	bool cispaired = false, ispaired;

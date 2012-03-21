@@ -134,14 +134,14 @@ void parse_gtf_file(char* gtfF) {
  			else {
  		 		if (hasMappingFile) {
  		 			tid = item.getTranscriptID();
- 		 		    mi_iter = mi_table.find(tid);
- 		 		    if (mi_iter == mi_table.end()) {
- 		 		    	fprintf(stderr, "Mapping Info is not correct, cannot find %s's gene_id!\n", tid.c_str());
- 		 		    	exit(-1);
- 		 		    }
- 		 		    //assert(iter != table.end());
- 		 		    gid = mi_iter->second;
- 		 		    item.setGeneID(gid);
+					mi_iter = mi_table.find(tid);
+					if (mi_iter == mi_table.end()) {
+					  fprintf(stderr, "Mapping Info is not correct, cannot find %s's gene_id!\n", tid.c_str());
+					  exit(-1);
+					}
+					//assert(iter != table.end());
+					gid = mi_iter->second;
+					item.setGeneID(gid);
  		 		}
  				items.push_back(item);
  			}

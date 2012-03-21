@@ -8,6 +8,7 @@
 #include<string>
 #include<algorithm>
 #include<sstream>
+#include<iostream>
 
 #include "utils.h"
 #include "my_assert.h"
@@ -238,7 +239,7 @@ public:
 	const LenDist& getGLD() { return *gld; }
 
 	void startSimulation(simul*, double*);
-	bool simulate(int, SingleReadQ&, int&);
+	bool simulate(READ_INT_TYPE, SingleReadQ&, int&);
 	void finishSimulation();
 
 	//Use it after function 'read' or 'estimateFromReads'
@@ -254,7 +255,7 @@ private:
 	static const int read_type = 1;
 
 	int M;
-	int N[3];
+        READ_INT_TYPE N[3];
 	Refs *refs;
 	double mean, sd;
 	int seedLen;
@@ -289,7 +290,7 @@ void SingleQModel::estimateFromReads(const char* readFN) {
 			genReadFileNames(readFN, i, read_type, s, readFs);
 			ReadReader<SingleReadQ> reader(s, readFs, refs->hasPolyA(), seedLen); // allow calculation of calc_lq() function
 
-			int cnt = 0;
+			READ_INT_TYPE cnt = 0;
 			while (reader.next(read)) {
 				if (!read.isLowQuality()) {
 					mld != NULL ? mld->update(read.getReadLength(), 1.0) : gld->update(read.getReadLength(), 1.0);
@@ -297,14 +298,14 @@ void SingleQModel::estimateFromReads(const char* readFN) {
 					if (i == 0) { nqpro->updateC(read.getReadSeq(), read.getQScore()); }
 				}
 				else if (verbose && read.getReadLength() < seedLen) {
-					printf("Warning: Read %s is ignored due to read length %d < seed length %d!\n", read.getName().c_str(), read.getReadLength(), seedLen);
+					std::cout<< "Warning: Read "<< read.getName()<< " is ignored due to read length "<< read.getReadLength()<< " < seed length "<< seedLen<< "!"<< std::endl;
 				}
 
 				++cnt;
-				if (verbose && cnt % 1000000 == 0) { printf("%d READS PROCESSED\n", cnt); }
+				if (verbose && cnt % 1000000 == 0) { std::cout<< cnt<< " READS PROCESSED"<< std::endl; }
 			}
 
-			if (verbose) { printf("estimateFromReads, N%d finished.\n", i); }
+			if (verbose) { std::cout<< "estimateFromReads, N"<< i<< " finished."<< std::endl; }
 		}
 
 	mld != NULL ? mld->finish() : gld->finish();
@@ -419,7 +420,7 @@ void SingleQModel::startSimulation(simul* sampler, double* theta) {
 	nqpro->startSimulation();
 }
 
-bool SingleQModel::simulate(int rid, SingleReadQ& read, int& sid) {
+bool SingleQModel::simulate(READ_INT_TYPE rid, SingleReadQ& read, int& sid) {
 	int dir, pos, readLen, fragLen;
 	std::string name;
 	std::string qual, readseq;

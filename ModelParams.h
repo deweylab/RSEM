@@ -9,7 +9,7 @@
 
 struct ModelParams {
 	int M;
-	int N[3];
+	READ_INT_TYPE N[3];
 	int minL, maxL;
 	bool estRSPD; // true if user wants to estimate RSPD; false if use uniform distribution
 	int B; // number of bins in RSPD

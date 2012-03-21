@@ -7,12 +7,15 @@
 #include<cassert>
 #include<string>
 #include<sstream>
+#include<iostream>
 
 #include <stdint.h>
 #include "sam/bam.h"
 #include "sam/sam.h"
 #include "sam_rsem_aux.h"
 #include "sam_rsem_cvt.h"
+
+#include "utils.h"
 
 #include "SingleHit.h"
 #include "PairedEndHit.h"
@@ -76,13 +79,13 @@ void BamWriter::work(HitWrapper<SingleHit> wrapper) {
 	bam1_t *b;
 	SingleHit *hit;
 
-	int cnt = 0;
+	HIT_INT_TYPE cnt = 0;
 
 	b = bam_init1();
 
 	while (samread(in, b) >= 0) {
 		++cnt;
-		if (verbose && cnt % 1000000 == 0) { printf("%d alignment lines are loaded!\n", cnt); }
+		if (verbose && cnt % 1000000 == 0) { std::cout<< cnt<< "alignment lines are loaded!"<< std::endl; }
 
 		if (b->core.flag & 0x0004) continue;
 
@@ -97,7 +100,7 @@ void BamWriter::work(HitWrapper<SingleHit> wrapper) {
 	assert(wrapper.getNextHit() == NULL);
 
 	bam_destroy1(b);
-	if (verbose) { printf("Bam output file is generated!\n"); }
+	if (verbose) { std::cout<< "Bam output file is generated!"<< std::endl; }
 }
 
 void BamWriter::work(HitWrapper<PairedEndHit> wrapper) {
@@ -111,8 +114,7 @@ void BamWriter::work(HitWrapper<PairedEndHit> wrapper) {
 
 	while (samread(in, b) >= 0 && samread(in, b2) >= 0) {
 		cnt += 2;
-		if (verbose && cnt % 1000000 == 0) { printf("%d alignment lines are loaded!\n", cnt); }
-
+		if (verbose && cnt % 1000000 == 0) { std::cout<< cnt<< "alignment lines are loaded!"<< std::endl; }
 		//mate info is not complete, skip
 		if (!(((b->core.flag & 0x0040) && (b2->core.flag & 0x0080)) || ((b->core.flag & 0x0080) && (b2->core.flag & 0x0040)))) continue;
 		//unalignable reads, skip
@@ -148,7 +150,7 @@ void BamWriter::work(HitWrapper<PairedEndHit> wrapper) {
 	bam_destroy1(b);
 	bam_destroy1(b2);
 
-	if (verbose) { printf("Bam output file is generated!\n"); }
+	if (verbose) { std::cout<< "Bam output file is generated!"<< std::endl; }
 }
 
 void BamWriter::convert(bam1_t *b, double prb) {

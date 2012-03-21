@@ -31,7 +31,7 @@
 
 using namespace std;
 
-int N;
+READ_INT_TYPE N;
 int model_type, M, m;
 
 Refs refs;
@@ -138,19 +138,19 @@ void simulate(char* modelF, char* resultsF) {
 	fin.close();
 	for (int i = 1; i <= M; i++) theta[i] = theta[i] / denom * (1.0 - theta[0]);
 	
-	int resimulation_count = 0;
+	READ_INT_TYPE resimulation_count = 0;
 
 	//simulating...
 	model.startSimulation(&sampler, theta);
-	for (int i = 0; i < N; i++) {
+	for (READ_INT_TYPE i = 0; i < N; i++) {
 		while (!model.simulate(i, read, sid)) { ++resimulation_count; }
 		read.write(n_os, os);
 		++counts[sid];
-		if ((i + 1) % 1000000 == 0 && verbose) printf("GEN %d\n", i + 1);
+		if ((i + 1) % 1000000 == 0 && verbose) cout<<"GEN "<< i + 1<< endl;
 	}
 	model.finishSimulation();
 
-	printf("Total number of resimulation is %d\n", resimulation_count);
+	cout<< "Total number of resimulation is "<< resimulation_count<< endl;
 }
 
 void writeResFiles(char* outFN) {
