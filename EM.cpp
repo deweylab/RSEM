@@ -412,7 +412,7 @@ void EM() {
 	double sum;
 
 	double bChange = 0.0, change = 0.0; // bChange : biggest change
-	READ_INT_TYPE totNum = 0;
+	int totNum = 0;
 
 	ModelType model(mparams); //master model
 	ReadReader<ReadType> **readers;
@@ -507,7 +507,7 @@ void EM() {
 				if (bChange < change) bChange = change;
 			}
 
-		if (verbose) { cout<< "ROUND = "<< ROUND<< ", SUM = "<< setprecision(15)<< sum<< ", bChange = " << setprecision(6)<< bChange<< ", totNum = %" << totNum<< endl; }
+		if (verbose) { cout<< "ROUND = "<< ROUND<< ", SUM = "<< setprecision(15)<< sum<< ", bChange = " << setprecision(6)<< bChange<< ", totNum = " << totNum<< endl; }
 	} while (ROUND < MIN_ROUND || (totNum > 0 && ROUND < MAX_ROUND));
 //	} while (ROUND < 1);
 
