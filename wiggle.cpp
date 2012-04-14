@@ -44,7 +44,7 @@ void build_wiggles(const std::string& bam_filename,
 	memset(used, 0, sizeof(bool) * header->n_targets);
 
     int cur_tid = -1; //current tid;
-    HIT_INT_TYPE cnt;
+    HIT_INT_TYPE cnt = 0;
     bam1_t *b = bam_init1();
     Wiggle wiggle;
 	while (samread(bam_in, b) >= 0) {
