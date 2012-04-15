@@ -49,6 +49,7 @@ my $genBamF = 1;  # default is generating transcript bam file
 my $genGenomeBamF = 0;
 my $sampling = 0;
 my $calcCI = 0;
+my $var_opt = 0; # temporarily, only for internal use
 my $quiet = 0;
 my $help = 0;
 
@@ -89,6 +90,7 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "no-bam-output" => sub { $genBamF = 0; },
 	   "output-genome-bam" => \$genGenomeBamF,
 	   "sampling-for-bam" => \$sampling,
+	   "var" => \$var_opt,
 	   "calc-ci" => \$calcCI,
 	   "ci-memory=i" => \$NMB,
 	   "time" => \$mTime,
@@ -291,12 +293,15 @@ if ($mTime) { $time_end = time(); $time_rsem = $time_end - $time_start; }
 
 if ($mTime) { $time_start = time(); }
 
-if ($calcCI) {
+if ($calcCI || $var_opt) {
     $command = $dir."rsem-run-gibbs $refName $sampleName $sampleToken $BURNIN $NCV $SAMPLEGAP";
     $command .= " -p $nThreads";
+    if ($var_opt) { $command .= " --var"; }
     if ($quiet) { $command .= " -q"; }
     &runCommand($command);
+}
 
+if ($calcCI) {
     system("mv $sampleName.isoforms.results $imdName.isoforms.results.bak1");
     system("mv $sampleName.genes.results $imdName.genes.results.bak1");
     &collectResults("$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
