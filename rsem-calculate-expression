@@ -265,7 +265,7 @@ if ($genBamF) {
     else { $command .= " 0"; }
     if ($sampling) { $command .= " --sampling"; }
 }
-if ($calcCI) { $command .= " --gibbs-out"; }
+if ($calcCI || $var_opt) { $command .= " --gibbs-out"; }
 if ($quiet) { $command .= " -q"; }
 
 &runCommand($command);

@@ -1,0 +1,40 @@
+#!/usr/bin/perl
+
+use strict;
+
+if (scalar(@ARGV) == 0) {
+    print "Usage: rsem-form-counts-matrix sampleA.[genes/isoforms].results sampleB.[genes/isoforms].results ... > output_name.counts.matrix\n";
+    print "Results files should be either all .genes.results or all .isoforms.results.\n";
+    exit(-1);
+}
+
+my $line;
+my $n = scalar(@ARGV);
+my $M = -1;
+my @matrix = ();
+
+for (my $i = 0; $i < $n; $i++) {
+    my @sample = ();
+    open(INPUT, $ARGV[$i]);
+    while ($line = <INPUT>) {
+	chomp($line); 
+	my @fields = split(/\t/, $line);
+	push(@sample, $fields[1]);
+    }
+    close(INPUT);
+    if (scalar(@sample) == 0) {
+	print STDERR "No transcript is detected! Please check if $ARGV[$i] exists.\n";
+	exit(-1);
+    }
+    if ($M < 0) { $M = scalar(@sample); }
+    elsif ($M != scalar(@sample)) { 
+	print STDERR "Number of transcripts among samples are not equal!\n"; 
+	exit(-1); 
+    }
+    push(@matrix, \@sample);
+}
+
+for (my $i = 0; $i < $M; $i++) {
+    for (my $j = 0; $j < $n - 1; $j++) { print "$matrix[$j][$i]\t"; }
+    print "$matrix[$n - 1][$i]\n";
+}

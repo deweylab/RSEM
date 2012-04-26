@@ -1,3 +1,11 @@
+RSEM v1.1.19
+
+- Allowed > 2^31 hits
+- Added some instructions on how to visualize transcript coordinate BAM/WIG files using IGV
+- Included EBSeq for downstream differential expression analysis
+
+--------------------------------------------------------------------------------------------
+
 RSEM v1.1.18
 
 - Added some user-friendly error messages
