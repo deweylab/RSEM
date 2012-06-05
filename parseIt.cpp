@@ -33,7 +33,6 @@ HIT_INT_TYPE nHits; // # of hits
 READ_INT_TYPE nUnique, nMulti, nIsoMulti;
 char fn_list[STRLEN];
 char groupF[STRLEN], tiF[STRLEN];
-char imdName[STRLEN];
 char datF[STRLEN], cntF[STRLEN];
 
 GroupInfo gi;
@@ -167,7 +166,7 @@ int main(int argc, char* argv[]) {
 	bool quiet = false;
 
 	if (argc < 6) {
-		printf("Usage : rsem-parse-alignments refName sampleName sampleToken alignFType('s' for sam, 'b' for bam) alignF [-t Type] [-l fn_list] [-tag tagName] [-q]\n");
+		printf("Usage : rsem-parse-alignments refName imdName statName alignFType('s' for sam, 'b' for bam) alignF [-t Type] [-l fn_list] [-tag tagName] [-q]\n");
 		exit(-1);
 	}
 
@@ -195,11 +194,10 @@ int main(int argc, char* argv[]) {
 	sprintf(tiF, "%s.ti", argv[1]);
 	transcripts.readFrom(tiF);
 
-	sprintf(imdName, "%s.temp/%s", argv[2], argv[3]);
-	sprintf(datF, "%s.dat", imdName);
-	sprintf(cntF, "%s.stat/%s.cnt", argv[2], argv[3]);
+	sprintf(datF, "%s.dat", argv[2]);
+	sprintf(cntF, "%s.cnt", argv[3]);
 
-	init(imdName, argv[4][0], argv[5]);
+	init(argv[2], argv[4][0], argv[5]);
 
 	hit_out.open(datF);
 

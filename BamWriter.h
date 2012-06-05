@@ -85,16 +85,18 @@ void BamWriter::work(HitWrapper<SingleHit> wrapper) {
 
 	while (samread(in, b) >= 0) {
 		++cnt;
-		if (verbose && cnt % 1000000 == 0) { std::cout<< cnt<< "alignment lines are loaded!"<< std::endl; }
+		if (verbose && cnt % 1000000 == 0) { std::cout<< cnt<< " alignment lines are loaded!"<< std::endl; }
 
-		if (b->core.flag & 0x0004) continue;
+		if (!(b->core.flag & 0x0004)) {
+		  hit = wrapper.getNextHit();
+		  assert(hit != NULL);
 
-		hit = wrapper.getNextHit();
-		assert(hit != NULL);
+		  assert(transcripts.getInternalSid(b->core.tid + 1) == hit->getSid());
+		  convert(b, hit->getConPrb());
+		}
 
-		assert(transcripts.getInternalSid(b->core.tid + 1) == hit->getSid());
-		convert(b, hit->getConPrb());
-		if (b->core.qual > 0) samwrite(out, b); // output only when MAPQ > 0
+		//if (b->core.qual > 0) samwrite(out, b); // output only when MAPQ > 0
+		samwrite(out, b);
 	}
 
 	assert(wrapper.getNextHit() == NULL);
@@ -115,34 +117,49 @@ void BamWriter::work(HitWrapper<PairedEndHit> wrapper) {
 	while (samread(in, b) >= 0 && samread(in, b2) >= 0) {
 		cnt += 2;
 		if (verbose && cnt % 1000000 == 0) { std::cout<< cnt<< "alignment lines are loaded!"<< std::endl; }
-		//mate info is not complete, skip
-		if (!(((b->core.flag & 0x0040) && (b2->core.flag & 0x0080)) || ((b->core.flag & 0x0080) && (b2->core.flag & 0x0040)))) continue;
-		//unalignable reads, skip
-		if ((b->core.flag & 0x0004) || (b2->core.flag & 0x0004)) continue;
 
-		//swap if b is mate 2
-		if (b->core.flag & 0x0080) {
-			assert(b2->core.flag & 0x0040);
-			bam1_t *tmp = b;
-			b = b2; b2 = tmp;
+		assert((b->core.flag & 0x0001) && (b2->core.flag & 0x0001));
+		assert((b->core.flag & 0x0040) && (b2->core.flag & 0x0080) || (b->core.flag & 0x0080) && (b2->core.flag & 0x0040));
+
+		//unalignable reads, skip		
+		bool notgood = (b->core.flag & 0x0004) || (b2->core.flag & 0x0004);
+
+		if (!notgood) {
+		  //swap if b is mate 2
+		  if (b->core.flag & 0x0080) {
+		    assert(b2->core.flag & 0x0040);
+		    bam1_t *tmp = b;
+		    b = b2; b2 = tmp;
+		  }
+
+		  hit = wrapper.getNextHit();
+		  assert(hit != NULL);
+
+		  assert(transcripts.getInternalSid(b->core.tid + 1) == hit->getSid());
+		  assert(transcripts.getInternalSid(b2->core.tid + 1) == hit->getSid());
+
+		  convert(b, hit->getConPrb());
+		  convert(b2, hit->getConPrb());
+
+		  b->core.mpos = b2->core.pos;
+		  b2->core.mpos = b->core.pos;
+		}
+		else {
+		  // if only one mate can be aligned, mask it as unaligned and put an additional tag Z0:A:!
+		  char exclamation = '!';
+		  if (!(b->core.flag & 0x0004)) { 
+		    b->core.flag |= 0x0004;
+		    bam_aux_append(b, "Z0", 'A', bam_aux_type2size('A'), (uint8_t*)&exclamation);
+		  }
+		  if (!(b2->core.flag & 0x0004)) {
+		    b2->core.flag |= 0x0004;
+		    bam_aux_append(b2, "Z0", 'A', bam_aux_type2size('A'), (uint8_t*)&exclamation);
+		  }
 		}
 
-		hit = wrapper.getNextHit();
-		assert(hit != NULL);
 
-		assert(transcripts.getInternalSid(b->core.tid + 1) == hit->getSid());
-		assert(transcripts.getInternalSid(b2->core.tid + 1) == hit->getSid());
-
-		convert(b, hit->getConPrb());
-		convert(b2, hit->getConPrb());
-
-		b->core.mpos = b2->core.pos;
-		b2->core.mpos = b->core.pos;
-
-		if (b->core.qual > 0) {
-			samwrite(out, b);
-			samwrite(out, b2);
-		}
+		samwrite(out, b);
+		samwrite(out, b2);
 	}
 
 	assert(wrapper.getNextHit() == NULL);

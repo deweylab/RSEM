@@ -397,9 +397,12 @@ void calculate_credibility_intervals(char* imdName) {
 
 int main(int argc, char* argv[]) {
 	if (argc < 8) {
-		printf("Usage: rsem-calculate-credibility-intervals reference_name sample_name sampleToken confidence nCV nSpC nMB [-p #Threads] [-q]\n");
+		printf("Usage: rsem-calculate-credibility-intervals reference_name imdName statName confidence nCV nSpC nMB [-p #Threads] [-q]\n");
 		exit(-1);
 	}
+
+	strcpy(imdName, argv[2]);
+	strcpy(statName, argv[3]);
 
 	confidence = atof(argv[4]);
 	nCV = atoi(argv[5]);
@@ -425,8 +428,6 @@ int main(int argc, char* argv[]) {
 	cvlen = M + 1;
 	assert(nSamples > 0 && cvlen > 1); // for Buffter.h: (bufsize_type)nSamples
 
-	sprintf(imdName, "%s.temp/%s", argv[2], argv[3]);
-	sprintf(statName, "%s.stat/%s", argv[2], argv[3]);
 	sprintf(tmpF, "%s.tmp", imdName);
 	sprintf(cvsF, "%s.countvectors", imdName);
 

@@ -298,8 +298,8 @@ named 'EBSeq'.
 
 For more information about EBSeq (including the paper describing their
 method), please visit <a
-href="http://www.biostat.wisc.edu/~ningleng/EBSeq_Package">here</a>. You
-can also find a local version of vignette under
+href="http://www.biostat.wisc.edu/~ningleng/EBSeq_Package">EBSeq
+website</a>. You can also find a local version of vignette under
 'EBSeq/inst/doc/EBSeq_Vignette.pdf'.
 
 EBSeq requires gene-isoform relationship for its isoform DE

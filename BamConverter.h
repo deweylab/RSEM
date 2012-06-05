@@ -85,32 +85,51 @@ void BamConverter::process() {
 		++cnt;
 		isPaired = (b->core.flag & 0x0001) > 0;
 		if (isPaired) {
-			assert(samread(in, b2) >= 0 && (b2->core.flag & 0x0001) && b->core.tid == b2->core.tid);
-			assert((b->core.flag & 0x0040) && (b2->core.flag & 0x0080)); // for collapsing
-			++cnt;
+			assert(samread(in, b2) >= 0 && (b2->core.flag & 0x0001));
+			assert((b->core.flag & 0x0001) && (b2->core.flag & 0x0001));
+			assert((b->core.flag & 0x0040) && (b2->core.flag & 0x0080) || (b->core.flag & 0x0080) && (b2->core.flag & 0x0040));
+ 			++cnt;
 		}
 
 		if (cnt % 1000000 == 0) { printf("."); fflush(stdout); }
 
 		// at least one segment is not properly mapped
-		if ((b->core.flag & 0x0004) || (isPaired && (b2->core.flag & 0x0004))) continue;
+		bool notgood = (b->core.flag & 0x0004) || (isPaired && (b2->core.flag & 0x0004));
+		
 
-		const Transcript& transcript = transcripts.getTranscriptViaEid(b->core.tid + 1);
+		if (isPaired && notgood) assert((b->core.flag & 0x0004) && (b2->core.flag & 0x0004));
 
-		convert(b, transcript);
-		if (isPaired) {
-			convert(b2, transcript);
-			b->core.mpos = b2->core.pos;
-			b2->core.mpos = b->core.pos;
+
+		if (!notgood) {
+		  assert((b->core.tid == b2->core.tid) && (b->core.flag & 0x0040) && (b2->core.flag & 0x0080)); // for collapsing
+
+		  const Transcript& transcript = transcripts.getTranscriptViaEid(b->core.tid + 1);
+
+		  convert(b, transcript);
+		  if (isPaired) {
+		    convert(b2, transcript);
+		    b->core.mpos = b2->core.pos;
+		    b2->core.mpos = b->core.pos;
+		  }
+
+		  if (cqname != bam1_qname(b)) {
+		    writeCollapsedLines();
+		    cqname = bam1_qname(b);
+		    collapseMap.init(isPaired);
+		  }
+		  collapseMap.insert(b, b2, bam_aux2f(bam_aux_get(b, "ZW")));
+		}
+		else {
+		  assert(cqname != bam1_qname(b));
+
+		  writeCollapsedLines();
+		  cqname = bam1_qname(b);
+		  collapseMap.init(isPaired);
+
+		  samwrite(out, b);
+		  if (isPaired) samwrite(out, b2);
 		}
 
-		if (cqname != bam1_qname(b)) {
-			writeCollapsedLines();
-			cqname = bam1_qname(b);
-			collapseMap.init(isPaired);
-		}
-
-		collapseMap.insert(b, b2, bam_aux2f(bam_aux_get(b, "ZW")));
 	}
 
 	writeCollapsedLines();
@@ -173,17 +192,14 @@ inline void BamConverter::writeCollapsedLines() {
 		while (collapseMap.next(tmp_b, tmp_b2, prb)) {
 			memcpy(bam_aux_get(tmp_b, "ZW") + 1, (uint8_t*)&(prb), bam_aux_type2size('f'));
 			tmp_b->core.qual = getMAPQ(prb);
-			if (tmp_b->core.qual > 0) {
-				samwrite(out, tmp_b);
-				if (isPaired) {
-					memcpy(bam_aux_get(tmp_b2, "ZW") + 1, (uint8_t*)&(prb), bam_aux_type2size('f'));
-					tmp_b2->core.qual = tmp_b->core.qual;
-					samwrite(out, tmp_b2);
-				}
+			samwrite(out, tmp_b);
+			if (isPaired) {
+			  memcpy(bam_aux_get(tmp_b2, "ZW") + 1, (uint8_t*)&(prb), bam_aux_type2size('f'));
+			  tmp_b2->core.qual = tmp_b->core.qual;
+			  samwrite(out, tmp_b2);
 			}
 			bam_destroy1(tmp_b);
 			if (isPaired) bam_destroy1(tmp_b2);
-
 		}
 	}
 }

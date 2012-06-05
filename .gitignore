@@ -16,6 +16,7 @@ rsem-synthesis-reference-transcripts
 rsem-tbam2gbam
 rsem-sam-validator
 rsem-scan-for-paired-end-reads
+rsem-for-ebseq-calculate-clustering-info
 sam/samtools
 .project
 .cproject

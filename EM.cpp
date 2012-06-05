@@ -652,8 +652,8 @@ int main(int argc, char* argv[]) {
 	ifstream fin;
 	bool quiet = false;
 
-	if (argc < 5) {
-		printf("Usage : rsem-run-em refName read_type sampleName sampleToken [-p #Threads] [-b samInpType samInpF has_fn_list_? [fn_list]] [-q] [--gibbs-out] [--sampling]\n\n");
+	if (argc < 6) {
+		printf("Usage : rsem-run-em refName read_type sampleName imdName statName [-p #Threads] [-b samInpType samInpF has_fn_list_? [fn_list]] [-q] [--gibbs-out] [--sampling]\n\n");
 		printf("  refName: reference name\n");
 		printf("  read_type: 0 single read without quality score; 1 single read with quality score; 2 paired-end read without quality score; 3 paired-end read with quality score.\n");
 		printf("  sampleName: sample's name, including the path\n");
@@ -672,8 +672,8 @@ int main(int argc, char* argv[]) {
 	strcpy(refName, argv[1]);
 	read_type = atoi(argv[2]);
 	strcpy(outName, argv[3]);
-	sprintf(imdName, "%s.temp/%s", argv[3], argv[4]);
-	sprintf(statName, "%s.stat/%s", argv[3], argv[4]);
+	strcpy(imdName, argv[4]);
+	strcpy(statName, argv[5]);
 
 	nThreads = 1;
 
@@ -682,7 +682,7 @@ int main(int argc, char* argv[]) {
 	genGibbsOut = false;
 	pt_fn_list = pt_chr_list = NULL;
 
-	for (int i = 5; i < argc; i++) {
+	for (int i = 6; i < argc; i++) {
 		if (!strcmp(argv[i], "-p")) { nThreads = atoi(argv[i + 1]); }
 		if (!strcmp(argv[i], "-b")) {
 			genBamF = true;

@@ -404,15 +404,17 @@ void writeEstimatedParameters(char* modelF, char* imdName) {
 
 int main(int argc, char* argv[]) {
 	if (argc < 7) {
-		printf("Usage: rsem-run-gibbs-multi reference_name sample_name sampleToken BURNIN NSAMPLES GAP [-p #Threads] [--var] [-q]\n");
+		printf("Usage: rsem-run-gibbs reference_name imdName statName BURNIN NSAMPLES GAP [-p #Threads] [--var] [-q]\n");
 		exit(-1);
 	}
+
+	strcpy(imdName, argv[2]);
+	strcpy(statName, argv[3]);
 
 	BURNIN = atoi(argv[4]);
 	NSAMPLES = atoi(argv[5]);
 	GAP = atoi(argv[6]);
-	sprintf(imdName, "%s.temp/%s", argv[2], argv[3]);
-	sprintf(statName, "%s.stat/%s", argv[2], argv[3]);
+
 	load_data(argv[1], statName, imdName);
 
 	nThreads = 1;
