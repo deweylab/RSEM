@@ -101,7 +101,7 @@ void BamConverter::process() {
 
 
 		if (!notgood) {
-		  assert((b->core.tid == b2->core.tid) && (b->core.flag & 0x0040) && (b2->core.flag & 0x0080)); // for collapsing
+		  if (isPaired) assert((b->core.tid == b2->core.tid) && (b->core.flag & 0x0040) && (b2->core.flag & 0x0080)); // for collapsing
 
 		  const Transcript& transcript = transcripts.getTranscriptViaEid(b->core.tid + 1);
 
