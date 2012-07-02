@@ -23,7 +23,7 @@ const int RANGE = 201;
 const int OLEN = 25; // overlap length, number of bases must not be in poly(A) tails
 const int NBITS = 32; // use unsigned int, 32 bits per variable
 
-bool verbose = true; // show detail intermediate outputs
+static bool verbose = true; // show detail intermediate outputs
 
 inline bool isZero(double a) { return fabs(a) < 1e-8; }
 inline bool isLongZero(double a) { return fabs(a) < 1e-30; }
@@ -124,7 +124,7 @@ inline std::string cleanStr(const std::string& str) {
   return (fr <= to ? str.substr(fr, to - fr + 1) : "");
 }
 
-void genReadFileNames(const char* readFN, int tagType, int read_type, int& s, char readFs[][STRLEN]){
+inline void genReadFileNames(const char* readFN, int tagType, int read_type, int& s, char readFs[][STRLEN]){
 	const char tags[3][STRLEN] = {"un", "alignable", "max"};
 	char suffix[STRLEN];
 
@@ -146,7 +146,7 @@ void genReadFileNames(const char* readFN, int tagType, int read_type, int& s, ch
 	}
 }
 
-void printTimeUsed(const time_t& a, const time_t& b, const char* program_name) {
+inline void printTimeUsed(const time_t& a, const time_t& b, const char* program_name) {
 	int hh = (b - a) / 3600;
 	int mm = (b - a) % 3600 / 60;
 	int ss = (b - a) % 60;

@@ -144,6 +144,8 @@ void BamWriter::work(HitWrapper<PairedEndHit> wrapper) {
 		  b->core.mpos = b2->core.pos;
 		  b2->core.mpos = b->core.pos;
 		}
+
+		/*
 		else {
 		  // if only one mate can be aligned, mask it as unaligned and put an additional tag Z0:A:!
 		  char exclamation = '!';
@@ -156,7 +158,7 @@ void BamWriter::work(HitWrapper<PairedEndHit> wrapper) {
 		    bam_aux_append(b2, "Z0", 'A', bam_aux_type2size('A'), (uint8_t*)&exclamation);
 		  }
 		}
-
+		*/
 
 		samwrite(out, b);
 		samwrite(out, b2);

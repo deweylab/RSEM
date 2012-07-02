@@ -9,29 +9,29 @@
 #include<sstream>
 #include<iomanip>
 
-std::string itos(int i) {
+inline std::string itos(int i) {
   std::ostringstream strout;
   strout<<i;
   return strout.str();
 }
 
 // n : number of significant digits
-std::string ftos(double f, int n) {
+inline std::string ftos(double f, int n) {
   std::ostringstream strout;
   strout<<std::setprecision(n)<<f;
   return strout.str();
 }
 
-std::string ctos(char c) {
+inline std::string ctos(char c) {
   return std::string(1, c);
 }
 
-std::string cstrtos(const char* s) {
+inline std::string cstrtos(const char* s) {
   return std::string(s);
 }
 
 
-void general_assert(int expr, const std::string& errmsg, bool putEnter = false) {
+inline void general_assert(int expr, const std::string& errmsg, bool putEnter = false) {
 	if (expr) return;
 
 	if (putEnter) printf("\n");
@@ -39,7 +39,7 @@ void general_assert(int expr, const std::string& errmsg, bool putEnter = false) 
 	exit(-1);
 }
 
-void pthread_assert(int rc, const std::string& func_name, const std::string& errmsg) {
+inline void pthread_assert(int rc, const std::string& func_name, const std::string& errmsg) {
 	if (rc == 0) return;
 
 	fprintf(stderr, "%s\n", errmsg.c_str());

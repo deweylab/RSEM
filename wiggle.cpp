@@ -10,9 +10,18 @@
 #include "utils.h"
 #include "wiggle.h"
 
+bool no_fractional_weight = false;
+
 void add_bam_record_to_wiggle(const bam1_t *b, Wiggle& wiggle) {
-    uint8_t *p_tag = bam_aux_get(b, "ZW");
-    float w = (p_tag != NULL ? bam_aux2f(p_tag) : 1.0);
+    float w;
+
+    if (no_fractional_weight) w = 1.0;
+    else {
+      uint8_t *p_tag = bam_aux_get(b, "ZW");
+      if (p_tag == NULL) return;
+      w = bam_aux2f(p_tag);
+    }
+
     int pos = b->core.pos;
     uint32_t *p = bam1_cigar(b);
     
@@ -43,21 +52,21 @@ void build_wiggles(const std::string& bam_filename,
 	bool *used = new bool[header->n_targets];
 	memset(used, 0, sizeof(bool) * header->n_targets);
 
-    int cur_tid = -1; //current tid;
-    HIT_INT_TYPE cnt = 0;
-    bam1_t *b = bam_init1();
-    Wiggle wiggle;
+	int cur_tid = -1; //current tid;
+	HIT_INT_TYPE cnt = 0;
+	bam1_t *b = bam_init1();
+	Wiggle wiggle;
 	while (samread(bam_in, b) >= 0) {
 		if (b->core.flag & 0x0004) continue;
 
 		if (b->core.tid != cur_tid) {
 			if (cur_tid >= 0) { used[cur_tid] = true; processor.process(wiggle); }
 			cur_tid = b->core.tid;
-            wiggle.name = header->target_name[cur_tid];
-            wiggle.length = header->target_len[cur_tid];
-            wiggle.read_depth.assign(wiggle.length, 0.0);
+			wiggle.name = header->target_name[cur_tid];
+			wiggle.length = header->target_len[cur_tid];
+			wiggle.read_depth.assign(wiggle.length, 0.0);
 		}
-        add_bam_record_to_wiggle(b, wiggle);
+		add_bam_record_to_wiggle(b, wiggle);
 		++cnt;
 		if (cnt % 1000000 == 0) std::cout<< cnt<< std::endl;
 	}

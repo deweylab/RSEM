@@ -19,8 +19,12 @@ pod2usage(-msg => "Invalid number of arguments!", -exitval => 2, -verbose => 2) 
 my ($fn, $dir, $suf) = fileparse($0);
 my $command = "";
 
+unless (-e "$ARGV[0].transcript.sorted.bam") {
+    $command = $dir."sam/samtools sort $ARGV[0].transcript.bam $ARGV[0].transcript.sorted";
+    &runCommand($command);
+}
 unless (-e "$ARGV[0].transcript.readdepth") {
-    $command = $dir."rsem-bam2readdepth $ARGV[0].transcript.sorted.bam > $ARGV[0].transcript.readdepth";
+    $command = $dir."rsem-bam2readdepth $ARGV[0].transcript.sorted.bam $ARGV[0].transcript.readdepth";
     &runCommand($command);
 }
 
@@ -34,7 +38,7 @@ if ($show_unique) {
 	&runCommand($command);
     }
     unless (-e "$ARGV[0].uniq.transcript.readdepth") {
-	$command = $dir."rsem-bam2readdepth $ARGV[0].uniq.transcript.sorted.bam > $ARGV[0].uniq.transcript.readdepth";
+	$command = $dir."rsem-bam2readdepth $ARGV[0].uniq.transcript.sorted.bam $ARGV[0].uniq.transcript.readdepth";
 	&runCommand($command);
     }
 }

@@ -96,10 +96,10 @@ BamConverter.h : utils.h my_assert.h sam/sam.h sam/bam.h sam_rsem_aux.h sam_rsem
 rsem-tbam2gbam : utils.h Transcripts.h Transcript.h bc_aux.h BamConverter.h sam/sam.h sam/bam.h sam/libbam.a sam_rsem_aux.h sam_rsem_cvt.h tbam2gbam.cpp sam/libbam.a
 	$(CC) -O3 -Wall tbam2gbam.cpp sam/libbam.a -lz -o $@
 
-rsem-bam2wig : wiggle.h wiggle.o sam/libbam.a bam2wig.cpp
+rsem-bam2wig : utils.h my_assert.h wiggle.h wiggle.o sam/libbam.a bam2wig.cpp
 	$(CC) -O3 -Wall bam2wig.cpp wiggle.o sam/libbam.a -lz -o $@
 
-rsem-bam2readdepth : wiggle.h wiggle.o sam/libbam.a bam2readdepth.cpp
+rsem-bam2readdepth : utils.h my_assert.h wiggle.h wiggle.o sam/libbam.a bam2readdepth.cpp
 	$(CC) -O3 -Wall bam2readdepth.cpp wiggle.o sam/libbam.a -lz -o $@
 
 wiggle.o: sam/bam.h sam/sam.h wiggle.cpp wiggle.h

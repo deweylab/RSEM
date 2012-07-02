@@ -1,7 +1,12 @@
+#ifndef WIGGLE_H_
+#define WIGGLE_H_
+
 #include <cstdio>
 #include <string>
 #include <vector>
 #include <ostream>
+
+extern bool no_fractional_weight; // if no_frac_weight == true, each alignment counts as weight 1
 
 struct Wiggle {
     std::string name;
@@ -40,3 +45,5 @@ private:
 
 void build_wiggles(const std::string& bam_filename,
                    WiggleProcessor& processor);
+
+#endif
