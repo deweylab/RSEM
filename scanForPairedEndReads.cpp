@@ -29,20 +29,28 @@ inline void add_to_appropriate_arr(bam1_t *b) {
 	else arr_partial_unknown.push_back(bam_dup1(b));
 }
 
+char get_pattern_code(uint32_t flag) {
+  if (flag & 0x0040) return (flag & 0x0010 ? 1 : 0);
+  else return (flag & 0x0010 ? 0 : 1);
+}
+
 bool less_than(bam1_t *a, bam1_t *b) {
 	int32_t ap1 = min(a->core.pos, a->core.mpos);
 	int32_t ap2 = max(a->core.pos, a->core.mpos);
 	int32_t bp1 = min(b->core.pos, b->core.mpos);
 	int32_t bp2 = max(b->core.pos, b->core.mpos);
+	char apat = get_pattern_code(a->core.flag); // apt: a's pattern of strand and mate information
+	char bpat = get_pattern_code(b->core.flag);
 
 	if (a->core.tid != b->core.tid) return a->core.tid < b->core.tid;
 	if (ap1 != bp1) return ap1 < bp1;
-	return ap2 < bp2;
+	if (ap2 != bp2) return ap2 < bp2;
+	return apat < bpat;
 }
 
 int main(int argc, char* argv[]) {
 	if (argc != 3) {
-		printf("Usage: rsem-scan-for-paired-end-reads input.sam output.bam\n");
+		printf("UsaOAge: rsem-scan-for-paired-end-reads input.sam output.bam\n");
 		exit(-1);
 	}
 
