@@ -46,6 +46,7 @@ if ($show_unique) {
 $command = $dir."rsem-gen-transcript-plots $ARGV[0] $ARGV[1] $gene_list $show_unique $ARGV[2]";
 &runCommand($command);
 
+
 # command, {err_msg}
 sub runCommand {
     print $_[0]."\n";

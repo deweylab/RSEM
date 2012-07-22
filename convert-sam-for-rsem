@@ -82,16 +82,16 @@ $command = $dir."rsem-sam-validator $out_file";
 
 # command, {err_msg}
 sub runCommand {
-    print STDERR $_[0]."\n";
+    print $_[0]."\n";
     my $status = system($_[0]);
     if ($status != 0) { 
 	my $errmsg;
 	if (scalar(@_) > 1) { $errmsg = $_[1]; }
-	else { $errmsg = "\"$command\" failed! Plase check if you provide correct parameters/options for the script!"; }
-	print STDERR $errmsg."\n";
+	else { $errmsg = "\"$command\" failed! Plase check if you provide correct parameters/options for the pipeline!"; }
+	print $errmsg."\n";
 	exit(-1);
     }
-    print STDERR "\n";
+    print "\n";
 }
 
 __END__
