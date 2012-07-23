@@ -69,7 +69,6 @@ bool quiet;
 Params *paramsArray;
 pthread_t *threads;
 pthread_attr_t attr;
-void *status;
 int rc;
 
 CIParams *ciParamsArray;
@@ -219,7 +218,7 @@ void sample_theta_vectors_from_count_vectors() {
 		pthread_assert(rc, "pthread_create", "Cannot create thread " + itos(i) + " (numbered from 0) in sample_theta_vectors_from_count_vectors!");
 	}
 	for (int i = 0; i < num_threads; i++) {
-		rc = pthread_join(threads[i], &status);
+		rc = pthread_join(threads[i], NULL);
 		pthread_assert(rc, "pthread_join", "Cannot join thread " + itos(i) + " (numbered from 0) in sample_theta_vectors_from_count_vectors!");
 	}
 
@@ -359,7 +358,7 @@ void calculate_credibility_intervals(char* imdName) {
 		pthread_assert(rc, "pthread_create", "Cannot create thread " + itos(i) + " (numbered from 0) in calculate_credibility_intervals!");
 	}
 	for (int i = 0; i < num_threads; i++) {
-		rc = pthread_join(threads[i], &status);
+		rc = pthread_join(threads[i], NULL);
 		pthread_assert(rc, "pthread_join", "Cannot join thread " + itos(i) + " (numbered from 0) in calculate_credibility_intervals!");
 	}
 

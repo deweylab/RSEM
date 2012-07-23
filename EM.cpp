@@ -423,7 +423,6 @@ void EM() {
 	Params fparams[nThreads];
 	pthread_t threads[nThreads];
 	pthread_attr_t attr;
-	void *status;
 	int rc;
 
 
@@ -471,7 +470,7 @@ void EM() {
 		}
 
 		for (int i = 0; i < nThreads; i++) {
-			rc = pthread_join(threads[i], &status);
+			rc = pthread_join(threads[i], NULL);
 			pthread_assert(rc, "pthread_join", "Cannot join thread " + itos(i) + " (numbered from 0) at ROUND " + itos(ROUND) + "!");
 		}
 
@@ -521,7 +520,7 @@ void EM() {
 				pthread_assert(rc, "pthread_create", "Cannot create thread " + itos(i) + " (numbered from 0) when generating files for Gibbs sampler!");
 			}
 			for (int i = 0; i < nThreads; i++) {
-				rc = pthread_join(threads[i], &status);
+				rc = pthread_join(threads[i], NULL);
 				pthread_assert(rc, "pthread_join", "Cannot join thread " + itos(i) + " (numbered from 0) when generating files for Gibbs sampler!");
 			}
 		}
@@ -581,7 +580,7 @@ void EM() {
 		pthread_assert(rc, "pthread_create", "Cannot create thread " + itos(i) + " (numbered from 0) when calculating expected weights!");
 	}
 	for (int i = 0; i < nThreads; i++) {
-		rc = pthread_join(threads[i], &status);
+		rc = pthread_join(threads[i], NULL);
 		pthread_assert(rc, "pthread_join", "Cannot join thread " + itos(i) + " (numbered from 0) when calculating expected weights!");
 	}
 	model.setNeedCalcConPrb(false);

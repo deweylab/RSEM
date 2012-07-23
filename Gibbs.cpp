@@ -70,7 +70,6 @@ bool quiet;
 Params *paramsArray;
 pthread_t *threads;
 pthread_attr_t attr;
-void *status;
 int rc;
 
 void load_data(char* reference_name, char* statName, char* imdName) {
@@ -443,7 +442,7 @@ int main(int argc, char* argv[]) {
 		pthread_assert(rc, "pthread_create", "Cannot create thread " + itos(i) + " (numbered from 0)!");
 	}
 	for (int i = 0; i < nThreads; i++) {
-		rc = pthread_join(threads[i], &status);
+		rc = pthread_join(threads[i], NULL);
 		pthread_assert(rc, "pthread_join", "Cannot join thread " + itos(i) + " (numbered from 0)!");
 	}
 	release();
