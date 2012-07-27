@@ -74,7 +74,7 @@ int main(int argc, char* argv[]) {
 			// both mates are mapped
 			if (!(b->core.flag & 0x0004) && !(b2->core.flag & 0x0004)) {
 				isValid = (b->core.tid == b2->core.tid) && (b->core.pos == b2->core.mpos) && (b2->core.pos == b->core.mpos);
-				if (!isValid) { printf("\nOne of paired-end read %s's alignment does not have two mates adjacent to each other!\n", qname.c_str()); continue; }
+				if (!isValid) { printf("\nOne of paired-end read %s's alignment does not have two mates adjacent to each other! If you're running covert-sam-for-rsem now, this might mean the read contains duplicate alignments.\n", qname.c_str()); continue; }
 			}
 
 			readlen = ((b->core.flag & 0x0040) ? (uint64_t(b->core.l_qseq) << 32) + b2->core.l_qseq : (uint64_t(b2->core.l_qseq) << 32) + b->core.l_qseq);
