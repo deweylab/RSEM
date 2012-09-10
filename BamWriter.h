@@ -125,24 +125,24 @@ void BamWriter::work(HitWrapper<PairedEndHit> wrapper) {
 		bool notgood = (b->core.flag & 0x0004) || (b2->core.flag & 0x0004);
 
 		if (!notgood) {
-		  //swap if b is mate 2
-		  if (b->core.flag & 0x0080) {
-		    assert(b2->core.flag & 0x0040);
-		    bam1_t *tmp = b;
-		    b = b2; b2 = tmp;
-		  }
+			//swap if b is mate 2
+			if (b->core.flag & 0x0080) {
+				assert(b2->core.flag & 0x0040);
+				bam1_t *tmp = b;
+				b = b2; b2 = tmp;
+			}
 
-		  hit = wrapper.getNextHit();
-		  assert(hit != NULL);
+			hit = wrapper.getNextHit();
+			assert(hit != NULL);
 
-		  assert(transcripts.getInternalSid(b->core.tid + 1) == hit->getSid());
-		  assert(transcripts.getInternalSid(b2->core.tid + 1) == hit->getSid());
+			assert(transcripts.getInternalSid(b->core.tid + 1) == hit->getSid());
+			assert(transcripts.getInternalSid(b2->core.tid + 1) == hit->getSid());
 
-		  convert(b, hit->getConPrb());
-		  convert(b2, hit->getConPrb());
+			convert(b, hit->getConPrb());
+			convert(b2, hit->getConPrb());
 
-		  b->core.mpos = b2->core.pos;
-		  b2->core.mpos = b->core.pos;
+			b->core.mpos = b2->core.pos;
+			b2->core.mpos = b->core.pos;
 		}
 
 		/*

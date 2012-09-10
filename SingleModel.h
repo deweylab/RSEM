@@ -9,6 +9,7 @@
 #include<algorithm>
 #include<sstream>
 #include<iostream>
+#include<vector>
 
 #include "utils.h"
 #include "my_assert.h"
@@ -230,11 +231,11 @@ public:
 
 	const LenDist& getGLD() { return *gld; }
 
-	void startSimulation(simul*, double*);
+	void startSimulation(simul*, const std::vector<double>&);
 	bool simulate(READ_INT_TYPE, SingleRead&, int&);
 	void finishSimulation();
 
-	double* getMW() { 
+	const double* getMW() { 
 	  assert(mw != NULL);
 	  return mw;
 	}
@@ -390,7 +391,7 @@ void SingleModel::write(const char* outF) {
 	fclose(fo);
 }
 
-void SingleModel::startSimulation(simul* sampler, double* theta) {
+void SingleModel::startSimulation(simul* sampler, const std::vector<double>& theta) {
 	this->sampler = sampler;
 
 	theta_cdf = new double[M + 1];

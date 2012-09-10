@@ -22,13 +22,14 @@
 #include "GroupInfo.h"
 
 #include "Buffer.h"
+
 using namespace std;
 
 struct Params {
 	int no;
 	FILE *fi;
 	engine_type *engine;
-	double *mw;
+	const double *mw;
 };
 
 struct CIType {
@@ -48,11 +49,12 @@ int nMB;
 double confidence;
 int nCV, nSpC, nSamples; // nCV: number of count vectors; nSpC: number of theta vectors sampled per count vector; nSamples: nCV * nSpC
 int nThreads;
-int cvlen;
+
+float *l_bars;
 
 char cvsF[STRLEN], tmpF[STRLEN], command[STRLEN];
 
-CIType *iso_tau, *gene_tau;
+CIType *iso_tpm, *gene_tpm, *iso_fpkm, *gene_fpkm;
 
 int M, m;
 Refs refs;
@@ -105,69 +107,58 @@ void calcExpectedEffectiveLengths(ModelType& model) {
 }
 
 void* sample_theta_from_c(void* arg) {
-
 	int *cvec;
 	double *theta;
+	float *tpm;
 	gamma_dist **gammas;
 	gamma_generator **rgs;
 
 	Params *params = (Params*)arg;
 	FILE *fi = params->fi;
-	double *mw = params->mw;
+	const double *mw = params->mw;
 
-	cvec = new int[cvlen];
-	theta = new double[cvlen];
-	gammas = new gamma_dist*[cvlen];
-	rgs = new gamma_generator*[cvlen];
-
-	float **vecs = new float*[nSpC];
-	for (int i = 0; i < nSpC; i++) vecs[i] = new float[cvlen];
+	cvec = new int[M + 1];
+	theta = new double[M + 1];
+	gammas = new gamma_dist*[M + 1];
+	rgs = new gamma_generator*[M + 1];
+	tpm = new float[M + 1];
+	float l_bar; // the mean transcript length over the sample
 
 	int cnt = 0;
 	while (fscanf(fi, "%d", &cvec[0]) == 1) {
-		for (int j = 1; j < cvlen; j++) assert(fscanf(fi, "%d", &cvec[j]) == 1);
+		for (int j = 1; j <= M; j++) assert(fscanf(fi, "%d", &cvec[j]) == 1);
 
 		++cnt;
 
-		for (int j = 0; j < cvlen; j++) {
+		for (int j = 0; j <= M; j++) {
 			gammas[j] = new gamma_dist(cvec[j]);
 			rgs[j] = new gamma_generator(*(params->engine), *gammas[j]);
 		}
 
 		for (int i = 0; i < nSpC; i++) {
 			double sum = 0.0;
-			for (int j = 0; j < cvlen; j++) {
-				theta[j] = ((j == 0 || eel[j] >= EPSILON) ? (*rgs[j])() : 0.0);
+			for (int j = 0; j <= M; j++) {
+				theta[j] = ((j == 0 || eel[j] >= EPSILON && mw[j] >= EPSILON) ? (*rgs[j])() / mw[j] : 0.0);
 				sum += theta[j];
 			}
 			assert(sum >= EPSILON);
-			for (int j = 0; j < cvlen; j++) theta[j] /= sum;
+			for (int j = 0; j <= M; j++) theta[j] /= sum;
 
 			sum = 0.0;
-			for (int j = 0; j < cvlen; j++) {
-				theta[j] = (mw[j] < EPSILON ? 0.0 : theta[j] / mw[j]);
-				sum += theta[j];
-			}
-			assert(sum >= EPSILON);
-			for (int j = 0; j < cvlen; j++) theta[j] /= sum;
-
-
-			sum = 0.0;
-			vecs[i][0] = theta[0];
-			for (int j = 1; j < cvlen; j++)
+			tpm[0] = 0.0;
+			for (int j = 1; j <= M; j++)
 				if (eel[j] >= EPSILON) {
-					vecs[i][j] = theta[j] / eel[j];
-					sum += vecs[i][j];
+					tpm[j] = theta[j] / eel[j];
+					sum += tpm[j];
 				}
 				else assert(theta[j] < EPSILON);
-
 			assert(sum >= EPSILON);
-			for (int j = 1; j < cvlen; j++) vecs[i][j] /= sum;
+			l_bar = 0.0; // store mean effective length of the sample
+			for (int j = 1; j <= M; j++) { tpm[j] /= sum; l_bar += tpm[j] * eel[j]; tpm[j] *= 1e6; }
+			buffer->write(l_bar, tpm + 1); // ommit the first element in tpm
 		}
 
-		buffer->write(nSpC, vecs);
-
-		for (int j = 0; j < cvlen; j++) {
+		for (int j = 0; j <= M; j++) {
 			delete gammas[j];
 			delete rgs[j];
 		}
@@ -179,9 +170,7 @@ void* sample_theta_from_c(void* arg) {
 	delete[] theta;
 	delete[] gammas;
 	delete[] rgs;
-
-	for (int i = 0; i < nSpC; i++) delete[] vecs[i];
-	delete[] vecs;
+	delete[] tpm;
 
 	return NULL;
 }
@@ -192,10 +181,9 @@ void sample_theta_vectors_from_count_vectors() {
 	model.read(modelF);
 	calcExpectedEffectiveLengths<ModelType>(model);
 
-
 	int num_threads = min(nThreads, nCV);
 
-	buffer = new Buffer(nMB, nSamples, cvlen, tmpF);
+	buffer = new Buffer(nMB, nSamples, M, l_bars, tmpF);
 
 	paramsArray = new Params[num_threads];
 	threads = new pthread_t[num_threads];
@@ -281,29 +269,44 @@ void calcCI(int nSamples, float *samples, float &lb, float &ub) {
 }
 
 void* calcCI_batch(void* arg) {
-	float *itsamples, *gtsamples;
+	float *itsamples, *gtsamples, *ifsamples, *gfsamples;
 	ifstream fin;
 	CIParams *ciParams = (CIParams*)arg;
 
 	itsamples = new float[nSamples];
 	gtsamples = new float[nSamples];
+	ifsamples = new float[nSamples];
+	gfsamples = new float[nSamples];
 
 	fin.open(tmpF, ios::binary);
-	streampos pos = streampos(gi.spAt(ciParams->start_gene_id)) * nSamples * FLOATSIZE;
+	// minus 1 here for that theta0 is not written!
+	streampos pos = streampos(gi.spAt(ciParams->start_gene_id) - 1) * nSamples * FLOATSIZE;
 	fin.seekg(pos, ios::beg);
 
 	int cnt = 0;
 	for (int i = ciParams->start_gene_id; i < ciParams->end_gene_id; i++) {
 		int b = gi.spAt(i), e = gi.spAt(i + 1);
 		memset(gtsamples, 0, FLOATSIZE * nSamples);
+		memset(gfsamples, 0, FLOATSIZE * nSamples);
 		for (int j = b; j < e; j++) {
 			for (int k = 0; k < nSamples; k++) {
 				fin.read((char*)(&itsamples[k]), FLOATSIZE);
 				gtsamples[k] += itsamples[k];
+				ifsamples[k] = 1e3 / l_bars[k] * itsamples[k];
+				gfsamples[k] += ifsamples[k];
 			}
-			calcCI(nSamples, itsamples, iso_tau[j].lb, iso_tau[j].ub);
+			calcCI(nSamples, itsamples, iso_tpm[j].lb, iso_tpm[j].ub);
+			calcCI(nSamples, ifsamples, iso_fpkm[j].lb, iso_fpkm[j].ub);
 		}
-		calcCI(nSamples, gtsamples, gene_tau[i].lb, gene_tau[i].ub);
+
+		if (e - b > 1) {
+			calcCI(nSamples, gtsamples, gene_tpm[i].lb, gene_tpm[i].ub);
+			calcCI(nSamples, gfsamples, gene_fpkm[i].lb, gene_fpkm[i].ub);
+		}
+		else {
+			gene_tpm[i].lb = iso_tpm[b].lb; gene_tpm[i].ub = iso_tpm[b].ub;
+			gene_fpkm[i].lb = iso_fpkm[b].lb; gene_fpkm[i].ub = iso_fpkm[b].ub;
+		}
 
 		++cnt;
 		if (verbose && cnt % 1000 == 0) { printf("In thread %d, %d genes are processed for CI calculation!\n", ciParams->no, cnt); }
@@ -322,8 +325,10 @@ void calculate_credibility_intervals(char* imdName) {
 	char outF[STRLEN];
 	int num_threads = nThreads;
 
-	iso_tau = new CIType[M + 1];
-	gene_tau = new CIType[m];
+	iso_tpm = new CIType[M + 1];
+	gene_tpm = new CIType[m];
+	iso_fpkm = new CIType[M + 1];
+	gene_fpkm = new CIType[m];
 
 	assert(M > 0);
 	int quotient = M / num_threads;
@@ -374,22 +379,32 @@ void calculate_credibility_intervals(char* imdName) {
 	sprintf(outF, "%s.iso_res", imdName);
 	fo = fopen(outF, "a");
 	for (int i = 1; i <= M; i++)
-		fprintf(fo, "%.6g%c", iso_tau[i].lb, (i < M ? '\t' : '\n'));
+		fprintf(fo, "%.6g%c", iso_tpm[i].lb, (i < M ? '\t' : '\n'));
 	for (int i = 1; i <= M; i++)
-		fprintf(fo, "%.6g%c", iso_tau[i].ub, (i < M ? '\t' : '\n'));
+		fprintf(fo, "%.6g%c", iso_tpm[i].ub, (i < M ? '\t' : '\n'));
+	for (int i = 1; i <= M; i++)
+		fprintf(fo, "%.6g%c", iso_fpkm[i].lb, (i < M ? '\t' : '\n'));
+	for (int i = 1; i <= M; i++)
+		fprintf(fo, "%.6g%c", iso_fpkm[i].ub, (i < M ? '\t' : '\n'));
 	fclose(fo);
 
 	//gene level results
 	sprintf(outF, "%s.gene_res", imdName);
 	fo = fopen(outF, "a");
 	for (int i = 0; i < m; i++)
-		fprintf(fo, "%.6g%c", gene_tau[i].lb, (i < m - 1 ? '\t' : '\n'));
+		fprintf(fo, "%.6g%c", gene_tpm[i].lb, (i < m - 1 ? '\t' : '\n'));
 	for (int i = 0; i < m; i++)
-		fprintf(fo, "%.6g%c", gene_tau[i].ub, (i < m - 1 ? '\t' : '\n'));
+		fprintf(fo, "%.6g%c", gene_tpm[i].ub, (i < m - 1 ? '\t' : '\n'));
+	for (int i = 0; i < m; i++)
+		fprintf(fo, "%.6g%c", gene_fpkm[i].lb, (i < m - 1 ? '\t' : '\n'));
+	for (int i = 0; i < m; i++)
+		fprintf(fo, "%.6g%c", gene_fpkm[i].ub, (i < m - 1 ? '\t' : '\n'));
 	fclose(fo);
 
-	delete[] iso_tau;
-	delete[] gene_tau;
+	delete[] iso_tpm;
+	delete[] gene_tpm;
+	delete[] iso_fpkm;
+	delete[] gene_fpkm;
 
 	if (verbose) { printf("All credibility intervals are calculated!\n"); }
 }
@@ -424,8 +439,8 @@ int main(int argc, char* argv[]) {
 	m = gi.getm();
 
 	nSamples = nCV * nSpC;
-	cvlen = M + 1;
-	assert(nSamples > 0 && cvlen > 1); // for Buffter.h: (bufsize_type)nSamples
+	assert(nSamples > 0 && M > 0); // for Buffter.h: (bufsize_type)nSamples
+	l_bars = new float[nSamples];
 
 	sprintf(tmpF, "%s.tmp", imdName);
 	sprintf(cvsF, "%s.countvectors", imdName);
@@ -447,6 +462,7 @@ int main(int argc, char* argv[]) {
 	// Phase II
 	calculate_credibility_intervals(imdName);
 
+	delete l_bars;
 	/*
 	sprintf(command, "rm -f %s", tmpF);
 	int status = system(command);

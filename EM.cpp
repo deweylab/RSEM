@@ -273,60 +273,124 @@ void* calcConProbs(void* arg) {
 
 template<class ModelType>
 void calcExpectedEffectiveLengths(ModelType& model) {
-  int lb, ub, span;
-  double *pdf = NULL, *cdf = NULL, *clen = NULL; // clen[i] = sigma_{j=1}^{i}pdf[i]*(lb+i)
+	int lb, ub, span;
+	double *pdf = NULL, *cdf = NULL, *clen = NULL; // clen[i] = sigma_{j=1}^{i}pdf[i]*(lb+i)
   
-  model.getGLD().copyTo(pdf, cdf, lb, ub, span);
-  clen = new double[span + 1];
-  clen[0] = 0.0;
-  for (int i = 1; i <= span; i++) {
-    clen[i] = clen[i - 1] + pdf[i] * (lb + i);
-  }
+	model.getGLD().copyTo(pdf, cdf, lb, ub, span);
+	clen = new double[span + 1];
+	clen[0] = 0.0;
+	for (int i = 1; i <= span; i++) {
+		clen[i] = clen[i - 1] + pdf[i] * (lb + i);
+	}
 
-  eel.clear();
-  eel.resize(M + 1, 0.0);
-  for (int i = 1; i <= M; i++) {
-    int totLen = refs.getRef(i).getTotLen();
-    int fullLen = refs.getRef(i).getFullLen();
-    int pos1 = max(min(totLen - fullLen + 1, ub) - lb, 0);
-    int pos2 = max(min(totLen, ub) - lb, 0);
+	eel.assign(M + 1, 0.0);
+	for (int i = 1; i <= M; i++) {
+		int totLen = refs.getRef(i).getTotLen();
+		int fullLen = refs.getRef(i).getFullLen();
+		int pos1 = max(min(totLen - fullLen + 1, ub) - lb, 0);
+		int pos2 = max(min(totLen, ub) - lb, 0);
 
-    if (pos2 == 0) { eel[i] = 0.0; continue; }
+		if (pos2 == 0) { eel[i] = 0.0; continue; }
     
-    eel[i] = fullLen * cdf[pos1] + ((cdf[pos2] - cdf[pos1]) * (totLen + 1) - (clen[pos2] - clen[pos1]));
-    assert(eel[i] >= 0);
-    if (eel[i] < MINEEL) { eel[i] = 0.0; }
-  }
+		eel[i] = fullLen * cdf[pos1] + ((cdf[pos2] - cdf[pos1]) * (totLen + 1) - (clen[pos2] - clen[pos1]));
+		assert(eel[i] >= 0);
+		if (eel[i] < MINEEL) { eel[i] = 0.0; }
+	}
   
-  delete[] pdf;
-  delete[] cdf;
-  delete[] clen;
+	delete[] pdf;
+	delete[] cdf;
+	delete[] clen;
+}
+
+void polishTheta(vector<double>& theta, const vector<double>& eel, const double* mw) {
+	double sum = 0.0;
+
+	/* The reason that for noise gene, mw value is 1 is :
+	 * currently, all masked positions are for poly(A) sites, which in theory should be filtered out.
+	 * So the theta0 does not containing reads from any masked position
+	 */
+
+	for (int i = 0; i <= M; i++) {
+		// i == 0, mw[i] == 1
+		if (i > 0 && (mw[i] < EPSILON || eel[i] < EPSILON)) {
+			theta[i] = 0.0;
+			continue;
+		}
+		theta[i] = theta[i] / mw[i];
+		sum += theta[i];
+	}
+	// currently is OK, since no transcript should be masked totally, only the poly(A) tail related part will be masked
+	general_assert(sum >= EPSILON, "No effective length is no less than" + ftos(MINEEL, 6) + " !");
+	for (int i = 0; i <= M; i++) theta[i] /= sum;
+}
+
+void calcExpressionValues(const vector<double>& theta, const vector<double>& eel, vector<double>& tpm, vector<double>& fpkm) {
+	double denom;
+	vector<double> frac;
+
+	//calculate fraction of count over all mappabile reads
+	denom = 0.0;
+	frac.assign(M + 1, 0.0);
+	for (int i = 1; i <= M; i++) 
+	  if (eel[i] >= EPSILON) {
+	    frac[i] = theta[i];
+	    denom += frac[i];
+	  }
+	general_assert(denom > 0, "No alignable reads?!");
+	for (int i = 1; i <= M; i++) frac[i] /= denom;
+  
+	//calculate FPKM
+	fpkm.assign(M + 1, 0.0);
+	for (int i = 1; i <= M; i++)
+		if (eel[i] >= EPSILON) fpkm[i] = frac[i] * 1e9 / eel[i];
+
+	//calculate TPM
+	tpm.assign(M + 1, 0.0);
+	denom = 0.0;
+	for (int i = 1; i <= M; i++) denom += fpkm[i];
+	for (int i = 1; i <= M; i++) tpm[i] = fpkm[i] / denom * 1e6;  
 }
 
 template<class ModelType>
 void writeResults(ModelType& model, double* counts) {
-	double denom;
 	char outF[STRLEN];
 	FILE *fo;
 
 	sprintf(modelF, "%s.model", statName);
 	model.write(modelF);
 
-	//calculate tau values
-	double *tau = new double[M + 1];
-	memset(tau, 0, sizeof(double) * (M + 1));
+	vector<int> tlens;
+	vector<double> fpkm, tpm, isopct;
+	vector<double> glens, gene_eels, gene_counts, gene_tpm, gene_fpkm;
 
-	denom = 0.0;
-	for (int i = 1; i <= M; i++) 
-	  if (eel[i] >= EPSILON) {
-	    tau[i] = theta[i] / eel[i];
-	    denom += tau[i];
-	  }   
+	calcExpressionValues(theta, eel, tpm, fpkm);
 
-	general_assert(denom > 0, "No alignable reads?!");
+	//calculate IsoPct, etc.
+	isopct.assign(M + 1, 0.0);
+	tlens.assign(M + 1, 0);
 
-	for (int i = 1; i <= M; i++) {
-		tau[i] /= denom;
+	glens.assign(m, 0.0); gene_eels.assign(m, 0.0);
+	gene_counts.assign(m, 0.0); gene_tpm.assign(m, 0.0); gene_fpkm.assign(m, 0.0);
+
+	for (int i = 0; i < m; i++) {
+		int b = gi.spAt(i), e = gi.spAt(i + 1);
+		for (int j = b; j < e; j++) {
+			const Transcript& transcript = transcripts.getTranscriptAt(j);
+			tlens[j] = transcript.getLength();
+
+			glens[i] += tlens[j] * tpm[j];
+			gene_eels[i] += eel[j] * tpm[j];
+			gene_counts[i] += counts[j];
+			gene_tpm[i] += tpm[j];
+			gene_fpkm[i] += fpkm[j];
+		}
+
+		if (gene_tpm[i] < EPSILON) continue;
+
+		for (int j = b; j < e; j++)
+			isopct[j] = tpm[j] / gene_tpm[i];
+		glens[i] /= gene_tpm[i];
+		gene_eels[i] /= gene_tpm[i];
 	}
 
 	//isoform level results
@@ -336,34 +400,30 @@ void writeResults(ModelType& model, double* counts) {
 		const Transcript& transcript = transcripts.getTranscriptAt(i);
 		fprintf(fo, "%s%c", transcript.getTranscriptID().c_str(), (i < M ? '\t' : '\n'));
 	}
-	for (int i = 1; i <= M; i++)
-		fprintf(fo, "%.2f%c", counts[i], (i < M ? '\t' : '\n'));
-	for (int i = 1; i <= M; i++)
-		fprintf(fo, "%.15g%c", tau[i], (i < M ? '\t' : '\n'));
 	for (int i = 1; i <= M; i++) {
 		const Transcript& transcript = transcripts.getTranscriptAt(i);
 		fprintf(fo, "%s%c", transcript.getGeneID().c_str(), (i < M ? '\t' : '\n'));
 	}
+	for (int i = 1; i <= M; i++)
+		fprintf(fo, "%d%c", tlens[i], (i < M ? '\t' : '\n'));
+	for (int i = 1; i <= M; i++)
+		fprintf(fo, "%.2f%c", eel[i], (i < M ? '\t' : '\n'));
+	for (int i = 1; i <= M; i++)
+		fprintf(fo, "%.2f%c", counts[i], (i < M ? '\t' : '\n'));
+	for (int i = 1; i <= M; i++)
+		fprintf(fo, "%.2f%c", tpm[i], (i < M ? '\t' : '\n'));
+	for (int i = 1; i <= M; i++)
+		fprintf(fo, "%.2f%c", fpkm[i], (i < M ? '\t' : '\n'));
+	for (int i = 1; i <= M; i++)
+		fprintf(fo, "%.2f%c", isopct[i] * 1e2, (i < M ? '\t' : '\n'));
 	fclose(fo);
 
 	//gene level results
 	sprintf(outF, "%s.gene_res", imdName);
 	fo = fopen(outF, "w");
 	for (int i = 0; i < m; i++) {
-		const string& gene_id = transcripts.getTranscriptAt(gi.spAt(i)).getGeneID();
-		fprintf(fo, "%s%c", gene_id.c_str(), (i < m - 1 ? '\t' : '\n'));
-	}
-	for (int i = 0; i < m; i++) {
-		double sumC = 0.0; // sum of counts
-		int b = gi.spAt(i), e = gi.spAt(i + 1);
-		for (int j = b; j < e; j++) sumC += counts[j];
-		fprintf(fo, "%.2f%c", sumC, (i < m - 1 ? '\t' : '\n'));
-	}
-	for (int i = 0; i < m; i++) {
-		double sumT = 0.0; // sum of tau values
-		int b = gi.spAt(i), e = gi.spAt(i + 1);
-		for (int j = b; j < e; j++) sumT += tau[j];
-		fprintf(fo, "%.15g%c", sumT, (i < m - 1 ? '\t' : '\n'));
+		const Transcript& transcript = transcripts.getTranscriptAt(gi.spAt(i));
+		fprintf(fo, "%s%c", transcript.getGeneID().c_str(), (i < m - 1 ? '\t' : '\n'));
 	}
 	for (int i = 0; i < m; i++) {
 		int b = gi.spAt(i), e = gi.spAt(i + 1);
@@ -371,9 +431,17 @@ void writeResults(ModelType& model, double* counts) {
 			fprintf(fo, "%s%c", transcripts.getTranscriptAt(j).getTranscriptID().c_str(), (j < e - 1 ? ',' : (i < m - 1 ? '\t' :'\n')));
 		}
 	}
+	for (int i = 0; i < m; i++)
+		fprintf(fo, "%.2f%c", glens[i], (i < m - 1 ? '\t' : '\n'));
+	for (int i = 0; i < m; i++)
+		fprintf(fo, "%.2f%c", gene_eels[i], (i < m - 1 ? '\t' : '\n'));
+	for (int i = 0; i < m; i++)
+		fprintf(fo, "%.2f%c", gene_counts[i], (i < m - 1 ? '\t' : '\n'));
+	for (int i = 0; i < m; i++)
+		fprintf(fo, "%.2f%c", gene_tpm[i], (i < m - 1 ? '\t' : '\n'));
+	for (int i = 0; i < m; i++)
+		fprintf(fo, "%.2f%c", gene_fpkm[i], (i < m - 1 ? '\t' : '\n'));
 	fclose(fo);
-
-	delete[] tau;
 
 	if (verbose) { printf("Expression Results are written!\n"); }
 }
@@ -551,28 +619,8 @@ void EM() {
 		fout.close();
 	}
 
-	sprintf(thetaF, "%s.theta", statName);
-	fo = fopen(thetaF, "w");
-	fprintf(fo, "%d\n", M + 1);
-
-	// output theta'
-	for (int i = 0; i < M; i++) fprintf(fo, "%.15g ", theta[i]);
-	fprintf(fo, "%.15g\n", theta[M]);
-	
-	//calculate expected effective lengths for each isoform
-	calcExpectedEffectiveLengths<ModelType>(model);
-
-	//correct theta vector
-	sum = theta[0];
-	for (int i = 1; i <= M; i++) 
-	  if (eel[i] < EPSILON) { theta[i] = 0.0; }
-	  else sum += theta[i];
-
-	general_assert(sum >= EPSILON, "No Expected Effective Length is no less than" + ftos(MINEEL, 6) + "?!");
-
-	for (int i = 0; i <= M; i++) theta[i] /= sum;
-
 	//calculate expected weights and counts using learned parameters
+	//just use the raw theta learned from the data, do not correct for eel or mw
 	updateModel = false; calcExpectedWeights = true;
 	for (int i = 0; i <= M; i++) probv[i] = theta[i];
 	for (int i = 0; i < nThreads; i++) {
@@ -594,15 +642,18 @@ void EM() {
 	/* destroy attribute */
 	pthread_attr_destroy(&attr);
 
-	//convert theta' to theta
-	double *mw = model.getMW();
-	sum = 0.0;
-	for (int i = 0; i <= M; i++) {
-	  theta[i] = (mw[i] < EPSILON ? 0.0 : theta[i] / mw[i]);
-	  sum += theta[i]; 
-	}
-	assert(sum >= EPSILON);
-	for (int i = 0; i <= M; i++) theta[i] /= sum;
+
+	sprintf(thetaF, "%s.theta", statName);
+	fo = fopen(thetaF, "w");
+	fprintf(fo, "%d\n", M + 1);
+
+	// output theta'
+	for (int i = 0; i < M; i++) fprintf(fo, "%.15g ", theta[i]);
+	fprintf(fo, "%.15g\n", theta[M]);
+	
+	//calculate expected effective lengths for each isoform
+	calcExpectedEffectiveLengths<ModelType>(model);
+	polishTheta(theta, eel, model.getMW());
 
 	// output theta
 	for (int i = 0; i < M; i++) fprintf(fo, "%.15g ", theta[i]);

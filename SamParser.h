@@ -341,10 +341,17 @@ inline int SamParser::getReadType(const bam1_t* b) {
 	return (bam_aux2i(p) > 0 ? 2 : 0);
 }
 
-
 //For paired-end reads, do not print out type 2 reads
 inline int SamParser::getReadType(const bam1_t* b, const bam1_t* b2) {
-	if ((b->core.flag & 0x0002) && (b2->core.flag & 0x0002)) return 1;
+	if (!(b->core.flag & 0x0004) && !(b2->core.flag & 0x0004)) return 1;
+
+	if (!strcmp(rtTag, "")) return 0;
+
+	uint8_t *p = bam_aux_get(b, rtTag);
+	if (p != NULL && bam_aux2i(p) > 0) return 2;
+
+	p = bam_aux_get(b2, rtTag);
+	if (p != NULL && bam_aux2i(p) > 0) return 2;
 
 	return 0;
 }

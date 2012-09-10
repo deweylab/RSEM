@@ -17,10 +17,10 @@ pod2usage(-msg => "Invalid number of arguments!", -exitval => 2, -verbose => 2) 
 my ($fn, $dir, $suf) = fileparse($0);
 my $command = "";
 
-$command = $dir."rsem-for-ebseq-calculate-clustering-info $k $ARGV[0] $ARGV[1].ump";
+$command = $dir."EBSeq/rsem-for-ebseq-calculate-clustering-info $k $ARGV[0] $ARGV[1].ump";
 &runCommand($command);
 
-$command = $dir."rsem-for-ebseq-generate-ngvector-from-clustering-info $ARGV[1].ump $ARGV[1].ngvec";
+$command = $dir."EBSeq/rsem-for-ebseq-generate-ngvector-from-clustering-info $ARGV[1].ump $ARGV[1].ngvec";
 &runCommand($command);
 
 # command, {err_msg}

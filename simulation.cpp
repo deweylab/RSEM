@@ -9,7 +9,7 @@
 #include<vector>
 
 #include "utils.h"
-
+#include "my_assert.h"
 #include "Read.h"
 #include "SingleRead.h"
 #include "SingleReadQ.h"
@@ -31,6 +31,8 @@
 
 using namespace std;
 
+const int OFFSITE = 5;
+
 READ_INT_TYPE N;
 int model_type, M, m;
 
@@ -38,8 +40,8 @@ Refs refs;
 GroupInfo gi;
 Transcripts transcripts;
 
-double *theta, *counts;
 vector<double> eel;
+vector<double> theta, counts;
 
 int n_os;
 ostream *os[2];
@@ -78,34 +80,33 @@ void genOutReadStreams(int type, char *outFN) {
 
 template<class ModelType>
 void calcExpectedEffectiveLengths(ModelType& model) {
-  int lb, ub, span;
-  double *pdf = NULL, *cdf = NULL, *clen = NULL; // clen[i] = sigma_{j=1}^{i}pdf[i]*(lb+i)
+	int lb, ub, span;
+	double *pdf = NULL, *cdf = NULL, *clen = NULL; // clen[i] = sigma_{j=1}^{i}pdf[i]*(lb+i)
   
-  model.getGLD().copyTo(pdf, cdf, lb, ub, span);
-  clen = new double[span + 1];
-  clen[0] = 0.0;
-  for (int i = 1; i <= span; i++) {
-    clen[i] = clen[i - 1] + pdf[i] * (lb + i);
-  }
+	model.getGLD().copyTo(pdf, cdf, lb, ub, span);
+	clen = new double[span + 1];
+	clen[0] = 0.0;
+	for (int i = 1; i <= span; i++) {
+		clen[i] = clen[i - 1] + pdf[i] * (lb + i);
+	}
 
-  eel.clear();
-  eel.resize(M + 1, 0.0);
-  for (int i = 1; i <= M; i++) {
-    int totLen = refs.getRef(i).getTotLen();
-    int fullLen = refs.getRef(i).getFullLen();
-    int pos1 = max(min(totLen - fullLen + 1, ub) - lb, 0);
-    int pos2 = max(min(totLen, ub) - lb, 0);
+	eel.assign(M + 1, 0.0);
+	for (int i = 1; i <= M; i++) {
+		int totLen = refs.getRef(i).getTotLen();
+		int fullLen = refs.getRef(i).getFullLen();
+		int pos1 = max(min(totLen - fullLen + 1, ub) - lb, 0);
+		int pos2 = max(min(totLen, ub) - lb, 0);
 
-    if (pos2 == 0) { eel[i] = 0.0; continue; }
+		if (pos2 == 0) { eel[i] = 0.0; continue; }
     
-    eel[i] = fullLen * cdf[pos1] + ((cdf[pos2] - cdf[pos1]) * (totLen + 1) - (clen[pos2] - clen[pos1]));
-    assert(eel[i] >= 0);
-    if (eel[i] < MINEEL) { eel[i] = 0.0; }
-  }
+		eel[i] = fullLen * cdf[pos1] + ((cdf[pos2] - cdf[pos1]) * (totLen + 1) - (clen[pos2] - clen[pos1]));
+		assert(eel[i] >= 0);
+		if (eel[i] < MINEEL) { eel[i] = 0.0; }
+	}
   
-  delete[] pdf;
-  delete[] cdf;
-  delete[] clen;
+	delete[] pdf;
+	delete[] cdf;
+	delete[] clen;
 }
 
 template<class ReadType, class ModelType>
@@ -122,16 +123,17 @@ void simulate(char* modelF, char* resultsF) {
 	//generate theta vector
 	ifstream fin(resultsF);
 	string line;
-	double tau;
+	double tpm;
 	double denom = 0.0;
+	getline(fin, line); // read the first line, which is just column names
 	for (int i = 1; i <= M; i++) {
 	  getline(fin, line);
 	  size_t pos = 0;
-	  for (int j = 0; j < 2; j++) pos = line.find_first_of('\t', pos) + 1;
+	  for (int j = 0; j < OFFSITE; j++) pos = line.find_first_of('\t', pos) + 1;
 	  size_t pos2 = line.find_first_of('\t', pos);
 	  if (pos2 == string::npos) pos2 = line.length();
-	  tau = atof(line.substr(pos, pos2 - pos).c_str());
-	  theta[i] = tau * eel[i];
+	  tpm = atof(line.substr(pos, pos2 - pos).c_str());
+	  theta[i] = tpm * eel[i];
 	  denom += theta[i];
 	}
 	assert(denom > EPSILON);
@@ -153,56 +155,97 @@ void simulate(char* modelF, char* resultsF) {
 	cout<< "Total number of resimulation is "<< resimulation_count<< endl;
 }
 
+void calcExpressionValues(const vector<double>& theta, const vector<double>& eel, vector<double>& tpm, vector<double>& fpkm) {
+	double denom;
+	vector<double> frac;
+
+	//calculate fraction of count over all mappabile reads
+	denom = 0.0;
+	frac.assign(M + 1, 0.0);
+	for (int i = 1; i <= M; i++)
+	  if (eel[i] >= EPSILON) {
+	    frac[i] = theta[i];
+	    denom += frac[i];
+	  }
+	general_assert(denom > 0, "No alignable reads?!");
+	for (int i = 1; i <= M; i++) frac[i] /= denom;
+
+	//calculate FPKM
+	fpkm.assign(M + 1, 0.0);
+	for (int i = 1; i <= M; i++)
+		if (eel[i] >= EPSILON) fpkm[i] = frac[i] * 1e9 / eel[i];
+
+	//calculate TPM
+	tpm.assign(M + 1, 0.0);
+	denom = 0.0;
+	for (int i = 1; i <= M; i++) denom += fpkm[i];
+	for (int i = 1; i <= M; i++) tpm[i] = fpkm[i] / denom * 1e6;
+}
+
 void writeResFiles(char* outFN) {
 	FILE *fo;
-	double denom;
+	vector<int> tlens;
+	vector<double> fpkm, tpm, isopct;
+	vector<double> glens, gene_eels, gene_counts, gene_tpm, gene_fpkm;
 
-	//calculate tau values
-	double *tau = new double[M + 1];
-	memset(tau, 0, sizeof(double) * (M + 1));
-	denom = 0.0;
-	for (int i = 1; i <= M; i++) 
-		if (eel[i] > EPSILON) {
-			tau[i] = counts[i] / eel[i];
-			denom += tau[i];
+	for (int i = 1; i <= M; i++)
+		general_assert(eel[i] > EPSILON || counts[i] <= EPSILON, "An isoform whose effecitve length < " + ftos(MINEEL, 6) + " got sampled!");
+
+	calcExpressionValues(counts, eel, tpm, fpkm);
+
+	//calculate IsoPct, etc.
+	isopct.assign(M + 1, 0.0);
+	tlens.assign(M + 1, 0);
+
+	glens.assign(m, 0.0); gene_eels.assign(m, 0.0);
+	gene_counts.assign(m, 0.0); gene_tpm.assign(m, 0.0); gene_fpkm.assign(m, 0.0);
+
+	for (int i = 0; i < m; i++) {
+		int b = gi.spAt(i), e = gi.spAt(i + 1);
+		for (int j = b; j < e; j++) {
+			const Transcript& transcript = transcripts.getTranscriptAt(j);
+			tlens[j] = transcript.getLength();
+
+			glens[i] += tlens[j] * tpm[j];
+			gene_eels[i] += eel[j] * tpm[j];
+			gene_counts[i] += counts[j];
+			gene_tpm[i] += tpm[j];
+			gene_fpkm[i] += fpkm[j];
 		}
-		else {
-		    if (counts[i] > EPSILON) { printf("Warning: An isoform which EEL is less than %.6g gets sampled!\n", MINEEL); }
-		}
-	assert(denom > 0.0);
-	for (int i = 1; i <= M; i++) tau[i] /= denom;
+
+		if (gene_tpm[i] < EPSILON) continue;
+
+		for (int j = b; j < e; j++)
+			isopct[j] = tpm[j] / gene_tpm[i];
+		glens[i] /= gene_tpm[i];
+		gene_eels[i] /= gene_tpm[i];
+	}
 
 	//isoform level
 	sprintf(isoResF, "%s.sim.isoforms.results", outFN);
 	fo = fopen(isoResF, "w");
+	fprintf(fo, "transcript_id\tgene_id\tlength\teffective_length\tcount\tTPM\tFPKM\tIsoPct\n");
 	for (int i = 1; i <= M; i++) {
 		const Transcript& transcript = transcripts.getTranscriptAt(i);
-		fprintf(fo, "%s\t%.2f\t%.15g", transcript.getTranscriptID().c_str(), counts[i], tau[i]);
-		
-		if (transcript.getLeft() != "") { fprintf(fo, "\t%s", transcript.getLeft().c_str()); }
-		fprintf(fo, "\n");
+		fprintf(fo, "%s\t%s\t%d\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\n", transcript.getTranscriptID().c_str(), transcript.getGeneID().c_str(), tlens[i],
+				eel[i], counts[i], tpm[i], fpkm[i], isopct[i] * 1e2);
 	}
 	fclose(fo);
 
 	//gene level
 	sprintf(geneResF, "%s.sim.genes.results", outFN);
 	fo = fopen(geneResF, "w");
+	fprintf(fo, "gene_id\ttranscript_id(s)\tlength\teffective_length\tcount\tTPM\tFPKM\n");
 	for (int i = 0; i < m; i++) {
-	  double sum_c = 0.0, sum_tau = 0.0;
 		int b = gi.spAt(i), e = gi.spAt(i + 1);
-		for (int j = b; j < e; j++) {
-			sum_c += counts[j];
-			sum_tau += tau[j];
-		}
 		const string& gene_id = transcripts.getTranscriptAt(b).getGeneID();
-		fprintf(fo, "%s\t%.2f\t%.15g\t", gene_id.c_str(), sum_c, sum_tau);
+		fprintf(fo, "%s\t", gene_id.c_str());
 		for (int j = b; j < e; j++) {
-			fprintf(fo, "%s%c", transcripts.getTranscriptAt(j).getTranscriptID().c_str(), (j < e - 1 ? ',' : '\n'));
+			fprintf(fo, "%s%c", transcripts.getTranscriptAt(j).getTranscriptID().c_str(), (j < e - 1 ? ',' : '\t'));
 		}
+		fprintf(fo, "%.2f\t%.2f\t%.2f\t%.2f\t%.2f\n", glens[i], gene_eels[i], gene_counts[i], gene_tpm[i], gene_fpkm[i]);
 	}
 	fclose(fo);
-
-	delete[] tau;
 }
 
 void releaseOutReadStreams() {
@@ -240,14 +283,13 @@ int main(int argc, char* argv[]) {
 	assert(fscanf(fi, "%d", &model_type) == 1);
 	fclose(fi);
 
-	theta = new double[M + 1];
+	theta.assign(M + 1, 0.0);
 	theta[0] = atof(argv[4]);
 	N = atoi(argv[5]);
 
 	genOutReadStreams(model_type, argv[6]);
 
-	counts = new double[M + 1];
-	memset(counts, 0, sizeof(double) * (M + 1));
+	counts.assign(M + 1, 0.0);
 
 	switch(model_type) {
 	case 0: simulate<SingleRead, SingleModel>(argv[2], argv[3]); break;
@@ -258,9 +300,6 @@ int main(int argc, char* argv[]) {
 
 	writeResFiles(argv[6]);
 	releaseOutReadStreams();
-
-	delete[] theta;
-	delete[] counts;
 
 	return 0;
 }

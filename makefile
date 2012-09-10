@@ -1,8 +1,7 @@
 CC = g++
 CFLAGS = -Wall -c -I.
 COFLAGS = -Wall -O3 -ffast-math -c -I.
-PROGRAMS = rsem-extract-reference-transcripts rsem-synthesis-reference-transcripts rsem-preref rsem-parse-alignments rsem-build-read-index rsem-run-em rsem-tbam2gbam rsem-run-gibbs rsem-calculate-credibility-intervals rsem-simulate-reads rsem-bam2wig rsem-get-unique rsem-bam2readdepth rsem-sam-validator rsem-scan-for-paired-end-reads rsem-for-ebseq-calculate-clustering-info
-
+PROGRAMS = rsem-extract-reference-transcripts rsem-synthesis-reference-transcripts rsem-preref rsem-parse-alignments rsem-build-read-index rsem-run-em rsem-tbam2gbam rsem-run-gibbs rsem-calculate-credibility-intervals rsem-simulate-reads rsem-bam2wig rsem-get-unique rsem-bam2readdepth rsem-sam-validator rsem-scan-for-paired-end-reads
 
 all : $(PROGRAMS)
 
@@ -136,10 +135,7 @@ rsem-sam-validator : sam/bam.h sam/sam.h my_assert.h samValidator.cpp sam/libbam
 rsem-scan-for-paired-end-reads : sam/bam.h sam/sam.h my_assert.h scanForPairedEndReads.cpp sam/libbam.a
 	$(CC) -O3 -Wall scanForPairedEndReads.cpp sam/libbam.a -lz -o $@
 
-rsem-for-ebseq-calculate-clustering-info : calcClusteringInfo.cpp
-	$(CC) -O3 -Wall calcClusteringInfo.cpp -o $@
-
-clean:
+clean :
 	rm -f *.o *~ $(PROGRAMS)
 	cd sam ; ${MAKE} clean
-
+	cd EBSeq ; ${MAKE} clean

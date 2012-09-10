@@ -8,6 +8,8 @@ if (scalar(@ARGV) == 0) {
     exit(-1);
 }
 
+my $offsite = 4; # for new file formats
+
 my $line;
 my $n = scalar(@ARGV);
 my $M = -1;
@@ -19,7 +21,7 @@ for (my $i = 0; $i < $n; $i++) {
     while ($line = <INPUT>) {
 	chomp($line); 
 	my @fields = split(/\t/, $line);
-	push(@sample, $fields[1]);
+	push(@sample, $fields[$offsite]);
     }
     close(INPUT);
     if (scalar(@sample) == 0) {

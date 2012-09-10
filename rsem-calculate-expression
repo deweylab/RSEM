@@ -19,6 +19,10 @@ my $status = 0;
 
 my $read_type = 1; # default, single end with qual
 
+my @transcript_title = ("transcript_id", "gene_id", "length", "effective_length", "expected_count", "TPM", "FPKM", "IsoPct", "pme_expected_count", "pme_TPM", "pme_FPKM", "IsoPct_from_pme_TPM", "TPM_ci_lower_bound", "TPM_ci_upper_bound", "FPKM_ci_lower_bound", "FPKM_ci_upper_bound");
+
+my @gene_title = ("gene_id", "transcript_id(s)", "length", "effective_length", "expected_count", "TPM", "FPKM", "pme_expected_count", "pme_TPM", "pme_FPKM", "TPM_ci_lower_bound", "TPM_ci_upper_bound", "FPKM_ci_lower_bound", "FPKM_ci_upper_bound");
+
 my $bowtie_path = "";
 my $C = 2;
 my $E = 99999999;
@@ -273,8 +277,8 @@ if ($quiet) { $command .= " -q"; }
 
 &runCommand($command);
 
-&collectResults("$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
-&collectResults("$imdName.gene_res", "$sampleName.genes.results"); # gene level
+&collectResults("isoform", "$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
+&collectResults("gene", "$imdName.gene_res", "$sampleName.genes.results"); # gene level
 
 if ($genBamF) {
     $command = $dir."sam/samtools sort $sampleName.transcript.bam $sampleName.transcript.sorted";
@@ -307,8 +311,8 @@ if ($calcCI || $var_opt) {
 if ($calcCI) {
     system("mv $sampleName.isoforms.results $imdName.isoforms.results.bak1");
     system("mv $sampleName.genes.results $imdName.genes.results.bak1");
-    &collectResults("$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
-    &collectResults("$imdName.gene_res", "$sampleName.genes.results"); # gene level
+    &collectResults("isoform", "$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
+    &collectResults("gene", "$imdName.gene_res", "$sampleName.genes.results"); # gene level
 
     $command = $dir."rsem-calculate-credibility-intervals $refName $imdName $statName $CONFIDENCE $NCV $NSPC $NMB";
     $command .= " -p $nThreads";
@@ -317,8 +321,8 @@ if ($calcCI) {
 
     system("mv $sampleName.isoforms.results $imdName.isoforms.results.bak2");
     system("mv $sampleName.genes.results $imdName.genes.results.bak2");
-    &collectResults("$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
-    &collectResults("$imdName.gene_res", "$sampleName.genes.results"); # gene level
+    &collectResults("isoform", "$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
+    &collectResults("gene", "$imdName.gene_res", "$sampleName.genes.results"); # gene level
 }
 
 if ($mTime) { $time_end = time(); $time_ci = $time_end - $time_start; }
@@ -354,33 +358,28 @@ sub runCommand {
     }
     print "\n";
 }
-
+ 
 # inpF, outF
 sub collectResults {
     my $local_status;
     my ($inpF, $outF);
-    my (@results, @ids) = ();
+    my @results = ();
     my $line;
-    my $cnt;
 
-    $inpF = $_[0];
-    $outF = $_[1];
+    $inpF = $_[1];
+    $outF = $_[2];
 
     $local_status = open(INPUT, $inpF);
     if ($local_status == 0) { print "Fail to open file $inpF!\n"; exit(-1); }
     
-    $cnt = 0;
     @results = ();
     
     while ($line = <INPUT>) {
-	++$cnt;
 	chomp($line);
 	my @local_arr = split(/\t/, $line);
-	if ($cnt == 4) { @ids = @local_arr; }
-	else { push(@results, \@local_arr); }
+	push(@results, \@local_arr); 
     }
-    
-    push(@results, \@ids);
+
     close(INPUT);
 
     $local_status = open(OUTPUT, ">$outF");
@@ -388,15 +387,25 @@ sub collectResults {
 
     my $n = scalar(@results);
     my $m = scalar(@{$results[0]});
+
+    $" = "\t";
+
+    my @out_arr = ();
+    for (my $i = 0; $i < $n; $i++) {
+	if ($_[0] eq "isoform") { push(@out_arr, $transcript_title[$i]); }
+	elsif ($_[0] eq "gene") { push(@out_arr, $gene_title[$i]); }
+	else { print "A bug on 'collectResults' is detected!\n"; exit(-1); }
+    }
+    print OUTPUT "@out_arr\n";
+
     for (my $i = 0; $i < $m; $i++) {
-	my @out_arr = ();
+	@out_arr = ();
 	for (my $j = 0; $j < $n; $j++) { push(@out_arr, $results[$j][$i]); }
-	$" = "\t";
 	print OUTPUT "@out_arr\n"; 
     }
+
     close(OUTPUT);
 }
-
 
 __END__
 
@@ -608,33 +617,85 @@ With the '--calc-ci' option, 95% credibility intervals and posterior mean estima
 
 =over
 
-=item B<sample_name.genes.results> 
-
-File containing gene level expression estimates. The format of each
-line in this file is:
-
-gene_id expected_counts tau_value [pmc_value tau_pme_value tau_ci_lower_bound tau_ci_upper_bound] transcript_id_list
-
-Fields are separated by the tab character. Fields within "[]" are only
-presented if '--calc-ci' is set. pme stands for posterior mean
-estimation. pmc stands for posterior mean counts. ci_lower_bound(l)
-means the lower bound of the credibility intervals, ci_upper_bound(u)
-means the upper bound of the credibility intervals. So the credibility
-interval is [l, u]. 'transcript_id_list' is a space-separated list of
-transcript_ids belonging to the gene. If no gene information is
-provided, this file has the same content as
-'sample_name.isoforms.results'.
-
 =item B<sample_name.isoforms.results> 
 
-File containing isoform level expression values. The format of each
-line in this file is:
+File containing isoform level expression estimates. The first line
+contains column names separated by the tab character. The format of
+each line in the rest of this file is:
 
-transcript_id expected_counts tau_value [pmc_value tau_pme_value tau_ci_lower_bound tau_ci_upper_bound] gene_id
+transcript_id gene_id length effective_length expected_count TPM FPKM IsoPct [pme_expected_count pme_TPM pme_FPKM IsoPct_from_pme_TPM TPM_ci_lower_bound TPM_ci_upper_bound FPKM_ci_lower_bound FPKM_ci_upper_bound]
 
-Fields are separated by the tab character. 'gene_id' is the gene_id of
-the gene which this transcript belongs to. If no gene information is
-provided, 'gene_id' and 'transcript_id' are the same.
+Fields are separated by the tab character. Fields within "[]" are only
+presented if '--calc-ci' is set.
+
+'transcript_id' is the transcript name of this transcript. 'gene_id'
+is the gene name of the gene which this transcript belongs to (denote
+this gene as its parent gene). If no gene information is provided,
+'gene_id' and 'transcript_id' are the same.
+
+'length' is this transcript's sequence length (poly(A) tail is not
+counted). 'effective_length' counts only the positions that can
+generate a valid fragment. If no poly(A) tail is added,
+'effective_length' is equal to transcript length - mean fragment
+length + 1. If one transcript's effective length is less than 1, this
+transcript's both effective length and abundance estimates are set to
+0.
+
+'expected_count' is the sum of the posterior probability of each read
+comes from this transcript over all reads. Because 1) each read
+aligning to this transcript has a probability of being generated from
+background noise; 2) RSEM may filter some alignable low quality reads,
+the sum of expected counts for all transcript are generally less than
+the total number of reads aligned.
+
+'TPM' stands for Transcripts Per Million. It is a relative measure of
+transcript abundance. The sum of all transcripts' TPM is 1
+million. 'FPKM' stands for Fragments Per Kilobase of transcript per
+Million mapped reads. It is another relative measure of transcript
+abundance. If we define l_bar be the mean transcript length in a
+sample, which can be calculated as
+
+l_bar = \sum_i TPM_i / 10^6 * effective_length_i (i goes through every transcript), 
+
+the following equation is hold:
+
+FPKM_i = 10^3 / l_bar * TPM_i.
+
+We can see that the sum of FPKM is not a constant across samples.
+
+'IsoPct' stands for isoform percentage. It is the percentage of this
+transcript's abandunce over its parent gene's abandunce. If its parent
+gene has only one isoform or the gene information is not provided,
+this field will be set to 100.
+
+'pme_expected_count', 'pme_TPM', 'pme_FPKM' are posterior mean
+estimates calculated by RSEM's Gibbs sampler. 'IsoPct_from_pme_TPM' is
+the isoform percentage calculated from 'pme_TPM' values.
+
+'TPM_ci_lower_bound', 'TPM_ci_upper_bound', 'FPKM_ci_lower_bound' and
+'FPKM_ci_upper_bound' are lower(l) and upper(u) bounds of 95%
+credibility intervals for TPM and FPKM values. The bounds are
+inclusive (i.e. [l, u]).
+
+=item B<sample_name.genes.results>
+
+File containing gene level expression estimates. The first line
+contains column names separated by the tab character. The format of
+each line in the rest of this file is:
+
+gene_id transcript_id(s) length effective_length expected_count TPM FPKM [pme_expected_count pme_TPM pme_FPKM TPM_ci_lower_bound TPM_ci_upper_bound FPKM_ci_lower_bound FPKM_ci_upper_bound]
+
+Fields are separated by the tab character. Fields within "[]" are only
+presented if '--calc-ci' is set. 
+
+'transcript_id(s)' is a comma-separated list of transcript_ids
+belonging to this gene. If no gene information is provided, 'gene_id'
+and 'transcript_id(s)' are identical (the 'transcript_id').
+
+A gene's 'length' and 'effective_length' are
+defined as the weighted average of its transcripts' lengths and
+effective lengths (weighted by 'IsoPct'). A gene's abundance estimates
+are just the sum of its transcripts' abundance estimates.
 
 =item B<sample_name.transcript.bam, sample_name.transcript.sorted.bam and sample_name.transcript.sorted.bam.bai>
 
