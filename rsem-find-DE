@@ -1,0 +1,69 @@
+#!/usr/bin/env Rscript
+
+printUsage <- function() {
+  cat("Usage: rsem-find-DE data_matrix_file [--ngvector ngvector_file] number_sample_condition1 FDR_rate output_file\n\n")
+  cat("This script calls EBSeq to find differentially expressed genes/transcripts in two conditions.\n\n") 
+  cat("data_matrix_file: m by n matrix containing expected counts, m is the number of transcripts/genes, n is the number of total samples.\n")
+  cat("[--ngvector ngvector_file]: optional field. 'ngvector_file' is calculated by 'rsem-generate-ngvector'. Having this field is recommended for transcript data.\n")
+  cat("number_sample_condition1: the number of samples in condition 1. A condition's samples must be adjacent. The left group of samples are defined as condition 1.\n")
+  cat("FDR_rate: false discovery rate.\n")
+  cat("output_file: the output file.\n\n")
+  cat("The results are written as a matrix with row and column names. The row names are the differentially expressed transcripts'/genes' ids. The column names are 'PPEE', 'PPDE', 'PostFC' and 'RealFC'.\n\n")
+  cat("PPEE: posterior probability of being equally expressed.\n")
+  cat("PPDE: posterior probability of being differentially expressed.\n")
+  cat("PostFC: posterior fold change (condition 1 over condition2).\n")
+  cat("RealFC: real fold change (condition 1 over condition2).\n")
+  q(status = 1)
+}
+
+argv <- commandArgs(FALSE)
+path <- dirname(sub("--file=", "", argv[grep("--file", argv)]))
+path <- paste(path, "EBSeq", sep = "/")
+start_pos <- grep("--args", argv) + 1
+end_pos <- length(argv)
+if (start_pos <= end_pos) argv <- argv[start_pos : end_pos] else argv <- NULL
+
+ng_pos <- grep("--ngvector", argv) 
+if (length(ng_pos) > 1 || length(ng_pos) == 0 && length(argv) != 4 || length(ng_pos) == 1 && length(argv) != 6) printUsage()
+ngvector_file <- NULL
+if (length(ng_pos) == 1) {
+  if (ng_pos == length(argv)) printUsage()
+  ngvector_file <- argv[ng_pos + 1]
+  argv <- argv[-c(ng_pos, ng_pos + 1)]
+}	
+
+data_matrix_file <- argv[1]
+num_con1 <- as.numeric(argv[2])
+fdr <- as.numeric(argv[3])
+output_file <- argv[4]
+
+library(blockmodeling, lib.loc = path)
+library(EBSeq, lib.loc = path)
+
+DataMat <- data.matrix(read.table(data_matrix_file))
+n <- dim(DataMat)[2]
+conditions <- as.factor(rep(c("C1", "C2"), times = c(num_con1, n - num_con1)))
+Sizes <- MedianNorm(DataMat)
+ngvector <- NULL
+if (!is.null(ngvector_file)) {
+  ngvector <- as.vector(data.matrix(read.table(ngvector_file)))
+}
+
+
+EBOut <- NULL
+if (is.null(ngvector)) {
+  EBOut <- EBTest(Data = DataMat, Conditions = conditions, sizeFactors = Sizes, maxround = 5)
+} else {
+  EBOut <- EBTest(Data = DataMat, NgVector = ngvector, Conditions = conditions, sizeFactors = Sizes, maxround = 5) 
+}
+stopifnot(!is.null(EBOut))
+
+PP <- GetPPMat(EBOut)
+thre <- crit_fun(PP[, "PPEE"], fdr)
+DEfound <- rownames(PP)[which(PP[, "PPDE"] >= thre)]
+
+fc_res <- PostFC(EBOut)
+
+results <- cbind(PP[DEfound, ], fc_res$GenePostFC[DEfound], fc_res$GeneRealFC[DEfound])
+colnames(results) <- c("PPEE", "PPDE", "PostFC", "RealFC")
+write.table(results, file = output_file)

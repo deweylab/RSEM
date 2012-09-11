@@ -15,6 +15,7 @@ Table of Contents
 * [Simulation](#simulation)
 * [Generate Transcript-to-Gene-Map from Trinity Output](#gen_trinity)
 * [Differential Expression Analysis](#de)
+* [Authors](#authors)
 * [Acknowledgements](#acknowledgements)
 * [License](#license)
 
@@ -300,13 +301,12 @@ named 'EBSeq'.
 For more information about EBSeq (including the paper describing their
 method), please visit <a
 href="http://www.biostat.wisc.edu/~ningleng/EBSeq_Package">EBSeq
-website</a>. You can also find a local version of vignette under
-'EBSeq/inst/doc/EBSeq_Vignette.pdf'.
+website</a>. 
 
 EBSeq requires gene-isoform relationship for its isoform DE
 detection. However, for de novo assembled transcriptome, it is hard to
 obtain an accurate gene-isoform relationship. Instead, RSEM provides a
-script 'rsem-generate-ngvector', which clusters isoforms based on
+script 'rsem-generate-ngvector', which clusters transcripts based on
 measures directly relating to read mappaing ambiguity. First, it
 calcualtes the 'unmappability' of each transcript. The 'unmappability'
 of a transcript is the ratio between the number of k mers with at
@@ -336,20 +336,54 @@ section 3.2.5 (Page 10) of EBSeq's vignette:
     IsoEBres=EBTest(Data=IsoMat, NgVector=NgVec, ...)
 
 For users' convenience, RSEM also provides a script
-'rsem-form-counts-matrix' to extract input matrix from expression
+'rsem-generate-data-matrix' to extract input matrix from expression
 results:
 
-    rsem-form-counts-matrix sampleA.[genes/isoforms].results sampleB.[genes/isoforms].results ... > output_name.counts.matrix
+    rsem-generate-data-matrix sampleA.[genes/isoforms].results sampleB.[genes/isoforms].results ... > output_name.counts.matrix
 
 The results files are required to be either all gene level results or
 all isoform level results. You can load the matrix into R by
 
-    IsoMat <- read.table(file="output_name.counts.matrix")
+    IsoMat <- data.matrix(read.table(file="output_name.counts.matrix"))
 
 before running function 'EBTest'.
 
-Questions related to EBSeq should be sent to <a href="mailto:nleng@wisc.edu">Ning Leng</a>.
- 
+At last, RSEM provides a R script, 'rsem-find-DE', which run EBSeq for
+you. 
+
+Usage: 
+
+    rsem-find-DE data_matrix_file [--ngvector ngvector_file] number_sample_condition1 FDR_rate output_file
+
+This script calls EBSeq to find differentially expressed genes/transcripts in two conditions.
+
+data_matrix_file: m by n matrix containing expected counts, m is the number of transcripts/genes, n is the number of total samples.
+[--ngvector ngvector_file]: optional field. 'ngvector_file' is calculated by 'rsem-generate-ngvector'. Having this field is recommended for transcript data.
+number_sample_condition1: the number of samples in condition 1. A condition's samples must be adjacent. The left group of samples are defined as condition 1.
+FDR_rate: false discovery rate.
+output_file: the output file.
+
+The results are written as a matrix with row and column names. The row names are the differentially expressed transcripts'/genes' ids. The column names are 'PPEE', 'PPDE', 'PostFC' and 'RealFC'.
+
+PPEE: posterior probability of being equally expressed.
+PPDE: posterior probability of being differentially expressed.
+PostFC: posterior fold change (condition 1 over condition2).
+RealFC: real fold change (condition 1 over condition2).
+
+To get the above usage information, type 
+
+    rsem-find-DE
+
+Note: any wrong parameter setting will lead 'rsem-find-DE' to output
+usage information and halt.
+
+Questions related to EBSeq should
+be sent to <a href="mailto:nleng@wisc.edu">Ning Leng</a>.
+
+## <a name="authors"></a> Authors
+
+RSEM is developed by Bo Li, with substaintial technical input from Colin Dewey.
+
 ## <a name="acknowledgements"></a> Acknowledgements
 
 RSEM uses the [Boost C++](http://www.boost.org) and

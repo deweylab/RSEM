@@ -13,4 +13,4 @@ rsem-for-ebseq-calculate-clustering-info : calcClusteringInfo.cpp
 	$(CC) -O3 -Wall calcClusteringInfo.cpp -o $@
 
 clean : 
-	rm -rf $(PROGRAMS)
+	rm -rf $(PROGRAMS) *~
