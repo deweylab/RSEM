@@ -51,12 +51,10 @@ variable.
 
 ### Prerequisites
 
-C++ and Perl are required to be installed. 
+C++, Perl and R are required to be installed. 
 
 To take advantage of RSEM's built-in support for the Bowtie alignment
 program, you must have [Bowtie](http://bowtie-bio.sourceforge.net) installed.
-
-If you want to plot model learned by RSEM, you should also install R. 
 
 ## <a name="usage"></a> Usage
 
@@ -291,17 +289,21 @@ consideration. Because read mapping ambiguity is prevalent among
 isoforms and de novo assembled transcripts, these tools are not ideal
 for DE detection in such conditions. 
 
-**EBSeq**, an empirical Bayesian DE
-analysis tool developed in UW-Madison, can take variance due to read
-mapping ambiguity into consideration by grouping isoforms with parent
-gene's number of isoforms. In addition, it is more robust to
-outliers. RSEM includes the newest version of EBSeq in the folder
-named 'EBSeq'.
-
-For more information about EBSeq (including the paper describing their
-method), please visit <a
+**EBSeq**, an empirical Bayesian DE analysis tool developed in
+UW-Madison, can take variance due to read mapping ambiguity into
+consideration by grouping isoforms with parent gene's number of
+isoforms. In addition, it is more robust to outliers. For more
+information about EBSeq (including the paper describing their method),
+please visit <a
 href="http://www.biostat.wisc.edu/~ningleng/EBSeq_Package">EBSeq
-website</a>. 
+website</a>.
+
+RSEM includes the newest version of EBSeq in its folder
+named 'EBSeq'. To use it, first type
+
+    make ebseq
+
+to compile the EBSeq related codes. 
 
 EBSeq requires gene-isoform relationship for its isoform DE
 detection. However, for de novo assembled transcriptome, it is hard to
