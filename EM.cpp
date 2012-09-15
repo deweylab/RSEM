@@ -378,19 +378,25 @@ void writeResults(ModelType& model, double* counts) {
 			const Transcript& transcript = transcripts.getTranscriptAt(j);
 			tlens[j] = transcript.getLength();
 
-			glens[i] += tlens[j] * tpm[j];
-			gene_eels[i] += eel[j] * tpm[j];
 			gene_counts[i] += counts[j];
 			gene_tpm[i] += tpm[j];
 			gene_fpkm[i] += fpkm[j];
 		}
 
-		if (gene_tpm[i] < EPSILON) continue;
-
-		for (int j = b; j < e; j++)
-			isopct[j] = tpm[j] / gene_tpm[i];
-		glens[i] /= gene_tpm[i];
-		gene_eels[i] /= gene_tpm[i];
+		if (gene_tpm[i] < EPSILON) {
+		  double frac = 1.0 / (e - b);
+		  for (int j = b; j < e; j++) {
+		    glens[i] += tlens[j] * frac;
+		    gene_eels[i] += eel[j] * frac;
+		  } 
+		}
+		else {
+		  for (int j = b; j < e; j++) {
+		    isopct[j] = tpm[j] / gene_tpm[i];
+		    glens[i] += tlens[j] * isopct[j];
+		    gene_eels[i] += eel[j] * isopct[j];
+		  }
+		}
 	}
 
 	//isoform level results
