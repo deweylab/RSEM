@@ -173,33 +173,7 @@ void BamWriter::work(HitWrapper<PairedEndHit> wrapper) {
 }
 
 void BamWriter::convert(bam1_t *b, double prb) {
-	const Transcript& transcript = transcripts.getTranscriptViaEid(b->core.tid + 1);
-
-	int pos = b->core.pos;
-	int readlen = b->core.l_qseq;
-
-	std::vector<uint32_t> data;
-	data.clear();
-
-	int core_pos, core_n_cigar;
-	std::vector<Interval> vec;
-	vec.assign(1, Interval(1, transcript.getLength()));
-	// make an artificial chromosome coordinates for the transcript to get new CIGAR strings
-	tr2chr(Transcript("", "", "", '+', vec, ""), pos + 1, pos + readlen, core_pos, core_n_cigar, data);
-	assert(core_pos >= 0);
-
-	int rest_len = b->data_len - b->core.l_qname - b->core.n_cigar * 4;
-	b->data_len = b->core.l_qname + core_n_cigar * 4 + rest_len;
-	expand_data_size(b);
-	uint8_t* pt = b->data + b->core.l_qname;
-	memmove(pt + core_n_cigar * 4, pt + b->core.n_cigar * 4, rest_len);
-	for (int i = 0; i < core_n_cigar; i++) { memmove(pt, &data[i], 4); pt += 4; }
-
-	b->core.pos = core_pos;
-	b->core.n_cigar = core_n_cigar;
 	b->core.qual = getMAPQ(prb);
-	b->core.bin = bam_reg2bin(b->core.pos, bam_calend(&(b->core), bam1_cigar(b)));
-
 	float val = (float)prb;
 	bam_aux_append(b, "ZW", 'f', bam_aux_type2size('f'), (uint8_t*)&val);
 }

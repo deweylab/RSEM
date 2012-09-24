@@ -174,7 +174,7 @@ Here are some guidance for visualizing transcript coordinate files using IGV:
 
 1) Import the transcript sequences as a genome 
 
-Select File -> Import Genome, then fill in ID, Name and Fasta file. Fasta file should be 'reference_name.transcripts.fa'. After that, click Save button. Suppose ID is filled as 'reference_name', a file called 'reference_name.genome' will be generated. Next time, we can use: File -> Load Genome, then select 'reference_name.genome'.
+Select File -> Import Genome, then fill in ID, Name and Fasta file. Fasta file should be 'reference_name.idx.fa'. After that, click Save button. Suppose ID is filled as 'reference_name', a file called 'reference_name.genome' will be generated. Next time, we can use: File -> Load Genome, then select 'reference_name.genome'.
 
 2) Load visualization files
 
