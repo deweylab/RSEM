@@ -119,7 +119,7 @@ void BamWriter::work(HitWrapper<PairedEndHit> wrapper) {
 		if (verbose && cnt % 1000000 == 0) { std::cout<< cnt<< "alignment lines are loaded!"<< std::endl; }
 
 		assert((b->core.flag & 0x0001) && (b2->core.flag & 0x0001));
-		assert((b->core.flag & 0x0040) && (b2->core.flag & 0x0080) || (b->core.flag & 0x0080) && (b2->core.flag & 0x0040));
+		assert(((b->core.flag & 0x0040) && (b2->core.flag & 0x0080)) || ((b->core.flag & 0x0080) && (b2->core.flag & 0x0040)));
 
 		//unalignable reads, skip		
 		bool notgood = (b->core.flag & 0x0004) || (b2->core.flag & 0x0004);
@@ -140,9 +140,6 @@ void BamWriter::work(HitWrapper<PairedEndHit> wrapper) {
 
 			convert(b, hit->getConPrb());
 			convert(b2, hit->getConPrb());
-
-			b->core.mpos = b2->core.pos;
-			b2->core.mpos = b->core.pos;
 		}
 
 		/*

@@ -133,7 +133,7 @@ void simulate(char* modelF, char* resultsF) {
 	  size_t pos2 = line.find_first_of('\t', pos);
 	  if (pos2 == string::npos) pos2 = line.length();
 	  tpm = atof(line.substr(pos, pos2 - pos).c_str());
-	  theta[i] = tpm * eel[i];
+	  theta[i] = tpm * eel[i]; // during simulation, there is no check for effL < 0. The reason is for that case, eel[i] here = 0 and therefore no chance to sample from it
 	  denom += theta[i];
 	}
 	assert(denom > EPSILON);

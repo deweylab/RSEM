@@ -3,7 +3,6 @@
 use Getopt::Long;
 use Pod::Usage;
 use File::Basename;
-use Switch;
 use strict;
 
 #const
@@ -246,12 +245,11 @@ if ($quiet) { $command .= " -q"; }
 &runCommand($command);
 
 $command = $dir."rsem-build-read-index $gap"; 
-switch($read_type) {
-    case 0  { $command .= " 0 $quiet $imdName\_alignable.fa"; }
-    case 1  { $command .= " 1 $quiet $imdName\_alignable.fq"; }
-    case 2  { $command .= " 0 $quiet $imdName\_alignable_1.fa $imdName\_alignable_2.fa"; }
-    case 3  { $command .= " 1 $quiet $imdName\_alignable_1.fq $imdName\_alignable_2.fq"; }
-}
+if ($read_type == 0) { $command .= " 0 $quiet $imdName\_alignable.fa"; }
+elsif ($read_type == 1) { $command .= " 1 $quiet $imdName\_alignable.fq"; }
+elsif ($read_type == 2) { $command .= " 0 $quiet $imdName\_alignable_1.fa $imdName\_alignable_2.fa"; }
+elsif ($read_type == 3) { $command .= " 1 $quiet $imdName\_alignable_1.fq $imdName\_alignable_2.fq"; }
+else { print "Impossible! read_type is not in [1,2,3,4]!\n"; exit(-1); }
 &runCommand($command);
 
 my $doesOpen = open(OUTPUT, ">$imdName.mparams");

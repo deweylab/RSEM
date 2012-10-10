@@ -87,7 +87,7 @@ void BamConverter::process() {
 		if (isPaired) {
 			assert(samread(in, b2) >= 0 && (b2->core.flag & 0x0001));
 			assert((b->core.flag & 0x0001) && (b2->core.flag & 0x0001));
-			assert((b->core.flag & 0x0040) && (b2->core.flag & 0x0080) || (b->core.flag & 0x0080) && (b2->core.flag & 0x0040));
+			assert(((b->core.flag & 0x0040) && (b2->core.flag & 0x0080)) || ((b->core.flag & 0x0080) && (b2->core.flag & 0x0040)));
  			++cnt;
 		}
 
