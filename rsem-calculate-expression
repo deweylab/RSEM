@@ -62,6 +62,8 @@ my $keep_intermediate_files = 0;
 
 my $strand_specific = 0;
 
+my $version = 0;
+
 my $mTime = 0;
 my ($time_start, $time_end, $time_alignment, $time_rsem, $time_ci) = (0, 0, 0, 0, 0);
 
@@ -105,11 +107,14 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "calc-ci" => \$calcCI,
 	   "ci-memory=i" => \$NMB,
 	   "time" => \$mTime,
+	   "version" => \$version,
 	   "q|quiet" => \$quiet,
 	   "h|help" => \$help) or pod2usage(-exitval => 2, -verbose => 2);
 
-pod2usage(-verbose => 2) if ($help == 1);
+my ($fn, $dir, $suf) = fileparse($0);
 
+pod2usage(-verbose => 2) if ($help == 1);
+&showVersionInfo($dir) if ($version == 1);
 
 #check parameters and options
 
@@ -186,7 +191,6 @@ my ($mate_minL, $mate_maxL) = (1, $maxL);
 
 if ($bowtie_path ne "") { $bowtie_path .= "/"; }
 
-my ($fn, $dir, $suf) = fileparse($0);
 my $command = "";
 
 if (!$is_sam && !$is_bam) {
@@ -350,7 +354,7 @@ sub runCommand {
     if ($status != 0) {
         my $errmsg = "";
         if (scalar(@_) > 1) { $errmsg .= $_[1]."\n"; }
-        $errmsg .= "\"$_[0]\" failed! Plase check if you provide correct parameters/options for the pipeline!\n";
+        $errmsg .= "\"$_[0]\" failed! Please check if you provide correct parameters/options for the pipeline!\n";
         print $errmsg;
         exit(-1);
     }
@@ -403,6 +407,16 @@ sub collectResults {
     }
 
     close(OUTPUT);
+}
+
+# dir
+sub showVersionInfo {
+    open(INPUT, "$_[0]\WHAT_IS_NEW");
+    my $line = <INPUT>;
+    chomp($line);
+    close(INPUT);
+    print "$line\n";
+    exit(0);
 }
 
 __END__
