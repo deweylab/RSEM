@@ -21,3 +21,5 @@ sam/samtools
 .project
 .cproject
 update_doc.sh
+EBSeq/EBSeq
+EBSeq/blockmodeling

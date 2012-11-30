@@ -138,7 +138,7 @@ void* sample_theta_from_c(void* arg) {
 		for (int i = 0; i < nSpC; i++) {
 			double sum = 0.0;
 			for (int j = 0; j <= M; j++) {
-				theta[j] = ((j == 0 || eel[j] >= EPSILON && mw[j] >= EPSILON) ? (*rgs[j])() / mw[j] : 0.0);
+				theta[j] = ((j == 0 || (eel[j] >= EPSILON && mw[j] >= EPSILON)) ? (*rgs[j])() / mw[j] : 0.0);
 				sum += theta[j];
 			}
 			assert(sum >= EPSILON);

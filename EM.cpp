@@ -336,7 +336,7 @@ void calcExpressionValues(const vector<double>& theta, const vector<double>& eel
 	    frac[i] = theta[i];
 	    denom += frac[i];
 	  }
-	general_assert(denom > 0, "No alignable reads?!");
+	general_assert(denom >= EPSILON, "No alignable reads?!");
 	for (int i = 1; i <= M; i++) frac[i] /= denom;
   
 	//calculate FPKM
@@ -384,18 +384,18 @@ void writeResults(ModelType& model, double* counts) {
 		}
 
 		if (gene_tpm[i] < EPSILON) {
-		  double frac = 1.0 / (e - b);
-		  for (int j = b; j < e; j++) {
-		    glens[i] += tlens[j] * frac;
-		    gene_eels[i] += eel[j] * frac;
-		  } 
+			double frac = 1.0 / (e - b);
+			for (int j = b; j < e; j++) {
+				glens[i] += tlens[j] * frac;
+				gene_eels[i] += eel[j] * frac;
+			}
 		}
 		else {
-		  for (int j = b; j < e; j++) {
-		    isopct[j] = tpm[j] / gene_tpm[i];
-		    glens[i] += tlens[j] * isopct[j];
-		    gene_eels[i] += eel[j] * isopct[j];
-		  }
+			for (int j = b; j < e; j++) {
+				isopct[j] = tpm[j] / gene_tpm[i];
+				glens[i] += tlens[j] * isopct[j];
+				gene_eels[i] += eel[j] * isopct[j];
+			}
 		}
 	}
 

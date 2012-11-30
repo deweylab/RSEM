@@ -55,9 +55,6 @@ BamWriter::BamWriter(char inpType, const char* inpF, const char* fn_list, const 
 
 	//generate output's header
 	bam_header_t *out_header = bam_header_dwt(in->header);
-	for (int i = 0; i < out_header->n_targets; i++) {
-		out_header->target_len[i] = transcripts.getTranscriptViaEid(i + 1).getLength();  // transcript length without poly(A) tail
-	}
 
 	std::ostringstream strout;
 	strout<<"@HD\tVN:1.4\tSO:unknown\n@PG\tID:RSEM\n";
@@ -116,7 +113,7 @@ void BamWriter::work(HitWrapper<PairedEndHit> wrapper) {
 
 	while (samread(in, b) >= 0 && samread(in, b2) >= 0) {
 		cnt += 2;
-		if (verbose && cnt % 1000000 == 0) { std::cout<< cnt<< "alignment lines are loaded!"<< std::endl; }
+		if (verbose && cnt % 1000000 == 0) { std::cout<< cnt<< " alignment lines are loaded!"<< std::endl; }
 
 		assert((b->core.flag & 0x0001) && (b2->core.flag & 0x0001));
 		assert(((b->core.flag & 0x0040) && (b2->core.flag & 0x0080)) || ((b->core.flag & 0x0080) && (b2->core.flag & 0x0040)));
@@ -140,22 +137,9 @@ void BamWriter::work(HitWrapper<PairedEndHit> wrapper) {
 
 			convert(b, hit->getConPrb());
 			convert(b2, hit->getConPrb());
-		}
 
-		/*
-		else {
-		  // if only one mate can be aligned, mask it as unaligned and put an additional tag Z0:A:!
-		  char exclamation = '!';
-		  if (!(b->core.flag & 0x0004)) { 
-		    b->core.flag |= 0x0004;
-		    bam_aux_append(b, "Z0", 'A', bam_aux_type2size('A'), (uint8_t*)&exclamation);
-		  }
-		  if (!(b2->core.flag & 0x0004)) {
-		    b2->core.flag |= 0x0004;
-		    bam_aux_append(b2, "Z0", 'A', bam_aux_type2size('A'), (uint8_t*)&exclamation);
-		  }
+			// omit "b->core.mpos = b2->core.pos; b2->core.mpos = b->core.pos" for the reason that it is possible that only one mate is alignable 
 		}
-		*/
 
 		samwrite(out, b);
 		samwrite(out, b2);

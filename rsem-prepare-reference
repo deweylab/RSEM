@@ -164,7 +164,7 @@ If this option is off, then the mapping of isoforms to genes depends on whether 
 
 =item B<--no-polyA>
 
-Do not add poly(A) tails to the end of reference isoforms. (Default: add poly(A) tails to all transcripts)
+Do not add poly(A) tails to the end of reference isoforms. (Default: adding poly(A) tails to all transcripts)
 
 =item B<--no-polyA-subset> <file>
 
@@ -207,7 +207,7 @@ This program will generate 'reference_name.grp', 'reference_name.ti', 'reference
 
 'reference_name.grp', 'reference_name.ti', 'reference_name.seq', 'reference_name.idx.fa', and 'reference_name.chrlist' are used by RSEM internally.
 
-B<'reference_name.transcripts.fa'> contains the extracted reference transcripts in FASTA format. Poly(A) tails are not added.
+B<'reference_name.transcripts.fa'> contains the extracted reference transcripts in FASTA format. Poly(A) tails are added unless '--no-polyA' is set.
 
 =head1 EXAMPLES
 

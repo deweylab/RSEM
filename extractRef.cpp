@@ -50,24 +50,24 @@ map<string, string> mi_table; // mapping info table
 map<string, string>::iterator mi_iter; //mapping info table's iterator
 
 void loadMappingInfo(char* mappingF) {
-  ifstream fin(mappingF);
-  string line, key, value;
+	ifstream fin(mappingF);
+	string line, key, value;
 
-  if (!fin.is_open()) {
-	  fprintf(stderr, "Cannot open %s! It may not exist.\n", mappingF);
-	  exit(-1);
-  }
+	if (!fin.is_open()) {
+		fprintf(stderr, "Cannot open %s! It may not exist.\n", mappingF);
+		exit(-1);
+	}
 
-  mi_table.clear();
-  while (getline(fin, line)) {
-    line = cleanStr(line);
-    if (line[0] == '#') continue;
-    istringstream strin(line);
-    strin>>value>>key;
-    mi_table[key] = value;
-  }
+	mi_table.clear();
+	while (getline(fin, line)) {
+		line = cleanStr(line);
+		if (line[0] == '#') continue;
+		istringstream strin(line);
+		strin>>value>>key;
+		mi_table[key] = value;
+	}
 
-  fin.close();
+	fin.close();
 }
 
 bool buildTranscript(int sp, int ep) {
@@ -305,7 +305,7 @@ int main(int argc, char* argv[]) {
 		if (seqs[i] == "") {
 			const Transcript& transcript = transcripts.getTranscriptAt(i);
 			fprintf(stderr, "Cannot extract transcript %s's sequence from chromosome %s, whose information might not be provided! Please check if the chromosome directory is set correctly or the list of chromosome files is complete.\n", \
-					transcript.getTranscriptID().c_str(), transcript.getGeneID().c_str());
+					transcript.getTranscriptID().c_str(), transcript.getSeqName().c_str());
 			exit(-1);
 		}
 	}

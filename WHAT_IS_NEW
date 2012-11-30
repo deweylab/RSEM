@@ -1,3 +1,12 @@
+RSEM v1.2.1
+
+- Added poly(A) tails to 'reference_name.transcripts.fa' so that the RSEM generated transcript unsorted BAM file can be fed into RSEM as an input file. However, users need to rebuild their references if they want to visualize the transcript level wiggle files and BAM files using IGV
+- Modified 'rsem-tbam2gbam' to convert users' alignments from transcript BAM files into genome BAM files, provided users use 'reference_name.idx.fa' to build indices for their aligners
+- Updated EBSeq from v1.1.3 to v1.1.4
+- Corrected several typos in warning messages
+
+--------------------------------------------------------------------------------------------
+
 RSEM v1.2.0
 
 - Changed output formats, added FPKM field etc.

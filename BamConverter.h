@@ -53,12 +53,35 @@ BamConverter::BamConverter(const char* inpF, const char* outF, const char* chr_l
 	transcripts.buildMappings(in->header->n_targets, in->header->target_name);
 
 	bam_header_t *out_header = sam_header_read2(chr_list);
+
 	refmap.clear();
 	for (int i = 0; i < out_header->n_targets; i++) {
 		refmap[out_header->target_name[i]] = i;
 	}
 
-	append_header_text(out_header, in->header->text, in->header->l_text);
+	if (in->header->l_text > 0) {
+		char comment[] = "@CO\tThis BAM file is processed by rsem-tbam2gam to convert from transcript coordinates into genomic coordinates.\n";
+		int comment_len = strlen(comment);
+
+		//Filter @SQ fields if the BAM file is user provided
+		char *text = in->header->text;
+		int l_text = in->header->l_text;
+		char *new_text = new char[l_text + comment_len];
+		int pos = 0, s = 0;
+		while (pos < l_text) {
+			if ((pos + 2 < l_text) && (text[pos] == '@') && (text[pos + 1] == 'S') && (text[pos + 2] == 'Q')) {
+				pos += 3;
+				while (pos < l_text && text[pos] != '\n') ++pos;
+			}
+			else new_text[s++] = text[pos];
+			++pos;
+		}
+		strncpy(new_text + s, comment, comment_len);
+		s += comment_len;
+
+		append_header_text(out_header, new_text, s);
+		delete[] new_text;
+	}
 
 	out = samopen(outF, "wb", out_header);
 	assert(out != 0);
@@ -101,35 +124,43 @@ void BamConverter::process() {
 
 
 		if (!notgood) {
-		  if (isPaired) assert((b->core.tid == b2->core.tid) && (b->core.flag & 0x0040) && (b2->core.flag & 0x0080)); // for collapsing
+			// for collapsing
+			if (isPaired) {
+				assert(b->core.tid == b2->core.tid);
+				if ((b->core.flag & 0x0080) && (b2->core.flag & 0x0040)) {
+					bam1_t *tmp = b; b = b2; b2 = tmp;
+				}
+			}
 
-		  const Transcript& transcript = transcripts.getTranscriptViaEid(b->core.tid + 1);
+			const Transcript& transcript = transcripts.getTranscriptViaEid(b->core.tid + 1);
 
-		  convert(b, transcript);
-		  if (isPaired) {
-		    convert(b2, transcript);
-		    b->core.mpos = b2->core.pos;
-		    b2->core.mpos = b->core.pos;
-		  }
+			convert(b, transcript);
+			if (isPaired) {
+				convert(b2, transcript);
+				b->core.mpos = b2->core.pos;
+				b2->core.mpos = b->core.pos;
+			}
 
-		  if (cqname != bam1_qname(b)) {
-		    writeCollapsedLines();
-		    cqname = bam1_qname(b);
-		    collapseMap.init(isPaired);
-		  }
-		  collapseMap.insert(b, b2, bam_aux2f(bam_aux_get(b, "ZW")));
+			if (cqname != bam1_qname(b)) {
+				writeCollapsedLines();
+				cqname = bam1_qname(b);
+				collapseMap.init(isPaired);
+			}
+
+			uint8_t *p = bam_aux_get(b, "ZW");
+			float prb = (p != NULL? bam_aux2f(p) : 1.0);
+			collapseMap.insert(b, b2, prb);
 		}
 		else {
-		  assert(cqname != bam1_qname(b));
+			assert(cqname != bam1_qname(b));
 
-		  writeCollapsedLines();
-		  cqname = bam1_qname(b);
-		  collapseMap.init(isPaired);
+			writeCollapsedLines();
+			cqname = bam1_qname(b);
+			collapseMap.init(isPaired);
 
-		  samwrite(out, b);
-		  if (isPaired) samwrite(out, b2);
+			samwrite(out, b);
+			if (isPaired) samwrite(out, b2);
 		}
-
 	}
 
 	writeCollapsedLines();
@@ -187,16 +218,21 @@ inline void BamConverter::writeCollapsedLines() {
 	bam1_t *tmp_b = NULL,*tmp_b2 = NULL;
 	float prb;
 	bool isPaired;
+	uint8_t *p;
 
 	if (!collapseMap.empty(isPaired)) {
 		while (collapseMap.next(tmp_b, tmp_b2, prb)) {
-			memcpy(bam_aux_get(tmp_b, "ZW") + 1, (uint8_t*)&(prb), bam_aux_type2size('f'));
-			tmp_b->core.qual = getMAPQ(prb);
+			p = bam_aux_get(tmp_b, "ZW");
+			if (p != NULL) {
+				memcpy(bam_aux_get(tmp_b, "ZW") + 1, (uint8_t*)&(prb), bam_aux_type2size('f'));
+				tmp_b->core.qual = getMAPQ(prb);
+			}
+			else tmp_b->core.qual = getMAPQ(1.0);
 			samwrite(out, tmp_b);
 			if (isPaired) {
-			  memcpy(bam_aux_get(tmp_b2, "ZW") + 1, (uint8_t*)&(prb), bam_aux_type2size('f'));
-			  tmp_b2->core.qual = tmp_b->core.qual;
-			  samwrite(out, tmp_b2);
+				if (p != NULL) memcpy(bam_aux_get(tmp_b2, "ZW") + 1, (uint8_t*)&(prb), bam_aux_type2size('f'));
+				tmp_b2->core.qual = tmp_b->core.qual;
+				samwrite(out, tmp_b2);
 			}
 			bam_destroy1(tmp_b);
 			if (isPaired) bam_destroy1(tmp_b2);

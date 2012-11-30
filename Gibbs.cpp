@@ -254,7 +254,7 @@ void calcExpressionValues(const vector<double>& theta, const vector<double>& eel
 	    frac[i] = theta[i];
 	    denom += frac[i];
 	  }
-	general_assert(denom > 0, "No alignable reads?!");
+	general_assert(denom >= EPSILON, "No alignable reads?!");
 	for (int i = 1; i <= M; i++) frac[i] /= denom;
   
 	//calculate FPKM
