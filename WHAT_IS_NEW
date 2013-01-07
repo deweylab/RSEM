@@ -1,3 +1,10 @@
+RSEM v1.2.2
+
+- Updated EBSeq to v1.1.5
+- Modified 'rsem-find-DE' to generate extra output files (type 'rsem-find-DE' to see more information)
+
+--------------------------------------------------------------------------------------------
+
 RSEM v1.2.1
 
 - Added poly(A) tails to 'reference_name.transcripts.fa' so that the RSEM generated transcript unsorted BAM file can be fed into RSEM as an input file. However, users need to rebuild their references if they want to visualize the transcript level wiggle files and BAM files using IGV

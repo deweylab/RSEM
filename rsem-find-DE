@@ -7,8 +7,8 @@ printUsage <- function() {
   cat("[--ngvector ngvector_file]: optional field. 'ngvector_file' is calculated by 'rsem-generate-ngvector'. Having this field is recommended for transcript data.\n")
   cat("number_sample_condition1: the number of samples in condition 1. A condition's samples must be adjacent. The left group of samples are defined as condition 1.\n")
   cat("FDR_rate: false discovery rate.\n")
-  cat("output_file: the output file.\n\n")
-  cat("The results are written as a matrix with row and column names. The row names are the differentially expressed transcripts'/genes' ids. The column names are 'PPEE', 'PPDE', 'PostFC' and 'RealFC'.\n\n")
+  cat("output_file: the output file. Three files will be generated: 'output_file', 'output_file.hard_threshold' and 'output_file.all'. The first file reports all DE genes/transcripts using a soft threshold (calculated by crit_func in EBSeq). The second file reports all DE genes/transcripts using a hard threshold (only report if PPEE <= fdr). The third file reports all genes/transcripts. The first file is recommended to be used as DE results because it generally contains more called genes/transcripts.\n\n")
+  cat("The results are written as a matrix with row and column names. The row names are the genes'/transcripts' ids. The column names are 'PPEE', 'PPDE', 'PostFC' and 'RealFC'.\n\n")
   cat("PPEE: posterior probability of being equally expressed.\n")
   cat("PPDE: posterior probability of being differentially expressed.\n")
   cat("PostFC: posterior fold change (condition 1 over condition2).\n")
@@ -59,11 +59,25 @@ if (is.null(ngvector)) {
 stopifnot(!is.null(EBOut))
 
 PP <- GetPPMat(EBOut)
+fc_res <- PostFC(EBOut)
+
+# soft threshold, default output
 thre <- crit_fun(PP[, "PPEE"], fdr)
 DEfound <- rownames(PP)[which(PP[, "PPDE"] >= thre)]
 
-fc_res <- PostFC(EBOut)
-
-results <- cbind(PP[DEfound, ], fc_res$GenePostFC[DEfound], fc_res$GeneRealFC[DEfound])
+results <- cbind(PP[DEfound, ], fc_res$PostFC[DEfound], fc_res$RealFC[DEfound])
 colnames(results) <- c("PPEE", "PPDE", "PostFC", "RealFC")
 write.table(results, file = output_file)
+
+# hard threshold
+thre <- 1.0 - fdr
+DEfound <- rownames(PP)[which(PP[, "PPDE"] >= thre)]
+
+results <- cbind(PP[DEfound, ], fc_res$PostFC[DEfound], fc_res$RealFC[DEfound])
+colnames(results) <- c("PPEE", "PPDE", "PostFC", "RealFC")
+write.table(results, file = paste(output_file, ".hard_threshold", sep = ""))
+
+# all
+results <- cbind(PP, fc_res$PostFC, fc_res$RealFC)
+colnames(results) <- c("PPEE", "PPDE", "PostFC", "RealFC")
+write.table(results, file = paste(output_file, ".all", sep = ""))
