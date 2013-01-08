@@ -1,3 +1,9 @@
+RSEM v1.2.3
+
+- Fixed a bug in 'EBSeq/rsem-for-ebseq-generate-ngvector-from-clustering-info' which may crash the script
+
+--------------------------------------------------------------------------------------------
+
 RSEM v1.2.2
 
 - Updated EBSeq to v1.1.5

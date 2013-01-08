@@ -6,7 +6,7 @@ if (length(argv) != 2) {
   q(status = 1)
 }
 
-data <- read.table(file = argv[1], stringsAsFactors = F)
+data <- read.table(file = argv[1], stringsAsFactors = F, sep = "\t")
 idx <- data[,2] >= 0
 kmr <- kmeans(data[idx, 2], 3)
 order <- order(kmr$centers)
