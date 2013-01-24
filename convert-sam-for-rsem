@@ -6,6 +6,8 @@ use File::Basename;
 use File::Path 'rmtree';
 use strict;
 
+use rsem_perl_utils;
+
 my ($in_file, $out_file) = ();
 
 my @tmp_dirs = ();
@@ -78,21 +80,6 @@ print STDERR "Conversion is completed. $out_file will be checked by 'rsem-sam-va
 
 $command = $dir."rsem-sam-validator $out_file";
 &runCommand($command);
-
-
-# command, {err_msg}
-sub runCommand {
-    print $_[0]."\n";
-    my $status = system($_[0]);
-    if ($status != 0) { 
-	my $errmsg;
-	if (scalar(@_) > 1) { $errmsg = $_[1]; }
-	else { $errmsg = "\"$command\" failed! Please check if you provide correct parameters/options for the pipeline!"; }
-	print $errmsg."\n";
-	exit(-1);
-    }
-    print "\n";
-}
 
 __END__
 

@@ -100,7 +100,7 @@ void Transcripts::buildMappings(int n_targets, char** target_name) {
 	for (int i = 1; i <= M; i++) {
 		const std::string& tid = transcripts[i].getTranscriptID();
 		iter = dict.find(tid);
-		assert(iter == dict.end());
+		general_assert(iter == dict.end(), tid + " appears more than once!");
 		dict[tid] = i;
 	}
 

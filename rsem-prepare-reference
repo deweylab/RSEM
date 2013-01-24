@@ -5,6 +5,8 @@ use Pod::Usage;
 use File::Basename;
 use strict;
 
+use rsem_perl_utils;
+
 my $status;
 
 my $gtfF = "";
@@ -91,20 +93,6 @@ if (!$no_bowtie) {
     $command .= " $ARGV[1].idx.fa $ARGV[1]";
 
     &runCommand($command);
-}
-
-# command, {err_msg}
-sub runCommand {
-    print $_[0]."\n";
-    my $status = system($_[0]);
-    if ($status != 0) {
-        my $errmsg = "";
-        if (scalar(@_) > 1) { $errmsg .= $_[1]."\n"; }
-        $errmsg .= "\"$_[0]\" failed! Please check if you provide correct parameters/options for the pipeline!\n";
-        print $errmsg;
-        exit(-1);
-    }
-    print "\n";
 }
 
 __END__
