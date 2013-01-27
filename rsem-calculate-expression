@@ -2,7 +2,8 @@
 
 use Getopt::Long;
 use Pod::Usage;
-use File::Basename;
+use FindBin;
+use lib $FindBin::Bin;
 use strict;
 
 use rsem_perl_utils qw(runCommand collectResults showVersionInfo);
@@ -109,7 +110,7 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "q|quiet" => \$quiet,
 	   "h|help" => \$help) or pod2usage(-exitval => 2, -verbose => 2);
 
-my ($fn, $dir, $suf) = fileparse($0);
+my $dir = "$FindBin::Bin/";
 
 pod2usage(-verbose => 2) if ($help == 1);
 &showVersionInfo($dir) if ($version == 1);

@@ -2,7 +2,8 @@
 
 use Getopt::Long;
 use Pod::Usage;	
-use File::Basename;
+use FindBin;
+use lib $FindBin::Bin;
 use strict;
 
 use rsem_perl_utils;
@@ -60,7 +61,7 @@ elsif ($subsetFile ne "") { $polyAChoice = 2; }
 
 if ($bowtie_path ne "") { $bowtie_path .= "/"; }
 
-my ($fn, $dir, $suf) = fileparse($0); 
+my $dir = "$FindBin::Bin/";
 my $command = "";
 
 if ($type == 0) {

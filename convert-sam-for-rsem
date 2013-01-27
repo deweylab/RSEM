@@ -2,6 +2,8 @@
 
 use Getopt::Long;
 use Pod::Usage;
+use FindBin;
+use lib $FindBin::Bin;
 use File::Basename;
 use File::Path 'rmtree';
 use strict;
@@ -31,7 +33,7 @@ $suf = lc(substr($suf, 1));
 pod2usage(-msg => "Input file's suffix is neither sam nor bam!", -exitval => 2, -verbose => 2) if (($suf ne "sam") && ($suf ne "bam"));
 my $isSam = ($suf eq "sam");
 
-($fn, $dir, $suf) = fileparse($0);
+$dir = "$FindBin::Bin/";
 
 my $temp_dir = "$out_file.temp";
 if (-d $temp_dir) { print "Warning: $temp_dir exists, convert-sam-for-rsem will write temporary files into this folder and delete it after it finishes!\n"; }

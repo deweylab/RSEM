@@ -2,7 +2,8 @@
 
 use Getopt::Long;
 use Pod::Usage;
-use File::Basename;
+use FindBin;
+use lib $FindBin::Bin;
 use strict;
 
 use rsem_perl_utils;
@@ -18,7 +19,7 @@ GetOptions("gene-list" => \$gene_list,
 pod2usage(-verbose => 2) if ($help == 1);
 pod2usage(-msg => "Invalid number of arguments!", -exitval => 2, -verbose => 2) if (scalar(@ARGV) != 3);
 
-my ($fn, $dir, $suf) = fileparse($0);
+my $dir = "$FindBin::Bin/";
 my $command = "";
 
 unless (-e "$ARGV[0].transcript.sorted.bam") {

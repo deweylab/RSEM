@@ -2,7 +2,8 @@
 
 use Getopt::Long;
 use Pod::Usage;
-use File::Basename;
+use FindBin;
+use lib $FindBin::Bin;
 use strict;
 
 use rsem_perl_utils;
@@ -16,7 +17,7 @@ GetOptions("k=i" => \$k,
 pod2usage(-verbose => 2) if ($help == 1);
 pod2usage(-msg => "Invalid number of arguments!", -exitval => 2, -verbose => 2) if (scalar(@ARGV) != 2);
 
-my ($fn, $dir, $suf) = fileparse($0);
+my $dir = "$FindBin::Bin/";
 my $command = "";
 
 $command = $dir."EBSeq/rsem-for-ebseq-calculate-clustering-info $k $ARGV[0] $ARGV[1].ump";
