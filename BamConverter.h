@@ -119,14 +119,13 @@ void BamConverter::process() {
 		// at least one segment is not properly mapped
 		bool notgood = (b->core.flag & 0x0004) || (isPaired && (b2->core.flag & 0x0004));
 		
-
-		if (isPaired && notgood) assert((b->core.flag & 0x0004) && (b2->core.flag & 0x0004));
-
+		if (isPaired && notgood) general_assert((b->core.flag & 0x0004) && (b2->core.flag & 0x0004), cstrtos(bam1_qname(b)) + "'s two mates are not all marked as unalignable!");
 
 		if (!notgood) {
 			// for collapsing
 			if (isPaired) {
 				assert(b->core.tid == b2->core.tid);
+				general_assert(b->core.tid == b2->core.tid, cstrtos(bam1_qname(b)) + "'s two mates are aligned to two different transcripts!");
 				if ((b->core.flag & 0x0080) && (b2->core.flag & 0x0040)) {
 					bam1_t *tmp = b; b = b2; b2 = tmp;
 				}
