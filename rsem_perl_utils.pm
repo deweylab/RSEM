@@ -90,7 +90,7 @@ sub showVersionInfo {
     my $line = <INPUT>;
     chomp($line);
     close(INPUT);
-    print "$line\n";
+    print "Current version is $line\n";
     exit(0);
 }
 

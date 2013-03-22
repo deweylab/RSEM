@@ -227,7 +227,8 @@ inline void BamConverter::writeCollapsedLines() {
 				memcpy(bam_aux_get(tmp_b, "ZW") + 1, (uint8_t*)&(prb), bam_aux_type2size('f'));
 				tmp_b->core.qual = getMAPQ(prb);
 			}
-			else tmp_b->core.qual = getMAPQ(1.0);
+			// otherwise, just use the MAPQ score of the orignal alignment
+
 			samwrite(out, tmp_b);
 			if (isPaired) {
 				if (p != NULL) memcpy(bam_aux_get(tmp_b2, "ZW") + 1, (uint8_t*)&(prb), bam_aux_type2size('f'));
