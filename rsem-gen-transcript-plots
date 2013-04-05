@@ -76,7 +76,7 @@ generate_a_page <- function(tids, gene_id = NULL) {
       vec <- readdepth_uniq[[tids[i]]]
       stopifnot(!is.null(vec))
       if (is.na(vec[[2]])) wiggle_uniq <- rep(0, vec[[1]]) else wiggle_uniq <- as.numeric(unlist(strsplit(vec[[2]], split = " ")))
-      stopifnot(len == length(wiggle_uniq), len == sum(wiggle >= wiggle_uniq))
+#      stopifnot(len == length(wiggle_uniq), len == sum(wiggle >= wiggle_uniq)) 
       heights <- rbind(wiggle_uniq, wiggle - wiggle_uniq)	
       barplot(heights, space = 0, border = NA, names.arg = 1:len, col = c("black", "red")) 
     }
