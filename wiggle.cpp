@@ -13,7 +13,7 @@
 bool no_fractional_weight = false;
 
 void add_bam_record_to_wiggle(const bam1_t *b, Wiggle& wiggle) {
-    float w;
+    double w;
 
     if (no_fractional_weight) w = 1.0;
     else {
@@ -104,14 +104,14 @@ void UCSCWiggleTrackWriter::process(const Wiggle& wiggle) {
     
     sp = ep = -1;
     for (size_t i = 0; i < wiggle.length; i++) {
-        if (wiggle.read_depth[i] > 0) {
+        if (wiggle.read_depth[i] >= 0.0095) {
             ep = i;
         }
         else {
             if (sp < ep) {
                 ++sp;
                 fprintf(fo, "fixedStep chrom=%s start=%d step=1\n", wiggle.name.c_str(), sp + 1);
-                for (int j = sp; j <= ep; j++) fprintf(fo, "%.7g\n", wiggle.read_depth[j]);
+                for (int j = sp; j <= ep; j++) fprintf(fo, "%.2f\n", wiggle.read_depth[j]);
             }
             sp = i;
         }
@@ -119,7 +119,7 @@ void UCSCWiggleTrackWriter::process(const Wiggle& wiggle) {
     if (sp < ep) {
         ++sp;
         fprintf(fo, "fixedStep chrom=%s start=%d step=1\n", wiggle.name.c_str(), sp + 1);
-        for (int j = sp; j <= ep; j++) fprintf(fo, "%.7g\n", wiggle.read_depth[j]);
+        for (int j = sp; j <= ep; j++) fprintf(fo, "%.2f\n", wiggle.read_depth[j]);
     }
 }
 

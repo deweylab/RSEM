@@ -10,7 +10,7 @@ extern bool no_fractional_weight; // if no_frac_weight == true, each alignment c
 
 struct Wiggle {
     std::string name;
-    std::vector<float> read_depth;
+    std::vector<double> read_depth;
     size_t length;
 };
 
