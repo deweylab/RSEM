@@ -75,12 +75,12 @@ int main(int argc, char* argv[]) {
 		if (isPaired) {
 			add_to_appropriate_arr(b);
 			while ((go_on = (samread(in, b) >= 0)) && (qname == bam1_qname(b))) {
-				general_assert(b->core.flag & 0x0001, "Read " + qname + " is detected as both single-end and paired-end read!", true);
+				general_assert_1(b->core.flag & 0x0001, "Read " + qname + " is detected as both single-end and paired-end read!");
 				add_to_appropriate_arr(b);
 			}
 
-			general_assert(arr_both.size() % 2 == 0, "Number of first and second mates in read " + qname + "'s full alignments (both mates are aligned) are not matched!", true);
-			general_assert((arr_partial_1.size() + arr_partial_2.size() + arr_partial_unknown.size()) % 2 == 0, "Number of first and second mates in read " + qname + "'s partial alignments (at most one mate is aligned) are not matched!", true);
+			general_assert_1(arr_both.size() % 2 == 0, "Number of first and second mates in read " + qname + "'s full alignments (both mates are aligned) are not matched!");
+			general_assert_1((arr_partial_1.size() + arr_partial_2.size() + arr_partial_unknown.size()) % 2 == 0, "Number of first and second mates in read " + qname + "'s partial alignments (at most one mate is aligned) are not matched!");
 
 			if (!arr_both.empty()) {
 				sort(arr_both.begin(), arr_both.end(), less_than);

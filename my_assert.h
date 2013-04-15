@@ -31,17 +31,18 @@ inline std::string cstrtos(const char* s) {
 }
 
 
-inline void general_assert(int expr, const std::string& errmsg, bool putEnter = false) {
-	if (expr) return;
+#define general_assert(expr, errmsg) if (!(expr)) general_report((errmsg), false)
+#define general_assert_1(expr, errmsg) if (!(expr)) general_report((errmsg), true)
 
+inline void general_report(const std::string& errmsg, bool putEnter) {
 	if (putEnter) printf("\n");
 	fprintf(stderr, "%s\n", errmsg.c_str());
 	exit(-1);
 }
 
-inline void pthread_assert(int rc, const std::string& func_name, const std::string& errmsg) {
-	if (rc == 0) return;
+#define pthread_assert(rc, func_name, errmsg) if ((rc) != 0) pthread_report((rc), (func_name), (errmsg))
 
+inline void pthread_report(int rc, const std::string& func_name, const std::string& errmsg) {
 	fprintf(stderr, "%s\n", errmsg.c_str());
 
 	if (func_name == "pthread_create") {
