@@ -1,3 +1,13 @@
+RSEM v1.2.4
+
+- Fixed a bug that leads to poor parallelization performance in Mac OS systems
+- Fixed a problem that may halt the 'rsem-gen-transcript-plots", thanks Han Lin for pointing out the problem and suggesting possible fixes  
+- Added some user-friendly error messages for converting transcript BAM files into genomic BAM files
+- Modified rsem-tbam2gbam so that the original alignment quality MAPQ will be preserved if the input bam is not from RSEM
+- Added user-friendly error messages if users forget to compile the source codes
+
+--------------------------------------------------------------------------------------------
+
 RSEM v1.2.3
 
 - Fixed a bug in 'EBSeq/rsem-for-ebseq-generate-ngvector-from-clustering-info' which may crash the script

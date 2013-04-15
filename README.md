@@ -414,6 +414,7 @@ RSEM uses the [Boost C++](http://www.boost.org) and
 differential expression analysis.
 
 We thank earonesty for contributing patches.
+We thank Han Lin for suggesting possible fixes. 
 
 ## <a name="license"></a> License
 
