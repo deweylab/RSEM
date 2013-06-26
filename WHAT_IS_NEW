@@ -1,3 +1,10 @@
+RSEM v1.2.5
+
+- Updated EBSeq from v1.1.5 to v1.1.6
+- Fixed a bug in 'rsem-generate-data-matrix', which can cause 'rsem-find-DE' to crash 
+
+--------------------------------------------------------------------------------------------
+
 RSEM v1.2.4
 
 - Fixed a bug that leads to poor parallelization performance in Mac OS systems

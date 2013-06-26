@@ -375,13 +375,13 @@ you.
 
 Usage: 
 
-    rsem-find-DE data_matrix_file [--ngvector ngvector_file] number_sample_condition1 FDR_rate output_file
+    rsem-find-DE data_matrix_file [--ngvector ngvector_file] number_of_samples_in_condition_1 FDR_rate output_file
 
 This script calls EBSeq to find differentially expressed genes/transcripts in two conditions.
 
 data_matrix_file: m by n matrix containing expected counts, m is the number of transcripts/genes, n is the number of total samples.   
 [--ngvector ngvector_file]: optional field. 'ngvector_file' is calculated by 'rsem-generate-ngvector'. Having this field is recommended for transcript data.   
-number_sample_condition1: the number of samples in condition 1. A condition's samples must be adjacent. The left group of samples are defined as condition 1.   
+number_of_samples_in_condition_1: the number of samples in condition 1. A condition's samples must be adjacent. The left group of samples are defined as condition 1.   
 FDR_rate: false discovery rate.   
 output_file: the output file. Three files will be generated: 'output_file', 'output_file.hard_threshold' and 'output_file.all'. The first file reports all DE genes/transcripts using a soft threshold (calculated by crit_func in EBSeq). The second file reports all DE genes/transcripts using a hard threshold (only report if PPEE <= fdr). The third file reports all genes/transcripts. The first file is recommended to be used as DE results because it generally contains more called genes/transcripts.   
 
@@ -414,6 +414,7 @@ RSEM uses the [Boost C++](http://www.boost.org) and
 differential expression analysis.
 
 We thank earonesty for contributing patches.
+
 We thank Han Lin for suggesting possible fixes. 
 
 ## <a name="license"></a> License

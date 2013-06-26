@@ -22,7 +22,7 @@ sub loadData {
     while ($line = <INPUT>) {
 	chomp($line); 
 	my @fields = split(/\t/, $line);
-	push(@{$_[2]}, $fields[0]);
+	push(@{$_[2]}, "\"$fields[0]\"");
 	push(@{$_[1]}, $fields[$offsite]);
     }
     close(INPUT);
@@ -59,7 +59,11 @@ for (my $i = 0; $i < $n; $i++) {
 	exit(-1); 
     }
 
-    @ecs = ($ARGV[$i], @ecs);
+    my $colname;
+    if (substr($ARGV[$i], 0, 2) eq "./") { $colname = substr($ARGV[$i], 2); }
+    else { $colname = $ARGV[$i]; }
+    $colname = "\"$colname\"";
+    @ecs = ($colname, @ecs);
     push(@matrix, \@ecs);
 }
 
