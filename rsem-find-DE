@@ -58,7 +58,7 @@ if (is.null(ngvector)) {
 }
 stopifnot(!is.null(EBOut))
 
-PP <- GetPPMat(EBOut)
+PP <- as.data.frame(GetPPMat(EBOut))
 fc_res <- PostFC(EBOut)
 
 # soft threshold, default output
