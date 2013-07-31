@@ -1,3 +1,10 @@
+RSEM v1.2.6
+
+- Install the latest version of EBSeq from Bioconductor and if fails, try to install EBSeq v1.1.5 locally
+- Fixed a bug in 'rsem-gen-transcript-plots', which makes 'rsem-plot-transcript-wiggles' fail 
+
+--------------------------------------------------------------------------------------------
+
 RSEM v1.2.5
 
 - Updated EBSeq from v1.1.5 to v1.1.6

@@ -21,40 +21,42 @@ is_gene <- as.numeric(args[3])
 show_uniq <- as.numeric(args[4])
 output_plot_file <- args[5]
 
-
-
 load_readdepth_file <- function(filename) {
   data <- read.table(file = filename, sep = "\t", stringsAsFactors = FALSE)
-  nrow <- dim(data)[1]
-  readdepth <- list()
-  for (i in 1:nrow) {
-    readdepth[[data[i, 1]]] <- data[i, c(2, 3)]
-  }
-  readdepth
+  readdepth <- split(data[, 2:3], data[, 1])
 }
 
 build_t2gmap <- function(filename) {
-  data <- read.table(file = filename, sep = "\t", stringsAsFactors = FALSE)
-  t2gmap <- list()
+  tpos <- 1   # the position of transcript_id
+  gpos <- 2   # the position of gene_id
 
-  nrow <- dim(data)[1]
-  ncol <- dim(data)[2]
+  data <- read.delim(file = filename, sep = "\t", stringsAsFactors = FALSE)
+  tmp <- aggregate(data[tpos], data[gpos], function(x) x)
+  t2gmap <- tmp[,2]
+  names(t2gmap) <- tmp[,1]
 
-  gene_id <- ""
-  tids <- c()
-  for (i in 1:nrow) {
-    if (gene_id != data[i, ncol]) {
-      if (gene_id != "") { 
-        t2gmap[[gene_id]] <- tids
-      }
-      gene_id <- data[i, ncol]
-      tids <- c()
-    }
-    tids <- c(tids, data[i, 1])
-  }
-  if (gene_id != "") t2gmap[[gene_id]] <- tids
-  
   t2gmap
+}
+
+make_a_plot <- function(tid) {
+  vec <- readdepth[[tid]]	
+  if (is.null(vec)) exit_with_error(paste("Unknown transcript detected,", tid, "is not included in RSEM's indices."))
+  if (is.na(vec[[2]])) wiggle <- rep(0, vec[[1]]) else wiggle <- as.numeric(unlist(strsplit(vec[[2]], split = " ")))
+  len <- length(wiggle)
+  if (!show_uniq) {
+    plot(wiggle, type = "h")
+  } else {
+    vec <- readdepth_uniq[[tid]]
+    stopifnot(!is.null(vec))
+    if (is.na(vec[[2]])) wiggle_uniq <- rep(0, vec[[1]]) else wiggle_uniq <- as.numeric(unlist(strsplit(vec[[2]], split = " ")))
+    stopifnot(len == length(wiggle_uniq))
+    if (len != sum(wiggle >= wiggle_uniq)) {
+      cat("Warning: transcript ", tid, " has position(s) that read covarege with multireads is smaller than read covarge without multireads.\n", "         The 1-based position(s) is(are) : ", which(wiggle < wiggle_uniq), ".\n", "         This may be due to floating point arithmetics.\n", sep = "") 
+    }
+    heights <- rbind(wiggle_uniq, wiggle - wiggle_uniq)	
+    barplot(heights, space = 0, border = NA, names.arg = 1:len, col = c("black", "red")) 
+  }
+  title(main = tid) #, xlab = "Position in transcript", ylab = "Read depth")
 }
 
 generate_a_page <- function(tids, gene_id = NULL) {
@@ -64,30 +66,19 @@ generate_a_page <- function(tids, gene_id = NULL) {
 
   par(mfrow = c(nrow, ncol), mar = c(2, 2, 2, 2))
   if (is_gene) par(oma = c(0, 0, 3, 0)) 
-
-  for (i in 1:n) {
-    vec <- readdepth[[tids[i]]]
-    if (is.null(vec)) exit_with_error(paste("Unknown transcript detected,", tids[i], "is not included in RSEM's indices."))
-    if (is.na(vec[[2]])) wiggle <- rep(0, vec[[1]]) else wiggle <- as.numeric(unlist(strsplit(vec[[2]], split = " ")))
-    len <- length(wiggle)
-    if (!show_uniq) {
-      plot(wiggle, type = "h")
-    } else {
-      vec <- readdepth_uniq[[tids[i]]]
-      stopifnot(!is.null(vec))
-      if (is.na(vec[[2]])) wiggle_uniq <- rep(0, vec[[1]]) else wiggle_uniq <- as.numeric(unlist(strsplit(vec[[2]], split = " ")))
-      stopifnot(len == length(wiggle_uniq))
-      if (len != sum(wiggle >= wiggle_uniq)) {
-      	 cat("Warning: transcript ", tids[i], " has position(s) that read covarege with multireads is smaller than read covarge without multireads.\n", "         The 1-based position(s) is(are) : ", which(wiggle < wiggle_uniq), ".\n", "         This may be due to floating point arithmetics.\n", sep = "") 
-      }
-
-      heights <- rbind(wiggle_uniq, wiggle - wiggle_uniq)	
-      barplot(heights, space = 0, border = NA, names.arg = 1:len, col = c("black", "red")) 
-    }
-    title(main = tids[i]) #, xlab = "Position in transcript", ylab = "Read depth")
-  }
-
+  sapply(tids, make_a_plot)
   if (is_gene) mtext(gene_id, outer = TRUE, line = 1)
+}
+
+plot_a_transcript <- function(i) {
+  fr <- (i - 1) * num_plots_per_page + 1
+  to <- min(i * num_plots_per_page, n)
+  generate_a_page(ids[fr:to])
+}
+
+plot_a_gene <- function(gene_id) {
+  if (is.null(t2gmap[[gene_id]])) exit_with_error(paste("Unknown gene detected,", gene_id, "is not included in RSEM's in indices."))
+  generate_a_page(t2gmap[[gene_id]], gene_id)
 }
 
 readdepth <- load_readdepth_file(paste(sample_name, ".transcript.readdepth", sep = ""))
@@ -110,18 +101,14 @@ pdf(output_plot_file)
 if (!is_gene) {	
   n <- length(ids)
   ub <- (n - 1) %/% num_plots_per_page + 1
-  for (i in 1:ub) {
-    fr <- (i - 1) * num_plots_per_page + 1
-    to <- min(i * num_plots_per_page, n)
-    generate_a_page(ids[fr:to])
-  }
+  tmp <- sapply(1:ub, plot_a_transcript)
 } else {
-  for (gene_id in ids) {
-    if (is.null(t2gmap[[gene_id]])) exit_with_error(paste("Unknown gene detected,", gene_id, "is not included in RSEM's in indices."))
-    generate_a_page(t2gmap[[gene_id]], gene_id)
-  }
+  tmp <- sapply(ids, plot_a_gene)
 }
 
-cat("Plots are generated!\n)
+cat("Plots are generated!\n")
 
 dev.off.output <- dev.off()
+
+
+
