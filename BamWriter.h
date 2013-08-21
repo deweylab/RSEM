@@ -106,7 +106,7 @@ void BamWriter::work(HitWrapper<PairedEndHit> wrapper) {
 	bam1_t *b, *b2;
 	PairedEndHit *hit;
 
-	int cnt = 0;
+	HIT_INT_TYPE cnt = 0;
 
 	b = bam_init1();
 	b2 = bam_init1();
