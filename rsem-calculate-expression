@@ -88,9 +88,9 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "bowtie-e=i" => \$E,
 	   "bowtie-m=i" => \$maxHits,
 	   "bowtie-chunkmbs=i" => \$chunkMbs,
-	   "phred33-quals" => \$phred33,
-	   "phred64-quals" => \$phred64, #solexa1.3-quals" => \$phred64,
-	   "solexa-quals" => \$solexa,
+	   "bowtie-phred33-quals" => \$phred33,
+	   "bowtie-phred64-quals" => \$phred64, #solexa1.3-quals" => \$phred64,
+	   "bowtie-solexa-quals" => \$solexa,
 	   "forward-prob=f" => \$probF,
 	   "fragment-length-min=i" => \$minL,
 	   "fragment-length-max=i" => \$maxL,
@@ -464,17 +464,17 @@ The path to the bowtie executables. (Default: the path to the bowtie executables
 
 (Bowtie parameter) memory allocated for best first alignment calculation (Default: 0 - use bowtie's default)
 
-=item B<--phred33-quals>
+=item B<--bowtie-phred33-quals>
 
-Input quality scores are encoded as Phred+33. (Default: on)
+(Bowtie parameter) Input quality scores are encoded as Phred+33. (Default: on)
 
-=item B<--phred64-quals>
+=item B<--bowtie-phred64-quals>
 
-Input quality scores are encoded as Phred+64 (default for GA Pipeline ver. >= 1.3). (Default: off)
+(Bowtie parameter) Input quality scores are encoded as Phred+64 (default for GA Pipeline ver. >= 1.3). (Default: off)
 
-=item B<--solexa-quals>
+=item B<--bowtie-solexa-quals>
 
-Input quality scores are solexa encoded (from GA Pipeline ver. < 1.3). (Default: off)
+(Bowtie parameter) Input quality scores are solexa encoded (from GA Pipeline ver. < 1.3). (Default: off)
 
 =item B<--forward-prob> <double>
 
