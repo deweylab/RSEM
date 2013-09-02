@@ -91,11 +91,7 @@ convert-sam-for-rsem
 
 =head1 SYNOPSIS
 
-=over
-
- convert-sam-for-rsem [options] <input.sam/input.bam> output_file_name
-
-=back
+convert-sam-for-rsem [options] <input.sam/input.bam> output_file_name
 
 =head1 ARGUMENTS
 

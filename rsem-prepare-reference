@@ -104,11 +104,7 @@ rsem-prepare-reference
 
 =head1 SYNOPSIS
 
-=over
-
- rsem-prepare-reference [options] reference_fasta_file(s) reference_name
-
-=back
+rsem-prepare-reference [options] reference_fasta_file(s) reference_name
 
 =head1 ARGUMENTS
 

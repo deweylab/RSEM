@@ -354,13 +354,9 @@ rsem-calculate-expression
 
 =head1 SYNOPSIS
 
-=over
-
- rsem-calculate-expression [options] upstream_read_file(s) reference_name sample_name
- rsem-calculate-expression [options] --paired-end upstream_read_file(s) downstream_read_file(s) reference_name sample_name
+ rsem-calculate-expression [options] upstream_read_file(s) reference_name sample_name 
+ rsem-calculate-expression [options] --paired-end upstream_read_file(s) downstream_read_file(s) reference_name sample_name 
  rsem-calculate-expression [options] --sam/--bam [--paired-end] input reference_name sample_name
-
-=back
 
 =head1 ARGUMENTS
 

@@ -34,11 +34,7 @@ rsem-generate-ngvector
 
 =head1 SYNOPSIS
 
-=over
-
- rsem-generate-ngvector [options] input_fasta_file output_name
-
-=back
+rsem-generate-ngvector [options] input_fasta_file output_name
 
 =head1 ARGUMENTS
 

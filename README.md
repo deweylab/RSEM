@@ -307,19 +307,17 @@ Popular differential expression (DE) analysis tools such as edgeR and
 DESeq do not take variance due to read mapping uncertainty into
 consideration. Because read mapping ambiguity is prevalent among
 isoforms and de novo assembled transcripts, these tools are not ideal
-for DE detection in such conditions. 
+for DE detection in such conditions.
 
-**EBSeq**, an empirical Bayesian DE analysis tool developed in
-UW-Madison, can take variance due to read mapping ambiguity into
-consideration by grouping isoforms with parent gene's number of
-isoforms. In addition, it is more robust to outliers. For more
-information about EBSeq (including the paper describing their method),
-please visit <a
+EBSeq, an empirical Bayesian DE analysis tool developed in UW-Madison,
+can take variance due to read mapping ambiguity into consideration by
+grouping isoforms with parent gene's number of isoforms. In addition,
+it is more robust to outliers. For more information about EBSeq
+(including the paper describing their method), please visit <a
 href="http://www.biostat.wisc.edu/~ningleng/EBSeq_Package">EBSeq
 website</a>.
 
-RSEM includes the newest version of EBSeq in its folder
-named 'EBSeq'. To use it, first type
+RSEM includes EBSeq in its folder named 'EBSeq'. To use it, first type
 
     make ebseq
 
@@ -352,10 +350,9 @@ run 'rsem-generate-ngvector' first. Then load the resulting
 
     NgVec <- scan(file="output_name.ngvec", what=0, sep="\n")
 
-. After that, replace 'IsoNgTrun' with 'NgVec' in the second line of
-section 3.2.5 (Page 10) of EBSeq's vignette:
+. After that, set "NgVector = NgVec" for your differential expression
+test (either 'EBTest' or 'EBMultiTest').
 
-    IsoEBres=EBTest(Data=IsoMat, NgVector=NgVec, ...)
 
 For users' convenience, RSEM also provides a script
 'rsem-generate-data-matrix' to extract input matrix from expression
@@ -368,36 +365,27 @@ all isoform level results. You can load the matrix into R by
 
     IsoMat <- data.matrix(read.table(file="output_name.counts.matrix"))
 
-before running function 'EBTest'.
+before running either 'EBTest' or 'EBMultiTest'.
 
-At last, RSEM provides a R script, 'rsem-find-DE', which run EBSeq for
-you. 
+Lastly, RSEM provides two scripts, 'rsem-run-ebseq' and
+'rsem-control-fdr', to help users find differential expressed
+genes. First, 'rsem-run-ebseq' calls EBSeq to calculate related statistics
+for all genes/transcripts. Run 
 
-Usage: 
+    rsem-run-ebseq --help
 
-    rsem-find-DE data_matrix_file [--ngvector ngvector_file] number_of_samples_in_condition_1 FDR_rate output_file
+to get usage information or visit the [rsem-run-ebseq documentation
+page](http://deweylab.biostat.wisc.edu/rsem/rsem-run-ebseq.html). Second,
+'rsem-control-fdr' takes 'rsem-run-ebseq' 's result and reports called
+differentially expressed genes/transcripts by controlling the false
+discovery rate. Run
 
-This script calls EBSeq to find differentially expressed genes/transcripts in two conditions.
+    rsem-control-fdr --help
 
-data_matrix_file: m by n matrix containing expected counts, m is the number of transcripts/genes, n is the number of total samples.   
-[--ngvector ngvector_file]: optional field. 'ngvector_file' is calculated by 'rsem-generate-ngvector'. Having this field is recommended for transcript data.   
-number_of_samples_in_condition_1: the number of samples in condition 1. A condition's samples must be adjacent. The left group of samples are defined as condition 1.   
-FDR_rate: false discovery rate.   
-output_file: the output file. Three files will be generated: 'output_file', 'output_file.hard_threshold' and 'output_file.all'. The first file reports all DE genes/transcripts using a soft threshold (calculated by crit_func in EBSeq). The second file reports all DE genes/transcripts using a hard threshold (only report if PPEE <= fdr). The third file reports all genes/transcripts. The first file is recommended to be used as DE results because it generally contains more called genes/transcripts.   
-
-The results are written as a matrix with row and column names. The row names are the differentially expressed transcripts'/genes' ids. The column names are 'PPEE', 'PPDE', 'PostFC' and 'RealFC'.
-
-PPEE: posterior probability of being equally expressed.   
-PPDE: posterior probability of being differentially expressed.   
-PostFC: posterior fold change (condition 1 over condition2).   
-RealFC: real fold change (condition 1 over condition2).   
-
-To get the above usage information, type 
-
-    rsem-find-DE
-
-Note: any wrong parameter setting will lead 'rsem-find-DE' to output
-usage information and halt.
+to get usage information or visit the [rsem-control-fdr documentation
+page](http://deweylab.biostat.wisc.edu/rsem/rsem-control-fdr.html). These
+two scripts can perform DE analysis on either 2 conditions or multiple
+conditions.
 
 Questions related to EBSeq should
 be sent to <a href="mailto:nleng@wisc.edu">Ning Leng</a>.

@@ -4,7 +4,7 @@ PROGRAMS = EBSeq rsem-for-ebseq-calculate-clustering-info
 all : $(PROGRAMS)
 
 EBSeq : 
-	./install.R
+	./install
 
 rsem-for-ebseq-calculate-clustering-info : calcClusteringInfo.cpp
 	$(CC) -O3 -Wall calcClusteringInfo.cpp -o $@

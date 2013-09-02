@@ -57,11 +57,7 @@ rsem-plot-transcript-wiggles
 
 =head1 SYNOPSIS
 
-=over
-
- rsem-plot-transcript-wiggles [options] sample_name input_list output_plot_file
-
-=back
+rsem-plot-transcript-wiggles [options] sample_name input_list output_plot_file
 
 =head1 ARGUMENTS
 
