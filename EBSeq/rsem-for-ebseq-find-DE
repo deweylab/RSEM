@@ -14,7 +14,8 @@ output_file <- argv[4]
 nc <- length(argv) - 4;
 num_reps <- as.numeric(argv[5:(5+nc-1)])
 
-library(EBSeq, lib.loc = path)
+.libPaths(c(path, .libPaths()))
+library(EBSeq)
 
 DataMat <- data.matrix(read.table(data_matrix_file))
 n <- dim(DataMat)[2]
