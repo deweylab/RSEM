@@ -1,3 +1,10 @@
+RSEM v1.2.7
+
+- 'rsem-find-DE' is replaced by 'rsem-run-ebseq' and 'rsem-control-fdr' for a more friendly user experience
+- Added support for differential expression testing on more than 2 conditions in RSEM's EBSeq wrappers 'rsem-run-ebseq' and 'rsem-control-fdr'
+
+--------------------------------------------------------------------------------------------
+
 RSEM v1.2.6
 
 - Install the latest version of EBSeq from Bioconductor and if fails, try to install EBSeq v1.1.5 locally
