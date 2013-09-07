@@ -58,8 +58,12 @@ if (nc == 2) {
 
   results <- cbind(PP, MultiPP$MAP[rownames(PP)], probs)
   colnames(results) <- c(colnames(PP), "MAP", "PPDE")  
-  results <- results[order(results[,"PPDE"], decreasing = TRUE),]
+  ord <- order(results[,"PPDE"], decreasing = TRUE)
+  results <- results[ord,]
   write.table(results, file = output_file, sep = "\t")
 
   write.table(MultiPP$Patterns, file = paste(output_file, ".pattern", sep = ""), sep = "\t")
+
+  MultiFC <- GetMultiFC(MultiOut)
+  write.table(MultiFC$CondMeans[ord,], file = paste(output_file, ".condmeans", sep = ""), sep = "\t")
 }

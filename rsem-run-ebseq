@@ -93,6 +93,10 @@ If there are more than 2 different conditions among the samples, the output form
 
 This file is only generated when there are more than 2 conditions. It defines all possible expression patterns over the conditions using a matrix with names. Each row of the matrix refers to a different expression pattern and each column gives the expression status of a different condition. Two conditions are equally expressed if and only if their statuses are the same.
 
+=item B<output_file.condmeans>
+
+This file is only generated when there are more than 2 conditions. It gives the normalized mean count value for each gene/transcript at each condition. It is formatted as a matrix with names. Each row represents a gene/transcript and each column represent a condition. The order of genes/transcripts is the same as 'output_file'. This file can be used to calculate fold changes between conditions which users are interested in.  
+
 =back
 
 =head1 EXAMPLES
@@ -107,7 +111,7 @@ The results will be in 'IsoMat.results'.
 
  rsem-run-ebseq GeneMat 3,4,4 GeneMat.results
 
-Two files, 'GeneMat.results' and 'GeneMat.results.pattern', will be generated. 
+Three files, 'GeneMat.results', 'GeneMat.results.pattern', and 'GeneMat.results.condmeans', will be generated. 
 
 =cut
 

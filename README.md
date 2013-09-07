@@ -313,9 +313,9 @@ EBSeq, an empirical Bayesian DE analysis tool developed in UW-Madison,
 can take variance due to read mapping ambiguity into consideration by
 grouping isoforms with parent gene's number of isoforms. In addition,
 it is more robust to outliers. For more information about EBSeq
-(including the paper describing their method), please visit <a
-href="http://www.biostat.wisc.edu/~ningleng/EBSeq_Package">EBSeq
-website</a>.
+(including the paper describing their method), please visit [EBSeq's
+website](http://www.biostat.wisc.edu/~ningleng/EBSeq_Package).
+
 
 RSEM includes EBSeq in its folder named 'EBSeq'. To use it, first type
 
@@ -369,7 +369,7 @@ before running either 'EBTest' or 'EBMultiTest'.
 
 Lastly, RSEM provides two scripts, 'rsem-run-ebseq' and
 'rsem-control-fdr', to help users find differential expressed
-genes. First, 'rsem-run-ebseq' calls EBSeq to calculate related statistics
+genes/transcripts. First, 'rsem-run-ebseq' calls EBSeq to calculate related statistics
 for all genes/transcripts. Run 
 
     rsem-run-ebseq --help
@@ -386,6 +386,11 @@ to get usage information or visit the [rsem-control-fdr documentation
 page](http://deweylab.biostat.wisc.edu/rsem/rsem-control-fdr.html). These
 two scripts can perform DE analysis on either 2 conditions or multiple
 conditions.
+
+Please note that 'rsem-run-ebseq' and 'rsem-control-fdr' use EBSeq's
+default parameters. For advanced use of EBSeq or information about how
+EBSeq works, please refer to [EBSeq's
+manual](http://www.bioconductor.org/packages/devel/bioc/vignettes/EBSeq/inst/doc/EBSeq_Vignette.pdf).
 
 Questions related to EBSeq should
 be sent to <a href="mailto:nleng@wisc.edu">Ning Leng</a>.
