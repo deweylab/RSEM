@@ -2,6 +2,7 @@ RSEM v1.2.7
 
 - 'rsem-find-DE' is replaced by 'rsem-run-ebseq' and 'rsem-control-fdr' for a more friendly user experience
 - Added support for differential expression testing on more than 2 conditions in RSEM's EBSeq wrappers 'rsem-run-ebseq' and 'rsem-control-fdr'
+- Renamed '--phred33-quals', '--phred64-quals', and '--solexa-quals' in 'rsem-calculate-expression' to '--bowtie-phred33-quals', '--bowtie-phred64-quals', and '--bowtie-solex-quals' to avoid confusion
 
 --------------------------------------------------------------------------------------------
 
