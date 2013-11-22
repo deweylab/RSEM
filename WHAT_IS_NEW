@@ -1,3 +1,10 @@
+RSEM v1.2.8
+
+- Provided a more detailed description for how to simulate RNA-Seq data using 'rsem-simulate-reads'
+- Provided more user-friendly error message if RSEM fails to extract transcript sequences due to the failure of reading certain chromosome sequences
+
+--------------------------------------------------------------------------------------------
+
 RSEM v1.2.7
 
 - 'rsem-find-DE' is replaced by 'rsem-run-ebseq' and 'rsem-control-fdr' for a more friendly user experience
