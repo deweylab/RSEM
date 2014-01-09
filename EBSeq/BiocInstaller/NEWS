@@ -1,0 +1,16 @@
+CHANGES IN VERSION 1.10.0
+-------------------------
+
+NEW FEATURES
+
+    o biocValid() checks that installed packages are consistent with
+    those available via biocLite().
+
+    o biocVersion() returns the version of Bioconductor expected with
+    this version of the BiocInstaller package.
+
+USER-VISIBLE CHANGES
+
+    o biocLite() invoked with no arguments updates currently installed
+    packages to their most-recent version.
+

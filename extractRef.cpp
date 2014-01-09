@@ -260,7 +260,6 @@ int main(int argc, char* argv[]) {
 
 	ifstream fin;
 	string line, gseq, seqname;
-	void* pt;
 
 	chrvec.clear();
 
@@ -270,31 +269,31 @@ int main(int argc, char* argv[]) {
 	for (int i = start; i < argc; i++) {
 		fin.open(argv[i]);
 		if (!fin.is_open()) { fprintf(stderr, "Cannot open %s! It may not exist.\n", argv[i]); exit(-1); }
-		pt = getline(fin, line);
-		while (pt != 0 && line[0] == '>') {
+		getline(fin, line);
+		while ((fin) && (line[0] == '>')) {
 			istringstream strin(line.substr(1));
 			strin>>seqname;
 
 			gseq = "";
-		    while((pt = getline(fin, line)) && line[0] != '>') {
-		    	gseq += line;
-		    }
+			while((getline(fin, line)) && (line[0] != '>')) {
+			  gseq += line;
+			}
 
-		    size_t len = gseq.length();
-		    assert(len > 0);
-		    for (size_t j = 0; j < len; j++) gseq[j] = check(gseq[j]);
-
-		    iter = sn2tr.find(seqname);
-		    if (iter == sn2tr.end()) continue;
-
-		    chrvec.push_back(ChrInfo(seqname, len));
-
-		    vector<int>& vec = iter->second;
-		    int s = vec.size();
-		    for (int j = 0; j < s; j++) {
-		    	assert(vec[j] > 0 && vec[j] <= M);
-		    	transcripts.getTranscriptAt(vec[j]).extractSeq(gseq, seqs[vec[j]]);
-		    }
+			size_t len = gseq.length();
+			assert(len > 0);
+			for (size_t j = 0; j < len; j++) gseq[j] = check(gseq[j]);
+			
+			iter = sn2tr.find(seqname);
+			if (iter == sn2tr.end()) continue;
+			
+			chrvec.push_back(ChrInfo(seqname, len));
+			
+			vector<int>& vec = iter->second;
+			int s = vec.size();
+			for (int j = 0; j < s; j++) {
+			  assert(vec[j] > 0 && vec[j] <= M);
+			  transcripts.getTranscriptAt(vec[j]).extractSeq(gseq, seqs[vec[j]]);
+			}
 		}
 		fin.close();
 
@@ -304,8 +303,8 @@ int main(int argc, char* argv[]) {
 	for (int i = 1; i <= M; i++) {
 		if (seqs[i] == "") {
 			const Transcript& transcript = transcripts.getTranscriptAt(i);
-			fprintf(stderr, "Cannot extract transcript %s's sequence from chromosome %s! Loading chromosome %s's sequence is failed. Please check if 1) the chromosome directory is set correctly; 2) the list of chromosome files is complete; 3) the FASTA files containing chromosome sequences are not truncated or having wrong format.\n", \
-				transcript.getTranscriptID().c_str(), transcript.getSeqName().c_str(), transcript.getSeqName().c_str());
+			fprintf(stderr, "Cannot extract transcript %s's sequence from chromosome %s, whose information might not be provided! Please check if the chromosome directory is set correctly or the list of chromosome files is complete.\n", \
+					transcript.getTranscriptID().c_str(), transcript.getSeqName().c_str());
 			exit(-1);
 		}
 	}

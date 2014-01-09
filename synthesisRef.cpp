@@ -118,7 +118,6 @@ int main(int argc, char* argv[]) {
 	ifstream fin;
 	string line, gseq;
 	string seqname, gene_id;
-	void* pt;
 
 	vector<Interval> vec;
 
@@ -127,13 +126,13 @@ int main(int argc, char* argv[]) {
 	for (int i = start; i < argc; i++) {
 		fin.open(argv[i]);
 		if (!fin.is_open()) { fprintf(stderr, "Cannot open %s! It may not exist.\n", argv[i]); exit(-1); }
-		pt = getline(fin, line);
-		while (pt != 0 && line[0] == '>') {
+		getline(fin, line);
+		while ((fin) && (line[0] == '>')) {
 			istringstream strin(line.substr(1));
 			strin>>seqname;
 
 			gseq = "";
-			while((pt = getline(fin, line)) && line[0] != '>') {
+			while((getline(fin, line)) && (line[0] != '>')) {
 			    gseq += line;
 			}
 

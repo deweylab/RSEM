@@ -65,18 +65,17 @@ string convert(const string& rawseq) {
 void loadRef(char* inpF) {
   ifstream fin(inpF);
   string tag, line, rawseq;
-  void *pt;
 
   assert(fin.is_open());
 
   names.clear(); names.push_back("");
   seqs.clear(); seqs.push_back("");
   
-  pt = getline(fin, line);
-  while (pt != 0 && line[0] == '>') {
+  getline(fin, line);
+  while ((fin) && (line[0] == '>')) {
     tag = line.substr(1);
     rawseq = "";
-    while((pt = getline(fin, line)) && line[0] != '>') {
+    while((getline(fin, line)) && (line[0] != '>')) {
       rawseq += line;
     }
     if (rawseq.size() <= 0) {

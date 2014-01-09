@@ -4,7 +4,7 @@ CFLAGS=		-g -Wall -O2 #-m64 #-arch ppc
 CXXFLAGS=	$(CFLAGS)
 DFLAGS=		-D_FILE_OFFSET_BITS=64
 OBJS=		
-PROG=		md5sum-lite md5fa maq2sam-short maq2sam-long wgsim seqtk
+PROG=		md5sum-lite md5fa maq2sam-short maq2sam-long ace2sam wgsim bamcheck
 INCLUDES=	-I..
 SUBDIRS=	.
 
@@ -27,8 +27,14 @@ lib-recur all-recur clean-recur cleanlocal-recur install-recur:
 
 lib:
 
-seqtk:seqtk.o
-		$(CC) $(CFLAGS) -o $@ seqtk.o -lm -lz
+bamcheck:bamcheck.o
+		$(CC) $(CFLAGS) -o $@ bamcheck.o -L.. -lm -lbam -lpthread -lz
+
+bamcheck.o:bamcheck.c ../faidx.h ../khash.h ../sam.h ../razf.h
+		$(CC) $(CFLAGS) -c -I.. -o $@ bamcheck.c
+
+ace2sam:ace2sam.o
+		$(CC) $(CFLAGS) -o $@ ace2sam.o -lz
 
 wgsim:wgsim.o
 		$(CC) $(CFLAGS) -o $@ wgsim.o -lm -lz
@@ -51,11 +57,11 @@ maq2sam-long:maq2sam.c
 md5fa.o:md5.h md5fa.c
 		$(CC) $(CFLAGS) -c -I.. -o $@ md5fa.c
 
-seqtk.o:seqtk.c ../khash.h ../kseq.h
-		$(CC) $(CFLAGS) -c -I.. -o $@ seqtk.c
-
 wgsim.o:wgsim.c ../kseq.h
 		$(CC) $(CFLAGS) -c -I.. -o $@ wgsim.c
+
+ace2sam.o:ace2sam.c ../kstring.h ../kseq.h
+		$(CC) $(CFLAGS) -c -I.. -o $@ ace2sam.c
 
 cleanlocal:
 		rm -fr gmon.out *.o a.out *.exe *.dSYM $(PROG) *~ *.a

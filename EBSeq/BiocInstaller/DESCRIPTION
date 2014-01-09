@@ -1,0 +1,13 @@
+Package: BiocInstaller
+Title: Install/Update Bioconductor and CRAN Packages
+Description: Installs/updates Bioconductor and CRAN packages
+Version: 1.12.0
+Author: Dan Tenenbaum and Biocore Team
+Maintainer: Bioconductor Package Maintainer
+        <maintainer@bioconductor.org>
+biocViews: Software
+Depends: R (>= 3.0.0)
+Suggests: RUnit, BiocGenerics
+License: Artistic-2.0
+Packaged: 2013-10-15 04:03:53 UTC; biocbuild
+Built: R 3.0.2; ; 2013-10-15 11:47:50 UTC; unix

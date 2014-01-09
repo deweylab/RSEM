@@ -27,6 +27,9 @@ int main_phase(int argc, char *argv[]);
 int main_cat(int argc, char *argv[]);
 int main_depth(int argc, char *argv[]);
 int main_bam2fq(int argc, char *argv[]);
+int main_pad2unpad(int argc, char *argv[]);
+int main_bedcov(int argc, char *argv[]);
+int main_bamshuf(int argc, char *argv[]);
 
 int faidx_main(int argc, char *argv[]);
 
@@ -53,8 +56,11 @@ static int usage()
 	fprintf(stderr, "         rmdup       remove PCR duplicates\n");
 	fprintf(stderr, "         reheader    replace BAM header\n");
 	fprintf(stderr, "         cat         concatenate BAMs\n");
+	fprintf(stderr, "         bedcov      read depth per BED region\n");
 	fprintf(stderr, "         targetcut   cut fosmid regions (for fosmid pool only)\n");
 	fprintf(stderr, "         phase       phase heterozygotes\n");
+	fprintf(stderr, "         bamshuf     shuffle and group alignments by name\n");
+//	fprintf(stderr, "         depad       convert padded BAM to unpadded BAM\n"); // not stable
 	fprintf(stderr, "\n");
 #ifdef _WIN32
 	fprintf(stderr, "\
@@ -94,6 +100,10 @@ int main(int argc, char *argv[])
 	else if (strcmp(argv[1], "phase") == 0) return main_phase(argc-1, argv+1);
 	else if (strcmp(argv[1], "depth") == 0) return main_depth(argc-1, argv+1);
 	else if (strcmp(argv[1], "bam2fq") == 0) return main_bam2fq(argc-1, argv+1);
+	else if (strcmp(argv[1], "pad2unpad") == 0) return main_pad2unpad(argc-1, argv+1);
+	else if (strcmp(argv[1], "depad") == 0) return main_pad2unpad(argc-1, argv+1);
+	else if (strcmp(argv[1], "bedcov") == 0) return main_bedcov(argc-1, argv+1);
+	else if (strcmp(argv[1], "bamshuf") == 0) return main_bamshuf(argc-1, argv+1);
 	else if (strcmp(argv[1], "pileup") == 0) {
 		fprintf(stderr, "[main] The `pileup' command has been removed. Please use `mpileup' instead.\n");
 		return 1;

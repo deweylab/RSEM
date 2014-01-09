@@ -1,0 +1,13 @@
+BiocUpgrade             Upgrade Bioconductor to the latest version
+                        available for this version of R
+biocLite                Install or update Bioconductor and CRAN
+                        packages
+biocValid               Validate installed package versions against
+                        biocLite versions.
+biocVersion             Bioconductor version
+biocases_group          Convenience functions to return package names
+                        associated with Bioconductor publications.
+biocinstallRepos        Display current Bioconductor and CRAN
+                        repositories.
+useDevel                Get the 'devel' version of the BiocInstaller
+                        package.

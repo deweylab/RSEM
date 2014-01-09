@@ -7,6 +7,7 @@
 #include<iostream>
 #include<cassert>
 #include<fstream>
+#include<vector>
 
 #include "utils.h"
 #include "SingleRead.h"
@@ -94,7 +95,7 @@ bool ReadReader<ReadType>::locate(READ_INT_TYPE rid) {
 
 	if (crid < rid) return false;
 
-	std::streampos tmp[s];
+	std::vector<std::streampos> tmp(s);
 	for (int i = 0; i < s; i++) { tmp[i] = arr[i]->tellg(); }
 
 	if (!read.read(s, (std::istream**)arr, 0)) return false;

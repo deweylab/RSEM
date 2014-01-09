@@ -135,6 +135,8 @@ rsem-sam-validator : sam/bam.h sam/sam.h my_assert.h samValidator.cpp sam/libbam
 rsem-scan-for-paired-end-reads : sam/bam.h sam/sam.h my_assert.h scanForPairedEndReads.cpp sam/libbam.a
 	$(CC) -O3 -Wall scanForPairedEndReads.cpp sam/libbam.a -lz -o $@
 
+.PHONY: ebseq
+
 ebseq :
 	cd EBSeq ; ${MAKE} all
 

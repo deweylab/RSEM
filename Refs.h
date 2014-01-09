@@ -84,7 +84,6 @@ void Refs::makeRefs(char *inpF, RefSeqPolicy& policy, PolyARules& rules) {
   //read standard fasta format here
   std::ifstream fin;
   std::string tag, line, rawseq;
-  void* pt; // istream& is indeed a pointer, that's why I can use void* here
 
   seqs.clear();
   seqs.push_back(RefSeq()); // noise isoform
@@ -94,11 +93,11 @@ void Refs::makeRefs(char *inpF, RefSeqPolicy& policy, PolyARules& rules) {
 
   fin.open(inpF);
   if (!fin.is_open()) { fprintf(stderr, "Cannot open %s! It may not exist.\n", inpF); exit(-1); }
-  pt = getline(fin, line);
-  while (pt != 0 && line[0] == '>') {
+  getline(fin, line);
+  while ((fin) && (line[0] == '>')) {
     tag = line.substr(1);
     rawseq = "";
-    while((pt = getline(fin, line)) && line[0] != '>') {
+    while((getline(fin, line)) && (line[0] != '>')) {
       rawseq += line;
     }
     if (rawseq.size() <= 0) {
