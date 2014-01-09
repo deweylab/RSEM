@@ -303,8 +303,9 @@ int main(int argc, char* argv[]) {
 	for (int i = 1; i <= M; i++) {
 		if (seqs[i] == "") {
 			const Transcript& transcript = transcripts.getTranscriptAt(i);
-			fprintf(stderr, "Cannot extract transcript %s's sequence from chromosome %s, whose information might not be provided! Please check if the chromosome directory is set correctly or the list of chromosome files is complete.\n", \
-					transcript.getTranscriptID().c_str(), transcript.getSeqName().c_str());
+
+			fprintf(stderr, "Cannot extract transcript %s's sequence from chromosome %s! Loading chromosome %s's sequence is failed. Please check if 1) the chromosome directory is set correctly; 2) the list of chromosome files is complete; 3) the FASTA files containing chromosome sequences are not truncated or having wrong format.\n", \
+				transcript.getTranscriptID().c_str(), transcript.getSeqName().c_str(), transcript.getSeqName().c_str());
 			exit(-1);
 		}
 	}

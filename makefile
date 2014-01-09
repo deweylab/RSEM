@@ -50,7 +50,7 @@ SamParser.h : sam/sam.h sam/bam.h utils.h my_assert.h SingleRead.h SingleReadQ.h
 
 
 rsem-parse-alignments : parseIt.o sam/libbam.a
-	$(CC) -o rsem-parse-alignments parseIt.o sam/libbam.a -lz 
+	$(CC) -o rsem-parse-alignments parseIt.o sam/libbam.a -lz -lpthread 
 
 parseIt.o : utils.h GroupInfo.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h HitContainer.h SamParser.h Transcripts.h sam/sam.h sam/bam.h parseIt.cpp
 	$(CC) -Wall -O2 -c -I. parseIt.cpp
@@ -93,13 +93,13 @@ bc_aux.h : sam/bam.h
 BamConverter.h : utils.h my_assert.h sam/sam.h sam/bam.h sam_rsem_aux.h sam_rsem_cvt.h bc_aux.h Transcript.h Transcripts.h
 
 rsem-tbam2gbam : utils.h Transcripts.h Transcript.h bc_aux.h BamConverter.h sam/sam.h sam/bam.h sam/libbam.a sam_rsem_aux.h sam_rsem_cvt.h tbam2gbam.cpp sam/libbam.a
-	$(CC) -O3 -Wall tbam2gbam.cpp sam/libbam.a -lz -o $@
+	$(CC) -O3 -Wall tbam2gbam.cpp sam/libbam.a -lz -lpthread -o $@
 
 rsem-bam2wig : utils.h my_assert.h wiggle.h wiggle.o sam/libbam.a bam2wig.cpp
-	$(CC) -O3 -Wall bam2wig.cpp wiggle.o sam/libbam.a -lz -o $@
+	$(CC) -O3 -Wall bam2wig.cpp wiggle.o sam/libbam.a -lz -lpthread -o $@
 
 rsem-bam2readdepth : utils.h my_assert.h wiggle.h wiggle.o sam/libbam.a bam2readdepth.cpp
-	$(CC) -O3 -Wall bam2readdepth.cpp wiggle.o sam/libbam.a -lz -o $@
+	$(CC) -O3 -Wall bam2readdepth.cpp wiggle.o sam/libbam.a -lz -lpthread -o $@
 
 wiggle.o: sam/bam.h sam/sam.h wiggle.cpp wiggle.h
 	$(CC) $(COFLAGS) wiggle.cpp
@@ -127,13 +127,13 @@ calcCI.o : utils.h my_assert.h boost/random.hpp sampling.h Model.h SingleModel.h
 	$(CC) $(COFLAGS) calcCI.cpp
 
 rsem-get-unique : sam/bam.h sam/sam.h getUnique.cpp sam/libbam.a
-	$(CC) -O3 -Wall getUnique.cpp sam/libbam.a -lz -o $@
+	$(CC) -O3 -Wall getUnique.cpp sam/libbam.a -lz -lpthread -o $@
 
 rsem-sam-validator : sam/bam.h sam/sam.h my_assert.h samValidator.cpp sam/libbam.a
-	$(CC) -O3 -Wall samValidator.cpp sam/libbam.a -lz -o $@
+	$(CC) -O3 -Wall samValidator.cpp sam/libbam.a -lz -lpthread -o $@
 
 rsem-scan-for-paired-end-reads : sam/bam.h sam/sam.h my_assert.h scanForPairedEndReads.cpp sam/libbam.a
-	$(CC) -O3 -Wall scanForPairedEndReads.cpp sam/libbam.a -lz -o $@
+	$(CC) -O3 -Wall scanForPairedEndReads.cpp sam/libbam.a -lz -lpthread -o $@
 
 .PHONY: ebseq
 
