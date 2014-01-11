@@ -718,7 +718,7 @@ Assume the path to the bowtie executables is in the user's PATH environment vari
                            /ref/mouse_125 \
                            mmliver_single_without_quals
 
-4) Data are the same as 1). This time we assume the bowtie executables are under '/sw/bowtie'. We want to take a fragment length distribution into consideration. We set the fragment length mean to 150 and the standard deviation to 35. In addition to a BAM file, we also want to generate credibility intervals.  We allow RSEM to use 1GB of memory for CI calculation:
+4) Data are the same as 1). This time we assume the bowtie executables are under '/sw/bowtie'. We want to take a fragment length distribution into consideration. We set the fragment length mean to 150 and the standard deviation to 35. In addition to a BAM file, we also want to generate credibility intervals. We allow RSEM to use 1GB of memory for CI calculation:
 
  rsem-calculate-expression --bowtie-path /sw/bowtie \
                            --phred64-quals \
@@ -732,7 +732,7 @@ Assume the path to the bowtie executables is in the user's PATH environment vari
                            /ref/mouse_125 \
                            mmliver_single_quals
 
-5) '/data/mmliver_paired_end_quals.bam', paired-end reads with quality scores.  We want to use 8 threads:
+5) '/data/mmliver_paired_end_quals.bam', paired-end reads with quality scores. We want to use 8 threads:
 
  rsem-calculate-expression --paired-end \
                            --bam \
