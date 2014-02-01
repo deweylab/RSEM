@@ -10,21 +10,19 @@
 #include<algorithm>
 using namespace std;
 
-typedef unsigned int INTEGER;
-
 const int STRLEN = 1005;
 
-INTEGER M;
+int M;
 int k; // k-mer size
 vector<string> names;
 vector<string> seqs;
-vector<INTEGER> effL;
+vector<int> effL;
 
 // tid starts from 1
 struct ReadType {
-  INTEGER tid, pos;
+  int tid, pos;
 
-  ReadType(INTEGER tid, INTEGER pos) {
+  ReadType(int tid, int pos) {
     this->tid = tid;
     this->pos = pos;
   }
@@ -104,10 +102,10 @@ int main(int argc, char* argv[]) {
 
   cands.clear();
   effL.assign(M + 1, 0);
-  for (INTEGER i = 1; i <= M; i++) {
-    effL[i] = seqs[i].length() - k + 1;
+  for (int i = 1; i <= M; i++) {
+    effL[i] = int(seqs[i].length()) - k + 1;
     if (effL[i] <= 0) effL[i] = 0; // effL should be non-negative
-    for (INTEGER j = 0; j < effL[i]; j++) 
+    for (int j = 0; j < effL[i]; j++) 
       cands.push_back(ReadType(i, j));
   }
   printf("All possbile %d mers are generated.\n", k);
@@ -133,7 +131,7 @@ int main(int argc, char* argv[]) {
       p = i;
     }
 
-  for (INTEGER i = 1; i <= M; i++) 
+  for (int i = 1; i <= M; i++) 
     if (effL[i] == 0) clusteringInfo[i] = -1.0;
     else clusteringInfo[i] /= effL[i];
 
@@ -141,7 +139,7 @@ int main(int argc, char* argv[]) {
 
 
   ofstream fout(argv[3]);
-  for (INTEGER i = 1; i <= M; i++) fout<<names[i]<<"\t"<<setprecision(6)<<clusteringInfo[i]<<endl;
+  for (int i = 1; i <= M; i++) fout<<names[i]<<"\t"<<setprecision(6)<<clusteringInfo[i]<<endl;
   fout.close();
 
   return 0;
