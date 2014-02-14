@@ -1,3 +1,10 @@
+RSEM v1.2.11
+
+- Enabled RSEM to use Bowtie 2 aligner (indel, local and discordant alignments are not supported yet)
+- Changed option names '--bowtie-phred33-quals', '--bowtie-phred64-quals' and '--bowtie-solexa-quals' back to '--phred33-quals', '--phred64-quals' and '--solexa-quals' 
+
+--------------------------------------------------------------------------------------------
+
 RSEM v1.2.10
 
 - Fixed a bug which will lead to out-of-memory error when RSEM computes ngvector for EBSeq

@@ -61,6 +61,12 @@ my $keep_intermediate_files = 0;
 
 my $strand_specific = 0;
 
+my $bowtie2 = 0;
+my $bowtie2_path = "";
+my $bowtie2_mismatch_rate = 0.1;
+my $bowtie2_k = 200;
+my $bowtie2_sensitivity_level = "sensitive"; # must be one of "very_fast", "fast", "sensitive", "very_sensitive"
+
 my $version = 0;
 
 my $mTime = 0;
@@ -88,9 +94,14 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "bowtie-e=i" => \$E,
 	   "bowtie-m=i" => \$maxHits,
 	   "bowtie-chunkmbs=i" => \$chunkMbs,
-	   "bowtie-phred33-quals" => \$phred33,
-	   "bowtie-phred64-quals" => \$phred64, #solexa1.3-quals" => \$phred64,
-	   "bowtie-solexa-quals" => \$solexa,
+	   "phred33-quals" => \$phred33,
+	   "phred64-quals" => \$phred64, #solexa1.3-quals" => \$phred64,
+	   "solexa-quals" => \$solexa,
+	   "bowtie2" => \$bowtie2,
+	   "bowtie2-path=s" => \$bowtie2_path,
+	   "bowtie2-mismatch-rate=f" => \$bowtie2_mismatch_rate,
+	   "bowtie2-k=i" => \$bowtie2_k,
+	   "bowtie2-sensitivity-level=s" => \$bowtie2_sensitivity_level,
 	   "forward-prob=f" => \$probF,
 	   "fragment-length-min=i" => \$minL,
 	   "fragment-length-max=i" => \$maxL,
@@ -120,12 +131,17 @@ pod2usage(-verbose => 2) if ($help == 1);
 if ($is_sam || $is_bam) {
     pod2usage(-msg => "Invalid number of arguments!", -exitval => 2, -verbose => 2) if (scalar(@ARGV) != 3);
     pod2usage(-msg => "--sam and --bam cannot be active at the same time!", -exitval => 2, -verbose => 2) if ($is_sam == 1&& $is_bam == 1);
-    pod2usage(-msg => "--bowtie-path, --bowtie-n, --bowtie-e, --bowtie-m, --phred33-quals, --phred64-quals or --solexa-quals cannot be set if input is SAM/BAM format!", -exitval => 2, -verbose => 2) if ($bowtie_path ne "" || $C != 2 || $E != 99999999 || $maxHits != 200 || $phred33 || $phred64 || $solexa);
+    pod2usage(-msg => "--bowtie-path, --bowtie-n, --bowtie-e, --bowtie-m, --phred33-quals, --phred64-quals, --solexa-quals, --bowtie2, --bowtie2-path, --bowtie2-mismatch-rate, --bowtie2-k and --bowtie2-sensitivity-level cannot be set if input is SAM/BAM format!", -exitval => 2, -verbose => 2) if ($bowtie_path ne "" || $C != 2 || $E != 99999999 || $maxHits != 200 || $phred33 || $phred64 || $solexa || $bowtie2 || $bowtie2_path ne "" || $bowtie2_mismatch_rate != 0.1 || $bowtie2_k != 200 || $bowtie2_sensitivity_level ne "sensitive");
 }
 else {
     pod2usage(-msg => "Invalid number of arguments!", -exitval => 2, -verbose => 2) if (!$paired_end && scalar(@ARGV) != 3 || $paired_end && scalar(@ARGV) != 4);    
-    pod2usage(-msg => "Only one of --phred33-quals --phred64-quals/--solexa1.3-quals --solexa-suqls can be active!", -exitval => 2, -verbose => 2) if ($phred33 + $phred64 + $solexa > 1);    
-    podwusage(-msg => "--sam , --bam or --sam-header-info cannot be set if use bowtie aligner to produce alignments!", -exitval => 2, -verbose => 2) if ($is_sam || $is_bam || $fn_list ne "");
+    pod2usage(-msg => "If --no-qualities is set, neither --phred33-quals, --phred64-quals or --solexa-quals can be active!", -exitval => 2, -verbose => 2) if ($no_qual && ($phred33 + $phred64 + $solexa > 0));
+    pod2usage(-msg => "Only one of --phred33-quals, --phred64-quals, and --solexa-quals can be active!", -exitval => 2, -verbose => 2) if ($phred33 + $phred64 + $solexa > 1);    
+    pod2usage(-msg => "--sam , --bam or --sam-header-info cannot be set if use bowtie/bowtie2 aligner to produce alignments!", -exitval => 2, -verbose => 2) if ($is_sam || $is_bam || $fn_list ne "");
+    pod2usage(-msg => "--bowtie2-path, --bowtie2-mismatch-rate, --bowtie2-k and --bowtie2-sensitivity-level cannot be set if bowtie aligner is used!", -exitval => 2, -verbose => 2) if (!$bowtie2 && ($bowtie2_path ne "" || $bowtie2_mismatch_rate != 0.1 || $bowtie2_k != 200 || $bowtie2_sensitivity_level ne "sensitive"));
+    pod2usage(-msg => "--bowtie-path, --bowtie-n, --bowtie-e, --bowtie-m cannot be set if bowtie2 aligner is used!", -exitval => 2, -verbose => 2) if ($bowtie2 && ($bowtie_path ne "" || $C != 2 || $E != 99999999 || $maxHits != 200));
+    pod2usage(-msg => "Mismatch rate must be within [0, 1]!", -exitval => 2, -verbose => 2) if ($bowtie2 && ($bowtie2_mismatch_rate < 0.0 || $bowtie2_mismatch_rate > 1.0));
+    pod2usage(-msg => "Sensitivity level must be one of \"very_fast\", \"fast\", \"sensitive\", and \"very_sensitive\"!", -exitval => 2, -verbose => 2) if ($bowtie2 && (($bowtie2_sensitivity_level ne "very_fast") && ($bowtie2_sensitivity_level ne "fast") && ($bowtie2_sensitivity_level ne "sensitive") && ($bowtie2_sensitivity_level ne "very_sensitive"))); 
 }
 
 pod2usage(-msg => "Forward probability should be in [0, 1]!", -exitval => 2, -verbose => 2) if ($probF < 0 || $probF > 1);
@@ -189,38 +205,76 @@ if (!$is_sam && !$is_bam && !$no_qual && ($phred33 + $phred64 + $solexa == 0)) {
 my ($mate_minL, $mate_maxL) = (1, $maxL);
 
 if ($bowtie_path ne "") { $bowtie_path .= "/"; }
+if ($bowtie2_path ne "") { $bowtie2_path .= "/"; }
 
 my $command = "";
 
 if (!$is_sam && !$is_bam) {
-    $command = $bowtie_path."bowtie";
-    if ($no_qual) { $command .= " -f"; }
-    else { $command .= " -q"; }
+    if (!$bowtie2) {
+	$command = $bowtie_path."bowtie";
+	if ($no_qual) { $command .= " -f"; }
+	else { $command .= " -q"; }
     
-    if ($phred33) { $command .= " --phred33-quals"; }
-    elsif ($phred64) { $command .= " --phred64-quals"; }
-    elsif ($solexa) { $command .= " --solexa-quals"; }
+	if ($phred33) { $command .= " --phred33-quals"; }
+	elsif ($phred64) { $command .= " --phred64-quals"; }
+	elsif ($solexa) { $command .= " --solexa-quals"; }
     
-    $command .= " -n $C -e $E -l $L";
-    if ($read_type == 2 || $read_type == 3) { $command .= " -I $minL -X $maxL"; }
-    if ($chunkMbs > 0) { $command .= " --chunkmbs $chunkMbs"; }
-    
-    if ($strand_specific || $probF == 1.0) { $command .= " --norc"; }
-    elsif ($probF == 0.0) { $command .= " --nofw"; }
+	$command .= " -n $C -e $E -l $L";
+	if ($read_type == 2 || $read_type == 3) { $command .= " -I $minL -X $maxL"; }
+	if ($chunkMbs > 0) { $command .= " --chunkmbs $chunkMbs"; }
+	
+	if ($strand_specific || $probF == 1.0) { $command .= " --norc"; }
+	elsif ($probF == 0.0) { $command .= " --nofw"; }
+	
+	$command .= " -p $nThreads -a -m $maxHits -S";
+	if ($quiet) { $command .= " --quiet"; }    
 
-    $command .= " -p $nThreads -a -m $maxHits -S";
-    if ($quiet) { $command .= " --quiet"; }    
+	$command .= " $refName";
+	if ($read_type == 0 || $read_type == 1) {
+	    $command .= " $mate1_list"; 
+	}
+	else {
+	    $command .= " -1 $mate1_list -2 $mate2_list";
+	}
 
-    $command .= " $refName";
-    if ($read_type == 0 || $read_type == 1) {
-	$command .= " $mate1_list"; 
+	# pipe to samtools to generate a BAM file
+	$command .= " | $dir\sam/samtools view -S -b -o $imdName.bam -";
     }
     else {
-	$command .= " -1 $mate1_list -2 $mate2_list";
-    }
+	$command = $bowtie2_path."bowtie2";
+	if ($no_qual) { $command .= " -f"; }
+	else { $command .= " -q"; }
 
-    # pipe to samtools to generate a BAM file
-    $command .= " | $dir\sam/samtools view -S -b -o $imdName.bam -";
+	if ($phred33) { $command .= " --phred33"; }
+	elsif ($phred64) { $command .= " --phred64"; }
+	elsif ($solexa) { $command .= " --solexa-quals"; }
+
+	if ($bowtie2_sensitivity_level eq "very_fast") { $command .= " --very-fast"; }
+	elsif ($bowtie2_sensitivity_level eq "fast") { $command .= " --fast"; }
+	elsif ($bowtie2_sensitivity_level eq "sensitive") { $command .= " --sensitive"; }
+	else { $command .= " --very-sensitive"; }
+
+	$command .= " --dpad 0 --gbar 99999999 --mp 1,1 --np 1 --score-min L,0,-$bowtie2_mismatch_rate";  
+
+	if ($read_type == 2 || $read_type == 3) { $command .= " -I $minL -X $maxL --no-mixed --no-discordant"; }
+
+	if ($strand_specific || $probF == 1.0) { $command .= " --norc"; }
+	elsif ($probF == 0.0) { $command .= " --nofw"; }
+	
+	$command .= " -p $nThreads -k $bowtie2_k";
+	if ($quiet) { $command .= " --quiet"; }    
+
+	$command .= " -x $refName";
+	if ($read_type == 0 || $read_type == 1) {
+	    $command .= " -U $mate1_list"; 
+	}
+	else {
+	    $command .= " -1 $mate1_list -2 $mate2_list";
+	}
+
+	# pipe to samtools to generate a BAM file
+	$command .= " | $dir\sam/samtools view -S -b -o $imdName.bam -";
+    }
 
     if ($mTime) { $time_start = time(); }
 
@@ -398,7 +452,7 @@ Input reads do not contain quality scores. (Default: off)
 
 =item B<--strand-specific>
 
-The RNA-Seq protocol used to generate the reads is strand specific, i.e., all (upstream) reads are derived from the forward strand.  This option is equivalent to --forward-prob=1.0.  With this option set, if RSEM runs the Bowtie aligner, the '--norc' Bowtie option will be used, which disables alignment to the reverse strand of transcripts.  (Default: off)
+The RNA-Seq protocol used to generate the reads is strand specific, i.e., all (upstream) reads are derived from the forward strand.  This option is equivalent to --forward-prob=1.0.  With this option set, if RSEM runs the Bowtie/Bowtie 2 aligner, the '--norc' Bowtie/Bowtie 2 option will be used, which disables alignment to the reverse strand of transcripts.  (Default: off)
 
 =item B<--sam>
 
@@ -414,7 +468,7 @@ RSEM reads header information from input by default. If this option is on, heade
 
 =item B<-p/--num-threads> <int>
 
-Number of threads to use. Both Bowtie and expression estimation will use this many threads. (Default: 1)
+Number of threads to use. Both Bowtie/Bowtie2 and expression estimation will use this many threads. (Default: 1)
 
 =item B<--no-bam-output>
 
@@ -442,7 +496,7 @@ The name of the optional field used in the SAM input for identifying a read with
 
 =item B<--bowtie-path> <path>
 
-The path to the bowtie executables. (Default: the path to the bowtie executables is assumed to be in the user's PATH environment variable)
+The path to the Bowtie executables. (Default: the path to the Bowtie executables is assumed to be in the user's PATH environment variable)
 
 =item B<--bowtie-n> <int>
 
@@ -458,19 +512,39 @@ The path to the bowtie executables. (Default: the path to the bowtie executables
 
 =item B<--bowtie-chunkmbs> <int>
 
-(Bowtie parameter) memory allocated for best first alignment calculation (Default: 0 - use bowtie's default)
+(Bowtie parameter) memory allocated for best first alignment calculation (Default: 0 - use Bowtie's default)
 
-=item B<--bowtie-phred33-quals>
+=item B<--phred33-quals>
 
-(Bowtie parameter) Input quality scores are encoded as Phred+33. (Default: on)
+Input quality scores are encoded as Phred+33. (Default: on)
 
-=item B<--bowtie-phred64-quals>
+=item B<--phred64-quals>
 
-(Bowtie parameter) Input quality scores are encoded as Phred+64 (default for GA Pipeline ver. >= 1.3). (Default: off)
+Input quality scores are encoded as Phred+64 (default for GA Pipeline ver. >= 1.3). (Default: off)
 
-=item B<--bowtie-solexa-quals>
+=item B<--solexa-quals>
 
-(Bowtie parameter) Input quality scores are solexa encoded (from GA Pipeline ver. < 1.3). (Default: off)
+Input quality scores are solexa encoded (from GA Pipeline ver. < 1.3). (Default: off)
+
+=item B<--bowtie2>
+
+Use Bowtie 2 instead of Bowtie to align reads. Since currently RSEM does not handle indel, local and discordant alignments, the Bowtie2 parameters are set in a way to avoid those alignments. In particular, we use options '--very-sensitive --dpad 0 --gbar 99999999 --mp 1,1 --np 1 --score-min L,0,-rate'. "-rate", the last parameter of '--score-min' is the negative value of the mismatch rate provided by option '--bowtie2-mismatch-rate'. If reads are paired-end, we additionally use options '--no-mixed' and '--no-discordant'. (Default: off)
+
+=item B<--bowtie2-path> <path>
+
+(Bowtie 2 parameter) The path to the Bowtie 2 executables. (Default: the path to the Bowtie 2 executables is assumed to be in the user's PATH environment variable)
+
+=item B<--bowtie2-mismatch-rate> <double>
+
+(Bowtie 2 parameter) The maximum mismatch rate allowed. (Default: 0.1)
+
+=item B<--bowtie2-k> <int>
+
+(Bowtie 2 parameter) Find up to <int> alignments per read. (Default: 200)
+
+=item B<--bowtie2-sensitivity-level> <string>
+
+(Bowtie 2 parameter) Set Bowtie 2's preset options in --end-to-end mode. This option controls how hard Bowtie 2 tries to find alignments. <string> must be one of "very_fast", "fast", "sensitive" and "very_sensitive". The four candidates correspond to Bowtie 2's "--very-fast", "--fast", "--sensitive" and "--very-sensitive" options. (Default: "sensitive" - use Bowtie 2's default)
 
 =item B<--forward-prob> <double>
 
@@ -478,11 +552,11 @@ Probability of generating a read from the forward strand of a transcript. Set to
 
 =item B<--fragment-length-min> <int>
 
-Minimum read/insert length allowed. This is also the value for the bowtie -I option. (Default: 1)
+Minimum read/insert length allowed. This is also the value for the Bowtie/Bowtie2 -I option. (Default: 1)
 
 =item B<--fragment-length-max> <int>
 
-Maximum read/insert length allowed. This is also the value for the bowtie -X option. (Default: 1000)
+Maximum read/insert length allowed. This is also the value for the Bowtie/Bowtie 2 -X option. (Default: 1000)
 
 =item B<--fragment-length-mean> <double>
 

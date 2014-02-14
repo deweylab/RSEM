@@ -19,6 +19,8 @@ my $polyALen = 125;
 my $bowtie_path = "";
 my $no_bowtie = 0;
 my $no_ntog = 0; 
+my $bowtie2 = 0;
+my $bowtie2_path = "";
 my $quiet = 0;
 my $help = 0;
 
@@ -30,16 +32,22 @@ GetOptions("gtf=s" => \$gtfF,
 	   "bowtie-path=s" => \$bowtie_path,
 	   "no-bowtie" => \$no_bowtie,
 	   "no-ntog" => \$no_ntog,
+	   "bowtie2" => \$bowtie2,
+	   "bowtie2-path=s" => \$bowtie2_path,
 	   "q|quiet" => \$quiet,
 	   "h|help" => \$help) or pod2usage(-exitval => 2, -verbose => 2);
 
 pod2usage(-verbose => 2) if ($help == 1);
 pod2usage(-msg => "Set --no-polyA & --no-polyA-subset at the same time!", -exitval => 2, -verbose => 2) if ($no_polyA == 1 && $subsetFile ne '');
 pod2usage(-msg => "Invalid number of arguments!", -exitval => 2, -verbose => 2) if (scalar(@ARGV) != 2);
+
+if ($bowtie2) { $no_bowtie = 1; $no_ntog = 1; }
+
 pod2usage(-msg => "If bowtie is used, --no-ntog cannot be set!", -exitval => 2, -verbose => 2) if (!$no_bowtie && $no_ntog);
 
-if ($no_bowtie && $bowtie_path ne "") { print "Warning: If bowtie is not used, no need to set --bowtie-path option!\n"; }
-
+if ($no_bowtie && ($bowtie_path ne "")) { print "Warning: If bowtie is not used, no need to set --bowtie-path option!\n"; }
+if (!$bowtie2 && ($bowtie2_path ne "")) { print "Warning: If bowtie2 is not used, no need to set --bowtie2-path option!\n"; }
+ 
 my $type;
 
 if ($gtfF ne "") { $type = 0; }
@@ -60,6 +68,7 @@ if ($no_polyA) { $polyAChoice = 1 }
 elsif ($subsetFile ne "") { $polyAChoice = 2; }
 
 if ($bowtie_path ne "") { $bowtie_path .= "/"; }
+if ($bowtie2_path ne "") { $bowtie2_path .= "/"; }
 
 my $dir = "$FindBin::Bin/";
 my $command = "";
@@ -93,6 +102,14 @@ if (!$no_bowtie) {
     if ($quiet) { $command .= " -q"; }
     $command .= " $ARGV[1].idx.fa $ARGV[1]";
 
+    &runCommand($command);
+}
+
+if ($bowtie2) { 
+    $command = $bowtie2_path."bowtie2-build -f";
+    if ($quiet) { $command .= " -q"; }
+    $command .= " $ARGV[1].idx.fa $ARGV[1]";
+    
     &runCommand($command);
 }
 
@@ -165,12 +182,19 @@ The path to the Bowtie executables. (Default: the path to Bowtie executables is 
 
 =item B<--no-bowtie>
 
-Do not build Bowtie indices.  Specify this option if you wish to use an alternative aligner for mapping reads to transcripts.  You should align against the sequences generated in the output file 'reference_name.idx.fa'.  (Default: off)
+Do not build Bowtie indices.  Specify this option if you wish to use an alternative aligner for mapping reads to transcripts.  You should align against the sequences generated in the output file 'reference_name.idx.fa'. (Default: off)
 
 =item B<--no-ntog>
 
-Disable the conversion of 'N' characters to 'G' characters in the reference sequences.  This conversion is normally desired because it allows some aligners (e.g., Bowtie) to align against all positions in the reference.
-(Default: off)
+Disable the conversion of 'N' characters to 'G' characters in the reference sequences prepared for aligners.  This conversion is in particular desired for Bowtie aligner to align against all positions in the reference. (Default: off)
+
+=item B<--bowtie2>
+
+Build Bowtie 2 indices instead of Bowtie indices. Turn on this option will automatically turn on '--no-bowtie' and '--no-ntog' options. (Default: off)
+
+=item B<--bowtie2-path>
+
+The path to the Bowtie 2 executables. (Default: the path to Bowtie 2 executables is assumed to be in the user's PATH environment variable)
 
 =item B<-q/--quiet>
 
@@ -190,10 +214,12 @@ This program extracts/preprocesses the reference sequences and builds Bowtie ind
 
 This program will generate 'reference_name.grp', 'reference_name.ti', 'reference_name.transcripts.fa', 'reference_name.seq', 'reference_name.chrlist' (if '--gtf' is on), 'reference_name.idx.fa', and corresponding Bowtie index files (unless '--no-bowtie' is specified).
 
-'reference_name.grp', 'reference_name.ti', 'reference_name.seq', 'reference_name.idx.fa', and 'reference_name.chrlist' are used by RSEM internally.
+'reference_name.grp', 'reference_name.ti', 'reference_name.seq', and 'reference_name.chrlist' are used by RSEM internally.
 
 B<'reference_name.transcripts.fa'> contains the extracted reference transcripts in FASTA format. Poly(A) tails are added unless '--no-polyA' is set.
 
+B<'reference_name.idx.fa'> is used by aligners to build their own indices. If '--no-ntog' is set, this file should be identical to 'reference_name.transcripts.fa'.
+ 
 =head1 EXAMPLES
 
 1) Suppose we have mouse RNA-Seq data and want to use the UCSC mm9 version of the mouse genome. We have downloaded the UCSC Genes transcript annotations in GTF format (as mm9.gtf) using the Table Browser and the knownIsoforms.txt file for mm9 from the UCSC Downloads. We also have all chromosome files for mm9 in the directory '/data/mm9'.  We want to put the generated reference files under '/ref' with name 'mouse_125'. We'll add poly(A) tails with length 125. Please note that GTF files generated from UCSC's Table Browser do not contain isoform-gene relationship information.  For the UCSC Genes annotation, this information can be obtained from the knownIsoforms.txt file.  Suppose we want to build Bowtie indices and Bowtie executables are found in '/sw/bowtie'.
