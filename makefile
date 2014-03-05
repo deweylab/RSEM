@@ -1,7 +1,7 @@
 CC = g++
 CFLAGS = -Wall -c -I.
 COFLAGS = -Wall -O3 -ffast-math -c -I.
-PROGRAMS = rsem-extract-reference-transcripts rsem-synthesis-reference-transcripts rsem-preref rsem-parse-alignments rsem-build-read-index rsem-run-em rsem-tbam2gbam rsem-run-gibbs rsem-calculate-credibility-intervals rsem-simulate-reads rsem-bam2wig rsem-get-unique rsem-bam2readdepth rsem-sam-validator rsem-scan-for-paired-end-reads
+PROGRAMS = rsem-extract-reference-transcripts rsem-synthesis-reference-transcripts rsem-preref rsem-parse-alignments rsem-build-read-index rsem-run-em rsem-tbam2gbam rsem-run-gibbs rsem-calculate-credibility-intervals rsem-simulate-reads rsem-simulate-reads-fixed-seed rsem-bam2wig rsem-get-unique rsem-bam2readdepth rsem-sam-validator rsem-scan-for-paired-end-reads
 
 all : $(PROGRAMS)
 
@@ -107,8 +107,17 @@ wiggle.o: sam/bam.h sam/sam.h wiggle.cpp wiggle.h
 rsem-simulate-reads : simulation.o
 	$(CC) -o rsem-simulate-reads simulation.o
 
+rsem-simulate-reads-fixed-seed : simulation-fixed-seed.o
+	$(CC) -o rsem-simulate-reads-fixed-seed simulation-fixed-seed.o
+
 simulation.o : utils.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h Refs.h RefSeq.h GroupInfo.h Transcript.h Transcripts.h Orientation.h LenDist.h RSPD.h QualDist.h QProfile.h NoiseQProfile.h Profile.h NoiseProfile.h simul.h boost/random.hpp simulation.cpp
+	cp -v simul-random-seed.h simul.h
 	$(CC) $(COFLAGS) simulation.cpp
+
+simulation-fixed-seed.o : utils.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h Refs.h RefSeq.h GroupInfo.h Transcript.h Transcripts.h Orientation.h LenDist.h RSPD.h QualDist.h QProfile.h NoiseQProfile.h Profile.h NoiseProfile.h simul.h boost/random.hpp simulation.cpp
+	cp -v simul-fixed-seed.h simul.h
+	$(CC) $(COFLAGS) -o simulation-fixed-seed.o simulation.cpp
+	cp -v simul-random-seed.h simul.h
 
 rsem-run-gibbs : Gibbs.o
 	$(CC) -o rsem-run-gibbs Gibbs.o -lpthread
