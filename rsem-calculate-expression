@@ -16,6 +16,7 @@ my $CONFIDENCE = 0.95;
 my $NSPC = 50;
 
 my $NMB = 1024; # default
+my $SortMem = "1G"; # default as 1G per thread
 
 my $status = 0;
 
@@ -116,6 +117,7 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "var" => \$var_opt,
 	   "calc-ci" => \$calcCI,
 	   "ci-memory=i" => \$NMB,
+	   "samtools-sort-mem=s" => \$SortMem,
 	   "time" => \$mTime,
 	   "version" => \$version,
 	   "q|quiet" => \$quiet,
@@ -336,7 +338,7 @@ if ($quiet) { $command .= " -q"; }
 &collectResults("gene", "$imdName.gene_res", "$sampleName.genes.results"); # gene level
 
 if ($genBamF) {
-    $command = $dir."sam/samtools sort $sampleName.transcript.bam $sampleName.transcript.sorted";
+    $command = $dir."sam/samtools sort -@ $nThreads -m $SortMem $sampleName.transcript.bam $sampleName.transcript.sorted";
     &runCommand($command);
     $command = $dir."sam/samtools index $sampleName.transcript.sorted.bam";
     &runCommand($command);
@@ -344,7 +346,7 @@ if ($genBamF) {
     if ($genGenomeBamF) {
 	$command = $dir."rsem-tbam2gbam $refName $sampleName.transcript.bam $sampleName.genome.bam";
 	&runCommand($command);
-	$command = $dir."sam/samtools sort $sampleName.genome.bam $sampleName.genome.sorted";
+	$command = $dir."sam/samtools sort -@ $nThreads -m $SortMem $sampleName.genome.bam $sampleName.genome.sorted";
 	&runCommand($command);
 	$command = $dir."sam/samtools index $sampleName.genome.sorted.bam";
 	&runCommand($command);
@@ -468,7 +470,7 @@ RSEM reads header information from input by default. If this option is on, heade
 
 =item B<-p/--num-threads> <int>
 
-Number of threads to use. Both Bowtie/Bowtie2 and expression estimation will use this many threads. (Default: 1)
+Number of threads to use. Both Bowtie/Bowtie2, expression estimation and 'samtools sort' will use this many threads. (Default: 1)
 
 =item B<--no-bam-output>
 
@@ -528,7 +530,7 @@ Input quality scores are solexa encoded (from GA Pipeline ver. < 1.3). (Default:
 
 =item B<--bowtie2>
 
-Use Bowtie 2 instead of Bowtie to align reads. Since currently RSEM does not handle indel, local and discordant alignments, the Bowtie2 parameters are set in a way to avoid those alignments. In particular, we use options '--very-sensitive --dpad 0 --gbar 99999999 --mp 1,1 --np 1 --score-min L,0,-rate'. "-rate", the last parameter of '--score-min' is the negative value of the mismatch rate provided by option '--bowtie2-mismatch-rate'. If reads are paired-end, we additionally use options '--no-mixed' and '--no-discordant'. (Default: off)
+Use Bowtie 2 instead of Bowtie to align reads. Since currently RSEM does not handle indel, local and discordant alignments, the Bowtie2 parameters are set in a way to avoid those alignments. In particular, we use options '--sensitive --dpad 0 --gbar 99999999 --mp 1,1 --np 1 --score-min L,0,-0.1' by default. "-0.1", the last parameter of '--score-min' is the negative value of the maximum mismatch rate allowed. This rate can be set by option '--bowtie2-mismatch-rate'. If reads are paired-end, we additionally use options '--no-mixed' and '--no-discordant'. (Default: off)
 
 =item B<--bowtie2-path> <path>
 
@@ -577,6 +579,10 @@ Number of bins in the RSPD. Only relevant when '--estimate-rspd' is specified.  
 =item B<--ci-memory> <int>
 
 Maximum size (in memory, MB) of the auxiliary buffer used for computing credibility intervals (CI). Set it larger for a faster CI calculation. However, leaving 2 GB memory free for other usage is recommended. (Default: 1024)
+
+=item B<--samtools-sort-mem> <string>
+
+Set the maximum memory per thread that can be used by 'samtools sort'. <string> represents the memory and accepts suffices 'K/M/G'. RSEM will pass <string> to the '-m' option of 'samtools sort'.  Please note that the default used here is different from the default used by samtools. (Default: 1G)
 
 =item B<--keep-intermediate-files>
 
