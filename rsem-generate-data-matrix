@@ -1,14 +1,15 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 use strict;
 
 if (scalar(@ARGV) == 0) {
-    print "Usage: rsem-generate-data-matrix sampleA.[genes/isoforms].results sampleB.[genes/isoforms].results ... > output_name.matrix\n";
-    print "Results files should be either all .genes.results or all .isoforms.results.\n";
+    print "Usage: rsem-generate-data-matrix sampleA.[alleles/genes/isoforms].results sampleB.[alleles/genes/isoforms].results ... > output_name.matrix\n";
+    print "All result files should have the same file type. The 'TPM' columns of every result file are extracted to form the data matrix.\n";
     exit(-1);
 }
 
 my $offsite = 4; # for new file formats
+if ($ARGV[0] =~ /alleles.results$/) { $offsite = 5; }
 
 my $line;
 my $n = scalar(@ARGV);
