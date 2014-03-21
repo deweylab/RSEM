@@ -146,4 +146,4 @@ barplot(pair[,2], names.arg = pair[,1],
         ylab = "Number of fragments",
         main = "Histogram of Alignments per Fragment")
 
-dev.off()
+dev.off.output <- dev.off()

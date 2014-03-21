@@ -31,12 +31,13 @@ sub runCommand {
     print "\n";
 }
 
+my @allele_title = ("allele_id", "transcript_id", "gene_id", "length", "effective_length", "expected_count", "TPM", "FPKM", "AlleleIsoPct", "AlleleGenePct", "pme_expected_count", "pme_TPM", "pme_FPKM", "AlleleIsoPct_from_pme_TPM", "AlleleGenePct_from_pme_TPM", "TPM_ci_lower_bound", "TPM_ci_upper_bound", "FPKM_ci_lower_bound", "FPKM_ci_upper_bound");
 
 my @transcript_title = ("transcript_id", "gene_id", "length", "effective_length", "expected_count", "TPM", "FPKM", "IsoPct", "pme_expected_count", "pme_TPM", "pme_FPKM", "IsoPct_from_pme_TPM", "TPM_ci_lower_bound", "TPM_ci_upper_bound", "FPKM_ci_lower_bound", "FPKM_ci_upper_bound");
 
 my @gene_title = ("gene_id", "transcript_id(s)", "length", "effective_length", "expected_count", "TPM", "FPKM", "pme_expected_count", "pme_TPM", "pme_FPKM", "TPM_ci_lower_bound", "TPM_ci_upper_bound", "FPKM_ci_lower_bound", "FPKM_ci_upper_bound");
 
-# inpF, outF
+# type, inpF, outF
 sub collectResults {
     my $local_status;
     my ($inpF, $outF);
@@ -69,7 +70,8 @@ sub collectResults {
 
     my @out_arr = ();
     for (my $i = 0; $i < $n; $i++) {
-	if ($_[0] eq "isoform") { push(@out_arr, $transcript_title[$i]); }
+	if ($_[0] eq "allele") { push(@out_arr, $allele_title[$i]); }
+	elsif ($_[0] eq "isoform") { push(@out_arr, $transcript_title[$i]); }
 	elsif ($_[0] eq "gene") { push(@out_arr, $gene_title[$i]); }
 	else { print "A bug on 'collectResults' is detected!\n"; exit(-1); }
     }

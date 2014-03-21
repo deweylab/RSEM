@@ -18,7 +18,9 @@
 #include "PairedEndQModel.h"
 
 #include "Refs.h"
+
 #include "GroupInfo.h"
+#include "WriteResults.h"
 
 using namespace std;
 
@@ -44,17 +46,16 @@ struct Item {
 int nThreads;
 
 int model_type;
-int m, M;
+int M;
 READ_INT_TYPE N0, N1;
 HIT_INT_TYPE nHits;
 double totc;
 int BURNIN, NSAMPLES, GAP;
-char imdName[STRLEN], statName[STRLEN];
-char thetaF[STRLEN], ofgF[STRLEN], groupF[STRLEN], refF[STRLEN], modelF[STRLEN];
+char refName[STRLEN], imdName[STRLEN], statName[STRLEN];
+char thetaF[STRLEN], ofgF[STRLEN], refF[STRLEN], modelF[STRLEN];
 char cvsF[STRLEN];
 
 Refs refs;
-GroupInfo gi;
 
 vector<HIT_INT_TYPE> s;
 vector<Item> hits;
@@ -73,20 +74,15 @@ pthread_t *threads;
 pthread_attr_t attr;
 int rc;
 
-void load_data(char* reference_name, char* statName, char* imdName) {
+void load_data(char* refName, char* statName, char* imdName) {
 	ifstream fin;
 	string line;
 	int tmpVal;
 
 	//load reference file
-	sprintf(refF, "%s.seq", reference_name);
+	sprintf(refF, "%s.seq", refName);
 	refs.loadRefs(refF, 1);
 	M = refs.getM();
-
-	//load groupF
-	sprintf(groupF, "%s.grp", reference_name);
-	gi.load(groupF);
-	m = gi.getm();
 
 	//load ofgF;
 	sprintf(ofgF, "%s.ofg", imdName);
@@ -119,42 +115,11 @@ void load_data(char* reference_name, char* statName, char* imdName) {
 }
 
 template<class ModelType>
-void calcExpectedEffectiveLengths(ModelType& model) {
-	int lb, ub, span;
-	double *pdf = NULL, *cdf = NULL, *clen = NULL; // clen[i] = sigma_{j=1}^{i}pdf[i]*(lb+i)
-  
-	model.getGLD().copyTo(pdf, cdf, lb, ub, span);
-	clen = new double[span + 1];
-	clen[0] = 0.0;
-	for (int i = 1; i <= span; i++) {
-		clen[i] = clen[i - 1] + pdf[i] * (lb + i);
-	}
-
-	eel.assign(M + 1, 0.0);
-	for (int i = 1; i <= M; i++) {
-		int totLen = refs.getRef(i).getTotLen();
-		int fullLen = refs.getRef(i).getFullLen();
-		int pos1 = max(min(totLen - fullLen + 1, ub) - lb, 0);
-		int pos2 = max(min(totLen, ub) - lb, 0);
-
-		if (pos2 == 0) { eel[i] = 0.0; continue; }
-    
-		eel[i] = fullLen * cdf[pos1] + ((cdf[pos2] - cdf[pos1]) * (totLen + 1) - (clen[pos2] - clen[pos1]));
-		assert(eel[i] >= 0);
-		if (eel[i] < MINEEL) { eel[i] = 0.0; }
-	}
-  
-	delete[] pdf;
-	delete[] cdf;
-	delete[] clen;
-}
-
-template<class ModelType>
 void init_model_related(char* modelF) {
 	ModelType model;
 	model.read(modelF);
 
-	calcExpectedEffectiveLengths<ModelType>(model);
+	calcExpectedEffectiveLengths<ModelType>(M, refs, model, eel);
 	memcpy(mw, model.getMW(), sizeof(double) * (M + 1)); // otherwise, after exiting this procedure, mw becomes undefined
 }
 
@@ -220,55 +185,6 @@ void writeCountVector(FILE* fo, vector<int>& counts) {
 	fprintf(fo, "%d\n", counts[M]);
 }
 
-void polishTheta(vector<double>& theta, const vector<double>& eel, const double* mw) {
-	double sum = 0.0;
-
-	/* The reason that for noise gene, mw value is 1 is :
-	 * currently, all masked positions are for poly(A) sites, which in theory should be filtered out.
-	 * So the theta0 does not containing reads from any masked position
-	 */
-
-	for (int i = 0; i <= M; i++) {
-		// i == 0, mw[i] == 1
-		if (i > 0 && (mw[i] < EPSILON || eel[i] < EPSILON)) {
-			theta[i] = 0.0;
-			continue;
-		}
-		theta[i] = theta[i] / mw[i];
-		sum += theta[i];
-	}
-	// currently is OK, since no transcript should be masked totally, only the poly(A) tail related part will be masked
-	general_assert(sum >= EPSILON, "No effective length is no less than" + ftos(MINEEL, 6) + " !");
-	for (int i = 0; i <= M; i++) theta[i] /= sum;
-}
-
-void calcExpressionValues(const vector<double>& theta, const vector<double>& eel, vector<double>& tpm, vector<double>& fpkm) {
-	double denom;
-	vector<double> frac;
-
-	//calculate fraction of count over all mappabile reads
-	denom = 0.0;
-	frac.assign(M + 1, 0.0);
-	for (int i = 1; i <= M; i++) 
-	  if (eel[i] >= EPSILON) {
-	    frac[i] = theta[i];
-	    denom += frac[i];
-	  }
-	general_assert(denom >= EPSILON, "No alignable reads?!");
-	for (int i = 1; i <= M; i++) frac[i] /= denom;
-  
-	//calculate FPKM
-	fpkm.assign(M + 1, 0.0);
-	for (int i = 1; i <= M; i++)
-		if (eel[i] >= EPSILON) fpkm[i] = frac[i] * 1e9 / eel[i];
-
-	//calculate TPM
-	tpm.assign(M + 1, 0.0);
-	denom = 0.0;
-	for (int i = 1; i <= M; i++) denom += fpkm[i];
-	for (int i = 1; i <= M; i++) tpm[i] = fpkm[i] / denom * 1e6;  
-}
-
 void* Gibbs(void* arg) {
 	int CHAINLEN;
 	HIT_INT_TYPE len, fr, to;
@@ -320,8 +236,8 @@ void* Gibbs(void* arg) {
 			if ((ROUND - BURNIN - 1) % GAP == 0) {
 				writeCountVector(params->fo, counts);
 				for (int i = 0; i <= M; i++) theta[i] = counts[i] / totc;
-				polishTheta(theta, eel, mw);
-				calcExpressionValues(theta, eel, tpm, fpkm);
+				polishTheta(M, theta, eel, mw);
+				calcExpressionValues(M, theta, eel, tpm, fpkm);
 				for (int i = 0; i <= M; i++) {
 					params->pme_c[i] += counts[i] - 1;
 					params->pve_c[i] += (counts[i] - 1) * (counts[i] - 1);
@@ -374,66 +290,13 @@ void release() {
 	}
 }
 
-void writeResults(char* imdName) {
-	char outF[STRLEN];
-	FILE *fo;
-
-	vector<double> isopct;
-	vector<double> gene_counts, gene_tpm, gene_fpkm;
-
-	//calculate IsoPct, etc.
-	isopct.assign(M + 1, 0.0);
-	gene_counts.assign(m, 0.0); gene_tpm.assign(m, 0.0); gene_fpkm.assign(m, 0.0);
-
-	for (int i = 0; i < m; i++) {
-		int b = gi.spAt(i), e = gi.spAt(i + 1);
-		for (int j = b; j < e; j++) {
-			gene_counts[i] += pme_c[j];
-			gene_tpm[i] += pme_tpm[j];
-			gene_fpkm[i] += pme_fpkm[j];
-		}
-		if (gene_tpm[i] < EPSILON) continue;
-		for (int j = b; j < e; j++)
-			isopct[j] = pme_tpm[j] / gene_tpm[i];
-	}
-
-	//isoform level results
-	sprintf(outF, "%s.iso_res", imdName);
-	fo = fopen(outF, "a");
-	general_assert(fo != NULL, "Cannot open " + cstrtos(outF) + "!");
-
-	for (int i = 1; i <= M; i++)
-		fprintf(fo, "%.2f%c", pme_c[i], (i < M ? '\t' : '\n'));
-	for (int i = 1; i <= M; i++)
-		fprintf(fo, "%.2f%c", pme_tpm[i], (i < M ? '\t' : '\n'));
-	for (int i = 1; i <= M; i++)
-		fprintf(fo, "%.2f%c", pme_fpkm[i], (i < M ? '\t' : '\n'));
-	for (int i = 1; i <= M; i++)
-		fprintf(fo, "%.2f%c", isopct[i] * 1e2, (i < M ? '\t' : '\n'));
-	fclose(fo);
-
-	//gene level results
-	sprintf(outF, "%s.gene_res", imdName);
-	fo = fopen(outF, "a");
-	general_assert(fo != NULL, "Cannot open " + cstrtos(outF) + "!");
-
-	for (int i = 0; i < m; i++)
-		fprintf(fo, "%.2f%c", gene_counts[i], (i < m - 1 ? '\t' : '\n'));
-	for (int i = 0; i < m; i++)
-		fprintf(fo, "%.2f%c", gene_tpm[i], (i < m - 1 ? '\t' : '\n'));
-	for (int i = 0; i < m; i++)
-		fprintf(fo, "%.2f%c", gene_fpkm[i], (i < m - 1 ? '\t' : '\n'));
-	fclose(fo);
-
-	if (verbose) { printf("Gibbs based expression values are written!\n"); }
-}
-
 int main(int argc, char* argv[]) {
 	if (argc < 7) {
 		printf("Usage: rsem-run-gibbs reference_name imdName statName BURNIN NSAMPLES GAP [-p #Threads] [--var] [-q]\n");
 		exit(-1);
 	}
 
+	strcpy(refName, argv[1]);
 	strcpy(imdName, argv[2]);
 	strcpy(statName, argv[3]);
 
@@ -459,7 +322,7 @@ int main(int argc, char* argv[]) {
 		printf("Warning: Number of samples is less than number of threads! Change the number of threads to %d!\n", nThreads);
 	}
 
-	load_data(argv[1], statName, imdName);
+	load_data(refName, statName, imdName);
 
 	sprintf(modelF, "%s.model", statName);
 	FILE *fi = fopen(modelF, "r");
@@ -491,11 +354,19 @@ int main(int argc, char* argv[]) {
 
 	if (verbose) printf("Gibbs finished!\n");
 	
-	writeResults(imdName);
+	writeResultsGibbs(M, refName, imdName, pme_c, pme_fpkm, pme_tpm);
 
 	if (var_opt) {
 		char varF[STRLEN];
 
+		// Load group info
+		int m;
+		GroupInfo gi;
+		char groupF[STRLEN];
+		sprintf(groupF, "%s.grp", refName);
+		gi.load(groupF);
+		m = gi.getm();
+		
 		sprintf(varF, "%s.var", statName);
 		FILE *fo = fopen(varF, "w");
 		general_assert(fo != NULL, "Cannot open " + cstrtos(varF) + "!");
@@ -507,7 +378,7 @@ int main(int argc, char* argv[]) {
 		}
 		fclose(fo);
 	}
-
+	
 	delete mw; // delete the copy
 
 	return 0;

@@ -24,8 +24,11 @@ my $bowtie2_path = "";
 my $quiet = 0;
 my $help = 0;
 
+my $alleleMappingF = "";
+
 GetOptions("gtf=s" => \$gtfF,
 	   "transcript-to-gene-map=s" => \$mappingF,
+	   "allele-to-gene-map=s" => \$alleleMappingF,
 	   "no-polyA" => \$no_polyA, 
 	   "no-polyA-subset=s" => \$subsetFile,
 	   "polyA-length=i" => \$polyALen,
@@ -39,6 +42,8 @@ GetOptions("gtf=s" => \$gtfF,
 
 pod2usage(-verbose => 2) if ($help == 1);
 pod2usage(-msg => "Set --no-polyA & --no-polyA-subset at the same time!", -exitval => 2, -verbose => 2) if ($no_polyA == 1 && $subsetFile ne '');
+pod2usage(-msg => "--transcript-to-gene-map and --allele-to-gene-map are mutually exclusive!", -exitval => 2, -verbose => 2) if (($mappingF ne "") && ($alleleMappingF ne ""));
+pod2usage(-msg => "--gtf and --allele-to-gene-map are mutually exclusive!", -exitval => 2, -verbose => 2) if (($gtfF ne "") && ($alleleMappingF ne ""));
 pod2usage(-msg => "Invalid number of arguments!", -exitval => 2, -verbose => 2) if (scalar(@ARGV) != 2);
 
 if ($bowtie2) { $no_bowtie = 1; $no_ntog = 1; }
@@ -85,6 +90,7 @@ else {
     $"=" ";
     $command = $dir."rsem-synthesis-reference-transcripts $ARGV[1] $quiet";
     if ($mappingF ne "") { $command .= " 1 $mappingF"; }
+    elsif ($alleleMappingF ne "") { $command .= " 2 $alleleMappingF"; }
     else { $command .= " 0"; } 
     $command .= " @list";
     &runCommand($command);
@@ -163,6 +169,19 @@ If you are using a GTF file for the "UCSC Genes" gene set from the UCSC Genome B
 If this option is off, then the mapping of isoforms to genes depends on whether the --gtf option is specified.  If --gtf is specified, then RSEM uses the "gene_id" and "transcript_id" attributes in the GTF file.  Otherwise, RSEM assumes that each sequence in the reference sequence files is a separate gene.
 
 (Default: off)
+
+=item B<--allele-to-gene-map> <file>
+
+Use information from <file> to provide gene_id and transcript_id information for each allele-specific transcript.
+Each line of <file> should be of the form:
+
+gene_id transcript_id allele_id
+
+with the fields separated by a tab character.
+
+This option is designed for quantifying allele-specific expression. It is only valid if '--gtf' option is not specified. allele_id should be the sequence names presented in the FASTA-formatted files.  
+
+(Default: off) 
 
 =item B<--no-polyA>
 

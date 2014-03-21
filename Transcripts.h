@@ -28,7 +28,11 @@ public:
 	}
 
 	int getM() { return M; }
+
 	int getType() { return type; }
+	void setType(int type) { this->type = type; }
+
+	bool isAlleleSpecific() { return type == 2; }
 
 	const Transcript& getTranscriptAt(int pos) {
 		assert(pos > 0 && pos <= M);
@@ -60,7 +64,7 @@ public:
 	void buildMappings(int, char**);
 
 private:
-	int M, type; // type 0 from genome , 1 standalone transcriptome
+	int M, type; // type 0 from genome, 1 standalone transcriptome, 2 allele-specific 
 	std::vector<Transcript> transcripts;
 
 	std::vector<int> e2i, i2e; // external sid to internal sid, internal sid to external sid
@@ -94,11 +98,11 @@ void Transcripts::buildMappings(int n_targets, char** target_name) {
 	std::map<std::string, int> dict;
 	std::map<std::string, int>::iterator iter;
 
-	general_assert(n_targets == M, "Number of transcripts does not match! Please check if the reads are aligned to a transcript set (instead of a genome)!");
+	general_assert(n_targets == M, "Number of reference sequences does not match! Please check if the reads are aligned to a transcript set (instead of a genome)!");
 
 	dict.clear();
 	for (int i = 1; i <= M; i++) {
-		const std::string& tid = transcripts[i].getTranscriptID();
+		const std::string& tid = isAlleleSpecific() ? transcripts[i].getSeqName() : transcripts[i].getTranscriptID();
 		iter = dict.find(tid);
 		general_assert(iter == dict.end(), tid + " appears more than once!");
 		dict[tid] = i;
@@ -108,7 +112,7 @@ void Transcripts::buildMappings(int n_targets, char** target_name) {
 	i2e.assign(M + 1, 0);
 	for (int i = 0; i < n_targets; i++) {
 		iter = dict.find(std::string(target_name[i]));
-		general_assert(iter != dict.end(), "RSEM can not recognize transcript " + cstrtos(target_name[i]) + "!");
+		general_assert(iter != dict.end(), "RSEM can not recognize reference sequence name " + cstrtos(target_name[i]) + "!");
 		general_assert(iter->second > 0, "Reference sequence name " + cstrtos(target_name[i]) + " is duplicated!");
 		e2i[i + 1] = iter->second;
 		i2e[iter->second] = i + 1;

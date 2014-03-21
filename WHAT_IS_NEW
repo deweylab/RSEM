@@ -1,3 +1,10 @@
+RSEM v1.2.12
+
+- Enabled allele-specific expression estimation
+- Added option '--calc-pme' option to calculate posterior mean estimates only (no credibility intervals)
+
+--------------------------------------------------------------------------------------------
+
 RSEM v1.2.11
 
 - Enabled RSEM to use Bowtie 2 aligner (indel, local and discordant alignments are not supported yet)

@@ -51,6 +51,7 @@ my $nThreads = 1;
 my $genBamF = 1;  # default is generating transcript bam file
 my $genGenomeBamF = 0;
 my $sampling = 0;
+my $calcPME = 0;
 my $calcCI = 0;
 my $var_opt = 0; # temporarily, only for internal use
 my $quiet = 0;
@@ -79,6 +80,8 @@ my $inpF = "";
 
 my ($refName, $sampleName, $sampleToken, $temp_dir, $stat_dir, $imdName, $statName) = ();
 my $gap = 32;
+
+my $alleleS = 0;
 
 GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "temporary-folder=s" => \$temp_dir,
@@ -114,6 +117,7 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "no-bam-output" => sub { $genBamF = 0; },
 	   "output-genome-bam" => \$genGenomeBamF,
 	   "sampling-for-bam" => \$sampling,
+	   "calc-pme" => \$calcPME,
 	   "var" => \$var_opt,
 	   "calc-ci" => \$calcCI,
 	   "ci-memory=i" => \$NMB,
@@ -180,6 +184,13 @@ else {
     $refName = $ARGV[2];
     $sampleName = $ARGV[3];
 }
+
+if (((-e "$refName.ta") && !(-e "$refName.gt")) || (!(-e "$refName.ta") && (-e "$refName.gt"))) {
+    print "Allele-specific expression related reference files are corrupted!\n";
+    exit(-1);
+}
+
+$alleleS = (-e "$refName.ta") && (-e "$refName.gt");
 
 if ($genGenomeBamF) {
     open(INPUT, "$refName.ti");
@@ -329,13 +340,20 @@ if ($genBamF) {
     else { $command .= " 0"; }
     if ($sampling) { $command .= " --sampling"; }
 }
-if ($calcCI || $var_opt) { $command .= " --gibbs-out"; }
+if ($calcPME || $var_opt || $calcCI) { $command .= " --gibbs-out"; }
 if ($quiet) { $command .= " -q"; }
 
 &runCommand($command);
 
-&collectResults("isoform", "$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
-&collectResults("gene", "$imdName.gene_res", "$sampleName.genes.results"); # gene level
+if ($alleleS) {
+    &collectResults("allele", "$imdName.allele_res", "$sampleName.alleles.results"); # allele level
+    &collectResults("isoform", "$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
+    &collectResults("gene", "$imdName.gene_res", "$sampleName.genes.results"); # gene level
+} 
+else {
+    &collectResults("isoform", "$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
+    &collectResults("gene", "$imdName.gene_res", "$sampleName.genes.results"); # gene level
+}
 
 if ($genBamF) {
     $command = $dir."sam/samtools sort -@ $nThreads -m $SortMem $sampleName.transcript.bam $sampleName.transcript.sorted";
@@ -357,7 +375,7 @@ if ($mTime) { $time_end = time(); $time_rsem = $time_end - $time_start; }
 
 if ($mTime) { $time_start = time(); }
 
-if ($calcCI || $var_opt) {
+if ($calcPME || $var_opt || $calcCI ) {
     $command = $dir."rsem-run-gibbs $refName $imdName $statName $BURNIN $NCV $SAMPLEGAP";
     $command .= " -p $nThreads";
     if ($var_opt) { $command .= " --var"; }
@@ -365,21 +383,43 @@ if ($calcCI || $var_opt) {
     &runCommand($command);
 }
 
-if ($calcCI) {
-    system("mv $sampleName.isoforms.results $imdName.isoforms.results.bak1");
-    system("mv $sampleName.genes.results $imdName.genes.results.bak1");
-    &collectResults("isoform", "$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
-    &collectResults("gene", "$imdName.gene_res", "$sampleName.genes.results"); # gene level
+if ($calcPME || $calcCI) {
+    if ($alleleS) {
+	system("mv $sampleName.alleles.results $imdName.alleles.results.bak1");
+	system("mv $sampleName.isoforms.results $imdName.isoforms.results.bak1");
+	system("mv $sampleName.genes.results $imdName.genes.results.bak1");
+	&collectResults("allele", "$imdName.allele_res", "$sampleName.alleles.results"); # allele level
+	&collectResults("isoform", "$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
+	&collectResults("gene", "$imdName.gene_res", "$sampleName.genes.results"); # gene level
+    }
+    else {
+	system("mv $sampleName.isoforms.results $imdName.isoforms.results.bak1");
+	system("mv $sampleName.genes.results $imdName.genes.results.bak1");
+	&collectResults("isoform", "$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
+	&collectResults("gene", "$imdName.gene_res", "$sampleName.genes.results"); # gene level
+    }
+}
 
+if ($calcCI) {
     $command = $dir."rsem-calculate-credibility-intervals $refName $imdName $statName $CONFIDENCE $NCV $NSPC $NMB";
     $command .= " -p $nThreads";
     if ($quiet) { $command .= " -q"; }
     &runCommand($command);
 
-    system("mv $sampleName.isoforms.results $imdName.isoforms.results.bak2");
-    system("mv $sampleName.genes.results $imdName.genes.results.bak2");
-    &collectResults("isoform", "$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
-    &collectResults("gene", "$imdName.gene_res", "$sampleName.genes.results"); # gene level
+    if ($alleleS) {
+	system("mv $sampleName.alleles.results $imdName.alleles.results.bak2");
+	system("mv $sampleName.isoforms.results $imdName.isoforms.results.bak2");
+	system("mv $sampleName.genes.results $imdName.genes.results.bak2");
+	&collectResults("allele", "$imdName.allele_res", "$sampleName.alleles.results"); # allele level
+	&collectResults("isoform", "$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
+	&collectResults("gene", "$imdName.gene_res", "$sampleName.genes.results"); # gene level
+    }
+    else {
+	system("mv $sampleName.isoforms.results $imdName.isoforms.results.bak2");
+	system("mv $sampleName.genes.results $imdName.genes.results.bak2");
+	&collectResults("isoform", "$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
+	&collectResults("gene", "$imdName.gene_res", "$sampleName.genes.results"); # gene level
+    }
 }
 
 if ($mTime) { $time_end = time(); $time_ci = $time_end - $time_start; }
@@ -397,7 +437,7 @@ if ($mTime) {
     print OUTPUT "Aligning reads: $time_alignment s.\n";
     print OUTPUT "Estimating expression levels: $time_rsem s.\n";
     print OUTPUT "Calculating credibility intervals: $time_ci s.\n";
-    my $time_del = $time_end - $time_start;
+#    my $time_del = $time_end - $time_start;
 #    print OUTPUT "Delete: $time_del s.\n";
     close(OUTPUT);
 }
@@ -484,9 +524,13 @@ Generate a BAM file, 'sample_name.genome.bam', with alignments mapped to genomic
 
 When RSEM generates a BAM file, instead of outputing all alignments a read has with their posterior probabilities, one alignment is sampled according to the posterior probabilities. The sampling procedure includes the alignment to the "noise" transcript, which does not appear in the BAM file. Only the sampled alignment has a weight of 1. All other alignments have weight 0. If the "noise" transcript is sampled, all alignments appeared in the BAM file should have weight 0. (Default: off)
 
+=item B<--calc-pme>
+
+Run RSEM's collapsed Gibbs sampler to calculate posterior mean estimates. (Default: off) 
+
 =item B<--calc-ci>
 
-Calculate 95% credibility intervals and posterior mean estimates.  (Default: off)
+Calculate 95% credibility intervals and posterior mean estimates. (Default: off)
 
 =item B<--seed-length> <int>
 
@@ -644,8 +688,9 @@ each line in the rest of this file is:
 
 transcript_id gene_id length effective_length expected_count TPM FPKM IsoPct [pme_expected_count pme_TPM pme_FPKM IsoPct_from_pme_TPM TPM_ci_lower_bound TPM_ci_upper_bound FPKM_ci_lower_bound FPKM_ci_upper_bound]
 
-Fields are separated by the tab character. Fields within "[]" are only
-presented if '--calc-ci' is set.
+Fields are separated by the tab character. Fields within "[]" are
+optional. They will not be presented if neither '--calc-pme' nor
+'--calc-ci' is set.
 
 'transcript_id' is the transcript name of this transcript. 'gene_id'
 is the gene name of the gene which this transcript belongs to (denote
@@ -704,8 +749,9 @@ each line in the rest of this file is:
 
 gene_id transcript_id(s) length effective_length expected_count TPM FPKM [pme_expected_count pme_TPM pme_FPKM TPM_ci_lower_bound TPM_ci_upper_bound FPKM_ci_lower_bound FPKM_ci_upper_bound]
 
-Fields are separated by the tab character. Fields within "[]" are only
-presented if '--calc-ci' is set. 
+Fields are separated by the tab character. Fields within "[]" are
+optional. They will not be presented if neither '--calc-pme' nor
+'--calc-ci' is set.
 
 'transcript_id(s)' is a comma-separated list of transcript_ids
 belonging to this gene. If no gene information is provided, 'gene_id'
@@ -715,6 +761,43 @@ A gene's 'length' and 'effective_length' are
 defined as the weighted average of its transcripts' lengths and
 effective lengths (weighted by 'IsoPct'). A gene's abundance estimates
 are just the sum of its transcripts' abundance estimates.
+
+=item B<sample_name.alleles.results>
+
+Only generated when the RSEM references are built with allele-specific
+transcripts.
+
+This file contains allele level expression estimates for
+allele-specific expression calculation. The first line
+contains column names separated by the tab character. The format of
+each line in the rest of this file is:
+
+allele_id transcript_id gene_id length effective_length expected_count TPM FPKM AlleleIsoPct AlleleGenePct [pme_expected_count pme_TPM pme_FPKM AlleleIsoPct_from_pme_TPM AlleleGenePct_from_pme_TPM TPM_ci_lower_bound TPM_ci_upper_bound FPKM_ci_lower_bound FPKM_ci_upper_bound]
+
+Fields are separated by the tab character. Fields within "[]" are
+optional. They will not be presented if neither '--calc-pme' nor
+'--calc-ci' is set.
+
+'allele_id' is the allele-specific name of this allele-specific transcript.
+
+'AlleleIsoPct' stands for allele-specific percentage on isoform
+level. It is the percentage of this allele-specific transcript's
+abundance over its parent transcript's abundance. If its parent
+transcript has only one allele variant form, this field will be set to
+100.
+
+'AlleleGenePct' stands for allele-specific percentage on gene
+level. It is the percentage of this allele-specific transcript's
+abundance over its parent gene's abundance.
+
+'AlleleIsoPct_from_pme_TPM' and 'AlleleGenePct_from_pme_TPM' have
+similar meanings. They are calculated based on posterior mean
+estimates.
+
+Please note that if this file is present, the fields 'length' and
+'effective_length' in 'sample_name.isoforms.results' should be
+interpreted similarly as the corresponding definitions in
+'sample_name.genes.results'.
 
 =item B<sample_name.transcript.bam, sample_name.transcript.sorted.bam and sample_name.transcript.sorted.bam.bai>
 

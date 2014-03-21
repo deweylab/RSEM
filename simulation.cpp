@@ -23,21 +23,22 @@
 #include "PairedEndQModel.h"
 
 #include "Refs.h"
-#include "GroupInfo.h"
 #include "Transcript.h"
 #include "Transcripts.h"
+
+#include "WriteResults.h"
 
 #include "simul.h"
 
 using namespace std;
 
-const int OFFSITE = 5;
+bool alleleS;
+int OFFSITE;
 
 READ_INT_TYPE N;
-int model_type, M, m;
+int model_type, M;
 
 Refs refs;
-GroupInfo gi;
 Transcripts transcripts;
 
 vector<double> eel;
@@ -47,8 +48,8 @@ int n_os;
 ostream *os[2];
 char outReadF[2][STRLEN];
 
-char refF[STRLEN], groupF[STRLEN], tiF[STRLEN];
-char geneResF[STRLEN], isoResF[STRLEN];
+char refName[STRLEN];
+char refF[STRLEN], tiF[STRLEN];
 
 simul sampler;
 
@@ -78,37 +79,6 @@ void genOutReadStreams(int type, char *outFN) {
 		os[i] = new ofstream(outReadF[i]);
 }
 
-template<class ModelType>
-void calcExpectedEffectiveLengths(ModelType& model) {
-	int lb, ub, span;
-	double *pdf = NULL, *cdf = NULL, *clen = NULL; // clen[i] = sigma_{j=1}^{i}pdf[i]*(lb+i)
-  
-	model.getGLD().copyTo(pdf, cdf, lb, ub, span);
-	clen = new double[span + 1];
-	clen[0] = 0.0;
-	for (int i = 1; i <= span; i++) {
-		clen[i] = clen[i - 1] + pdf[i] * (lb + i);
-	}
-
-	eel.assign(M + 1, 0.0);
-	for (int i = 1; i <= M; i++) {
-		int totLen = refs.getRef(i).getTotLen();
-		int fullLen = refs.getRef(i).getFullLen();
-		int pos1 = max(min(totLen - fullLen + 1, ub) - lb, 0);
-		int pos2 = max(min(totLen, ub) - lb, 0);
-
-		if (pos2 == 0) { eel[i] = 0.0; continue; }
-    
-		eel[i] = fullLen * cdf[pos1] + ((cdf[pos2] - cdf[pos1]) * (totLen + 1) - (clen[pos2] - clen[pos1]));
-		assert(eel[i] >= 0);
-		if (eel[i] < MINEEL) { eel[i] = 0.0; }
-	}
-  
-	delete[] pdf;
-	delete[] cdf;
-	delete[] clen;
-}
-
 template<class ReadType, class ModelType>
 void simulate(char* modelF, char* resultsF) {
 	ModelType model(&refs);
@@ -118,7 +88,7 @@ void simulate(char* modelF, char* resultsF) {
 	model.read(modelF);
 	
 	//calculate eel
-	calcExpectedEffectiveLengths<ModelType>(model);
+	calcExpectedEffectiveLengths<ModelType>(M, refs, model, eel);
 
 	//generate theta vector
 	ifstream fin(resultsF);
@@ -155,99 +125,6 @@ void simulate(char* modelF, char* resultsF) {
 	cout<< "Total number of resimulation is "<< resimulation_count<< endl;
 }
 
-void calcExpressionValues(const vector<double>& theta, const vector<double>& eel, vector<double>& tpm, vector<double>& fpkm) {
-	double denom;
-	vector<double> frac;
-
-	//calculate fraction of count over all mappabile reads
-	denom = 0.0;
-	frac.assign(M + 1, 0.0);
-	for (int i = 1; i <= M; i++)
-	  if (eel[i] >= EPSILON) {
-	    frac[i] = theta[i];
-	    denom += frac[i];
-	  }
-	general_assert(denom > 0, "No alignable reads?!");
-	for (int i = 1; i <= M; i++) frac[i] /= denom;
-
-	//calculate FPKM
-	fpkm.assign(M + 1, 0.0);
-	for (int i = 1; i <= M; i++)
-		if (eel[i] >= EPSILON) fpkm[i] = frac[i] * 1e9 / eel[i];
-
-	//calculate TPM
-	tpm.assign(M + 1, 0.0);
-	denom = 0.0;
-	for (int i = 1; i <= M; i++) denom += fpkm[i];
-	for (int i = 1; i <= M; i++) tpm[i] = fpkm[i] / denom * 1e6;
-}
-
-void writeResFiles(char* outFN) {
-	FILE *fo;
-	vector<int> tlens;
-	vector<double> fpkm, tpm, isopct;
-	vector<double> glens, gene_eels, gene_counts, gene_tpm, gene_fpkm;
-
-	for (int i = 1; i <= M; i++)
-		general_assert(eel[i] > EPSILON || counts[i] <= EPSILON, "An isoform whose effecitve length < " + ftos(MINEEL, 6) + " got sampled!");
-
-	calcExpressionValues(counts, eel, tpm, fpkm);
-
-	//calculate IsoPct, etc.
-	isopct.assign(M + 1, 0.0);
-	tlens.assign(M + 1, 0);
-
-	glens.assign(m, 0.0); gene_eels.assign(m, 0.0);
-	gene_counts.assign(m, 0.0); gene_tpm.assign(m, 0.0); gene_fpkm.assign(m, 0.0);
-
-	for (int i = 0; i < m; i++) {
-		int b = gi.spAt(i), e = gi.spAt(i + 1);
-		for (int j = b; j < e; j++) {
-			const Transcript& transcript = transcripts.getTranscriptAt(j);
-			tlens[j] = transcript.getLength();
-
-			glens[i] += tlens[j] * tpm[j];
-			gene_eels[i] += eel[j] * tpm[j];
-			gene_counts[i] += counts[j];
-			gene_tpm[i] += tpm[j];
-			gene_fpkm[i] += fpkm[j];
-		}
-
-		if (gene_tpm[i] < EPSILON) continue;
-
-		for (int j = b; j < e; j++)
-			isopct[j] = tpm[j] / gene_tpm[i];
-		glens[i] /= gene_tpm[i];
-		gene_eels[i] /= gene_tpm[i];
-	}
-
-	//isoform level
-	sprintf(isoResF, "%s.sim.isoforms.results", outFN);
-	fo = fopen(isoResF, "w");
-	fprintf(fo, "transcript_id\tgene_id\tlength\teffective_length\tcount\tTPM\tFPKM\tIsoPct\n");
-	for (int i = 1; i <= M; i++) {
-		const Transcript& transcript = transcripts.getTranscriptAt(i);
-		fprintf(fo, "%s\t%s\t%d\t%.2f\t%.2f\t%.2f\t%.2f\t%.2f\n", transcript.getTranscriptID().c_str(), transcript.getGeneID().c_str(), tlens[i],
-				eel[i], counts[i], tpm[i], fpkm[i], isopct[i] * 1e2);
-	}
-	fclose(fo);
-
-	//gene level
-	sprintf(geneResF, "%s.sim.genes.results", outFN);
-	fo = fopen(geneResF, "w");
-	fprintf(fo, "gene_id\ttranscript_id(s)\tlength\teffective_length\tcount\tTPM\tFPKM\n");
-	for (int i = 0; i < m; i++) {
-		int b = gi.spAt(i), e = gi.spAt(i + 1);
-		const string& gene_id = transcripts.getTranscriptAt(b).getGeneID();
-		fprintf(fo, "%s\t", gene_id.c_str());
-		for (int j = b; j < e; j++) {
-			fprintf(fo, "%s%c", transcripts.getTranscriptAt(j).getTranscriptID().c_str(), (j < e - 1 ? ',' : '\t'));
-		}
-		fprintf(fo, "%.2f\t%.2f\t%.2f\t%.2f\t%.2f\n", glens[i], gene_eels[i], gene_counts[i], gene_tpm[i], gene_fpkm[i]);
-	}
-	fclose(fo);
-}
-
 void releaseOutReadStreams() {
 	for (int i = 0; i < n_os; i++) {
 		((ofstream*)os[i])->close();
@@ -264,7 +141,7 @@ int main(int argc, char* argv[]) {
 		printf("Parameters:\n\n");
 		printf("reference_name: The name of RSEM references, which should be already generated by 'rsem-prepare-reference'\n");
 		printf("estimated_model_file: This file describes how the RNA-Seq reads will be sequenced given the expression levels. It determines what kind of reads will be simulated (single-end/paired-end, w/o quality score) and includes parameters for fragment length distribution, read start position distribution, sequencing error models, etc. Normally, this file should be learned from real data using 'rsem-calculate-expression'. The file can be found under the 'sample_name.stat' folder with the name of 'sample_name.model'\n");
-		printf("estimated_isoform_results: This file contains expression levels for all isoforms recorded in the reference. It can be learned using 'rsem-calculate-expression' from real data. The corresponding file users want to use is 'sample_name.isoforms.results'. If simulating from user-designed expression profile is desired, start from a learned 'sample_name.isoforms.results' file and only modify the 'TPM' column. The simulator only reads the TPM column. But keeping the file format the same is required.\n");
+		printf("estimated_isoform_results: This file contains expression levels for all isoforms recorded in the reference. It can be learned using 'rsem-calculate-expression' from real data. The corresponding file users want to use is 'sample_name.isoforms.results'. If simulating from user-designed expression profile is desired, start from a learned 'sample_name.isoforms.results' file and only modify the 'TPM' column. The simulator only reads the TPM column. But keeping the file format the same is required. If the RSEM references built are aware of allele-specific transcripts, 'sample_name.alleles.results' should be used instead.\n");
 		printf("theta0: This parameter determines the fraction of reads that are coming from background \"noise\" (instead of from a transcript). It can also be estimated using 'rsem-calculate-expression' from real data. Users can find it as the first value of the third line of the file 'sample_name.stat/sample_name.theta'.\n");
 		printf("N: The total number of reads to be simulated. If 'rsem-calculate-expression' is executed on a real data set, the total number of reads can be found as the 4th number of the first line of the file 'sample_name.stat/sample_name.cnt'.\n");
 		printf("output_name: Prefix for all output files.\n");
@@ -289,13 +166,14 @@ int main(int argc, char* argv[]) {
 	if (argc == 8 && !strcmp(argv[7], "-q")) quiet = true;
 	verbose = !quiet;
 
+	strcpy(refName, argv[1]);
+	alleleS = isAlleleSpecific(refName);
+	OFFSITE = (alleleS ? 6: 5);
+
 	//load basic files
 	sprintf(refF, "%s.seq", argv[1]);
 	refs.loadRefs(refF);
 	M = refs.getM();
-	sprintf(groupF, "%s.grp", argv[1]);
-	gi.load(groupF);
-	m = gi.getm();
 	sprintf(tiF, "%s.ti", argv[1]);
 	transcripts.readFrom(tiF);
 
@@ -320,7 +198,7 @@ int main(int argc, char* argv[]) {
 	case 3: simulate<PairedEndReadQ, PairedEndQModel>(argv[2], argv[3]); break;
 	}
 
-	writeResFiles(argv[6]);
+	writeResultsSimulation(M, refName, argv[6], transcripts, eel, counts);
 	releaseOutReadStreams();
 
 	return 0;

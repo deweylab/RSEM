@@ -20,6 +20,7 @@
 
 #include "Refs.h"
 #include "GroupInfo.h"
+#include "WriteResults.h"
 
 #include "Buffer.h"
 
@@ -32,15 +33,15 @@ struct Params {
 	const double *mw;
 };
 
+struct CIParams {
+	int no;
+	int start_gene_id, end_gene_id;
+};
+
 struct CIType {
 	float lb, ub; // the interval is [lb, ub]
 
 	CIType() { lb = ub = 0.0; }
-};
-
-struct CIParams {
-	int no;
-	int start_gene_id, end_gene_id;
 };
 
 int model_type;
@@ -54,13 +55,19 @@ float *l_bars;
 
 char cvsF[STRLEN], tmpF[STRLEN], command[STRLEN];
 
-CIType *iso_tpm, *gene_tpm, *iso_fpkm, *gene_fpkm;
+CIType *tpm, *fpkm;
+CIType *iso_tpm = NULL, *iso_fpkm = NULL;
+CIType *gene_tpm, *gene_fpkm;
 
 int M, m;
 Refs refs;
 GroupInfo gi;
-char imdName[STRLEN], statName[STRLEN];
+char refName[STRLEN], imdName[STRLEN], statName[STRLEN];
 char modelF[STRLEN], groupF[STRLEN], refF[STRLEN];
+
+bool alleleS;
+int m_trans;
+GroupInfo ta;
 
 vector<double> eel; //expected effective lengths
 
@@ -74,37 +81,6 @@ pthread_attr_t attr;
 int rc;
 
 CIParams *ciParamsArray;
-
-template<class ModelType>
-void calcExpectedEffectiveLengths(ModelType& model) {
-	int lb, ub, span;
-	double *pdf = NULL, *cdf = NULL, *clen = NULL; // clen[i] = \sigma_{j=1}^{i}pdf[i]*(lb+i)
-  
-	model.getGLD().copyTo(pdf, cdf, lb, ub, span);
-	clen = new double[span + 1];
-	clen[0] = 0.0;
-	for (int i = 1; i <= span; i++) {
-		clen[i] = clen[i - 1] + pdf[i] * (lb + i);
-	}
-
-	eel.assign(M + 1, 0.0);
-	for (int i = 1; i <= M; i++) {
-		int totLen = refs.getRef(i).getTotLen();
-		int fullLen = refs.getRef(i).getFullLen();
-		int pos1 = max(min(totLen - fullLen + 1, ub) - lb, 0);
-		int pos2 = max(min(totLen, ub) - lb, 0);
-
-		if (pos2 == 0) { eel[i] = 0.0; continue; }
-    
-		eel[i] = fullLen * cdf[pos1] + ((cdf[pos2] - cdf[pos1]) * (totLen + 1) - (clen[pos2] - clen[pos1]));
-		assert(eel[i] >= 0);
-		if (eel[i] < MINEEL) { eel[i] = 0.0; }
-	}
-  
-	delete[] pdf;
-	delete[] cdf;
-	delete[] clen;
-}
 
 void* sample_theta_from_c(void* arg) {
 	int *cvec;
@@ -179,7 +155,7 @@ template<class ModelType>
 void sample_theta_vectors_from_count_vectors() {
 	ModelType model;
 	model.read(modelF);
-	calcExpectedEffectiveLengths<ModelType>(model);
+	calcExpectedEffectiveLengths<ModelType>(M, refs, model, eel);
 
 	int num_threads = min(nThreads, nCV);
 
@@ -269,13 +245,19 @@ void calcCI(int nSamples, float *samples, float &lb, float &ub) {
 }
 
 void* calcCI_batch(void* arg) {
-	float *itsamples, *gtsamples, *ifsamples, *gfsamples;
+	float *tsamples, *fsamples;
+	float *itsamples = NULL, *ifsamples = NULL, *gtsamples, *gfsamples;
 	ifstream fin;
 	CIParams *ciParams = (CIParams*)arg;
+	int curtid, curaid, tid;
 
-	itsamples = new float[nSamples];
+	tsamples = new float[nSamples];
+	fsamples = new float[nSamples];
+	if (alleleS) { 
+	  itsamples = new float[nSamples];
+	  ifsamples = new float[nSamples];
+	}
 	gtsamples = new float[nSamples];
-	ifsamples = new float[nSamples];
 	gfsamples = new float[nSamples];
 
 	fin.open(tmpF, ios::binary);
@@ -284,19 +266,46 @@ void* calcCI_batch(void* arg) {
 	fin.seekg(pos, ios::beg);
 
 	int cnt = 0;
+	if (alleleS) {
+	  curtid = curaid = -1;
+	  memset(itsamples, 0, FLOATSIZE * nSamples);
+	  memset(ifsamples, 0, FLOATSIZE * nSamples);
+	}
 	for (int i = ciParams->start_gene_id; i < ciParams->end_gene_id; i++) {
 		int b = gi.spAt(i), e = gi.spAt(i + 1);
 		memset(gtsamples, 0, FLOATSIZE * nSamples);
 		memset(gfsamples, 0, FLOATSIZE * nSamples);
 		for (int j = b; j < e; j++) {
-			for (int k = 0; k < nSamples; k++) {
-				fin.read((char*)(&itsamples[k]), FLOATSIZE);
-				gtsamples[k] += itsamples[k];
-				ifsamples[k] = 1e3 / l_bars[k] * itsamples[k];
-				gfsamples[k] += ifsamples[k];
+			if (alleleS) {
+			  tid = ta.gidAt(j);
+			  if (curtid != tid) {
+			    if (curtid >= 0) {
+			      if (j - curaid > 1) {
+				calcCI(nSamples, itsamples, iso_tpm[curtid].lb, iso_tpm[curtid].ub);
+				calcCI(nSamples, ifsamples, iso_fpkm[curtid].lb, iso_fpkm[curtid].ub);
+			      }
+			      else {
+				iso_tpm[curtid] = tpm[curaid];
+				iso_fpkm[curtid] = fpkm[curaid];
+			      }
+			    }
+			    curtid = tid;
+			    curaid = j;
+			  }
 			}
-			calcCI(nSamples, itsamples, iso_tpm[j].lb, iso_tpm[j].ub);
-			calcCI(nSamples, ifsamples, iso_fpkm[j].lb, iso_fpkm[j].ub);
+
+			for (int k = 0; k < nSamples; k++) {
+				fin.read((char*)(&tsamples[k]), FLOATSIZE);
+				fsamples[k] = 1e3 / l_bars[k] * tsamples[k];
+				if (alleleS) {
+				  itsamples[k] += tsamples[k];
+				  ifsamples[k] += fsamples[k];
+				}
+				gtsamples[k] += tsamples[k];
+				gfsamples[k] += fsamples[k];
+			}
+			calcCI(nSamples, tsamples, tpm[j].lb, tpm[j].ub);
+			calcCI(nSamples, fsamples, fpkm[j].lb, fpkm[j].ub);
 		}
 
 		if (e - b > 1) {
@@ -304,18 +313,34 @@ void* calcCI_batch(void* arg) {
 			calcCI(nSamples, gfsamples, gene_fpkm[i].lb, gene_fpkm[i].ub);
 		}
 		else {
-			gene_tpm[i].lb = iso_tpm[b].lb; gene_tpm[i].ub = iso_tpm[b].ub;
-			gene_fpkm[i].lb = iso_fpkm[b].lb; gene_fpkm[i].ub = iso_fpkm[b].ub;
+			gene_tpm[i] = tpm[b];
+			gene_fpkm[i] = fpkm[b];
 		}
 
 		++cnt;
 		if (verbose && cnt % 1000 == 0) { printf("In thread %d, %d genes are processed for CI calculation!\n", ciParams->no, cnt); }
 	}
-
 	fin.close();
 
-	delete[] itsamples;
+	if (alleleS && (curtid >= 0)) {
+	  if (gi.spAt(ciParams->end_gene_id) - curaid > 1) {
+	    calcCI(nSamples, itsamples, iso_tpm[curtid].lb, iso_tpm[curtid].ub);
+	    calcCI(nSamples, ifsamples, iso_fpkm[curtid].lb, iso_fpkm[curtid].ub);
+	  }
+	  else {
+	    iso_tpm[curtid] = tpm[curaid];
+	    iso_fpkm[curtid] = fpkm[curaid];
+	  }
+	}
+	
+	delete[] tsamples;
+	delete[] fsamples;
+	if (alleleS) {
+	  delete[] itsamples;
+	  delete[] ifsamples;
+	}
 	delete[] gtsamples;
+	delete[] gfsamples;
 
 	return NULL;
 }
@@ -325,9 +350,13 @@ void calculate_credibility_intervals(char* imdName) {
 	char outF[STRLEN];
 	int num_threads = nThreads;
 
-	iso_tpm = new CIType[M + 1];
+	tpm = new CIType[M + 1];
+	fpkm = new CIType[M + 1];
+	if (alleleS) {
+	  iso_tpm = new CIType[m_trans];
+	  iso_fpkm = new CIType[m_trans];
+	}
 	gene_tpm = new CIType[m];
-	iso_fpkm = new CIType[M + 1];
 	gene_fpkm = new CIType[m];
 
 	assert(M > 0);
@@ -375,18 +404,32 @@ void calculate_credibility_intervals(char* imdName) {
 
 	delete[] ciParamsArray;
 
-	//isoform level results
-	sprintf(outF, "%s.iso_res", imdName);
+	alleleS ? sprintf(outF, "%s.allele_res", imdName) : sprintf(outF, "%s.iso_res", imdName);
 	fo = fopen(outF, "a");
 	for (int i = 1; i <= M; i++)
-		fprintf(fo, "%.6g%c", iso_tpm[i].lb, (i < M ? '\t' : '\n'));
+	  fprintf(fo, "%.6g%c", tpm[i].lb, (i < M ? '\t' : '\n'));
 	for (int i = 1; i <= M; i++)
-		fprintf(fo, "%.6g%c", iso_tpm[i].ub, (i < M ? '\t' : '\n'));
+	  fprintf(fo, "%.6g%c", tpm[i].ub, (i < M ? '\t' : '\n'));
 	for (int i = 1; i <= M; i++)
-		fprintf(fo, "%.6g%c", iso_fpkm[i].lb, (i < M ? '\t' : '\n'));
+	  fprintf(fo, "%.6g%c", fpkm[i].lb, (i < M ? '\t' : '\n'));
 	for (int i = 1; i <= M; i++)
-		fprintf(fo, "%.6g%c", iso_fpkm[i].ub, (i < M ? '\t' : '\n'));
+	  fprintf(fo, "%.6g%c", fpkm[i].ub, (i < M ? '\t' : '\n'));
 	fclose(fo);
+
+	if (alleleS) {
+	  //isoform level results
+	  sprintf(outF, "%s.iso_res", imdName);
+	  fo = fopen(outF, "a");
+	  for (int i = 0; i < m_trans; i++)
+	    fprintf(fo, "%.6g%c", iso_tpm[i].lb, (i < m_trans - 1 ? '\t' : '\n'));
+	  for (int i = 0; i < m_trans; i++)
+	    fprintf(fo, "%.6g%c", iso_tpm[i].ub, (i < m_trans - 1 ? '\t' : '\n'));
+	  for (int i = 0; i < m_trans; i++)
+	    fprintf(fo, "%.6g%c", iso_fpkm[i].lb, (i < m_trans - 1 ? '\t' : '\n'));
+	  for (int i = 0; i < m_trans; i++)
+	    fprintf(fo, "%.6g%c", iso_fpkm[i].ub, (i < m_trans - 1 ? '\t' : '\n'));
+	  fclose(fo);
+	}
 
 	//gene level results
 	sprintf(outF, "%s.gene_res", imdName);
@@ -401,9 +444,13 @@ void calculate_credibility_intervals(char* imdName) {
 		fprintf(fo, "%.6g%c", gene_fpkm[i].ub, (i < m - 1 ? '\t' : '\n'));
 	fclose(fo);
 
-	delete[] iso_tpm;
+	delete[] tpm;
+	delete[] fpkm;
+	if (alleleS) { 
+	  delete[] iso_tpm; 
+	  delete[] iso_fpkm; 
+	}
 	delete[] gene_tpm;
-	delete[] iso_fpkm;
 	delete[] gene_fpkm;
 
 	if (verbose) { printf("All credibility intervals are calculated!\n"); }
@@ -415,6 +462,7 @@ int main(int argc, char* argv[]) {
 		exit(-1);
 	}
 
+	strcpy(refName, argv[1]);
 	strcpy(imdName, argv[2]);
 	strcpy(statName, argv[3]);
 
@@ -431,12 +479,17 @@ int main(int argc, char* argv[]) {
 	}
 	verbose = !quiet;
 
-	sprintf(refF, "%s.seq", argv[1]);
+	sprintf(refF, "%s.seq", refName);
 	refs.loadRefs(refF, 1);
 	M = refs.getM();
-	sprintf(groupF, "%s.grp", argv[1]);
+
+	sprintf(groupF, "%s.grp", refName);
 	gi.load(groupF);
 	m = gi.getm();
+
+	// allele-specific 
+	alleleS = isAlleleSpecific(refName, NULL, &ta);
+	if (alleleS) m_trans = ta.getm();
 
 	nSamples = nCV * nSpC;
 	assert(nSamples > 0 && M > 0); // for Buffter.h: (bufsize_type)nSamples
@@ -463,14 +516,6 @@ int main(int argc, char* argv[]) {
 	calculate_credibility_intervals(imdName);
 
 	delete l_bars;
-	/*
-	sprintf(command, "rm -f %s", tmpF);
-	int status = system(command);
-	if (status != 0) {
-		fprintf(stderr, "Cannot delete %s!\n", tmpF);
-		exit(-1);
-	}
-	*/
 
 	return 0;
 }

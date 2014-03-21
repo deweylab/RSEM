@@ -10,6 +10,10 @@
 
 #include "utils.h"
 
+/**
+   If no genome is provided, seqname field is used to store the allele name.
+ */
+
 struct Interval {
 	int start, end;
 
@@ -49,7 +53,7 @@ public:
 	}
 
 	bool operator< (const Transcript& o) const {
-	  return gene_id < o.gene_id || (gene_id == o.gene_id && transcript_id < o.transcript_id);
+	  return gene_id < o.gene_id || (gene_id == o.gene_id && transcript_id < o.transcript_id) || (gene_id == o.gene_id && transcript_id == o.transcript_id && seqname < o.seqname);
 	}
 
 	const std::string& getTranscriptID() const { return transcript_id; }
