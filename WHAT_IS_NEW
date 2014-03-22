@@ -1,7 +1,9 @@
 RSEM v1.2.12
 
 - Enabled allele-specific expression estimation
-- Added option '--calc-pme' option to calculate posterior mean estimates only (no credibility intervals)
+- Added '--calc-pme' option for 'rsem-calculate-expression' to calculate posterior mean estimates only (no credibility intervals)
+- Modified the shebang line of RSEM perl scripts to make them more portable
+- Added '--seed' option for 'rsem-simulate-reads' to enable users set the seed of random number generator used by the simulation
 
 --------------------------------------------------------------------------------------------
 

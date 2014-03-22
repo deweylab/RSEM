@@ -1,7 +1,6 @@
 #ifndef SIMUL_H_
 #define SIMUL_H_
 
-#include<ctime>
 #include<cassert>
 
 #include "boost/random.hpp"
@@ -9,7 +8,7 @@
 class simul {
 public:
 
-	simul() : rg(boost::mt19937(time(NULL))) {
+	simul(unsigned int seed) : rg(boost::mt19937(seed)) {
 	}
 
 	// interval : [,)

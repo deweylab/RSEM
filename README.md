@@ -304,11 +304,14 @@ __N:__ The total number of reads to be simulated. If 'rsem-calculate-expression'
 
 __output_name:__ Prefix for all output files.   
 
+__--seed seed:__ Set seed for the random number generator used in simulation. The seed should be a 32-bit unsigned integer.
+
 __-q:__ Set it will stop outputting intermediate information.   
 
 ### Outputs:
 
 output_name.sim.isoforms.results, output_name.sim.genes.results: Expression levels estimated by counting where each simulated read comes from.
+output_name.sim.alleles.results: Allele-specific expression levels estimated by counting where each simulated read comes from.
 
 output_name.fa if single-end without quality score;   
 output_name.fq if single-end with quality score;   
