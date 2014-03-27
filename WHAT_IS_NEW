@@ -4,6 +4,7 @@ RSEM v1.2.12
 - Added '--calc-pme' option for 'rsem-calculate-expression' to calculate posterior mean estimates only (no credibility intervals)
 - Modified the shebang line of RSEM perl scripts to make them more portable
 - Added '--seed' option for 'rsem-simulate-reads' to enable users set the seed of random number generator used by the simulation
+- Modified the transcript extraction behavior of 'rsem-prepare-reference'. For transcripts that cannot be extracted, instead of failing the whole script, warning information is produced. Those transcripts are ignored
 
 --------------------------------------------------------------------------------------------
 

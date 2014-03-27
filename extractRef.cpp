@@ -9,6 +9,7 @@
 #include<algorithm>
 
 #include "utils.h"
+#include "my_assert.h"
 #include "GTFItem.h"
 #include "Transcript.h"
 #include "Transcripts.h"
@@ -53,10 +54,7 @@ void loadMappingInfo(char* mappingF) {
 	ifstream fin(mappingF);
 	string line, key, value;
 
-	if (!fin.is_open()) {
-		fprintf(stderr, "Cannot open %s! It may not exist.\n", mappingF);
-		exit(-1);
-	}
+	general_assert(fin.is_open(), "Cannot open " + cstrtos(mappingF) + "! It may not exist.");
 
 	mi_table.clear();
 	while (getline(fin, line)) {
@@ -86,14 +84,8 @@ bool buildTranscript(int sp, int ep) {
 		int start = items[i].getStart();
 		int end = items[i].getEnd();
 
-		if (strand != items[i].getStrand()) {
-		  fprintf(stderr, "According to the GTF file given, a transcript has exons from different orientations!\n");
-		  exit(-1);
-		}
-		if (seqname != items[i].getSeqName()) {
-		  fprintf(stderr, "According to the GTF file given, a transcript has exons on multiple chromosomes!\n");
-		  exit(-1);
-		}
+		general_assert(strand == items[i].getStrand(), "According to the GTF file given, a transcript has exons from different orientations!");
+		general_assert(seqname == items[i].getSeqName(), "According to the GTF file given, a transcript has exons on multiple chromosomes!");
 
 		if (cur_e + 1 < start) {
 			if (cur_s > 0) vec.push_back(Interval(cur_s, cur_e));
@@ -110,10 +102,10 @@ bool buildTranscript(int sp, int ep) {
 
 void parse_gtf_file(char* gtfF) {
 	ifstream fin(gtfF);
-	string line, curgid, tid, gid; //  curgid: current gene id;
+	string line, tid, gid;
 	GTFItem item;
 
-	if (!fin.is_open()) { fprintf(stderr, "Cannot open %s! It may not exist.\n", gtfF); exit(-1); }
+	general_assert(fin.is_open(), "Cannot open " + cstrtos(gtfF) + "! It may not exist.");
 
 	int cnt = 0;
 
@@ -124,22 +116,18 @@ void parse_gtf_file(char* gtfF) {
  		string feature = item.getFeature();
  		if (feature == "exon") {
  			if (item.getStart() > item.getEnd()) {
- 				fprintf(stderr, "Warning: exon's start position is larger than its end position! This exon is discarded.\n");
- 				fprintf(stderr, "\t%s\n\n", line.c_str());
+				printf("Warning: exon's start position is larger than its end position! This exon is discarded.\n");
+ 				printf("\t%s\n\n", line.c_str());
  			}
  			else if (item.getStart() < 1) {
- 				fprintf(stderr, "Warning: exon's start position is less than 1! This exon is discarded.\n");
- 				fprintf(stderr, "\t%s\n\n", line.c_str());
+				printf("Warning: exon's start position is less than 1! This exon is discarded.\n");
+ 				printf("\t%s\n\n", line.c_str());
  			}
  			else {
  		 		if (hasMappingFile) {
  		 			tid = item.getTranscriptID();
 					mi_iter = mi_table.find(tid);
-					if (mi_iter == mi_table.end()) {
-					  fprintf(stderr, "Mapping Info is not correct, cannot find %s's gene_id!\n", tid.c_str());
-					  exit(-1);
-					}
-					//assert(iter != table.end());
+					general_assert(mi_iter != mi_table.end(), "Mapping Info is not correct, cannot find " + tid + "'s gene_id!");
 					gid = mi_iter->second;
 					item.setGeneID(gid);
  		 		}
@@ -154,16 +142,12 @@ void parse_gtf_file(char* gtfF) {
 
 	sort(items.begin(), items.end());
 
-	starts.clear();
-	sn2tr.clear();
-	curgid = "";
-
 	int sp = 0, ep; // start pointer, end pointer
 	int nItems = items.size();
 
+	sn2tr.clear();
 	while (sp < nItems) {
 		tid = items[sp].getTranscriptID();
-		gid = items[sp].getGeneID();
 
 		ep = sp + 1;
 		while (ep < nItems && items[ep].getTranscriptID() == tid) ep++;
@@ -174,10 +158,6 @@ void parse_gtf_file(char* gtfF) {
 		int sid = transcripts.getM();
 		const Transcript& transcript = transcripts.getTranscriptAt(sid);
 
-		if (curgid != gid) {
-			starts.push_back(sid);
-			curgid = gid;
-		}
 		iter = sn2tr.find(transcript.getSeqName());
 		if (iter == sn2tr.end()) {
 			vector<int> vec(1, sid);
@@ -190,24 +170,52 @@ void parse_gtf_file(char* gtfF) {
 		sp = ep + 1;
 	}
 
-	M = transcripts.getM();
-	starts.push_back(M + 1);
 	items.clear();
 
-	if (M < 1) {
-		fprintf(stderr, "Number of transcripts in the reference is less than 1!\n");
-		exit(-1);
-	}
+	M = transcripts.getM();
+	general_assert(M > 0, "The reference contains no transcripts!");
 
 	if (verbose) { printf("Parsing gtf File is done!\n"); }
 }
 
 char check(char c) {
-	if (!isalpha(c)) { fprintf(stderr, "Sequence contains unknown letter '%c'!\n", c); exit(-1); }
-	//assert(isalpha(c));
+	general_assert(isalpha(c), "Sequence contains unknown letter '" + ctos(c) + "'!");
 	if (isupper(c) && c != 'A' && c != 'C' && c != 'G' && c != 'T') c = 'N';
 	if (islower(c) && c != 'a' && c != 'c' && c != 'g' && c != 't') c = 'n';
 	return c;
+}
+
+void shrink() {
+  int curp = 0;
+
+  for (int i = 1; i <= M; i++) 
+    if (seqs[i] == "") {
+      const Transcript& transcript = transcripts.getTranscriptAt(i);
+      printf("Warning: Cannot extract transcript %s's sequence since the chromosome it locates, %s, is absent!\n", transcript.getTranscriptID().c_str(), transcript.getSeqName().c_str());
+    }
+    else {
+      ++curp;
+      transcripts.move(i, curp);
+      if (i > curp) seqs[curp] = seqs[i];
+    }
+
+  printf("%d transcripts are extracted and %d transcripts are omitted.\n", curp, M - curp);
+
+  transcripts.setM(curp);
+  M = transcripts.getM();
+  general_assert(M > 0, "The reference contains no transcripts!");
+
+  starts.clear();
+  string curgid = "", gid;
+
+  for (int i = 1; i <= M; i++) {
+    gid = transcripts.getTranscriptAt(i).getGeneID();
+    if (curgid != gid) { 
+      starts.push_back(i);
+      curgid = gid;
+    }
+  }
+  starts.push_back(M + 1);
 }
 
 void writeResults(char* refName) {
@@ -268,7 +276,7 @@ int main(int argc, char* argv[]) {
 	int start = hasMappingFile ? 6 : 5;
 	for (int i = start; i < argc; i++) {
 		fin.open(argv[i]);
-		if (!fin.is_open()) { fprintf(stderr, "Cannot open %s! It may not exist.\n", argv[i]); exit(-1); }
+		general_assert(fin.is_open(), "Cannot open " + cstrtos(argv[i]) + "! It may not exist.");
 		getline(fin, line);
 		while ((fin) && (line[0] == '>')) {
 			istringstream strin(line.substr(1));
@@ -299,19 +307,9 @@ int main(int argc, char* argv[]) {
 
 		if (verbose) { printf("%s is processed!\n", argv[i]); }
 	}
-
-	for (int i = 1; i <= M; i++) {
-		if (seqs[i] == "") {
-			const Transcript& transcript = transcripts.getTranscriptAt(i);
-
-			fprintf(stderr, "Cannot extract transcript %s's sequence from chromosome %s! Loading chromosome %s's sequence is failed. Please check if 1) the chromosome directory is set correctly; 2) the list of chromosome files is complete; 3) the FASTA files containing chromosome sequences are not truncated or having wrong format.\n", \
-				transcript.getTranscriptID().c_str(), transcript.getSeqName().c_str(), transcript.getSeqName().c_str());
-			exit(-1);
-		}
-	}
-
 	sort(chrvec.begin(), chrvec.end());
 
+	shrink();
 	if (verbose) { printf("Extracting sequences is done!\n"); }
 
 	writeResults(argv[1]);

@@ -16,7 +16,6 @@
 #include "my_assert.h"
 #include "Transcript.h"
 
-
 class Transcripts {
 public:
 	Transcripts(int type = 0) {
@@ -29,6 +28,14 @@ public:
 
 	int getM() { return M; }
 
+	// used in shrinking the transcripts
+	void setM(int M) { this->M = M; transcripts.resize(M + 1); } 
+	
+	void move(int from, int to) {
+	  assert(from >= to);
+	  if (from > to) transcripts[to] = transcripts[from];
+	}
+	
 	int getType() { return type; }
 	void setType(int type) { this->type = type; }
 
