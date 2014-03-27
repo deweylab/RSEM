@@ -457,9 +457,9 @@ RSEM uses the [Boost C++](http://www.boost.org) and
 [EBSeq](http://www.biostat.wisc.edu/~ningleng/EBSeq_Package/) for
 differential expression analysis.
 
-We thank earonesty, Dr. Samuel Arvidsson for contributing patches.
+We thank earonesty and Dr. Samuel Arvidsson for contributing patches.
 
-We thank Han Lin, j.miller for suggesting possible fixes. 
+We thank Han Lin, j.miller, Jo&euml;l Fillon and Dr. Samuel G. Younkin for suggesting possible fixes. 
 
 ## <a name="license"></a> License
 
