@@ -2,11 +2,15 @@
 
 use Getopt::Long;
 use Pod::Usage;
-use FindBin;
-use lib $FindBin::Bin;
-use strict;
 
+use FindBin;
+use lib $FindBin::RealBin;
 use rsem_perl_utils;
+
+use Env qw(@PATH);
+push(@PATH, "$FindBin::RealBin/EBSeq");
+
+use strict;
 
 my $ngvF = "";
 my $help = 0;
@@ -18,7 +22,6 @@ pod2usage(-verbose => 2) if ($help == 1);
 pod2usage(-msg => "Invalid number of arguments!", -exitval => 2, -verbose => 2) if (scalar(@ARGV) != 3);
 pod2usage(-msg => "ngvector file cannot be named as #! # is reserved for other purpose!", -exitval => 2, -verbose => 2) if ($ngvF eq "#");
 
-my $dir = "$FindBin::Bin/";
 my $command = "";
 
 my @conditions = split(/,/, $ARGV[1]);
@@ -28,7 +31,7 @@ pod2usage(-msg => "At least 2 conditions are required for differential expressio
 if ($ngvF eq "") { $ngvF = "#"; }
 
 $" = " ";
-$command = $dir."EBSeq/rsem-for-ebseq-find-DE ".$dir."EBSeq $ngvF $ARGV[0] $ARGV[2] @conditions";
+$command = "rsem-for-ebseq-find-DE $FindBin::RealBin/EBSeq $ngvF $ARGV[0] $ARGV[2] @conditions";
 &runCommand($command)
 
 __END__

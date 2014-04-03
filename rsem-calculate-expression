@@ -2,11 +2,15 @@
 
 use Getopt::Long;
 use Pod::Usage;
-use FindBin;
-use lib $FindBin::Bin;
-use strict;
 
+use FindBin;
+use lib $FindBin::RealBin;
 use rsem_perl_utils qw(runCommand collectResults showVersionInfo);
+
+use Env qw(@PATH);
+push(@PATH, $FindBin::RealBin, "$FindBin::RealBin/sam");
+
+use strict;
 
 #const
 my $BURNIN = 200;
@@ -127,10 +131,8 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "q|quiet" => \$quiet,
 	   "h|help" => \$help) or pod2usage(-exitval => 2, -verbose => 2);
 
-my $dir = "$FindBin::Bin/";
-
 pod2usage(-verbose => 2) if ($help == 1);
-&showVersionInfo($dir) if ($version == 1);
+&showVersionInfo($FindBin::RealBin) if ($version == 1);
 
 #check parameters and options
 
@@ -251,7 +253,7 @@ if (!$is_sam && !$is_bam) {
 	}
 
 	# pipe to samtools to generate a BAM file
-	$command .= " | $dir\sam/samtools view -S -b -o $imdName.bam -";
+	$command .= " | samtools view -S -b -o $imdName.bam -";
     }
     else {
 	$command = $bowtie2_path."bowtie2";
@@ -286,7 +288,7 @@ if (!$is_sam && !$is_bam) {
 	}
 
 	# pipe to samtools to generate a BAM file
-	$command .= " | $dir\sam/samtools view -S -b -o $imdName.bam -";
+	$command .= " | samtools view -S -b -o $imdName.bam -";
     }
 
     if ($mTime) { $time_start = time(); }
@@ -301,7 +303,7 @@ if (!$is_sam && !$is_bam) {
 
 if ($mTime) { $time_start = time(); }
 
-$command = $dir."rsem-parse-alignments $refName $imdName $statName";
+$command = "rsem-parse-alignments $refName $imdName $statName";
 
 my $samInpType;
 if ($is_sam) { $samInpType = "s"; } 
@@ -314,7 +316,7 @@ if ($quiet) { $command .= " -q"; }
 
 &runCommand($command);
 
-$command = $dir."rsem-build-read-index $gap"; 
+$command = "rsem-build-read-index $gap"; 
 if ($read_type == 0) { $command .= " 0 $quiet $imdName\_alignable.fa"; }
 elsif ($read_type == 1) { $command .= " 1 $quiet $imdName\_alignable.fq"; }
 elsif ($read_type == 2) { $command .= " 0 $quiet $imdName\_alignable_1.fa $imdName\_alignable_2.fa"; }
@@ -333,7 +335,7 @@ print OUTPUT "$mean $sd\n";
 print OUTPUT "$L\n";
 close(OUTPUT);  
 
-$command = $dir."rsem-run-em $refName $read_type $sampleName $imdName $statName -p $nThreads";
+$command = "rsem-run-em $refName $read_type $sampleName $imdName $statName -p $nThreads";
 if ($genBamF) { 
     $command .= " -b $samInpType $inpF";
     if ($fn_list ne "") { $command .= " 1 $fn_list"; }
@@ -356,17 +358,17 @@ else {
 }
 
 if ($genBamF) {
-    $command = $dir."sam/samtools sort -@ $nThreads -m $SortMem $sampleName.transcript.bam $sampleName.transcript.sorted";
+    $command = "samtools sort -@ $nThreads -m $SortMem $sampleName.transcript.bam $sampleName.transcript.sorted";
     &runCommand($command);
-    $command = $dir."sam/samtools index $sampleName.transcript.sorted.bam";
+    $command = "samtools index $sampleName.transcript.sorted.bam";
     &runCommand($command);
 
     if ($genGenomeBamF) {
-	$command = $dir."rsem-tbam2gbam $refName $sampleName.transcript.bam $sampleName.genome.bam";
+	$command = "rsem-tbam2gbam $refName $sampleName.transcript.bam $sampleName.genome.bam";
 	&runCommand($command);
-	$command = $dir."sam/samtools sort -@ $nThreads -m $SortMem $sampleName.genome.bam $sampleName.genome.sorted";
+	$command = "samtools sort -@ $nThreads -m $SortMem $sampleName.genome.bam $sampleName.genome.sorted";
 	&runCommand($command);
-	$command = $dir."sam/samtools index $sampleName.genome.sorted.bam";
+	$command = "samtools index $sampleName.genome.sorted.bam";
 	&runCommand($command);
     }
 }
@@ -376,7 +378,7 @@ if ($mTime) { $time_end = time(); $time_rsem = $time_end - $time_start; }
 if ($mTime) { $time_start = time(); }
 
 if ($calcPME || $var_opt || $calcCI ) {
-    $command = $dir."rsem-run-gibbs $refName $imdName $statName $BURNIN $NCV $SAMPLEGAP";
+    $command = "rsem-run-gibbs $refName $imdName $statName $BURNIN $NCV $SAMPLEGAP";
     $command .= " -p $nThreads";
     if ($var_opt) { $command .= " --var"; }
     if ($quiet) { $command .= " -q"; }
@@ -401,7 +403,7 @@ if ($calcPME || $calcCI) {
 }
 
 if ($calcCI) {
-    $command = $dir."rsem-calculate-credibility-intervals $refName $imdName $statName $CONFIDENCE $NCV $NSPC $NMB";
+    $command = "rsem-calculate-credibility-intervals $refName $imdName $statName $CONFIDENCE $NCV $NSPC $NMB";
     $command .= " -p $nThreads";
     if ($quiet) { $command .= " -q"; }
     &runCommand($command);

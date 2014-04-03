@@ -3,10 +3,13 @@
 use Getopt::Long;
 use Pod::Usage;	
 use FindBin;
-use lib $FindBin::Bin;
-use strict;
-
+use lib $FindBin::RealBin;
 use rsem_perl_utils;
+
+use Env qw(@PATH);
+push(@PATH, $FindBin::RealBin);
+
+use strict;
 
 my $status;
 
@@ -75,12 +78,11 @@ elsif ($subsetFile ne "") { $polyAChoice = 2; }
 if ($bowtie_path ne "") { $bowtie_path .= "/"; }
 if ($bowtie2_path ne "") { $bowtie2_path .= "/"; }
 
-my $dir = "$FindBin::Bin/";
 my $command = "";
 
 if ($type == 0) {
     $"=" ";
-    $command = $dir."rsem-extract-reference-transcripts $ARGV[1] $quiet $gtfF";
+    $command = "rsem-extract-reference-transcripts $ARGV[1] $quiet $gtfF";
     if ($mappingF ne "") { $command .= " 1 $mappingF"; }
     else { $command .= " 0"; }
     $command .= " @list";
@@ -88,7 +90,7 @@ if ($type == 0) {
 }
 else {
     $"=" ";
-    $command = $dir."rsem-synthesis-reference-transcripts $ARGV[1] $quiet";
+    $command = "rsem-synthesis-reference-transcripts $ARGV[1] $quiet";
     if ($mappingF ne "") { $command .= " 1 $mappingF"; }
     elsif ($alleleMappingF ne "") { $command .= " 2 $alleleMappingF"; }
     else { $command .= " 0"; } 
@@ -96,7 +98,7 @@ else {
     &runCommand($command);
 }
 
-$command = $dir."rsem-preref $ARGV[1].transcripts.fa $polyAChoice $ARGV[1] -l $polyALen";
+$command = "rsem-preref $ARGV[1].transcripts.fa $polyAChoice $ARGV[1] -l $polyALen";
 if ($polyAChoice == 2) { $command .= " -f $subsetFile"; }
 if ($no_ntog) { $command .= " --no-ntog"; }
 if ($quiet) { $command .= " -q"; }

@@ -2,13 +2,17 @@
 
 use Getopt::Long;
 use Pod::Usage;
-use FindBin;
-use lib $FindBin::Bin;
 use File::Basename;
 use File::Path 'rmtree';
-use strict;
 
+use FindBin;
+use lib $FindBin::RealBin;
 use rsem_perl_utils;
+
+use Env qw(@PATH);
+push(@PATH, $FindBin::RealBin, "$FindBin::RealBin/sam");
+
+use strict;
 
 my ($in_file, $out_file) = ();
 
@@ -33,8 +37,6 @@ $suf = lc(substr($suf, 1));
 pod2usage(-msg => "Input file's suffix is neither sam nor bam!", -exitval => 2, -verbose => 2) if (($suf ne "sam") && ($suf ne "bam"));
 my $isSam = ($suf eq "sam");
 
-$dir = "$FindBin::Bin/";
-
 my $temp_dir = "$out_file.temp";
 if (-d $temp_dir) { print "Warning: $temp_dir exists, convert-sam-for-rsem will write temporary files into this folder and delete it after it finishes!\n"; }
 else {
@@ -47,7 +49,7 @@ my $sam_file;
 
 if (!$isSam) {
     $sam_file = "$temp_dir/input.sam";
-    $command = $dir."sam/samtools view -h -o $sam_file $in_file";
+    $command = "samtools view -h -o $sam_file $in_file";
     &runCommand($command); 
 }
 else {
@@ -70,7 +72,7 @@ $command .= " >> $tmp_sam";
 
 # Phase II, parse the temporary SAM file to make paired-end alignments' two mates adjacent to each other
 
-$command = $dir."rsem-scan-for-paired-end-reads $tmp_sam $out_file";
+$command = "rsem-scan-for-paired-end-reads $tmp_sam $out_file";
 &runCommand($command);
 
 # delete temporary directory
@@ -80,7 +82,7 @@ print STDERR "Conversion is completed. $out_file will be checked by 'rsem-sam-va
 
 # Phase III, validate if the resulting bam file is correct
 
-$command = $dir."rsem-sam-validator $out_file";
+$command = "rsem-sam-validator $out_file";
 &runCommand($command);
 
 __END__

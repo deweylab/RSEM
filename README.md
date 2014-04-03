@@ -459,7 +459,7 @@ differential expression analysis.
 
 We thank earonesty and Dr. Samuel Arvidsson for contributing patches.
 
-We thank Han Lin, j.miller, Jo&euml;l Fillon and Dr. Samuel G. Younkin for suggesting possible fixes. 
+We thank Han Lin, j.miller, Jo&euml;l Fillon, Dr. Samuel G. Younkin and Malcolm Cook for suggesting possible fixes. 
 
 ## <a name="license"></a> License
 

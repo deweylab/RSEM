@@ -2,11 +2,16 @@
 
 use Getopt::Long;
 use Pod::Usage;
+
 use FindBin;
-use lib $FindBin::Bin;
+use lib $FindBin::RealBin;
+use rsem_perl_utils;
+
+use Env qw(@PATH);
+push(@PATH, $FindBin::RealBin, "$FindBin::RealBin/sam");
+
 use strict;
 
-use rsem_perl_utils;
 
 my $gene_list = 0; # default is 0, means input is not a gene list
 my $transcript_list = 0; # default is 0, this option can only be turned on if allele-specific expression is calculated
@@ -27,29 +32,28 @@ if (-e "$ARGV[0].alleles.results") { $alleleS = 1; }
 pod2usage(-msg => "--transcript-list cannot be set if allele-specific reference is not built!", -exitval => 2, -verbose => 2) if (!$alleleS && $transcript_list);
 pod2usage(-msg => "--gene-list and --transcript-list cannot be set at the same time!", -exitval => 2, -verbose => 2) if ($gene_list && $transcript_list);
 
-my $dir = "$FindBin::Bin/";
 my $command = "";
 
 unless (-e "$ARGV[0].transcript.sorted.bam") {
-    $command = $dir."sam/samtools sort $ARGV[0].transcript.bam $ARGV[0].transcript.sorted";
+    $command = "samtools sort $ARGV[0].transcript.bam $ARGV[0].transcript.sorted";
     &runCommand($command);
 }
 unless (-e "$ARGV[0].transcript.readdepth") {
-    $command = $dir."rsem-bam2readdepth $ARGV[0].transcript.sorted.bam $ARGV[0].transcript.readdepth";
+    $command = "rsem-bam2readdepth $ARGV[0].transcript.sorted.bam $ARGV[0].transcript.readdepth";
     &runCommand($command);
 }
 
 if ($show_unique) {
     unless (-e "$ARGV[0].uniq.transcript.bam") {
-	$command = $dir."rsem-get-unique $ARGV[0].transcript.bam $ARGV[0].uniq.transcript.bam";
+	$command = "rsem-get-unique $ARGV[0].transcript.bam $ARGV[0].uniq.transcript.bam";
 	&runCommand($command);
     }
     unless (-e "$ARGV[0].uniq.transcript.sorted.bam") {
-	$command = $dir."sam/samtools sort $ARGV[0].uniq.transcript.bam $ARGV[0].uniq.transcript.sorted";
+	$command = "samtools sort $ARGV[0].uniq.transcript.bam $ARGV[0].uniq.transcript.sorted";
 	&runCommand($command);
     }
     unless (-e "$ARGV[0].uniq.transcript.readdepth") {
-	$command = $dir."rsem-bam2readdepth $ARGV[0].uniq.transcript.sorted.bam $ARGV[0].uniq.transcript.readdepth";
+	$command = "rsem-bam2readdepth $ARGV[0].uniq.transcript.sorted.bam $ARGV[0].uniq.transcript.readdepth";
 	&runCommand($command);
     }
 }
@@ -66,7 +70,7 @@ else {
     if ($gene_list) { $id_type = 2; }
 }
 
-$command = $dir."rsem-gen-transcript-plots $ARGV[0] $ARGV[1] $alleleS $id_type $show_unique $ARGV[2]";
+$command = "rsem-gen-transcript-plots $ARGV[0] $ARGV[1] $alleleS $id_type $show_unique $ARGV[2]";
 &runCommand($command);
 
 __END__

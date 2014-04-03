@@ -86,9 +86,9 @@ sub collectResults {
     close(OUTPUT);
 }
 
-# dir
+# 0, dir
 sub showVersionInfo {
-    open(INPUT, "$_[0]\WHAT_IS_NEW");
+    open(INPUT, "$_[0]/WHAT_IS_NEW");
     my $line = <INPUT>;
     chomp($line);
     close(INPUT);
