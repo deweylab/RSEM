@@ -1,5 +1,6 @@
 RSEM v1.2.13
 
+- Allowed users to use the SAMtools in the PATH first and enabled RSEM to find its executables via a symbolic link
 - Changed the behavior of parsing GTF file. Now if a GTF line's feature is not "exon" and it does not contain a "gene_id" or "transcript_id" attribute, only a warning message will be produced (instead of failing the RSEM)
 
 --------------------------------------------------------------------------------------------
