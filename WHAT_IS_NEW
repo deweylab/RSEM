@@ -1,3 +1,9 @@
+RSEM v1.2.13
+
+- Changed the behavior of parsing GTF file. Now if a GTF line's feature is not "exon" and it does not contain a "gene_id" or "transcript_id" attribute, only a warning message will be produced (instead of failing the RSEM)
+
+--------------------------------------------------------------------------------------------
+
 RSEM v1.2.12
 
 - Enabled allele-specific expression estimation

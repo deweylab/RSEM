@@ -80,8 +80,10 @@ public:
 			}
 		}
 
-		my_assert(find_gene_id, line, "Cannot find gene_id!");
-		my_assert(find_transcript_id, line, "Cannot find transcript_id!");
+		my_assert(feature != "exon" || find_gene_id, line, "Cannot find gene_id!");
+		my_assert(feature != "exon" || find_transcript_id, line, "Cannot find transcript_id!");
+		if (!find_gene_id && feature != "exon") { printf("Warning: line \" %s \" does not contain a gene_id attribute! Since this line will not be used for reference construction, it is skipped. But if you think this GTF file is corrupted, you should find a complelete GTF file instead and rebuild the reference.\n", line.c_str()); }
+		if (!find_transcript_id && feature != "exon") { printf("Warning: line \" %s \" does not contain a transcript_id attribute! Since this line will not be used for reference construction, it is skipped. But if you think this GTF file is corrupted, you should find a complelete GTF file instead and rebuild the reference.\n", line.c_str()); }
 	}
 
 	std::string getSeqName() { return seqname; }

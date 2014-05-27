@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) {
 	size_t len = suffix.length();
 	for (size_t i = 0; i < len; i++) suffix[i] = tolower(suffix[i]);
 
-	general_assert(suffix == "sam" || suffix == "bam", "Cannot recognize input file's file type! The file suffix is neither sam or bam.");
+	general_assert(suffix == "sam" || suffix == "bam", "Cannot recognize input file's file type! The file suffix is neither sam nor bam.");
 
 	in = (suffix == "sam" ? samopen(argv[1], "r", NULL) : samopen(argv[1], "rb", NULL));
 	general_assert(in != 0, "Cannot open input file!");

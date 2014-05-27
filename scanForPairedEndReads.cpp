@@ -50,7 +50,7 @@ bool less_than(bam1_t *a, bam1_t *b) {
 
 int main(int argc, char* argv[]) {
 	if (argc != 3) {
-		printf("UsaOAge: rsem-scan-for-paired-end-reads input.sam output.bam\n");
+		printf("Usage: rsem-scan-for-paired-end-reads input.sam output.bam\n");
 		exit(-1);
 	}
 
