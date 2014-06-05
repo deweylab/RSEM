@@ -8,7 +8,7 @@ use lib $FindBin::RealBin;
 use rsem_perl_utils;
 
 use Env qw(@PATH);
-push(@PATH, "$FindBin::RealBin/EBSeq");
+@PATH = ("$FindBin::RealBin/EBSeq", @PATH);
 
 use strict;
 

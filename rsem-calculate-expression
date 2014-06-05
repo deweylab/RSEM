@@ -8,7 +8,7 @@ use lib $FindBin::RealBin;
 use rsem_perl_utils qw(runCommand collectResults showVersionInfo);
 
 use Env qw(@PATH);
-push(@PATH, $FindBin::RealBin, "$FindBin::RealBin/sam");
+@PATH = ($FindBin::RealBin, "$FindBin::RealBin/sam", @PATH);
 
 use strict;
 
