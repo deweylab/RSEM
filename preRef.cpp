@@ -48,7 +48,6 @@ int main(int argc, char* argv[]) {
 	polyAChoice = atoi(argv[2]);
 
 	polyALen = 125;
-	ntog = true;
 	quiet = false;
 	memset(exceptionF, 0, sizeof(exceptionF));
 
@@ -78,7 +77,7 @@ int main(int argc, char* argv[]) {
 	if (verbose) printf("%s is generated!\n", idxF);
 
 	sprintf(n2g_idxF, "%s.n2g.idx.fa", argv[3]);
-	fout.open(ng2_idxF);
+	fout.open(n2g_idxF);
 	for (int i = 1; i <= M; i++) {
 	  fout<< ">"<< refs.getRef(i).getName()<< endl<< aligner_refp.convert(refs.getRef(i).getSeq())<< endl;
 	}

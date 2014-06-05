@@ -19,7 +19,6 @@ my $polyAChoice = 0; # 0, default, pad polyA tails for all isoforms; 1, --no-pol
 my $no_polyA = 0; # for option --no-polyA 
 my $subsetFile = "";
 my $polyALen = 125;
-my $ntog = 0; 
 my $bowtie = 0;
 my $bowtie_path = "";
 my $bowtie2 = 0;
@@ -35,7 +34,6 @@ GetOptions("gtf=s" => \$gtfF,
 	   "no-polyA" => \$no_polyA, 
 	   "no-polyA-subset=s" => \$subsetFile,
 	   "polyA-length=i" => \$polyALen,
-	   "ntog" => \$no_ntog,
 	   "bowtie" => \$bowtie,
 	   "bowtie-path=s" => \$bowtie_path,
 	   "bowtie2" => \$bowtie2,
@@ -96,15 +94,14 @@ else {
 
 $command = "rsem-preref $ARGV[1].transcripts.fa $polyAChoice $ARGV[1] -l $polyALen";
 if ($polyAChoice == 2) { $command .= " -f $subsetFile"; }
-if ($no_ntog) { $command .= " --no-ntog"; }
 if ($quiet) { $command .= " -q"; }
 
 &runCommand($command);
 
-if (!$no_bowtie) {
+if ($bowtie) {
     $command = $bowtie_path."bowtie-build -f";
     if ($quiet) { $command .= " -q"; }
-    $command .= " $ARGV[1].idx.fa $ARGV[1]";
+    $command .= " $ARGV[1].n2g.idx.fa $ARGV[1]";
 
     &runCommand($command);
 }
@@ -133,7 +130,7 @@ rsem-prepare-reference [options] reference_fasta_file(s) reference_name
 
 =item B<reference_fasta_file(s)>
 
-Either a comma-separated list of FASTA formatted files OR a directory name. If a directory name is specified, RSEM will read all files with suffix ".fa" or ".fasta" in this directory.  The files should contain either the sequences of transcripts or an entire genome, depending on whether the --gtf option is used.
+Either a comma-separated list of Multi-FASTA formatted files OR a directory name. If a directory name is specified, RSEM will read all files with suffix ".fa" or ".fasta" in this directory.  The files should contain either the sequences of transcripts or an entire genome, depending on whether the --gtf option is used.
 
 =item B<reference name>
 
@@ -149,7 +146,7 @@ The name of the reference used. RSEM will generate several reference-related fil
 
 If this option is on, RSEM assumes that 'reference_fasta_file(s)' contains the sequence of a genome, and will extract transcript reference sequences using the gene annotations specified in <file>, which should be in GTF format.
 
-If this option is off, RSEM will assume 'reference_fasta_file(s)' contains the reference transcripts. In this case, RSEM assumes that name of each sequence in the FASTA files is its transcript_id. 
+If this option is off, RSEM will assume 'reference_fasta_file(s)' contains the reference transcripts. In this case, RSEM assumes that name of each sequence in the Multi-FASTA files is its transcript_id. 
 
 (Default: off)
 
@@ -177,7 +174,7 @@ gene_id transcript_id allele_id
 
 with the fields separated by a tab character.
 
-This option is designed for quantifying allele-specific expression. It is only valid if '--gtf' option is not specified. allele_id should be the sequence names presented in the FASTA-formatted files.  
+This option is designed for quantifying allele-specific expression. It is only valid if '--gtf' option is not specified. allele_id should be the sequence names presented in the Multi-FASTA-formatted files.  
 
 (Default: off) 
 
@@ -193,21 +190,17 @@ Add poly(A) tails to all transcripts except those listed in <file>. <file> is a 
 
 The length of the poly(A) tails to be added. (Default: 125)
 
+=item B<--bowtie>
+
+Build Bowtie indices. (Default: off)
+
 =item B<--bowtie-path> <path>
 
 The path to the Bowtie executables. (Default: the path to Bowtie executables is assumed to be in the user's PATH environment variable)
 
-=item B<--no-bowtie>
-
-Do not build Bowtie indices.  Specify this option if you wish to use an alternative aligner for mapping reads to transcripts.  You should align against the sequences generated in the output file 'reference_name.idx.fa'. (Default: off)
-
-=item B<--no-ntog>
-
-Disable the conversion of 'N' characters to 'G' characters in the reference sequences prepared for aligners.  This conversion is in particular desired for Bowtie aligner to align against all positions in the reference. (Default: off)
-
 =item B<--bowtie2>
 
-Build Bowtie 2 indices instead of Bowtie indices. Turn on this option will automatically turn on '--no-bowtie' and '--no-ntog' options. (Default: off)
+Build Bowtie 2 indices. (Default: off)
 
 =item B<--bowtie2-path>
 
@@ -225,17 +218,17 @@ Show help information.
 
 =head1 DESCRIPTION
 
-This program extracts/preprocesses the reference sequences and builds Bowtie indices using default parameters.  If an alternative aligner is to be used, then the '--no-bowtie' option should be specified to disable building Bowtie indices. This program is used in conjunction with the 'rsem-calculate-expression' program.
+This program extracts/preprocesses the reference sequences for RSEM. It can optionally build Bowtie indices (with '--bowtie' option) and/or Bowtie 2 indices (with '--bowtie2' option) using their default parameters. If an alternative aligner is to be used, indices for that particular aligner can be built from either 'reference_name.idx.fa' or 'reference_name.n2g.idx.fa' (see OUTPUT for details). This program is used in conjunction with the 'rsem-calculate-expression' program.
 
 =head1 OUTPUT
 
-This program will generate 'reference_name.grp', 'reference_name.ti', 'reference_name.transcripts.fa', 'reference_name.seq', 'reference_name.chrlist' (if '--gtf' is on), 'reference_name.idx.fa', and corresponding Bowtie index files (unless '--no-bowtie' is specified).
+This program will generate 'reference_name.grp', 'reference_name.ti', 'reference_name.transcripts.fa', 'reference_name.seq', 'reference_name.chrlist' (if '--gtf' is on), 'reference_name.idx.fa', 'reference_name.n2g.idx.fa' and optional Bowtie/Bowtie 2 index files.
 
 'reference_name.grp', 'reference_name.ti', 'reference_name.seq', and 'reference_name.chrlist' are used by RSEM internally.
 
-B<'reference_name.transcripts.fa'> contains the extracted reference transcripts in FASTA format. Poly(A) tails are added unless '--no-polyA' is set.
+B<'reference_name.transcripts.fa'> contains the extracted reference transcripts in Multi-FASTA format. Poly(A) tails are not added and it may contain lower case bases in its sequences if the corresponding genomic regions are soft-masked.
 
-B<'reference_name.idx.fa'> is used by aligners to build their own indices. If '--no-ntog' is set, this file should be identical to 'reference_name.transcripts.fa'.
+B<'reference_name.idx.fa' and 'reference_name.n2g.idx.fa'> are used by aligners to build their own indices. Poly(A) tails are added unless '--no-polyA' is set. In addition, all sequence bases are converted into upper case. The only difference between 'reference_name.idx.fa' and 'reference_name.n2g.idx.fa' is that 'reference_name.n2g.idx.fa' in addition converts all 'N' characters to 'G' characters. This conversion is in particular desired for aligners (e.g. Bowtie) that do not allow reads to overlap with 'N' characters in the reference sequences. Otherwise, 'reference_name.idx.fa' should be used to build the aligner's index files. RSEM uses 'reference_name.idx.fa' to build Bowtie 2 indices and 'reference_name.n2g.idx.fa' to build Bowtie indices. For visualizing the transcript-coordinate-based BAM files generated by RSEM in IGV, 'reference_name.idx.fa' should be imported as a "genome" (see Visualization section in README.md for details). 
  
 =head1 EXAMPLES
 
@@ -245,6 +238,7 @@ There are two ways to write the command:
 
  rsem-prepare-reference --gtf mm9.gtf \
                         --transcript-to-gene-map knownIsoforms.txt \
+                        --bowtie \
                         --bowtie-path /sw/bowtie \                  
                         /data/mm9/chr1.fa,/data/mm9/chr2.fa,...,/data/mm9/chrM.fa \
                         /ref/mouse_125
@@ -253,15 +247,26 @@ OR
 
  rsem-prepare-reference --gtf mm9.gtf \
                         --transcript-to-gene-map knownIsoforms.txt \
+                        --bowtie \
                         --bowtie-path /sw/bowtie \
                         /data/mm9 \
                         /ref/mouse_125
 
-2) Suppose we only have transcripts from EST tags in 'mm9.fasta'. In addition, we also have isoform-gene information in 'mapping.txt'. We do not want to add any poly(A) tails. The reference_name will be set to 'mouse_0'. In addition, we do not want to build Bowtie indices, and will use an alternative aligner to align reads against the 'mouse_0.idx.fa' output file:
+2) Suppose we also want to build Bowtie 2 indices in the above example and Bowtie 2 executables are found in '/sw/bowtie2', the command will be:
+
+ rsem-prepare-reference --gtf mm9.gtf \
+                        --transcript-to-gene-map knownIsoforms.txt \
+                        --bowtie \
+                        --bowtie-path /sw/bowtie \
+                        --bowtie2 \
+                        --bowtie2-path /sw/bowtie2 \
+                        /data/mm9 \
+                        /ref/mouse_125
+
+3) Suppose we only have transcripts from EST tags in 'mm9.fasta'. In addition, we also have isoform-gene information in 'mapping.txt'. We do not want to add any poly(A) tails. The reference_name will be set to 'mouse_0'. In addition, we do not want to build Bowtie/Bowtie 2 indices, and will use an alternative aligner to align reads against either 'mouse_0.idx.fa' or 'mouse_0.idx.n2g.fa':
 
  rsem-prepare-reference --transcript-to-gene-map mapping.txt \
                         --no-polyA \
-                        --no-bowtie \
                         mm9.fasta \
                         mouse_0
 
