@@ -19,9 +19,9 @@ my $polyAChoice = 0; # 0, default, pad polyA tails for all isoforms; 1, --no-pol
 my $no_polyA = 0; # for option --no-polyA 
 my $subsetFile = "";
 my $polyALen = 125;
+my $ntog = 0; 
+my $bowtie = 0;
 my $bowtie_path = "";
-my $no_bowtie = 0;
-my $no_ntog = 0; 
 my $bowtie2 = 0;
 my $bowtie2_path = "";
 my $quiet = 0;
@@ -35,9 +35,9 @@ GetOptions("gtf=s" => \$gtfF,
 	   "no-polyA" => \$no_polyA, 
 	   "no-polyA-subset=s" => \$subsetFile,
 	   "polyA-length=i" => \$polyALen,
+	   "ntog" => \$no_ntog,
+	   "bowtie" => \$bowtie,
 	   "bowtie-path=s" => \$bowtie_path,
-	   "no-bowtie" => \$no_bowtie,
-	   "no-ntog" => \$no_ntog,
 	   "bowtie2" => \$bowtie2,
 	   "bowtie2-path=s" => \$bowtie2_path,
 	   "q|quiet" => \$quiet,
@@ -49,12 +49,8 @@ pod2usage(-msg => "--transcript-to-gene-map and --allele-to-gene-map are mutuall
 pod2usage(-msg => "--gtf and --allele-to-gene-map are mutually exclusive!", -exitval => 2, -verbose => 2) if (($gtfF ne "") && ($alleleMappingF ne ""));
 pod2usage(-msg => "Invalid number of arguments!", -exitval => 2, -verbose => 2) if (scalar(@ARGV) != 2);
 
-if ($bowtie2) { $no_bowtie = 1; $no_ntog = 1; }
-
-pod2usage(-msg => "If bowtie is used, --no-ntog cannot be set!", -exitval => 2, -verbose => 2) if (!$no_bowtie && $no_ntog);
-
-if ($no_bowtie && ($bowtie_path ne "")) { print "Warning: If bowtie is not used, no need to set --bowtie-path option!\n"; }
-if (!$bowtie2 && ($bowtie2_path ne "")) { print "Warning: If bowtie2 is not used, no need to set --bowtie2-path option!\n"; }
+if (!$bowtie && ($bowtie_path ne "")) { print "Warning: If Bowtie is not used, no need to set --bowtie-path option!\n"; }
+if (!$bowtie2 && ($bowtie2_path ne "")) { print "Warning: If Bowtie 2 is not used, no need to set --bowtie2-path option!\n"; }
  
 my $type;
 
