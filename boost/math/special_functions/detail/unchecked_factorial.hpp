@@ -15,7 +15,9 @@
 #pragma warning(push) // Temporary until lexical cast fixed.
 #pragma warning(disable: 4127 4701)
 #endif
+#ifndef BOOST_MATH_NO_LEXICAL_CAST
 #include <boost/lexical_cast.hpp>
+#endif
 #ifdef BOOST_MSVC
 #pragma warning(pop)
 #endif
@@ -28,7 +30,7 @@ namespace boost { namespace math
 template <class T>
 struct max_factorial;
 
-// efinitions:
+// Definitions:
 template <>
 inline float unchecked_factorial<float>(unsigned i BOOST_MATH_APPEND_EXPLICIT_TEMPLATE_TYPE_SPEC(float))
 {
@@ -279,9 +281,19 @@ struct max_factorial<double>
       value = ::boost::math::max_factorial<long double>::value);
 };
 
+#ifndef BOOST_MATH_NO_LEXICAL_CAST
+
 template <class T>
 inline T unchecked_factorial(unsigned i BOOST_MATH_APPEND_EXPLICIT_TEMPLATE_TYPE_SPEC(T))
 {
+   BOOST_STATIC_ASSERT(!boost::is_integral<T>::value);
+   // factorial<unsigned int>(n) is not implemented
+   // because it would overflow integral type T for too small n
+   // to be useful. Use instead a floating-point type,
+   // and convert to an unsigned type if essential, for example:
+   // unsigned int nfac = static_cast<unsigned int>(factorial<double>(n));
+   // See factorial documentation for more detail.
+
    static const boost::array<T, 101> factorials = {{
       boost::lexical_cast<T>("1"),
       boost::lexical_cast<T>("1"),
@@ -394,6 +406,27 @@ struct max_factorial
 {
    BOOST_STATIC_CONSTANT(unsigned, value = 100);
 };
+
+#else // BOOST_MATH_NO_LEXICAL_CAST
+
+template <class T>
+inline T unchecked_factorial(unsigned i BOOST_MATH_APPEND_EXPLICIT_TEMPLATE_TYPE_SPEC(T))
+{
+   return 1;
+}
+
+template <class T>
+struct max_factorial
+{
+   BOOST_STATIC_CONSTANT(unsigned, value = 0);
+};
+
+#endif
+
+#ifndef BOOST_NO_INCLASS_MEMBER_INITIALIZATION
+template <class T>
+const unsigned max_factorial<T>::value;
+#endif
 
 } // namespace math
 } // namespace boost
