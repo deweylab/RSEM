@@ -73,6 +73,8 @@ my $bowtie2_mismatch_rate = 0.1;
 my $bowtie2_k = 200;
 my $bowtie2_sensitivity_level = "sensitive"; # must be one of "very_fast", "fast", "sensitive", "very_sensitive"
 
+my $seed = "NULL";
+
 my $version = 0;
 
 my $mTime = 0;
@@ -126,6 +128,7 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "calc-ci" => \$calcCI,
 	   "ci-memory=i" => \$NMB,
 	   "samtools-sort-mem=s" => \$SortMem,
+	   "seed=i" => \$seed,
 	   "time" => \$mTime,
 	   "version" => \$version,
 	   "q|quiet" => \$quiet,
@@ -160,6 +163,7 @@ pod2usage(-msg => "Number of threads should be at least 1!\n", -exitval => 2, -v
 pod2usage(-msg => "Seed length should be at least 5!\n", -exitval => 2, -verbose => 2) if ($L < 5);
 pod2usage(-msg => "--sampling-for-bam cannot be specified if --no-bam-output is specified!\n", -exitval => 2, -verbose => 2) if ($sampling && !$genBamF);
 pod2usage(-msg => "--output-genome-bam cannot be specified if --no-bam-output is specified!\n", -exitval => 2, -verbose => 2) if ($genGenomeBamF && !$genBamF);
+pod2usage(-msg => "The seed for random number generator must be a non-negative 32bit integer!\n", -exitval => 2, -verbose => 2) if (($seed ne "NULL") && ($seed < 0 || $seed > 0xffffffff));
 
 if ($L < 25) { print "Warning: the seed length set is less than 25! This is only allowed if the references are not added poly(A) tails.\n"; }
 
@@ -335,12 +339,21 @@ print OUTPUT "$mean $sd\n";
 print OUTPUT "$L\n";
 close(OUTPUT);  
 
+my @seeds = ();
+if ($seed ne "NULL") { 
+    srand($seed); 
+    for (my $i = 0; $i < 3; $i++) {
+	push(@seeds, int(rand(1 << 32))); 
+    }
+}
+
 $command = "rsem-run-em $refName $read_type $sampleName $imdName $statName -p $nThreads";
 if ($genBamF) { 
     $command .= " -b $samInpType $inpF";
     if ($fn_list ne "") { $command .= " 1 $fn_list"; }
     else { $command .= " 0"; }
     if ($sampling) { $command .= " --sampling"; }
+    if ($seed ne "NULL") { $command .= " --seed $seeds[0]"; }
 }
 if ($calcPME || $var_opt || $calcCI) { $command .= " --gibbs-out"; }
 if ($quiet) { $command .= " -q"; }
@@ -381,6 +394,7 @@ if ($calcPME || $var_opt || $calcCI ) {
     $command = "rsem-run-gibbs $refName $imdName $statName $BURNIN $NCV $SAMPLEGAP";
     $command .= " -p $nThreads";
     if ($var_opt) { $command .= " --var"; }
+    if ($seed ne "NULL") { $command .= " --seed $seeds[1]"; }
     if ($quiet) { $command .= " -q"; }
     &runCommand($command);
 }
@@ -405,6 +419,7 @@ if ($calcPME || $calcCI) {
 if ($calcCI) {
     $command = "rsem-calculate-credibility-intervals $refName $imdName $statName $CONFIDENCE $NCV $NSPC $NMB";
     $command .= " -p $nThreads";
+    if ($seed ne "NULL") { $command .= " --seed $seeds[2]"; }
     if ($quiet) { $command .= " -q"; }
     &runCommand($command);
 
@@ -525,6 +540,10 @@ Generate a BAM file, 'sample_name.genome.bam', with alignments mapped to genomic
 =item B<--sampling-for-bam>
 
 When RSEM generates a BAM file, instead of outputing all alignments a read has with their posterior probabilities, one alignment is sampled according to the posterior probabilities. The sampling procedure includes the alignment to the "noise" transcript, which does not appear in the BAM file. Only the sampled alignment has a weight of 1. All other alignments have weight 0. If the "noise" transcript is sampled, all alignments appeared in the BAM file should have weight 0. (Default: off)
+
+=item B<--seed> <uint32>
+
+Set the seed for the random number generators used in calculating posterior mean estimates and credibility intervals. The seed must be a non-negative 32 bit interger. (Default: off)
 
 =item B<--calc-pme>
 

@@ -74,6 +74,9 @@ pthread_t *threads;
 pthread_attr_t attr;
 int rc;
 
+bool hasSeed;
+seedType seed;
+
 void load_data(char* refName, char* statName, char* imdName) {
 	ifstream fin;
 	string line;
@@ -135,6 +138,7 @@ void init() {
 	paramsArray = new Params[nThreads];
 	threads = new pthread_t[nThreads];
 
+	hasSeed ? engineFactory::init(seed) : engineFactory::init();
 	for (int i = 0; i < nThreads; i++) {
 		paramsArray[i].no = i;
 
@@ -154,6 +158,7 @@ void init() {
 		paramsArray[i].pme_fpkm = new double[M + 1];
 		memset(paramsArray[i].pme_fpkm, 0, sizeof(double) * (M + 1));
 	}
+	engineFactory::finish();
 
 	/* set thread attribute to be joinable */
 	pthread_attr_init(&attr);
@@ -292,7 +297,7 @@ void release() {
 
 int main(int argc, char* argv[]) {
 	if (argc < 7) {
-		printf("Usage: rsem-run-gibbs reference_name imdName statName BURNIN NSAMPLES GAP [-p #Threads] [--var] [-q]\n");
+		printf("Usage: rsem-run-gibbs reference_name imdName statName BURNIN NSAMPLES GAP [-p #Threads] [--var] [--seed seed] [-q]\n");
 		exit(-1);
 	}
 
@@ -306,11 +311,18 @@ int main(int argc, char* argv[]) {
 
 	nThreads = 1;
 	var_opt = false;
+	hasSeed = false;
 	quiet = false;
 
 	for (int i = 7; i < argc; i++) {
 		if (!strcmp(argv[i], "-p")) nThreads = atoi(argv[i + 1]);
 		if (!strcmp(argv[i], "--var")) var_opt = true;
+		if (!strcmp(argv[i], "--seed")) {
+		  hasSeed = true;
+		  int len = strlen(argv[i + 1]);
+		  seed = 0;
+		  for (int k = 0; k < len; k++) seed = seed * 10 + (argv[i + 1][k] - '0');
+		}
 		if (!strcmp(argv[i], "-q")) quiet = true;
 	}
 	verbose = !quiet;

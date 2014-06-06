@@ -89,6 +89,9 @@ Transcripts transcripts;
 
 ModelParams mparams;
 
+bool hasSeed;
+seedType seed;
+
 template<class ReadType, class HitType, class ModelType>
 void init(ReadReader<ReadType> **&readers, HitContainer<HitType> **&hitvs, double **&ncpvs, ModelType **&mhps) {
 	READ_INT_TYPE nReads;
@@ -503,7 +506,7 @@ void EM() {
 			READ_INT_TYPE local_N;
 			HIT_INT_TYPE fr, to, len, id;
 			vector<double> arr;
-			uniform01 rg(engine_type(time(NULL)));
+			uniform01 rg(engine_type(hasSeed ? seed : time(NULL)));
 
 			if (verbose) cout<< "Begin to sample reads from their posteriors."<< endl;
 			for (int i = 0; i < nThreads; i++) {
@@ -536,7 +539,7 @@ int main(int argc, char* argv[]) {
 	bool quiet = false;
 
 	if (argc < 6) {
-		printf("Usage : rsem-run-em refName read_type sampleName imdName statName [-p #Threads] [-b samInpType samInpF has_fn_list_? [fn_list]] [-q] [--gibbs-out] [--sampling]\n\n");
+		printf("Usage : rsem-run-em refName read_type sampleName imdName statName [-p #Threads] [-b samInpType samInpF has_fn_list_? [fn_list]] [-q] [--gibbs-out] [--sampling] [--seed seed]\n\n");
 		printf("  refName: reference name\n");
 		printf("  read_type: 0 single read without quality score; 1 single read with quality score; 2 paired-end read without quality score; 3 paired-end read with quality score.\n");
 		printf("  sampleName: sample's name, including the path\n");
@@ -546,6 +549,7 @@ int main(int argc, char* argv[]) {
 		printf("  -q: set it quiet\n");
 		printf("  --gibbs-out: generate output file used by Gibbs sampler. (default: off)\n");
 		printf("  --sampling: sample each read from its posterior distribution when bam file is generated. (default: off)\n");
+		printf("  --seed uint32: the seed used for the BAM sampling. (default: off)\n");
 		printf("// model parameters should be in imdName.mparams.\n");
 		exit(-1);
 	}
@@ -564,6 +568,7 @@ int main(int argc, char* argv[]) {
 	bamSampling = false;
 	genGibbsOut = false;
 	pt_fn_list = pt_chr_list = NULL;
+	hasSeed = false;
 
 	for (int i = 6; i < argc; i++) {
 		if (!strcmp(argv[i], "-p")) { nThreads = atoi(argv[i + 1]); }
@@ -579,6 +584,12 @@ int main(int argc, char* argv[]) {
 		if (!strcmp(argv[i], "-q")) { quiet = true; }
 		if (!strcmp(argv[i], "--gibbs-out")) { genGibbsOut = true; }
 		if (!strcmp(argv[i], "--sampling")) { bamSampling = true; }
+		if (!strcmp(argv[i], "--seed")) {
+		  hasSeed = true;
+		  int len = strlen(argv[i + 1]);
+		  seed = 0;
+		  for (int k = 0; k < len; k++) seed = seed * 10 + (argv[i + 1][k] - '0');
+		}
 	}
 
 	general_assert(nThreads > 0, "Number of threads should be bigger than 0!");

@@ -17,21 +17,30 @@ typedef boost::variate_generator<engine_type&, gamma_dist> gamma_generator;
 
 class engineFactory {
 public:
+  static void init() { seedEngine = new engine_type(time(NULL)); }
+  static void init(seedType seed) { seedEngine = new engine_type(seed); }
+
+  static void finish() { if (seedEngine != NULL) delete seedEngine; }
+
 	static engine_type *new_engine() {
 		seedType seed;
-		static engine_type seedEngine(time(NULL));
 		static std::set<seedType> seedSet;			// empty set of seeds
 		std::set<seedType>::iterator iter;
 
 		do {
-			seed = seedEngine();
+			seed = (*seedEngine)();
 			iter = seedSet.find(seed);
 		} while (iter != seedSet.end());
 		seedSet.insert(seed);
 
 		return new engine_type(seed);
 	}
+
+ private:
+	static engine_type *seedEngine;
 };
+
+engine_type* engineFactory::seedEngine = NULL;
 
 // arr should be cumulative!
 // interval : [,)

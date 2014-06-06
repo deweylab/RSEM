@@ -80,6 +80,9 @@ pthread_t *threads;
 pthread_attr_t attr;
 int rc;
 
+bool hasSeed;
+seedType seed;
+
 CIParams *ciParamsArray;
 
 void* sample_theta_from_c(void* arg) {
@@ -165,6 +168,7 @@ void sample_theta_vectors_from_count_vectors() {
 	threads = new pthread_t[num_threads];
 
 	char inpF[STRLEN];
+	hasSeed ? engineFactory::init(seed) : engineFactory::init();
 	for (int i = 0; i < num_threads; i++) {
 		paramsArray[i].no = i;
 		sprintf(inpF, "%s%d", cvsF, i);
@@ -172,6 +176,7 @@ void sample_theta_vectors_from_count_vectors() {
 		paramsArray[i].engine = engineFactory::new_engine();
 		paramsArray[i].mw = model.getMW();
 	}
+	engineFactory::finish();
 
 	/* set thread attribute to be joinable */
 	pthread_attr_init(&attr);
@@ -458,7 +463,7 @@ void calculate_credibility_intervals(char* imdName) {
 
 int main(int argc, char* argv[]) {
 	if (argc < 8) {
-		printf("Usage: rsem-calculate-credibility-intervals reference_name imdName statName confidence nCV nSpC nMB [-p #Threads] [-q]\n");
+		printf("Usage: rsem-calculate-credibility-intervals reference_name imdName statName confidence nCV nSpC nMB [-p #Threads] [--seed seed] [-q]\n");
 		exit(-1);
 	}
 
@@ -473,8 +478,15 @@ int main(int argc, char* argv[]) {
 
 	nThreads = 1;
 	quiet = false;
+	hasSeed = false;
 	for (int i = 8; i < argc; i++) {
 		if (!strcmp(argv[i], "-p")) nThreads = atoi(argv[i + 1]);
+		if (!strcmp(argv[i], "--seed")) {
+		  hasSeed = true;
+		  int len = strlen(argv[i + 1]);
+		  seed = 0;
+		  for (int k = 0; k < len; k++) seed = seed * 10 + (argv[i + 1][k] - '0');
+		}
 		if (!strcmp(argv[i], "-q")) quiet = true;
 	}
 	verbose = !quiet;
