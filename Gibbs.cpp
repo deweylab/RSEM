@@ -229,7 +229,7 @@ void* Gibbs(void* arg) {
 	vector<int> z, counts;
 	vector<double> arr;
 
-	uniform01 rg(*params->engine);
+	uniform_01_generator rg(*params->engine, uniform_01_dist());
 
 	// generate initial state
 	sampleTheta(*params->engine, theta);

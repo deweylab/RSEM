@@ -8,8 +8,8 @@
 class simul {
 public:
 
-	simul(unsigned int seed) : rg(boost::mt19937(seed)) {
-	}
+ simul(unsigned int seed) : engine(seed), rg(engine, boost::random::uniform_01<>()) {
+  }
 
 	// interval : [,)
 	// random number should be in [0, arr[len - 1])
@@ -35,7 +35,8 @@ public:
 	double random() { return rg(); };
 
 private:
-	boost::uniform_01<boost::mt19937> rg;
+	boost::random::mt19937 engine;
+	boost::random::variate_generator<boost::random::mt19937&, boost::random::uniform_01<> > rg;
 };
 
 #endif /* SIMUL_H_ */

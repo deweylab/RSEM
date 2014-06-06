@@ -506,7 +506,9 @@ void EM() {
 			READ_INT_TYPE local_N;
 			HIT_INT_TYPE fr, to, len, id;
 			vector<double> arr;
-			uniform01 rg(engine_type(hasSeed ? seed : time(NULL)));
+			engine_type engine(hasSeed ? seed : time(NULL));
+			uniform_01_dist uniform_01;
+			uniform_01_generator rg(engine, uniform_01);
 
 			if (verbose) cout<< "Begin to sample reads from their posteriors."<< endl;
 			for (int i = 0; i < nThreads; i++) {

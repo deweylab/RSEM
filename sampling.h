@@ -10,10 +10,11 @@
 #include "boost/random.hpp"
 
 typedef unsigned int seedType;
-typedef boost::mt19937 engine_type;
-typedef boost::gamma_distribution<> gamma_dist;
-typedef boost::uniform_01<engine_type> uniform01;
-typedef boost::variate_generator<engine_type&, gamma_dist> gamma_generator;
+typedef boost::random::mt19937 engine_type;
+typedef boost::random::uniform_01<> uniform_01_dist;
+typedef boost::random::gamma_distribution<> gamma_dist;
+typedef boost::random::variate_generator<engine_type&, uniform_01_dist> uniform_01_generator;
+typedef boost::random::variate_generator<engine_type&, gamma_dist> gamma_generator;
 
 class engineFactory {
 public:
@@ -46,7 +47,7 @@ engine_type* engineFactory::seedEngine = NULL;
 // interval : [,)
 // random number should be in [0, arr[len - 1])
 // If by chance arr[len - 1] == 0.0, one possibility is to sample uniformly from 0...len-1
-int sample(uniform01& rg, std::vector<double>& arr, int len) {
+int sample(uniform_01_generator& rg, std::vector<double>& arr, int len) {
   int l, r, mid;
   double prb = rg() * arr[len - 1];
 
