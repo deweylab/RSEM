@@ -1,6 +1,7 @@
 #ifndef WRITERESULTS_H_
 #define WRITERESULTS_H_
 
+#include<cmath>
 #include<cstdio>
 #include<vector>
 #include<string>
@@ -336,27 +337,15 @@ void writeResultsEM(int M, const char* refName, const char* imdName, Transcripts
 	if (verbose) { printf("Expression Results are written!\n"); }
 }
 
-void writeResultsGibbs(int M, char* refName, char* imdName, std::vector<double>& pme_c, std::vector<double>& pme_fpkm, std::vector<double>& pme_tpm) {
+void writeResultsGibbs(int M, int m, int m_trans, GroupInfo& gi, GroupInfo &gt, GroupInfo &ta, bool alleleS, char* imdName, std::vector<double>& pme_c, std::vector<double>& pme_fpkm, std::vector<double>& pme_tpm, std::vector<double>& pve_c, std::vector<double>& pve_c_genes, std::vector<double>& pve_c_trans) {
 	char outF[STRLEN];
 	FILE *fo;
 
-	int m;
-	GroupInfo gi;
-	char groupF[STRLEN];
 	std::vector<double> isopct;
 	std::vector<double> gene_counts, gene_tpm, gene_fpkm;
 
-	// Load group info
-	sprintf(groupF, "%s.grp", refName);
-	gi.load(groupF);
-	m = gi.getm();
-
 	// For allele-specific expression
-	int m_trans = 0;
-	GroupInfo gt, ta;
 	std::vector<double> trans_counts, trans_tpm, trans_fpkm, ta_pct, gt_pct;
-
-	bool alleleS = isAlleleSpecific(refName, &gt, &ta); // if allele-specific
 
 	//calculate IsoPct, etc.
 	isopct.assign(M + 1, 0.0);
@@ -375,7 +364,6 @@ void writeResultsGibbs(int M, char* refName, char* imdName, std::vector<double>&
 	}
 
 	if (alleleS) {
-	  m_trans = ta.getm();
 	  ta_pct.assign(M + 1, 0.0);
 	  trans_counts.assign(m_trans, 0.0); trans_tpm.assign(m_trans, 0.0); trans_fpkm.assign(m_trans, 0.0);
 	  
@@ -407,6 +395,8 @@ void writeResultsGibbs(int M, char* refName, char* imdName, std::vector<double>&
 	  
 	  for (int i = 1; i <= M; i++)
 	    fprintf(fo, "%.2f%c", pme_c[i], (i < M ? '\t' : '\n'));
+	  for (int i = 1; i <= M; i++) 
+	    fprintf(fo, "%.2f%c", sqrt(pve_c[i]), (i < M ? '\t' : '\n'));
 	  for (int i = 1; i <= M; i++)
 	    fprintf(fo, "%.2f%c", pme_tpm[i], (i < M ? '\t' : '\n'));
 	  for (int i = 1; i <= M; i++)
@@ -423,6 +413,8 @@ void writeResultsGibbs(int M, char* refName, char* imdName, std::vector<double>&
 	  
 	  for (int i = 1; i <= M; i++)
 	    fprintf(fo, "%.2f%c", pme_c[i], (i < M ? '\t' : '\n'));
+	  for (int i = 1; i <= M; i++) 
+	    fprintf(fo, "%.2f%c", sqrt(pve_c[i]), (i < M ? '\t' : '\n'));
 	  for (int i = 1; i <= M; i++)
 	    fprintf(fo, "%.2f%c", pme_tpm[i], (i < M ? '\t' : '\n'));
 	  for (int i = 1; i <= M; i++)
@@ -440,6 +432,8 @@ void writeResultsGibbs(int M, char* refName, char* imdName, std::vector<double>&
 	  
 	  for (int i = 0; i < m_trans; i++)
 	    fprintf(fo, "%.2f%c", trans_counts[i], (i < m_trans - 1 ? '\t' : '\n'));
+	  for (int i = 0; i < m_trans; i++) 
+	    fprintf(fo, "%.2f%c", sqrt(pve_c_trans[i]), (i < m_trans - 1 ? '\t' : '\n'));
 	  for (int i = 0; i < m_trans; i++)
 	    fprintf(fo, "%.2f%c", trans_tpm[i], (i < m_trans - 1 ? '\t' : '\n'));
 	  for (int i = 0; i < m_trans; i++)
@@ -455,11 +449,13 @@ void writeResultsGibbs(int M, char* refName, char* imdName, std::vector<double>&
 	general_assert(fo != NULL, "Cannot open " + cstrtos(outF) + "!");
 
 	for (int i = 0; i < m; i++)
-		fprintf(fo, "%.2f%c", gene_counts[i], (i < m - 1 ? '\t' : '\n'));
+	  fprintf(fo, "%.2f%c", gene_counts[i], (i < m - 1 ? '\t' : '\n'));
+	for (int i = 0; i < m; i++) 
+	  fprintf(fo, "%.2f%c", sqrt(pve_c_genes[i]), (i < m - 1 ? '\t' : '\n'));
 	for (int i = 0; i < m; i++)
-		fprintf(fo, "%.2f%c", gene_tpm[i], (i < m - 1 ? '\t' : '\n'));
+	  fprintf(fo, "%.2f%c", gene_tpm[i], (i < m - 1 ? '\t' : '\n'));
 	for (int i = 0; i < m; i++)
-		fprintf(fo, "%.2f%c", gene_fpkm[i], (i < m - 1 ? '\t' : '\n'));
+	  fprintf(fo, "%.2f%c", gene_fpkm[i], (i < m - 1 ? '\t' : '\n'));
 	fclose(fo);
 
 	if (verbose) { printf("Gibbs based expression values are written!\n"); }

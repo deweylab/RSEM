@@ -25,13 +25,14 @@
 using namespace std;
 
 struct Params {
-	int no, nsamples;
-	FILE *fo;
-	engine_type *engine;
-	double *pme_c, *pve_c; //posterior mean and variance vectors on counts
+  int no, nsamples;
+  FILE *fo;
+  engine_type *engine;
+  double *pme_c, *pve_c; //posterior mean and variance vectors on counts
   double *pme_tpm, *pme_fpkm;
+  
+  double *pve_c_genes, *pve_c_trans;
 };
-
 
 struct Item {
 	int sid;
@@ -66,7 +67,6 @@ double *mw;
 vector<double> pme_c, pve_c; //global posterior mean and variance vectors on counts
 vector<double> pme_tpm, pme_fpkm;
 
-bool var_opt;
 bool quiet;
 
 Params *paramsArray;
@@ -76,6 +76,27 @@ int rc;
 
 bool hasSeed;
 seedType seed;
+
+int m;
+char groupF[STRLEN];
+GroupInfo gi;
+
+bool alleleS;
+int m_trans;
+GroupInfo gt, ta;
+vector<double> pve_c_genes, pve_c_trans;
+
+void load_group_info(char* refName) {
+  // Load group info
+  sprintf(groupF, "%s.grp", refName);
+  gi.load(groupF);
+  m = gi.getm();
+  
+  alleleS = isAlleleSpecific(refName, &gt, &ta); // if allele-specific 
+  m_trans = (alleleS ? ta.getm() : 0);
+
+  if (verbose) { printf("Loading group information is finished!\n"); }
+}
 
 void load_data(char* refName, char* statName, char* imdName) {
 	ifstream fin;
@@ -114,7 +135,7 @@ void load_data(char* refName, char* statName, char* imdName) {
 
 	totc = N0 + N1 + (M + 1);
 
-	if (verbose) { printf("Loading Data is finished!\n"); }
+	if (verbose) { printf("Loading data is finished!\n"); }
 }
 
 template<class ModelType>
@@ -157,6 +178,15 @@ void init() {
 		memset(paramsArray[i].pme_tpm, 0, sizeof(double) * (M + 1));
 		paramsArray[i].pme_fpkm = new double[M + 1];
 		memset(paramsArray[i].pme_fpkm, 0, sizeof(double) * (M + 1));
+
+		paramsArray[i].pve_c_genes = new double[m];
+		memset(paramsArray[i].pve_c_genes, 0, sizeof(double) * m);
+		
+		paramsArray[i].pve_c_trans = NULL;
+		if (alleleS) {
+		  paramsArray[i].pve_c_trans = new double[m_trans];
+		  memset(paramsArray[i].pve_c_trans, 0, sizeof(double) * m_trans);
+		}
 	}
 	engineFactory::finish();
 
@@ -245,10 +275,25 @@ void* Gibbs(void* arg) {
 				calcExpressionValues(M, theta, eel, tpm, fpkm);
 				for (int i = 0; i <= M; i++) {
 					params->pme_c[i] += counts[i] - 1;
-					params->pve_c[i] += (counts[i] - 1) * (counts[i] - 1);
+					params->pve_c[i] += double(counts[i] - 1) * (counts[i] - 1);
 					params->pme_tpm[i] += tpm[i];
 					params->pme_fpkm[i] += fpkm[i];
 				}
+
+				for (int i = 0; i < m; i++) {
+				  int b = gi.spAt(i), e = gi.spAt(i + 1);
+				  double count = 0.0;
+				  for (int j = b; j < e; j++) count += counts[j] - 1;
+				  params->pve_c_genes[i] += count * count;
+				}
+
+				if (alleleS)
+				  for (int i = 0; i < m_trans; i++) {
+				    int b = ta.spAt(i), e = ta.spAt(i + 1);
+				    double count = 0.0;
+				    for (int j = b; j < e; j++) count += counts[j] - 1;
+				    params->pve_c_trans[i] += count * count;
+				  }
 			}
 		}
 
@@ -270,6 +315,11 @@ void release() {
 	pve_c.assign(M + 1, 0);
 	pme_tpm.assign(M + 1, 0);
 	pme_fpkm.assign(M + 1, 0);
+
+	pve_c_genes.assign(m, 0);
+	pve_c_trans.clear();
+	if (alleleS) pve_c_trans.assign(m_trans, 0);
+
 	for (int i = 0; i < nThreads; i++) {
 		fclose(paramsArray[i].fo);
 		delete paramsArray[i].engine;
@@ -279,25 +329,53 @@ void release() {
 			pme_tpm[j] += paramsArray[i].pme_tpm[j];
 			pme_fpkm[j] += paramsArray[i].pme_fpkm[j];
 		}
+
+		for (int j = 0; j < m; j++) 
+		  pve_c_genes[j] += paramsArray[i].pve_c_genes[j];
+		
+		if (alleleS) 
+		  for (int j = 0; j < m_trans; j++) 
+		    pve_c_trans[j] += paramsArray[i].pve_c_trans[j];
+
 		delete[] paramsArray[i].pme_c;
 		delete[] paramsArray[i].pve_c;
 		delete[] paramsArray[i].pme_tpm;
 		delete[] paramsArray[i].pme_fpkm;
+
+		delete[] paramsArray[i].pve_c_genes;
+		if (alleleS) delete[] paramsArray[i].pve_c_trans;
 	}
 	delete[] paramsArray;
 
-
 	for (int i = 0; i <= M; i++) {
 		pme_c[i] /= NSAMPLES;
-		pve_c[i] = (pve_c[i] - NSAMPLES * pme_c[i] * pme_c[i]) / (NSAMPLES - 1);
+		pve_c[i] = (pve_c[i] - double(NSAMPLES) * pme_c[i] * pme_c[i]) / double(NSAMPLES - 1);
+		if (pve_c[i] < 0.0) pve_c[i] = 0.0;
 		pme_tpm[i] /= NSAMPLES;
 		pme_fpkm[i] /= NSAMPLES;
 	}
+
+	for (int i = 0; i < m; i++) {
+	  int b = gi.spAt(i), e = gi.spAt(i + 1);
+	  double pme_c_gene = 0.0;
+	  for (int j = b; j < e; j++) pme_c_gene += pme_c[j];
+	  pve_c_genes[i] = (pve_c_genes[i] - double(NSAMPLES) * pme_c_gene * pme_c_gene) / double(NSAMPLES - 1);
+	  if (pve_c_genes[i] < 0.0) pve_c_genes[i] = 0.0;
+	}
+
+	if (alleleS) 
+	  for (int i = 0; i < m_trans; i++) {
+	    int b = ta.spAt(i), e = ta.spAt(i + 1);
+	    double pme_c_tran = 0.0;
+	    for (int j = b; j < e; j++) pme_c_tran += pme_c[j];
+	    pve_c_trans[i] = (pve_c_trans[i] - double(NSAMPLES) * pme_c_tran * pme_c_tran) / double(NSAMPLES - 1);
+	    if (pve_c_trans[i] < 0.0) pve_c_trans[i] = 0.0;
+	  }
 }
 
 int main(int argc, char* argv[]) {
 	if (argc < 7) {
-		printf("Usage: rsem-run-gibbs reference_name imdName statName BURNIN NSAMPLES GAP [-p #Threads] [--var] [--seed seed] [-q]\n");
+		printf("Usage: rsem-run-gibbs reference_name imdName statName BURNIN NSAMPLES GAP [-p #Threads] [--seed seed] [-q]\n");
 		exit(-1);
 	}
 
@@ -310,13 +388,11 @@ int main(int argc, char* argv[]) {
 	GAP = atoi(argv[6]);
 
 	nThreads = 1;
-	var_opt = false;
 	hasSeed = false;
 	quiet = false;
 
 	for (int i = 7; i < argc; i++) {
 		if (!strcmp(argv[i], "-p")) nThreads = atoi(argv[i + 1]);
-		if (!strcmp(argv[i], "--var")) var_opt = true;
 		if (!strcmp(argv[i], "--seed")) {
 		  hasSeed = true;
 		  int len = strlen(argv[i + 1]);
@@ -334,6 +410,7 @@ int main(int argc, char* argv[]) {
 		printf("Warning: Number of samples is less than number of threads! Change the number of threads to %d!\n", nThreads);
 	}
 
+	load_group_info(refName);
 	load_data(refName, statName, imdName);
 
 	sprintf(modelF, "%s.model", statName);
@@ -366,31 +443,8 @@ int main(int argc, char* argv[]) {
 
 	if (verbose) printf("Gibbs finished!\n");
 	
-	writeResultsGibbs(M, refName, imdName, pme_c, pme_fpkm, pme_tpm);
+	writeResultsGibbs(M, m, m_trans, gi, gt, ta, alleleS, imdName, pme_c, pme_fpkm, pme_tpm, pve_c, pve_c_genes, pve_c_trans);
 
-	if (var_opt) {
-		char varF[STRLEN];
-
-		// Load group info
-		int m;
-		GroupInfo gi;
-		char groupF[STRLEN];
-		sprintf(groupF, "%s.grp", refName);
-		gi.load(groupF);
-		m = gi.getm();
-		
-		sprintf(varF, "%s.var", statName);
-		FILE *fo = fopen(varF, "w");
-		general_assert(fo != NULL, "Cannot open " + cstrtos(varF) + "!");
-		for (int i = 0; i < m; i++) {
-			int b = gi.spAt(i), e = gi.spAt(i + 1), number_of_isoforms = e - b;
-			for (int j = b; j < e; j++) {
-				fprintf(fo, "%s\t%d\t%.15g\t%.15g\n", refs.getRef(j).getName().c_str(), number_of_isoforms, pme_c[j], pve_c[j]);
-			}
-		}
-		fclose(fo);
-	}
-	
 	delete mw; // delete the copy
 
 	return 0;

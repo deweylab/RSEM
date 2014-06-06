@@ -31,11 +31,11 @@ sub runCommand {
     print "\n";
 }
 
-my @allele_title = ("allele_id", "transcript_id", "gene_id", "length", "effective_length", "expected_count", "TPM", "FPKM", "AlleleIsoPct", "AlleleGenePct", "pme_expected_count", "pme_TPM", "pme_FPKM", "AlleleIsoPct_from_pme_TPM", "AlleleGenePct_from_pme_TPM", "TPM_ci_lower_bound", "TPM_ci_upper_bound", "FPKM_ci_lower_bound", "FPKM_ci_upper_bound");
+my @allele_title = ("allele_id", "transcript_id", "gene_id", "length", "effective_length", "expected_count", "TPM", "FPKM", "AlleleIsoPct", "AlleleGenePct", "posterior_mean_count", "posterior_standard_deviation_of_count", "pme_TPM", "pme_FPKM", "AlleleIsoPct_from_pme_TPM", "AlleleGenePct_from_pme_TPM", "TPM_ci_lower_bound", "TPM_ci_upper_bound", "FPKM_ci_lower_bound", "FPKM_ci_upper_bound");
 
-my @transcript_title = ("transcript_id", "gene_id", "length", "effective_length", "expected_count", "TPM", "FPKM", "IsoPct", "pme_expected_count", "pme_TPM", "pme_FPKM", "IsoPct_from_pme_TPM", "TPM_ci_lower_bound", "TPM_ci_upper_bound", "FPKM_ci_lower_bound", "FPKM_ci_upper_bound");
+my @transcript_title = ("transcript_id", "gene_id", "length", "effective_length", "expected_count", "TPM", "FPKM", "IsoPct", "posterior_mean_count", "posterior_standard_deviation_of_count", "pme_TPM", "pme_FPKM", "IsoPct_from_pme_TPM", "TPM_ci_lower_bound", "TPM_ci_upper_bound", "FPKM_ci_lower_bound", "FPKM_ci_upper_bound");
 
-my @gene_title = ("gene_id", "transcript_id(s)", "length", "effective_length", "expected_count", "TPM", "FPKM", "pme_expected_count", "pme_TPM", "pme_FPKM", "TPM_ci_lower_bound", "TPM_ci_upper_bound", "FPKM_ci_lower_bound", "FPKM_ci_upper_bound");
+my @gene_title = ("gene_id", "transcript_id(s)", "length", "effective_length", "expected_count", "TPM", "FPKM", "posterior_mean_count", "posterior_standard_deviation_of_count", "pme_TPM", "pme_FPKM", "TPM_ci_lower_bound", "TPM_ci_upper_bound", "FPKM_ci_lower_bound", "FPKM_ci_upper_bound");
 
 # type, inpF, outF
 sub collectResults {

@@ -57,7 +57,6 @@ my $genGenomeBamF = 0;
 my $sampling = 0;
 my $calcPME = 0;
 my $calcCI = 0;
-my $var_opt = 0; # temporarily, only for internal use
 my $quiet = 0;
 my $help = 0;
 
@@ -124,7 +123,6 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "output-genome-bam" => \$genGenomeBamF,
 	   "sampling-for-bam" => \$sampling,
 	   "calc-pme" => \$calcPME,
-	   "var" => \$var_opt,
 	   "calc-ci" => \$calcCI,
 	   "ci-memory=i" => \$NMB,
 	   "samtools-sort-mem=s" => \$SortMem,
@@ -355,7 +353,7 @@ if ($genBamF) {
     if ($sampling) { $command .= " --sampling"; }
     if ($seed ne "NULL") { $command .= " --seed $seeds[0]"; }
 }
-if ($calcPME || $var_opt || $calcCI) { $command .= " --gibbs-out"; }
+if ($calcPME || $calcCI) { $command .= " --gibbs-out"; }
 if ($quiet) { $command .= " -q"; }
 
 &runCommand($command);
@@ -390,10 +388,9 @@ if ($mTime) { $time_end = time(); $time_rsem = $time_end - $time_start; }
 
 if ($mTime) { $time_start = time(); }
 
-if ($calcPME || $var_opt || $calcCI ) {
+if ($calcPME || $calcCI ) {
     $command = "rsem-run-gibbs $refName $imdName $statName $BURNIN $NCV $SAMPLEGAP";
     $command .= " -p $nThreads";
-    if ($var_opt) { $command .= " --var"; }
     if ($seed ne "NULL") { $command .= " --seed $seeds[1]"; }
     if ($quiet) { $command .= " -q"; }
     &runCommand($command);
@@ -707,7 +704,7 @@ File containing isoform level expression estimates. The first line
 contains column names separated by the tab character. The format of
 each line in the rest of this file is:
 
-transcript_id gene_id length effective_length expected_count TPM FPKM IsoPct [pme_expected_count pme_TPM pme_FPKM IsoPct_from_pme_TPM TPM_ci_lower_bound TPM_ci_upper_bound FPKM_ci_lower_bound FPKM_ci_upper_bound]
+transcript_id gene_id length effective_length expected_count TPM FPKM IsoPct [posterior_mean_count posterior_standard_deviation_of_count pme_TPM pme_FPKM IsoPct_from_pme_TPM TPM_ci_lower_bound TPM_ci_upper_bound FPKM_ci_lower_bound FPKM_ci_upper_bound]
 
 Fields are separated by the tab character. Fields within "[]" are
 optional. They will not be presented if neither '--calc-pme' nor
@@ -753,9 +750,11 @@ transcript's abandunce over its parent gene's abandunce. If its parent
 gene has only one isoform or the gene information is not provided,
 this field will be set to 100.
 
-'pme_expected_count', 'pme_TPM', 'pme_FPKM' are posterior mean
-estimates calculated by RSEM's Gibbs sampler. 'IsoPct_from_pme_TPM' is
-the isoform percentage calculated from 'pme_TPM' values.
+'posterior_mean_count', 'pme_TPM', 'pme_FPKM' are posterior mean
+estimates calculated by RSEM's Gibbs
+sampler. 'posterior_standard_deviation_of_count' is the posterior
+standard deviation of counts. 'IsoPct_from_pme_TPM' is the isoform
+percentage calculated from 'pme_TPM' values.
 
 'TPM_ci_lower_bound', 'TPM_ci_upper_bound', 'FPKM_ci_lower_bound' and
 'FPKM_ci_upper_bound' are lower(l) and upper(u) bounds of 95%
@@ -768,7 +767,7 @@ File containing gene level expression estimates. The first line
 contains column names separated by the tab character. The format of
 each line in the rest of this file is:
 
-gene_id transcript_id(s) length effective_length expected_count TPM FPKM [pme_expected_count pme_TPM pme_FPKM TPM_ci_lower_bound TPM_ci_upper_bound FPKM_ci_lower_bound FPKM_ci_upper_bound]
+gene_id transcript_id(s) length effective_length expected_count TPM FPKM [posterior_mean_count posterior_standard_deviation_of_count pme_TPM pme_FPKM TPM_ci_lower_bound TPM_ci_upper_bound FPKM_ci_lower_bound FPKM_ci_upper_bound]
 
 Fields are separated by the tab character. Fields within "[]" are
 optional. They will not be presented if neither '--calc-pme' nor
@@ -793,7 +792,7 @@ allele-specific expression calculation. The first line
 contains column names separated by the tab character. The format of
 each line in the rest of this file is:
 
-allele_id transcript_id gene_id length effective_length expected_count TPM FPKM AlleleIsoPct AlleleGenePct [pme_expected_count pme_TPM pme_FPKM AlleleIsoPct_from_pme_TPM AlleleGenePct_from_pme_TPM TPM_ci_lower_bound TPM_ci_upper_bound FPKM_ci_lower_bound FPKM_ci_upper_bound]
+allele_id transcript_id gene_id length effective_length expected_count TPM FPKM AlleleIsoPct AlleleGenePct [posterior_mean_count posterior_standard_deviation_of_count pme_TPM pme_FPKM AlleleIsoPct_from_pme_TPM AlleleGenePct_from_pme_TPM TPM_ci_lower_bound TPM_ci_upper_bound FPKM_ci_lower_bound FPKM_ci_upper_bound]
 
 Fields are separated by the tab character. Fields within "[]" are
 optional. They will not be presented if neither '--calc-pme' nor
