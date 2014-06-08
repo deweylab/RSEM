@@ -1,6 +1,8 @@
 CC = g++
 PROGRAMS = EBSeq rsem-for-ebseq-calculate-clustering-info
 
+.PHONY : all EBSeq clean
+
 all : $(PROGRAMS)
 
 EBSeq : 
