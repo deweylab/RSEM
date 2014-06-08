@@ -39,7 +39,7 @@ private:
 	void writeCollapsedLines();
 	void flipSeq(uint8_t*, int);
 	void flipQual(uint8_t*, int);
-	void addXSTag(bam1_t*, const Transcript&);
+	void modifyTags(bam1_t*, const Transcript&); // modify MD tag and XS tag if needed
 };
 
 BamConverter::BamConverter(const char* inpF, const char* outF, const char* chr_list, Transcripts& transcripts)
@@ -210,7 +210,7 @@ void BamConverter::convert(bam1_t* b, const Transcript& transcript) {
 	b->core.n_cigar = core_n_cigar;
 	b->core.bin = bam_reg2bin(b->core.pos, bam_calend(&(b->core), bam1_cigar(b)));
 
-	addXSTag(b, transcript); // check if need to add XS tag, if need, add it
+	modifyTags(b, transcript); // check if need to add XS tag, if need, add it
 }
 
 inline void BamConverter::writeCollapsedLines() {
@@ -271,14 +271,58 @@ inline void BamConverter::flipQual(uint8_t* q, int readlen) {
 	}
 }
 
-inline void BamConverter::addXSTag(bam1_t* b, const Transcript& transcript) {
-	uint32_t* p = bam1_cigar(b);
+inline void BamConverter::modifyTags(bam1_t* b, const Transcript& transcript) {
+	char strand = transcript.getStrand();
+	uint8_t *s = NULL;
+
+	if (strand == '-') {
+	  s = bam_aux_get(b, "MD");
+	  if ((s != NULL) && (*(s) == 'Z') && (bam_aux2Z(s) != NULL)) {
+	    char *mis = bam_aux2Z(s);
+	    int len = strlen(mis);
+	    char *tmp = new char[len];
+	    int cur_type = -1, fr = -1, type, base;
+	    for (int i = 0; i < len; i++) {
+	      type = (mis[i] >= '0' && mis[i] <= '9');
+	      if (cur_type != type) {
+		switch(cur_type) {
+		case 0:
+		  base = len - 1;
+		  if (mis[fr] == '^') { tmp[len - i] = mis[fr]; ++fr; ++base; }
+		  for (int j = fr; j < i; j++) tmp[base - j] = ((mis[j] == 'A' || mis[j] == 'C' || mis[j] == 'G' || mis[j] == 'T') ? getOpp(mis[j]) : mis[j]);
+		  break;
+		case 1: 
+		  base = len - i - fr;
+		  for (int j = fr; j < i; j++) tmp[base + j] = mis[j]; 
+		  break; 
+		}
+		cur_type = type;
+		fr = i;
+	      }
+	    }
+	    switch(cur_type) {
+	    case 0:
+	      base = len - 1;
+	      if (mis[fr] == '^') { tmp[0] = mis[fr]; ++fr; ++base; }
+	      for (int j = fr; j < len; j++) tmp[base - j] = ((mis[j] == 'A' || mis[j] == 'C' || mis[j] == 'G' || mis[j] == 'T') ? getOpp(mis[j]) : mis[j]);
+	      break;
+	    case 1: 
+	      for (int j = fr; j < len; j++) tmp[j - fr] = mis[j]; 
+	      break; 
+	    }
+	    strncpy(mis, tmp, len);
+	    delete[] tmp;
+	  }
+	}
+
+	// append XS:A field if necessary
+	s = bam_aux_get(b, "XS");
+	if (s != NULL) bam_aux_del(b, s);
 	bool hasN = false;
+	uint32_t* p = bam1_cigar(b);
 	for (int i = 0; i < (int)b->core.n_cigar; i++)
 		if ((*(p + i) & BAM_CIGAR_MASK) == BAM_CREF_SKIP) { hasN = true; break; }
-	if (!hasN) return;
-	char strand = transcript.getStrand();
-	bam_aux_append(b, "XS", 'A', 1, (uint8_t*)&strand);
+	if (hasN) bam_aux_append(b, "XS", 'A', 1, (uint8_t*)&strand);
 }
 
 #endif /* BAMCONVERTER_H_ */
