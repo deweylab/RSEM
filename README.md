@@ -56,6 +56,11 @@ To compile EBSeq, which is included in the RSEM package, run
 To install, simply put the rsem directory in your environment's PATH
 variable.
 
+If you prefer to put all RSEM executables to a bin directory, please
+also remember to put 'rsem_perl_utils.pm' and 'WHAT_IS_NEW' to the
+same bin directory. 'rsem_perl_utils.pm' is required for most RSEM's
+perl scripts and 'WHAT_IS_NEW' contains the RSEM version information.
+
 ### Prerequisites
 
 C++, Perl and R are required to be installed. 
@@ -209,7 +214,7 @@ Here are some guidance for visualizing transcript coordinate files using IGV:
 
 1) Import the transcript sequences as a genome 
 
-Select File -> Import Genome, then fill in ID, Name and Fasta file. Fasta file should be 'reference_name.transcripts.fa'. After that, click Save button. Suppose ID is filled as 'reference_name', a file called 'reference_name.genome' will be generated. Next time, we can use: File -> Load Genome, then select 'reference_name.genome'.
+Select File -> Import Genome, then fill in ID, Name and Fasta file. Fasta file should be 'reference_name.idx.fa'. After that, click Save button. Suppose ID is filled as 'reference_name', a file called 'reference_name.genome' will be generated. Next time, we can use: File -> Load Genome, then select 'reference_name.genome'.
 
 2) Load visualization files
 
