@@ -123,8 +123,13 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "output-genome-bam" => \$genGenomeBamF,
 	   "sampling-for-bam" => \$sampling,
 	   "calc-pme" => \$calcPME,
+	   "gibbs-burnin=i" => \$BURNIN,
+	   "gibbs-number-of-samples=i" => \$NCV,
+	   "gibbs-sampling-gap=i", \$SAMPLEGAP,
 	   "calc-ci" => \$calcCI,
+	   "ci-credibility-level=f" => \$CONFIDENCE,
 	   "ci-memory=i" => \$NMB,
+	   "ci-number-of-samples-per-count-vector=i" => \$NSPC,
 	   "samtools-sort-mem=s" => \$SortMem,
 	   "seed=i" => \$seed,
 	   "time" => \$mTime,
@@ -162,6 +167,7 @@ pod2usage(-msg => "Seed length should be at least 5!\n", -exitval => 2, -verbose
 pod2usage(-msg => "--sampling-for-bam cannot be specified if --no-bam-output is specified!\n", -exitval => 2, -verbose => 2) if ($sampling && !$genBamF);
 pod2usage(-msg => "--output-genome-bam cannot be specified if --no-bam-output is specified!\n", -exitval => 2, -verbose => 2) if ($genGenomeBamF && !$genBamF);
 pod2usage(-msg => "The seed for random number generator must be a non-negative 32bit integer!\n", -exitval => 2, -verbose => 2) if (($seed ne "NULL") && ($seed < 0 || $seed > 0xffffffff));
+pod2usage(-msg => "The credibility level should be within (0, 1)!\n", -exitval => 2, -verbose => 2) if ($CONFIDENCE <= 0.0 || $CONFIDENCE >= 1.0);
 
 if ($L < 25) { print "Warning: the seed length set is less than 25! This is only allowed if the references are not added poly(A) tails.\n"; }
 
@@ -494,7 +500,7 @@ The name of the sample analyzed. All output files are prefixed by this name (e.g
 
 =back
 
-=head1 OPTIONS
+=head1 BASIC OPTIONS
 
 =over
 
@@ -510,6 +516,10 @@ Input reads do not contain quality scores. (Default: off)
 
 The RNA-Seq protocol used to generate the reads is strand specific, i.e., all (upstream) reads are derived from the forward strand.  This option is equivalent to --forward-prob=1.0.  With this option set, if RSEM runs the Bowtie/Bowtie 2 aligner, the '--norc' Bowtie/Bowtie 2 option will be used, which disables alignment to the reverse strand of transcripts.  (Default: off)
 
+=item B<--bowtie2>
+
+Use Bowtie 2 instead of Bowtie to align reads. Since currently RSEM does not handle indel, local and discordant alignments, the Bowtie2 parameters are set in a way to avoid those alignments. In particular, we use options '--sensitive --dpad 0 --gbar 99999999 --mp 1,1 --np 1 --score-min L,0,-0.1' by default. "-0.1", the last parameter of '--score-min' is the negative value of the maximum mismatch rate allowed. This rate can be set by option '--bowtie2-mismatch-rate'. If reads are paired-end, we additionally use options '--no-mixed' and '--no-discordant'. (Default: off)
+
 =item B<--sam>
 
 Input file is in SAM format. (Default: off)
@@ -517,10 +527,6 @@ Input file is in SAM format. (Default: off)
 =item B<--bam>
 
 Input file is in BAM format. (Default: off)
-
-=item B<--sam-header-info> <file>
-
-RSEM reads header information from input by default. If this option is on, header information is read from the specified file. For the format of the file, please see SAM official website. (Default: "")
 
 =item B<-p/--num-threads> <int>
 
@@ -548,7 +554,29 @@ Run RSEM's collapsed Gibbs sampler to calculate posterior mean estimates. (Defau
 
 =item B<--calc-ci>
 
-Calculate 95% credibility intervals and posterior mean estimates. (Default: off)
+Calculate 95% credibility intervals and posterior mean estimates. The credibility level can be changed by setting '--ci-credibility-level'. (Default: off)
+
+=item B<-q/--quiet>
+
+Suppress the output of logging information. (Default: off)
+
+=item B<-h/--help>
+
+Show help information.
+
+=item B<--version>
+
+Show version information.
+
+=back
+
+=head1 ADVANCED OPTIONS
+
+=over
+
+=item B<--sam-header-info> <file>
+
+RSEM reads header information from input by default. If this option is on, header information is read from the specified file. For the format of the file, please see SAM official website. (Default: "")
 
 =item B<--seed-length> <int>
 
@@ -589,10 +617,6 @@ Input quality scores are encoded as Phred+64 (default for GA Pipeline ver. >= 1.
 =item B<--solexa-quals>
 
 Input quality scores are solexa encoded (from GA Pipeline ver. < 1.3). (Default: off)
-
-=item B<--bowtie2>
-
-Use Bowtie 2 instead of Bowtie to align reads. Since currently RSEM does not handle indel, local and discordant alignments, the Bowtie2 parameters are set in a way to avoid those alignments. In particular, we use options '--sensitive --dpad 0 --gbar 99999999 --mp 1,1 --np 1 --score-min L,0,-0.1' by default. "-0.1", the last parameter of '--score-min' is the negative value of the maximum mismatch rate allowed. This rate can be set by option '--bowtie2-mismatch-rate'. If reads are paired-end, we additionally use options '--no-mixed' and '--no-discordant'. (Default: off)
 
 =item B<--bowtie2-path> <path>
 
@@ -638,9 +662,29 @@ Set this option if you want to estimate the read start position distribution (RS
 
 Number of bins in the RSPD. Only relevant when '--estimate-rspd' is specified.  Use of the default setting is recommended. (Default: 20)
 
+=item B<--gibbs-burnin> <int>
+
+The number of burn-in rounds for RSEM's Gibbs sampler. Each round passes over the entire data set once. If RSEM can use multiple threads, multiple Gibbs samplers will start at the same time and all samplers share the same burn-in number. (Default: 200)
+
+=item B<--gibbs-number-of-samples> <int>
+
+The total number of count vectors RSEM will collect from its Gibbs samplers. (Default: 1000)
+
+=item B<--gibbs-sampling-gap> <int>
+
+The number of rounds between two succinct count vectors RSEM collects. If the count vector after round N is collected, the count vector after round N + <int> will also be collected. (Default: 1) 
+
+=item B<--ci-credibility-level> <double>
+
+The credibility level for credibility intervals. (Default: 0.95)
+
 =item B<--ci-memory> <int>
 
 Maximum size (in memory, MB) of the auxiliary buffer used for computing credibility intervals (CI). Set it larger for a faster CI calculation. However, leaving 2 GB memory free for other usage is recommended. (Default: 1024)
+
+=item B<--ci-number-of-samples-per-count-vector> <int>
+
+The number of read generating probability vectors sampled per sampled count vector. The crebility intervals are calculated by first sampling P(C | D) and then sampling (\Theta | C) for each sampled count vector. This option controls how many \Theta vectors are sampled per sampled count vector. (Default: 50)
 
 =item B<--samtools-sort-mem> <string>
 
@@ -657,18 +701,6 @@ Set where to put the temporary files generated by RSEM. If the folder specified 
 =item B<--time>
 
 Output time consumed by each step of RSEM to 'sample_name.time'. (Default: off)
-
-=item B<-q/--quiet>
-
-Suppress the output of logging information. (Default: off)
-
-=item B<-h/--help>
-
-Show help information.
-
-=item B<--version>
-
-Show version information.
 
 =back
 
