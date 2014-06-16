@@ -3,7 +3,7 @@ RSEM v1.2.15
 - Allowed for a subset of reference sequences to be declared in an input SAM/BAM file
 - For any transcript not declared in the SAM/BAM file, its PME estimates and credibility intervals are set to zero
 - Added advanced options for customizing Gibbs sampler and credibility interval calculation behaviors
-- Splitted options in 'rsem-calculate-expression' into basic and advanced options;
+- Splitted options in 'rsem-calculate-expression' into basic and advanced options
 
 --------------------------------------------------------------------------------------------
 
