@@ -684,7 +684,7 @@ Maximum size (in memory, MB) of the auxiliary buffer used for computing credibil
 
 =item B<--ci-number-of-samples-per-count-vector> <int>
 
-The number of read generating probability vectors sampled per sampled count vector. The crebility intervals are calculated by first sampling P(C | D) and then sampling (\Theta | C) for each sampled count vector. This option controls how many \Theta vectors are sampled per sampled count vector. (Default: 50)
+The number of read generating probability vectors sampled per sampled count vector. The crebility intervals are calculated by first sampling P(C | D) and then sampling P(Theta | C) for each sampled count vector. This option controls how many Theta vectors are sampled per sampled count vector. (Default: 50)
 
 =item B<--samtools-sort-mem> <string>
 

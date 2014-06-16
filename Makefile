@@ -12,7 +12,7 @@ sam/libbam.a :
 
 Transcript.h : utils.h
 
-Transcripts.h : my_assert.h Transcript.h
+Transcripts.h : utils.h my_assert.h Transcript.h
 
 rsem-extract-reference-transcripts : utils.h my_assert.h GTFItem.h Transcript.h Transcripts.h extractRef.cpp
 	$(CC) -Wall -O3 extractRef.cpp -o rsem-extract-reference-transcripts

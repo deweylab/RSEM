@@ -52,7 +52,7 @@ void init(const char* imdName, char alignFType, const char* alignF) {
 
 	char* aux = 0;
 	if (strcmp(fn_list, "")) aux = fn_list;
-	parser = new SamParser(alignFType, alignF, transcripts, aux);
+	parser = new SamParser(alignFType, alignF, aux, transcripts, imdName);
 
 	memset(cat, 0, sizeof(cat));
 	memset(readOutFs, 0, sizeof(readOutFs));

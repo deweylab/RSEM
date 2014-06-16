@@ -106,18 +106,22 @@ void* sample_theta_from_c(void* arg) {
 	int cnt = 0;
 	while (fscanf(fi, "%d", &cvec[0]) == 1) {
 		for (int j = 1; j <= M; j++) assert(fscanf(fi, "%d", &cvec[j]) == 1);
+		assert(cvec[0] > 0);
 
 		++cnt;
 
 		for (int j = 0; j <= M; j++) {
-			gammas[j] = new gamma_dist(cvec[j]);
-			rgs[j] = new gamma_generator(*(params->engine), *gammas[j]);
+		  gammas[j] = NULL; rgs[j] = NULL;
+		  if (cvec[j] > 0) {
+		    gammas[j] = new gamma_dist(cvec[j]);
+		    rgs[j] = new gamma_generator(*(params->engine), *gammas[j]);
+		  }
 		}
-
+		  
 		for (int i = 0; i < nSpC; i++) {
 			double sum = 0.0;
 			for (int j = 0; j <= M; j++) {
-				theta[j] = ((j == 0 || (eel[j] >= EPSILON && mw[j] >= EPSILON)) ? (*rgs[j])() / mw[j] : 0.0);
+				theta[j] = ((j == 0 || (cvec[j] > 0 && eel[j] >= EPSILON && mw[j] >= EPSILON)) ? (*rgs[j])() / mw[j] : 0.0);
 				sum += theta[j];
 			}
 			assert(sum >= EPSILON);
@@ -138,8 +142,8 @@ void* sample_theta_from_c(void* arg) {
 		}
 
 		for (int j = 0; j <= M; j++) {
-			delete gammas[j];
-			delete rgs[j];
+		  if (gammas[j] != NULL) delete gammas[j];
+		  if (rgs[j] != NULL) delete rgs[j];
 		}
 
 		if (verbose && cnt % 100 == 0) { printf("Thread %d, %d count vectors are processed!\n", params->no, cnt); }

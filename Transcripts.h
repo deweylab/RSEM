@@ -13,6 +13,7 @@
 #include<map>
 #include<string>
 
+#include "utils.h"
 #include "my_assert.h"
 #include "Transcript.h"
 
@@ -68,7 +69,7 @@ public:
 		return transcripts[getInternalSid(eid)];
 	}
 
-	void buildMappings(int, char**);
+	void buildMappings(int, char**, const char* = NULL);
 
 private:
 	int M, type; // type 0 from genome, 1 standalone transcriptome, 2 allele-specific 
@@ -101,29 +102,43 @@ void Transcripts::writeTo(const char* outF) {
 	fout.close();
 }
 
-void Transcripts::buildMappings(int n_targets, char** target_name) {
+void Transcripts::buildMappings(int n_targets, char** target_name, const char* imdName) {
 	std::map<std::string, int> dict;
 	std::map<std::string, int>::iterator iter;
+	std::vector<bool> appeared;
 
-	general_assert(n_targets == M, "Number of reference sequences does not match! Please check if the reads are aligned to a transcript set (instead of a genome)!");
+	general_assert(n_targets > 0, "The SAM/BAM file declares less than one reference sequence!");
+	general_assert(n_targets <=  M, "The SAM/BAM file declares more reference sequences (" + itos(n_targets) + ") than RSEM knows (" + itos(M) + ")!");
+	if (n_targets < M) printf("Warning: The SAM/BAM file declares less reference sequences (%d) than RSEM knows (%d)!\n", n_targets, M);
 
 	dict.clear();
 	for (int i = 1; i <= M; i++) {
 		const std::string& tid = isAlleleSpecific() ? transcripts[i].getSeqName() : transcripts[i].getTranscriptID();
 		iter = dict.find(tid);
-		general_assert(iter == dict.end(), tid + " appears more than once!");
+		general_assert(iter == dict.end(), "RSEM's indices might be corrupted, " + tid + " appears more than once!");
 		dict[tid] = i;
 	}
 
 	e2i.assign(M + 1, 0);
 	i2e.assign(M + 1, 0);
+	appeared.assign(M + 1, false);
 	for (int i = 0; i < n_targets; i++) {
 		iter = dict.find(std::string(target_name[i]));
 		general_assert(iter != dict.end(), "RSEM can not recognize reference sequence name " + cstrtos(target_name[i]) + "!");
-		general_assert(iter->second > 0, "Reference sequence name " + cstrtos(target_name[i]) + " is duplicated!");
+		general_assert(iter->second > 0, "Reference sequence name " + cstrtos(target_name[i]) + " appears more than once in the SAM/BAM file!");
 		e2i[i + 1] = iter->second;
 		i2e[iter->second] = i + 1;
 		iter->second = -1;
+		appeared[e2i[i + 1]] = true;
+	}
+
+	if (imdName != NULL) {
+	  char omitF[STRLEN];
+	  sprintf(omitF, "%s.omit", imdName);
+	  FILE *fo = fopen(omitF, "w");
+	  for (int i = 1; i <= M; i++) 
+	    if (!appeared[i]) fprintf(fo, "%d\n", i);
+	  fclose(fo);
 	}
 }
 

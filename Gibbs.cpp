@@ -64,6 +64,7 @@ vector<Item> hits;
 vector<double> eel;
 double *mw;
 
+vector<int> pseudo_counts;
 vector<double> pme_c, pve_c; //global posterior mean and variance vectors on counts
 vector<double> pme_tpm, pme_fpkm;
 
@@ -85,18 +86,6 @@ bool alleleS;
 int m_trans;
 GroupInfo gt, ta;
 vector<double> pve_c_genes, pve_c_trans;
-
-void load_group_info(char* refName) {
-  // Load group info
-  sprintf(groupF, "%s.grp", refName);
-  gi.load(groupF);
-  m = gi.getm();
-  
-  alleleS = isAlleleSpecific(refName, &gt, &ta); // if allele-specific 
-  m_trans = (alleleS ? ta.getm() : 0);
-
-  if (verbose) { printf("Loading group information is finished!\n"); }
-}
 
 void load_data(char* refName, char* statName, char* imdName) {
 	ifstream fin;
@@ -136,6 +125,29 @@ void load_data(char* refName, char* statName, char* imdName) {
 	totc = N0 + N1 + (M + 1);
 
 	if (verbose) { printf("Loading data is finished!\n"); }
+}
+
+void load_group_info(char* refName) {
+  // Load group info
+  sprintf(groupF, "%s.grp", refName);
+  gi.load(groupF);
+  m = gi.getm();
+  
+  alleleS = isAlleleSpecific(refName, &gt, &ta); // if allele-specific 
+  m_trans = (alleleS ? ta.getm() : 0);
+
+  if (verbose) { printf("Loading group information is finished!\n"); }
+}
+
+// Load imdName.omit and initialize the pseudo count vector.
+void load_omit_info(const char* imdName) {
+  char omitF[STRLEN];
+  sprintf(omitF, "%s.omit", imdName);
+  FILE *fi = fopen(omitF, "r");
+  pseudo_counts.assign(M + 1, 1);
+  int tid;
+  while (fscanf(fi, "%d", &tid) == 1) pseudo_counts[tid] = 0;
+  fclose(fi);
 }
 
 template<class ModelType>
@@ -206,7 +218,7 @@ void sampleTheta(engine_type& engine, vector<double>& theta) {
 	theta.assign(M + 1, 0);
 	denom = 0.0;
 	for (int i = 0; i <= M; i++) {
-		theta[i] = gmg();
+		theta[i] = (pseudo_counts[i] > 0 ? gmg() : 0.0);
 		denom += theta[i];
 	}
 	assert(denom > EPSILON);
@@ -226,7 +238,7 @@ void* Gibbs(void* arg) {
 	Params *params = (Params*)arg;
 
 	vector<double> theta, tpm, fpkm;
-	vector<int> z, counts;
+	vector<int> z, counts(pseudo_counts);
 	vector<double> arr;
 
 	uniform_01_generator rg(*params->engine, uniform_01_dist());
@@ -235,8 +247,6 @@ void* Gibbs(void* arg) {
 	sampleTheta(*params->engine, theta);
 
 	z.assign(N1, 0);
-
-	counts.assign(M + 1, 1); // 1 pseudo count
 	counts[0] += N0;
 
 	for (READ_INT_TYPE i = 0; i < N1; i++) {
@@ -274,8 +284,8 @@ void* Gibbs(void* arg) {
 				polishTheta(M, theta, eel, mw);
 				calcExpressionValues(M, theta, eel, tpm, fpkm);
 				for (int i = 0; i <= M; i++) {
-					params->pme_c[i] += counts[i] - 1;
-					params->pve_c[i] += double(counts[i] - 1) * (counts[i] - 1);
+					params->pme_c[i] += counts[i] - pseudo_counts[i];
+					params->pve_c[i] += double(counts[i] - pseudo_counts[i]) * (counts[i] - pseudo_counts[i]);
 					params->pme_tpm[i] += tpm[i];
 					params->pme_fpkm[i] += fpkm[i];
 				}
@@ -283,7 +293,7 @@ void* Gibbs(void* arg) {
 				for (int i = 0; i < m; i++) {
 				  int b = gi.spAt(i), e = gi.spAt(i + 1);
 				  double count = 0.0;
-				  for (int j = b; j < e; j++) count += counts[j] - 1;
+				  for (int j = b; j < e; j++) count += counts[j] - pseudo_counts[j];
 				  params->pve_c_genes[i] += count * count;
 				}
 
@@ -291,7 +301,7 @@ void* Gibbs(void* arg) {
 				  for (int i = 0; i < m_trans; i++) {
 				    int b = ta.spAt(i), e = ta.spAt(i + 1);
 				    double count = 0.0;
-				    for (int j = b; j < e; j++) count += counts[j] - 1;
+				    for (int j = b; j < e; j++) count += counts[j] - pseudo_counts[j];
 				    params->pve_c_trans[i] += count * count;
 				  }
 			}
@@ -410,8 +420,9 @@ int main(int argc, char* argv[]) {
 		printf("Warning: Number of samples is less than number of threads! Change the number of threads to %d!\n", nThreads);
 	}
 
-	load_group_info(refName);
 	load_data(refName, statName, imdName);
+	load_group_info(refName);
+	load_omit_info(imdName);
 
 	sprintf(modelF, "%s.model", statName);
 	FILE *fi = fopen(modelF, "r");

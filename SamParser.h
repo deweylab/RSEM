@@ -25,7 +25,7 @@
 
 class SamParser {
 public:
-	SamParser(char, const char*, Transcripts&, const char* = 0);
+	SamParser(char, const char*, const char*, Transcripts&, const char*);
 	~SamParser();
 
 	/**
@@ -80,7 +80,7 @@ private:
 char SamParser::rtTag[STRLEN] = ""; // default : no tag, thus no Type 2 reads
 
 // aux, if not 0, points to the file name of fn_list
-SamParser::SamParser(char inpType, const char* inpF, Transcripts& transcripts, const char* aux)
+SamParser::SamParser(char inpType, const char* inpF, const char* aux, Transcripts& transcripts, const char* imdName)
 	: transcripts(transcripts)
 {
 	switch(inpType) {
@@ -93,7 +93,7 @@ SamParser::SamParser(char inpType, const char* inpF, Transcripts& transcripts, c
 	header = sam_in->header;
 	general_assert(header != 0, "Fail to parse sam header!");
 
-	transcripts.buildMappings(header->n_targets, header->target_name);
+	transcripts.buildMappings(header->n_targets, header->target_name, imdName);
 
 	b = bam_init1();
 	b2 = bam_init1();
