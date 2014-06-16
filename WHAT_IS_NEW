@@ -1,3 +1,12 @@
+RSEM v1.2.15
+
+- Allowed for a subset of reference sequences to be declared in an input SAM/BAM file
+- For any transcript not declared in the SAM/BAM file, its PME estimates and credibility intervals are set to zero
+- Added advanced options for customizing Gibbs sampler and credibility interval calculation behaviors
+- Splitted options in 'rsem-calculate-expression' into basic and advanced options;
+
+--------------------------------------------------------------------------------------------
+
 RSEM v1.2.14
 
 - Changed RSEM's behaviors for building Bowtie/Bowtie 2 indices. In 'rsem-prepare-reference', '--no-bowtie' and '--no-ntog' options are removed. By default, RSEM does not build either Bowtie or Bowtie 2 indices. Instead, it generates two index Multi-FASTA files, 'reference_name.idx.fa' and 'reference_name.n2g.idx.fa'. Compared to the former file, the latter one in addition converts all 'N's into 'G's. These two files can be used to build aligner indices for customized aligners. In addition, 'reference_name.transcripts.fa' does not have poly(A) tails added. To enable RSEM build Bowtie/Bowtie 2 indices, '--bowtie' or '--bowtie2' must be set explicitly. The most significant benefit of this change is that now we can build Bowtie and Bowtie 2 indices simultaneously by turning both '--bowtie' and '--bowtie2' on. Type 'rsem-prepare-reference --help' for more information 
