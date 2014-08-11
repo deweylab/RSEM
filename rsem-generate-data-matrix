@@ -4,7 +4,7 @@ use strict;
 
 if (scalar(@ARGV) == 0) {
     print "Usage: rsem-generate-data-matrix sampleA.[alleles/genes/isoforms].results sampleB.[alleles/genes/isoforms].results ... > output_name.matrix\n";
-    print "All result files should have the same file type. The 'TPM' columns of every result file are extracted to form the data matrix.\n";
+    print "All result files should have the same file type. The 'expected_count' columns of every result file are extracted to form the data matrix.\n";
     exit(-1);
 }
 
