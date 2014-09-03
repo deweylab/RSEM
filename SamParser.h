@@ -62,7 +62,7 @@ private:
 	}
 
 	std::string getName(const bam1_t* b) {
-		return std::string((char*)bam1_qname(b));
+		return std::string(bam1_qname(b));
 	}
 
 	std::string getReadSeq(const bam1_t*);
@@ -190,6 +190,8 @@ int SamParser::parseNext(PairedEndRead& read, PairedEndHit& hit) {
 		mp1 = b2; mp2 = b;
 	}
 
+	general_assert(!strcmp(bam1_qname(mp1), bam1_qname(mp2)), "Detected a read pair whose two mates have different names: " + getName(mp1) + " , " + getName(mp2) + " !");
+
 	int readType = getReadType(mp1, mp2);
 	std::string name = getName(mp1);
 
@@ -241,6 +243,8 @@ int SamParser::parseNext(PairedEndReadQ& read, PairedEndHit& hit) {
 	else  {
 		mp1 = b2; mp2 = b;
 	}
+
+	general_assert(!strcmp(bam1_qname(mp1), bam1_qname(mp2)), "Detected a read pair whose two mates have different names: " + getName(mp1) + " , " + getName(mp2) + " !");
 
 	int readType = getReadType(mp1, mp2);
 	std::string name = getName(mp1);

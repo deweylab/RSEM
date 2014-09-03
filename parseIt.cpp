@@ -94,6 +94,9 @@ void parseIt(SamParser *parser) {
 				record_read.write(n_os, cat[record_val]);
 				++N[record_val];
 			}
+
+			general_assert(record_val == 1 || hits.getNHits() == 0, "Read " + record_read.getName() + " is both unalignable and alignable according to the input SAM/BAM file!");
+
 			// flush out previous read's hits if the read is alignable reads
 			if (record_val == 1) {
 				hits.updateRI();
