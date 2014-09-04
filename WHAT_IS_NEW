@@ -1,3 +1,9 @@
+RSEM v1.2.17
+
+- Added error detection for cases such as a read's two mates having different names or a read is both alignable and unalignable
+
+--------------------------------------------------------------------------------------------
+
 RSEM v1.2.16
 
 - Corrected a typo in 'rsem-generate-data-matrix', this script extracts 'expected_count' column instead of 'TPM' column
