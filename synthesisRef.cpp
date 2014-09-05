@@ -20,7 +20,7 @@ map<string, string> name2seq;
 map<string, string>::iterator iter;
 
 Transcripts transcripts(1); // no genome, just transcript set
-char groupF[STRLEN], tiF[STRLEN], refFastaF[STRLEN], chromListF[STRLEN];
+char groupF[STRLEN], tiF[STRLEN], refFastaF[STRLEN];
 char gtF[STRLEN], taF[STRLEN]; // group info between gene and transcript, transcript and allele
 
 int hasMappingFile;
@@ -76,7 +76,7 @@ char check(char c) {
 }
 
 void writeResults(int option, char* refName) {
-	ofstream fout, fout2;
+	ofstream fout;
 	string cur_gene_id, cur_transcript_id, name;
 	vector<int> gi, gt, ta;
 
@@ -120,8 +120,6 @@ void writeResults(int option, char* refName) {
 	}
 
 	sprintf(refFastaF, "%s.transcripts.fa", refName);
-	sprintf(chromListF, "%s.chrlist", refName);
-	fout2.open(chromListF);
 	fout.open(refFastaF);
 	for (int i = 1; i <= M; i++) {
 		name = transcripts.getTranscriptAt(i).getSeqName();
@@ -129,14 +127,10 @@ void writeResults(int option, char* refName) {
 		general_assert(iter != name2seq.end(), "Cannot recognize sequence ID" + name + "!");
 		fout<<">"<<name<<endl;
 		fout<<iter->second<<endl;
-
-		fout2<<name<<'\t'<<iter->second.length()<<endl;
 	}
 	fout.close();
-	fout2.close();
 	
 	if (verbose) { 
-	  printf("Chromosome List File is generated!\n"); 
 	  printf("Extracted Sequences File is generated!\n"); 
 	}
 }

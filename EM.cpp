@@ -75,7 +75,7 @@ char mparamsF[STRLEN];
 char modelF[STRLEN], thetaF[STRLEN];
 
 char inpSamType;
-char *pt_fn_list, *pt_chr_list;
+char *pt_fn_list;
 char inpSamF[STRLEN], outBamF[STRLEN], fn_list[STRLEN], chr_list[STRLEN];
 
 char out_for_gibbs_F[STRLEN];
@@ -569,7 +569,7 @@ int main(int argc, char* argv[]) {
 	genBamF = false;
 	bamSampling = false;
 	genGibbsOut = false;
-	pt_fn_list = pt_chr_list = NULL;
+	pt_fn_list = NULL;
 	hasSeed = false;
 
 	for (int i = 6; i < argc; i++) {
