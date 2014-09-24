@@ -76,7 +76,7 @@ char modelF[STRLEN], thetaF[STRLEN];
 
 char inpSamType;
 char *pt_fn_list;
-char inpSamF[STRLEN], outBamF[STRLEN], fn_list[STRLEN], chr_list[STRLEN];
+char inpSamF[STRLEN], outBamF[STRLEN], fn_list[STRLEN];
 
 char out_for_gibbs_F[STRLEN];
 

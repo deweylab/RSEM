@@ -124,6 +124,7 @@ void parse_gtf_file(char* gtfF) {
  				printf("\t%s\n\n", line.c_str());
  			}
  			else {
+ 				item.parseAttributes(line);
  		 		if (hasMappingFile) {
  		 			tid = item.getTranscriptID();
 					mi_iter = mi_table.find(tid);

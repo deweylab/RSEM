@@ -37,7 +37,7 @@ public:
 		}
 	}
 
-	void parse(std::string line) {
+	void parse(std::string& line) {
 		std::istringstream strin(line);
 		std::string tmp;
 
@@ -55,8 +55,11 @@ public:
 		getline(strin, frame, '\t');
 
 		getline(strin, left); // assign attributes and possible comments into "left"
+	}
 
-		strin.clear(); strin.str(left);
+	void parseAttributes(std::string& line) {
+		std::istringstream strin(left);
+		std::string tmp;
 		bool find_gene_id = false, find_transcript_id = false;
 
 		while (getline(strin, tmp, ';') && (!find_gene_id || !find_transcript_id)) {

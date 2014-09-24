@@ -724,6 +724,8 @@ Please note that some of the default values for the Bowtie parameters are not th
 
 The temporary directory and all intermediate files will be removed when RSEM finishes unless '--keep-intermediate-files' is specified.
 
+With the '--calc-pme' option, posterior mean estimates will be calculated in addition to maximum likelihood estimates.
+
 With the '--calc-ci' option, 95% credibility intervals and posterior mean estimates will be calculated in addition to maximum likelihood estimates.
 
 =head1 OUTPUT
