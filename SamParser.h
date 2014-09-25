@@ -190,7 +190,7 @@ int SamParser::parseNext(PairedEndRead& read, PairedEndHit& hit) {
 		mp1 = b2; mp2 = b;
 	}
 
-	general_assert(!strcmp(bam1_qname(mp1), bam1_qname(mp2)), "Detected a read pair whose two mates have different names: " + getName(mp1) + " , " + getName(mp2) + " !");
+	if (strcmp(bam1_qname(mp1), bam1_qname(mp2))) printf("Warning: Detected a read pair whose two mates have different names--%s and %s!\n", getName(mp1).c_str(), getName(mp2).c_str()); 
 
 	int readType = getReadType(mp1, mp2);
 	std::string name = getName(mp1);
@@ -244,7 +244,7 @@ int SamParser::parseNext(PairedEndReadQ& read, PairedEndHit& hit) {
 		mp1 = b2; mp2 = b;
 	}
 
-	general_assert(!strcmp(bam1_qname(mp1), bam1_qname(mp2)), "Detected a read pair whose two mates have different names: " + getName(mp1) + " , " + getName(mp2) + " !");
+	if (strcmp(bam1_qname(mp1), bam1_qname(mp2))) printf("Warning: Detected a read pair whose two mates have different names--%s and %s!\n", getName(mp1).c_str(), getName(mp2).c_str()); 
 
 	int readType = getReadType(mp1, mp2);
 	std::string name = getName(mp1);
