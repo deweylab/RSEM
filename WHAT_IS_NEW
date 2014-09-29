@@ -1,3 +1,10 @@
+RSEM v1.2.18
+
+- Only generate warning message if two mates of a read pair have different names 
+- Only parse attributes of a GTF record if its feature is "exon" to avoid unnecessary warning messages
+
+--------------------------------------------------------------------------------------------
+
 RSEM v1.2.17
 
 - Added error detection for cases such as a read's two mates having different names or a read is both alignable and unalignable
