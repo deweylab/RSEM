@@ -1,0 +1,15 @@
+# '#' marks the start of comments (till the end of the line) 
+# *.cnt file contains alignment statistics based purely on the alignment results obtained from aligners
+N0 N1 N2 N_tot   #  N0, number of unalignable reads; N1, number of alignable reads; N2, number of filtered reads due to too many alignments; N_tot = N0 + N1 + N2
+nUnique nMulti nUncertain   # nUnique, number of reads aligned uniquely to a gene; nMulti, number of reads aligned to multiple genes; nUnique + nMulti = N1; 
+                            # nUncertain, number of reads aligned to multiple locations in the given reference sequences, which include isoform-level multi-mapping reads
+nHits read_type             # nHits, number of total alignments. 
+                            # read_type: 0, single-end read, no quality score; 1, single-end read, with quality score; 2, paired-end read, no quality score; 3, paired-end read, with quality score
+
+# The next section counts reads by the number of alignments they have. Each line contains two values separated by a TAB character. The first value is number of alignments. 'Inf' refers to reads filtered due to too many alignments. The second value is the number of reads that contain such many alignments
+
+0                             N0
+...
+number_of_alignments          number_of_reads_with_that_many_alignments
+...                           
+Inf                           N2

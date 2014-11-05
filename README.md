@@ -175,9 +175,7 @@ of 'rsem-calculate-expression'. However, if you have run
 indices for your aligner, you can use 'rsem-tbam2gbam' to convert your
 transcript coordinate BAM alignments file into a genomic coordinate
 BAM alignments file without the need to run the whole RSEM
-pipeline. Please note that 'rsem-prepare-reference' will convert all
-'N' into 'G' by default for 'reference_name.idx.fa'. If you do not
-want this to happen, please use '--no-ntog' option.
+pipeline.
 
 Usage:
 
