@@ -901,7 +901,11 @@ It contains time (in seconds) consumed by aligning reads, estimating expression 
 
 =item B<sample_name.stat>
 
-This is a folder instead of a file. All model related statistics are stored in this folder. Use 'rsem-plot-model' can generate plots using this folder.
+This is a folder instead of a file. All model related statistics are stored in this folder. Use 'rsem-plot-model' can generate plots using this folder. 
+
+'sample_name.stat/sample_name.cnt' contains alignment statistics. The format and meanings of each field are described in 'cnt_file_description.txt' under RSEM directory.
+
+'sample_name.stat/sample_name.model' stores RNA-Seq model parameters learned from the data. The format and meanings of each filed of this file are described in 'model_file_description.txt' under RSEM directory.
 
 =back
 

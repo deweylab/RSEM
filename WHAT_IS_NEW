@@ -1,3 +1,10 @@
+RSEM v1.2.19
+
+- Modified 'rsem-prepare-reference' such that by default it does not add any poly(A) tails. To add poly(A) tails, use '--polyA' option
+- Added an annotation of the 'sample_name.stat/sample_name.cnt' file, see 'cnt_file_description.txt'
+
+--------------------------------------------------------------------------------------------
+
 RSEM v1.2.18
 
 - Only generate warning message if two mates of a read pair have different names 
