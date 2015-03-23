@@ -126,6 +126,7 @@ public:
 		const SingleReadQ& mate2 = read.getMate2();
 		int m2pos = totLen - pos - insertLen;
 		int m2dir = !dir;
+
 		prob *= mld->getAdjustedProb(mate2.getReadLength(), hit.getInsertL()) *
 		        qpro->getProb(mate2.getReadSeq(), mate2.getQScore(), ref, m2pos, m2dir);
 

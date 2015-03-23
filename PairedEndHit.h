@@ -15,13 +15,13 @@ public:
 		this->insertL = insertL;
 	}
 
-	short getInsertL() const { return insertL; }
+	int getInsertL() const { return insertL; }
 
 	bool read(std::istream&);
 	void write(std::ostream&);
 
 private:
-	short insertL; // insert length
+	int insertL; // insert length
 };
 
 bool PairedEndHit::read(std::istream& in) {

@@ -1,3 +1,9 @@
+RSEM v1.2.20
+
+- Fixed a problem that can lead to assertion error if any paired-end read's insert size > 32767 (by changing the type of insertL in PairedEndHit.h from short to int)
+
+--------------------------------------------------------------------------------------------
+
 RSEM v1.2.19
 
 - Modified 'rsem-prepare-reference' such that by default it does not add any poly(A) tails. To add poly(A) tails, use '--polyA' option
