@@ -37,22 +37,22 @@ wiggle.o: wiggle.cpp
 
 
 rsem-extract-reference-transcripts : extractRef.cpp
-	$(CC) $(CFLAGS) -O3 extractRef.cpp -o rsem-extract-reference-transcripts
+	$(CC) $(CFLAGS) -O3 extractRef.cpp -o $@
 
 rsem-synthesis-reference-transcripts : synthesisRef.cpp
-	$(CC) $(CFLAGS) -O3 synthesisRef.cpp -o rsem-synthesis-reference-transcripts
+	$(CC) $(CFLAGS) -O3 synthesisRef.cpp -o $@
 
 rsem-preref : preRef.o
-	$(CC) $(CFLAGS) preRef.o -o rsem-preref
+	$(CC) $(CFLAGS) preRef.o -o $@
 
 rsem-parse-alignments : parseIt.o
-	$(CC) $(CFLAGS) -o rsem-parse-alignments parseIt.o -lbam -lz -lpthread
+	$(CC) $(CFLAGS) -o $@ parseIt.o -lbam -lz -lpthread
 
 rsem-build-read-index : buildReadIndex.cpp
-	$(CC) $(CFLAGS) -O3 buildReadIndex.cpp -o rsem-build-read-index
+	$(CC) $(CFLAGS) -O3 buildReadIndex.cpp -o $@
 
 rsem-run-em : EM.o
-	$(CC) $(CFLAGS) -o rsem-run-em EM.o -lbam -lz -lpthread
+	$(CC) $(CFLAGS) -o $@ EM.o -lbam -lz -lpthread
 
 rsem-tbam2gbam : tbam2gbam.cpp
 	$(CC) $(CFLAGS) -O3 tbam2gbam.cpp -lbam -lz -lpthread -o $@
@@ -64,13 +64,13 @@ rsem-bam2readdepth : wiggle.o bam2readdepth.cpp
 	$(CC) $(CFLAGS) -O3 bam2readdepth.cpp wiggle.o -lbam -lz -lpthread -o $@
 
 rsem-simulate-reads : simulation.o
-	$(CC) $(CFLAGS) -o rsem-simulate-reads simulation.o
+	$(CC) $(CFLAGS) -o $@ simulation.o
 
 rsem-run-gibbs : Gibbs.o
-	$(CC) $(CFLAGS) -o rsem-run-gibbs Gibbs.o -lpthread
+	$(CC) $(CFLAGS) -o $@ Gibbs.o -lpthread
 
 rsem-calculate-credibility-intervals : calcCI.o
-	$(CC) $(CFLAGS) -o rsem-calculate-credibility-intervals calcCI.o -lpthread
+	$(CC) $(CFLAGS) -o $@ calcCI.o -lpthread
 
 rsem-get-unique : getUnique.cpp
 	$(CC) $(CFLAGS) -O3 getUnique.cpp -lbam -lz -lpthread -o $@
