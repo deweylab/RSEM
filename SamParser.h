@@ -23,6 +23,8 @@
 
 #include "Transcripts.h"
 
+const char* whitespace = " \t\n\r\f\v";
+
 class SamParser {
 public:
 	SamParser(char, const char*, const char*, Transcripts&, const char*);
@@ -62,7 +64,16 @@ private:
 	}
 
 	std::string getName(const bam1_t* b) {
-		return std::string(bam1_qname(b));
+        const char* raw_query_name = bam1_qname(b);
+        // Retain only the first whitespace-delimited word as the read name
+        // This prevents issues of mismatching names when aligners do not
+        // strip off extra words in read name strings
+        const char* whitespace_pos = std::strpbrk(raw_query_name, whitespace);
+        if (whitespace_pos == NULL) {
+            return std::string(raw_query_name);
+        } else {
+            return std::string(raw_query_name, whitespace_pos - raw_query_name);
+        }
 	}
 
 	std::string getReadSeq(const bam1_t*);
@@ -190,10 +201,11 @@ int SamParser::parseNext(PairedEndRead& read, PairedEndHit& hit) {
 		mp1 = b2; mp2 = b;
 	}
 
-	if (strcmp(bam1_qname(mp1), bam1_qname(mp2))) printf("Warning: Detected a read pair whose two mates have different names--%s and %s!\n", getName(mp1).c_str(), getName(mp2).c_str()); 
+	std::string name = getName(mp1);
+	std::string name2 = getName(mp2);
+	if (name != name2) printf("Warning: Detected a read pair whose two mates have different names--%s and %s!\n", name.c_str(), name2.c_str());
 
 	int readType = getReadType(mp1, mp2);
-	std::string name = getName(mp1);
 
 	if (readType != 1 || (readType == 1 && read.getName().compare(name) != 0)) {
 		val = readType;
@@ -244,10 +256,11 @@ int SamParser::parseNext(PairedEndReadQ& read, PairedEndHit& hit) {
 		mp1 = b2; mp2 = b;
 	}
 
-	if (strcmp(bam1_qname(mp1), bam1_qname(mp2))) printf("Warning: Detected a read pair whose two mates have different names--%s and %s!\n", getName(mp1).c_str(), getName(mp2).c_str()); 
+	std::string name = getName(mp1);
+	std::string name2 = getName(mp2);
+	if (name != name2) printf("Warning: Detected a read pair whose two mates have different names--%s and %s!\n", name.c_str(), name2.c_str());
 
 	int readType = getReadType(mp1, mp2);
-	std::string name = getName(mp1);
 
 	if (readType != 1 || (readType == 1 && read.getName().compare(name) != 0)) {
 		val = readType;
