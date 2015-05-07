@@ -1,3 +1,9 @@
+RSEM v1.2.21
+
+- Strip read names of extra words to avoid mismatches of paired-end read names
+
+--------------------------------------------------------------------------------------------
+
 RSEM v1.2.20
 
 - Fixed a problem that can lead to assertion error if any paired-end read's insert size > 32767 (by changing the type of insertL in PairedEndHit.h from short to int)
