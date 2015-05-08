@@ -11,6 +11,7 @@ use Env qw(@PATH);
 @PATH = ($FindBin::RealBin, "$FindBin::RealBin/sam", @PATH);
 
 use strict;
+use warnings;
 
 #const
 my $BURNIN = 200;
