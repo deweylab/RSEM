@@ -84,7 +84,7 @@ my $mate1_list = "";
 my $mate2_list = "";
 my $inpF = "";
 
-my ($refName, $sampleName, $sampleToken, $temp_dir, $stat_dir, $imdName, $statName) = ();
+my ($refName, $sampleName, $sampleToken, $temp_dir, $stat_dir, $imdName, $statName) = ('') x 7;
 my $gap = 32;
 
 my $alleleS = 0;
