@@ -18,7 +18,7 @@ sub main {
 
   GetOptions( "bowtie-path=s"  => \$bowtie_path,
               "bowtie2-path=s" => \$bowtie2_path,
-              "q|quiet"        => \$quiet );
+              "quiet"          => \$quiet );
 
   my $command = '';
 
@@ -65,6 +65,7 @@ sub getBowtieRef {
   my @lengths = ();
   my @chroms = ();
 
+  print "\n$command\n\n";
   my $output = `$command`;
 
   my @lines = split("\n", $output);

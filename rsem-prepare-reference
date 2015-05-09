@@ -150,11 +150,18 @@ if ($star) {
 }
 
 if ( $index_genome ) {
+  if ( $bowtie_path ne '' ) {
+    $command = "prsem-prepare-reference --bowtie-path  $bowtie_path ";
+  } elsif ( $bowtie2_path ne '' ) {
+    $command = "prsem-prepare-reference --bowtie2-path $bowtie2_path ";
+  }
+
+  if ( $quiet ) {
+    $command .= ' --quiet ';
+  }
+
   my $ref_fas = join(',', @list);
-  $command = "prsem-prepare-reference --bowtie-path  $bowtie_path  " .
-                                    " --bowtie2-path $bowtie2_path " .
-                                    " --quiet " .
-                                    " $ref_fas $ARGV[1]";
+  $command .= " $ref_fas $ARGV[1]";
   &runCommand($command);
 }
 
