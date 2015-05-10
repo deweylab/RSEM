@@ -9,8 +9,7 @@ use lib "$FindBin::RealBin/../";
 use rsem_perl_utils qw(runCommand collectResults showVersionInfo);
 
 use Env qw(@PATH);
-@PATH = ($FindBin::RealBin, "$FindBin::RealBin/../sam", "$FindBin::RealBin/../",
-         @PATH);
+@PATH = ($FindBin::RealBin, "$FindBin::RealBin/../", @PATH);
 
 
 sub main {
@@ -19,6 +18,9 @@ sub main {
               'num-threads=i',
               'chipseq-target-read-files=s',
               'chipseq-control-read-files=s',
+              'bowtie-bin-for-chipseq=s', ## bowtie binary, only bowtie no v2
+              'samtools-bin=s',
+              'bedtools-bin-for-chipseq=s',
               'quiet'  );
 
   $param{'ref-name'}    = $ARGV[0];
@@ -35,14 +37,22 @@ sub processChIPSeq {
  #print "\n", Dumper(\%param), "\n";
 
   my $script='prsem-process-chipseq.R';
-  my $fout = "$param{'imd-name'}_prsem.fq_encod";
   my $s_file = $param{'chipseq-target-read-files'}; 
   if ( $param{'chipseq-control-read-files'} ne '' ) {
     $s_file .= ",$param{'chipseq-control-read-files'}";
   }
 
-  $command = "$script guessFqEncoding $param{'num-threads'} $s_file $fout";
+  ## guess fastq's encoding
+  my $fencod = "$param{'imd-name'}_prsem.fq_encod";
+  $command = "$script guessFqEncoding $param{'num-threads'} $s_file $fencod";
+  &runCommand($command);
 
+  ## align fastq reads
+  $command = "$script alignReads $param{'num-threads'} $s_file $fencod " .
+                    " $param{'ref-name'} $param{'imd-name'} " .
+                    " $param{'bowtie-bin-for-chipseq'} " . 
+                    " $param{'samtools-bin'} " .
+                    " $param{'bedtools-bin-for-chipseq'}";
   &runCommand($command);
 }
 

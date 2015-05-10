@@ -6,28 +6,58 @@
 #  module for processing ChIP-seq data
 #
 
+source('prsem-util.R')
 
 main <- function() {
   name2func <- list(
-    'guessFqEncoding' = guessFqEncoding
+    'guessFqEncoding' = guessFqEncoding,
+    'alignReads'      = alignReads
   )
 
   argv <- commandArgs(trailingOnly=T)
   name2func[[argv[1]]](argv[2:length(argv)])
-  
- #guessFqEncoding('dum')
+}
+
+
+alignReads <- function(argv) {
+  library(data.table)
+
+  nthr      <- strtoi(argv[1])
+  s_infiles <- argv[2]
+  fencod    <- argv[3]
+  refname   <- argv[4]
+  imdname   <- argv[5]
+  bowtie    <- argv[6]
+  samtools  <- argv[7]
+  bedtools  <- argv[8]
+
+  ffqs <- strsplit(s_infiles, ',', fixed=T)[[1]]
+  encoddt <- fread(fencod, header=T, sep="\t")
+  nthr_bowtie <- ifelse(nthr > 4, nthr-4, 1) 
+  bowtie_ref <- paste0(refname, '_prsem')
+
+  for ( ffq in ffqs ) {
+    id <- Util$getFileNameSansExt(ffq)
+    fout <- paste0(imdname, '_prsem.', id, '.tagAlign.gz')
+    encod <- subset(encoddt, file == ffq)[, encoding]
+    cmd_cat <- ifelse(Util$checkIfGzipByExt(ffq), 'zcat', 'cat')
+    cmd <- paste0(cmd_cat, ' ', ffq , ' | ', 
+                  bowtie, ' -q -v 2 -a --best --strata -m 1 ', encod, 
+                          ' -S -p ', nthr_bowtie, ' ', bowtie_ref, ' - |',
+                  samtools, ' view -S -b -F 1548 - | ',
+                  bedtools, ' bamtobed -i stdin | ',
+                  quote(`awk 'BEGIN{FS=\"\t";OFS="\t"}{$4="N"; print $0}' |`),
+                  'gzip -c > ', fout)
+
+    cat("\n", cmd, "\n")
+    system(cmd)
+  }
 }
 
 
 guessFqEncoding <- function(argv){
-
-  if ( ! 'data.table' %in% rownames(installed.packages() ) ) {
-    install.packages('data.table')
-  }
-  if ( ! 'ShortRead' %in% rownames(installed.packages()) ) {
-    source("http://bioconductor.org/biocLite.R")
-    biocLite("ShortRead")
-  }
+  Util$checkInstallCRAN('data.table')
+  Util$checkInstallBioc('ShortRead')
 
   library(data.table)
   library(ShortRead)
@@ -35,10 +65,6 @@ guessFqEncoding <- function(argv){
   nthr      <- strtoi(argv[1])
   s_infiles <- argv[2]
   fout      <- argv[3]
-
- #nthr <- 16
- #s_infiles <- '/tier2/deweylab/scratch/pliu/dev/MelPol2IggmusRep1.fastq.gz,/tier2/deweylab/scratch/pliu/dev/MelPol2IggmusRep2.fastq.gz,/tier2/deweylab/scratch/pliu/dev/MelInputIggmusRep1.fastq.gz'
- #fout <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.fq_encod'
 
   files <- strsplit(s_infiles, ',', fixed=T)[[1]]
 

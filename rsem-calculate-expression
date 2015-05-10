@@ -100,6 +100,8 @@ my $sort_bam_buffer_size = '60G';
 my $run_prsem = 0;
 my $chipseq_target_read_files  = '';
 my $chipseq_control_read_files = '';
+my $bowtie_bin_for_chipseq = '';
+my $bedtools_bin_for_chipseq = '';
 
 GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "temporary-folder=s" => \$temp_dir,
@@ -157,6 +159,8 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
                                           ## delimited by comma 
      'chipseq-control-read-files=s' => \$chipseq_control_read_files, 
                                           ## delimited by comma
+     'bowtie-bin-for-chipseq=s' => \$bowtie_bin_for_chipseq,
+     'bedtools-bin-for-chipseq=s' => \$bedtools_bin_for_chipseq,
 	   "time" => \$mTime,
 	   "version" => \$version,
 	   "q|quiet" => \$quiet,
@@ -571,12 +575,17 @@ if ( $run_prsem ) {
     $command .= " --chipseq-control-read-files $chipseq_control_read_files ";
   }
 
+  $command .= " --bowtie-bin-for-chipseq $bowtie_bin_for_chipseq" .
+              " --samtools-bin $FindBin::RealBin/sam/samtools " .
+              " --bedtools-bin-for-chipseq $bedtools_bin_for_chipseq";
+
   if ( $quiet ) {
     $command .= ' --quiet ';
   }
   $command .= " $refName $sampleName $statName $imdName";
   &runCommand($command);
 }
+####
 
 
 if (!$keep_intermediate_files) {
