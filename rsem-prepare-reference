@@ -59,9 +59,9 @@ pod2usage(-msg => "--transcript-to-gene-map and --allele-to-gene-map are mutuall
 pod2usage(-msg => "--gtf and --allele-to-gene-map are mutually exclusive!", -exitval => 2, -verbose => 2) if (($gtfF ne "") && ($alleleMappingF ne ""));
 pod2usage(-msg => "Invalid number of arguments!", -exitval => 2, -verbose => 2) if (scalar(@ARGV) != 2);
 
-if ( $index_genome && ($bowtie_path eq '' ) && ($bowtie2_path eq '') ) {
-  pod2usage(-msg => 'Path to Bowtie or Bowtie2 executable is required ' .
-                    "when building index for the whole genome\n",
+if ( $index_genome && ($bowtie_path eq '' ) ) {
+  pod2usage(-msg => 'Path to Bowtie executable is required ' .
+                    "for building index of genome\n",
             -exitval => 2,
             -verbose => 1 );
 }
@@ -150,11 +150,7 @@ if ($star) {
 }
 
 if ( $index_genome ) {
-  if ( $bowtie_path ne '' ) {
-    $command = "prsem-prepare-reference --bowtie-path  $bowtie_path ";
-  } elsif ( $bowtie2_path ne '' ) {
-    $command = "prsem-prepare-reference --bowtie2-path $bowtie2_path ";
-  }
+  $command = "prsem-prepare-reference --bowtie-path $bowtie_path ";
 
   if ( $quiet ) {
     $command .= ' --quiet ';
@@ -276,7 +272,7 @@ Number of threads to use for building STAR's genome indices. (Default: 1)
 
 =item B<--index-genome>
 
-A Boolean indicating whether to build index for genome. This is for aligning ChIP-seq reads in pRSEM. Path to Bowtie or Bowtie 2 executables is required. (Default: off)
+A Boolean indicating whether to build index for genome. This is prepared for aligning ChIP-seq reads in pRSEM. Path to Bowtie executables is required. Bowtie2 is not supported at the moment. (Default: off)
 
 =item B<-q/--quiet>
 
