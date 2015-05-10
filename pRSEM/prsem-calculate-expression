@@ -1,0 +1,50 @@
+#!/usr/bin/env perl
+
+use Getopt::Long;
+use Data::Dumper; ## temp lib for printing hash
+
+use FindBin;
+use lib $FindBin::RealBin;
+use lib "$FindBin::RealBin/../";
+use rsem_perl_utils qw(runCommand collectResults showVersionInfo);
+
+use Env qw(@PATH);
+@PATH = ($FindBin::RealBin, "$FindBin::RealBin/../sam", "$FindBin::RealBin/../",
+         @PATH);
+
+
+sub main {
+  my %param = ();
+  GetOptions( \%param, 
+              'num-threads=i',
+              'chipseq-target-read-files=s',
+              'chipseq-control-read-files=s',
+              'quiet'  );
+
+  $param{'ref-name'}    = $ARGV[0];
+  $param{'sample-name'} = $ARGV[1];
+  $param{'stat-name'}   = $ARGV[2];
+  $param{'imd-name'}    = $ARGV[3];
+
+  processChIPSeq(\%param);
+}
+
+
+sub processChIPSeq {
+  my %param = %{$_[0]};
+ #print "\n", Dumper(\%param), "\n";
+
+  my $script='prsem-process-chipseq.R';
+  my $fout = "$param{'imd-name'}_prsem.fq_encod";
+  my $s_file = $param{'chipseq-target-read-files'}; 
+  if ( $param{'chipseq-control-read-files'} ne '' ) {
+    $s_file .= ",$param{'chipseq-control-read-files'}";
+  }
+
+  $command = "$script guessFqEncoding $param{'num-threads'} $s_file $fout";
+
+  &runCommand($command);
+}
+
+
+main();
