@@ -8,7 +8,8 @@ use lib $FindBin::RealBin;
 use rsem_perl_utils qw(runCommand collectResults showVersionInfo);
 
 use Env qw(@PATH);
-@PATH = ($FindBin::RealBin, "$FindBin::RealBin/sam", @PATH);
+@PATH = ($FindBin::RealBin, "$FindBin::RealBin/sam", "$FindBin::RealBin/pRSEM", 
+         @PATH);
 
 use strict;
 use warnings;
@@ -96,6 +97,9 @@ my $bzipped_read_file = 0;
 my $output_star_genome_bam = 0;
 my $sort_bam_by_read_name = 0;
 my $sort_bam_buffer_size = '60G';
+my $run_prsem = 0;
+my $chipseq_target_read_files  = '';
+my $chipseq_control_read_files = '';
 
 GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "temporary-folder=s" => \$temp_dir,
@@ -148,6 +152,11 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "sort-bam-by-read-name" => \$sort_bam_by_read_name,
 	   "sort-bam-buffer-size=s" => \$sort_bam_buffer_size,
 	   "seed=i" => \$seed,
+     'run-pRSEM' => \$run_prsem,
+     'chipseq-target-read-files=s' => \$chipseq_target_read_files, 
+                                          ## delimited by comma 
+     'chipseq-control-read-files=s' => \$chipseq_control_read_files, 
+                                          ## delimited by comma
 	   "time" => \$mTime,
 	   "version" => \$version,
 	   "q|quiet" => \$quiet,
@@ -550,6 +559,25 @@ if ($calcCI) {
 if ($mTime) { $time_end = time(); $time_ci = $time_end - $time_start; }
 
 if ($mTime) { $time_start = time(); }
+
+
+## if run pRSEM
+if ( $run_prsem ) {
+  $command = 'prsem-calculate-expression ' .
+             " --num-threads $nThreads " .
+             " --chipseq-target-read-files $chipseq_target_read_files ";
+
+  if ( $chipseq_control_read_files ne '' ) {
+    $command .= " --chipseq-control-read-files $chipseq_control_read_files ";
+  }
+
+  if ( $quiet ) {
+    $command .= ' --quiet ';
+  }
+  $command .= " $refName $sampleName $statName $imdName";
+  &runCommand($command);
+}
+
 
 if (!$keep_intermediate_files) {
     &runCommand("rm -rf $temp_dir", "Fail to delete the temporary folder!");
