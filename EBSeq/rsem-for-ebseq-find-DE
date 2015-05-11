@@ -10,6 +10,7 @@ path <- argv[1]
 ngvector_file <- argv[2]
 data_matrix_file <- argv[3]
 output_file <- argv[4]
+norm_out_file <- paste0("norm_", data_matrix_file)
 
 nc <- length(argv) - 4;
 num_reps <- as.numeric(argv[5:(5+nc-1)])
@@ -23,6 +24,7 @@ if (sum(num_reps) != n) stop("Total number of replicates given does not match th
 
 conditions <- as.factor(rep(paste("C", 1:nc, sep=""), times = num_reps))
 Sizes <- MedianNorm(DataMat)
+NormMat <- GetNormalizedMat(DataMat, Sizes)
 ngvector <- NULL
 if (ngvector_file != "#") {
   ngvector <- as.vector(data.matrix(read.table(ngvector_file)))
@@ -37,8 +39,8 @@ if (nc == 2) {
   PP <- as.data.frame(GetPPMat(EBOut))
   fc_res <- PostFC(EBOut)
 
-  results <- cbind(PP, fc_res$PostFC, fc_res$RealFC)
-  colnames(results) <- c("PPEE", "PPDE", "PostFC", "RealFC")
+  results <- cbind(PP, fc_res$PostFC, fc_res$RealFC,unlist(EBOut$C1Mean)[rownames(PP)], unlist(EBOut$C2Mean)[rownames(PP)])
+  colnames(results) <- c("PPEE", "PPDE", "PostFC", "RealFC","C1Mean","C2Mean")
   results <- results[order(results[,"PPDE"], decreasing = TRUE),]
   write.table(results, file = output_file, sep = "\t")
   
@@ -68,3 +70,4 @@ if (nc == 2) {
   MultiFC <- GetMultiFC(MultiOut)
   write.table(MultiFC$CondMeans[ord,], file = paste(output_file, ".condmeans", sep = ""), sep = "\t")
 }
+write.table(NormMat, file = norm_out_file, sep = "\t")
