@@ -60,10 +60,10 @@ pod2usage(-msg => "--gtf and --allele-to-gene-map are mutually exclusive!", -exi
 pod2usage(-msg => "Invalid number of arguments!", -exitval => 2, -verbose => 2) if (scalar(@ARGV) != 2);
 
 if ( $index_genome && ($bowtie_path eq '' ) ) {
-  pod2usage(-msg => 'Path to Bowtie executable is required ' .
-                    "for building index of genome\n",
-            -exitval => 2,
-            -verbose => 1 );
+    pod2usage(-msg => 'Path to Bowtie executable is required ' .
+                      "for building index of genome\n",
+              -exitval => 2,
+              -verbose => 1 );
 }
 
 ## $bowtie_path $bowtie2_path may also be set for --index-genome
@@ -150,15 +150,15 @@ if ($star) {
 }
 
 if ( $index_genome ) {
-  $command = "prsem-prepare-reference --bowtie-path $bowtie_path ";
-
-  if ( $quiet ) {
-    $command .= ' --quiet ';
-  }
-
-  my $ref_fas = join(',', @list);
-  $command .= " $ref_fas $ARGV[1]";
-  &runCommand($command);
+    $command = "prsem-prepare-reference --bowtie-path $bowtie_path ";
+ 
+    if ( $quiet ) {
+      $command .= ' --quiet ';
+    }
+ 
+    my $ref_fas = join(',', @list);
+    $command .= " $ref_fas $ARGV[1]";
+    &runCommand($command);
 }
 
 __END__
