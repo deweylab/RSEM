@@ -130,7 +130,7 @@ using an alternative aligner, you may also want to provide the
 '--no-bowtie' option to 'rsem-prepare-reference' so that the Bowtie
 indices are not built.
 
-RSEM requires all alignments of the same read group together. For
+RSEM requires the alignments of a read to be adjacent. For
 paired-end reads, RSEM also requires the two mates of any alignment be
 adjacent. To check if your SAM/BAM file satisfy the requirements,
 please run
