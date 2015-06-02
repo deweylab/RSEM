@@ -11,6 +11,8 @@ use warnings;
 
 my $starbin      = '/tier2/deweylab/pliu/local/STAR-2.4.0h/STAR';
 my $bowtiepath   = '/tier2/deweylab/pliu/local/bin';
+my $bowtie       = '/tier2/deweylab/pliu/local/bin/bowtie';
+my $bedtools     = '/tier2/deweylab/pliu/local/bin/bedtools';
 my $datdir       = '/tier2/deweylab/scratch/pliu/dev';
 my $fgtf         = "$datdir/chr1819.gtf";
 my $genomedir    = "$datdir/mm10";
@@ -21,7 +23,7 @@ my $rsem_exprdir = "$datdir/rsem_expr";
 my $nthreads     = 16;
 my $runid        = 'test';
 
-my $chipseq_input_rep1  = "$datdir/MelInputIggmusRep1.fastq.gz";
+my $chipseq_control_rep1  = "$datdir/MelInputIggmusRep1.fastq.gz";
 my $chipseq_target_rep1 = "$datdir/MelPol2IggmusRep1.fastq.gz";
 my $chipseq_target_rep2 = "$datdir/MelPol2IggmusRep2.fastq.gz";
 my $rnaseq_rd1 = "$datdir/MelRibozerogRep1Rd1.fastq.gz";
@@ -42,13 +44,18 @@ sub main {
 sub runRSEM {
   my $bin = '/ua/pliu/dev/RSEM/rsem-calculate-expression';
 
-  if ( -e $rsem_exprdir ) {
-    system("rm -fr $rsem_exprdir");
-  }
-  mkdir $rsem_exprdir;
-  chdir $rsem_exprdir;
+ #if ( -e $rsem_exprdir ) {
+ #  system("rm -fr $rsem_exprdir");
+ #}
+ #mkdir $rsem_exprdir;
+ #chdir $rsem_exprdir;
 
-  my $nsteps = 1e+4;
+  if ( not -e $rsem_exprdir ) {
+    mkdir $rsem_exprdir;
+  }
+
+ #my $nsteps = 1e+4;
+  my $nsteps = 20;  ## non-standard
   my $fbam = "$star_alndir/Aligned.toTranscriptome.out.bam";
 
   my $cmd = "$bin --bam ".
@@ -66,10 +73,19 @@ sub runRSEM {
                 " --gibbs-number-of-samples $nsteps" .
                 ' --quiet' .
                 ######
+                
+                ## run pRSEM
+                ' --run-pRSEM ' .
+                " --chipseq-target-read-files $chipseq_target_rep1," .
+                                              $chipseq_target_rep2 .
+                " --chipseq-control-read-files $chipseq_control_rep1 " .
+                " --bowtie-bin-for-chipseq $bowtie " .
+                " --bedtools-bin-for-chipseq $bedtools " .
+                ######
 
-                " $fbam $rsem_refdir/$runid $runid "; 
+                " $fbam $rsem_refdir/$runid $rsem_exprdir/$runid "; 
 
- #print "$cmd\n";
+  print "\n$cmd\n\n";
   system($cmd);
 }
 
@@ -137,6 +153,7 @@ sub prepRSEMRef {
   my $cmd = "$bin --gtf $fgtf " .
                 " --bowtie-path $bowtiepath " .
                 ' --index-genome ' .
+               #' -q '.
                 "$genomedir $rsem_refdir/$runid";
 
  #print "\n$cmd\n\n";
