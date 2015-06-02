@@ -28,6 +28,9 @@ my $help = 0;
 
 my $alleleMappingF = "";
 
+my $star_genome_dir = '';
+my $star_nthreads = 1;
+
 GetOptions("gtf=s" => \$gtfF,
 	   "transcript-to-gene-map=s" => \$mappingF,
 	   "allele-to-gene-map=s" => \$alleleMappingF,
@@ -38,6 +41,8 @@ GetOptions("gtf=s" => \$gtfF,
 	   "bowtie-path=s" => \$bowtie_path,
 	   "bowtie2" => \$bowtie2,
 	   "bowtie2-path=s" => \$bowtie2_path,
+ 	   'star-genome-dir=s' => \$star_genome_dir,
+	   'p|num-threads=i' => \$star_nthreads,
 	   "q|quiet" => \$quiet,
 	   "h|help" => \$help) or pod2usage(-exitval => 2, -verbose => 2);
 
@@ -111,6 +116,19 @@ if ($bowtie2) {
     if ($quiet) { $command .= " -q"; }
     $command .= " $ARGV[1].idx.fa $ARGV[1]";
     
+    &runCommand($command);
+}
+
+if ($star_genome_dir ne '') {
+    my $star_bin = 'STAR/source/STAR';
+    $command = "$star_bin --runThreadN $star_nthreads " .
+                        ' --runMode genomeGenerate ' .
+                        " --genomeDir $star_genome_dir " .
+                        " --genomeFastaFiles @list " .
+                        " --sjdbGTFfile $gtfF " .
+                        ' --sjdbOverhang 100 ' .
+                        " --outFileNamePrefix $star_genome_dir ";
+   #print "$command\n"; 
     &runCommand($command);
 }
 
