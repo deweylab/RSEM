@@ -11,11 +11,20 @@ source('prsem-util.R')
 main <- function() {
   name2func <- list(
     'guessFqEncoding' = guessFqEncoding,
-    'alignReads'      = alignReads
+    'alignReads'      = alignReads,
+    'poolAllRep'      = pooAllRep
   )
 
   argv <- commandArgs(trailingOnly=T)
   name2func[[argv[1]]](argv[2:length(argv)])
+}
+
+
+poolAllRep <- function(argv) {
+  s_infiles <- argv[1]
+  imdname   <- argv[2]
+
+  ffqs <- strsplit(s_infiles, ',', fixed=T)[[1]]
 }
 
 
