@@ -133,7 +133,7 @@ if ($out_star_genome_dir ne '') {
                         " --genomeFastaFiles @list " .
                         " --sjdbGTFfile $gtfF " .
                         ' --sjdbOverhang 100 ' .
-                        " --outFileNamePrefix $out_star_genome_dir ";
+                        " --outFileNamePrefix $out_star_genome_dir/";
     &runCommand($command);
 }
 
