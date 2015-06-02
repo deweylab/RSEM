@@ -1,0 +1,1 @@
+See https://sites.google.com/site/anshulkundaje/projects/idr for the ENCODE peak calling pipeline using SPP + IDR
