@@ -88,6 +88,10 @@ my $gap = 32;
 
 my $alleleS = 0;
 
+my $star_genome_dir   = '';
+my $gzipped_read_file = 0;
+my $bzipped_read_file = 0;
+
 GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "temporary-folder=s" => \$temp_dir,
 	   "no-qualities" => \$no_qual,
@@ -131,6 +135,9 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "ci-memory=i" => \$NMB,
 	   "ci-number-of-samples-per-count-vector=i" => \$NSPC,
 	   "samtools-sort-mem=s" => \$SortMem,
+	   'star-genome-dir=s' => \$star_genome_dir,
+	   "gzipped-read-file" => \$gzipped_read_file,
+	   "bzipped-read-file" => \$bzipped_read_file,
 	   "seed=i" => \$seed,
 	   "time" => \$mTime,
 	   "version" => \$version,
@@ -233,7 +240,59 @@ if ($bowtie2_path ne "") { $bowtie2_path .= "/"; }
 my $command = "";
 
 if (!$is_sam && !$is_bam) {
-    if (!$bowtie2) {
+	if ( $star_genome_dir ne '' ) {
+	  ## align reads by STAR
+	  my $star_bin = "$FindBin::RealBin/STAR/source/STAR";
+	  $command = $star_bin . 
+	               ## ENCODE3 pipeline parameters
+	               " --genomeDir $star_genome_dir " .
+	               ' --outSAMunmapped Within ' .
+	               ' --outFilterType BySJout ' .
+	               ' --outSAMattributes NH HI AS NM MD ' .
+	               ' --outFilterMultimapNmax 20 ' .
+	               ' --outFilterMismatchNmax 999 ' .
+	               ' --outFilterMismatchNoverLmax 0.04 ' .
+	               ' --alignIntronMin 20 ' .
+	               ' --alignIntronMax 1000000 ' .
+	               ' --alignMatesGapMax 1000000 ' .
+	               ' --alignSJoverhangMin 8 ' .
+	               ' --alignSJDBoverhangMin 1 ' .
+	               ' --sjdbScore 1 ' .
+	               " --runThreadN $nThreads " .
+	               ##
+	
+	               ## different than ENCODE3 pipeline 
+	               ## load genome into shared memory but remove it after run
+	               ' --genomeLoad LoadAndRemove ' .
+	               ##
+	
+	               ## different than ENCODE3 pipeline, which sorts output BAM
+	               ## no need to do it here to save time and memory 
+	               ' --outSAMtype BAM Unsorted ' .
+	               ##
+	
+	               ## unlike ENCODE3, we don't output bedGraph files
+	
+	               ' --quantMode TranscriptomeSAM '.
+	               ' --outSAMheaderHD \@HD VN:1.4 SO:unsorted '.
+	
+	               ## define output file prefix
+	               " --outFileNamePrefix $imdName ";
+	               ##
+	
+	  if ( $gzipped_read_file ) {
+	    $command .= ' --readFilesCommand zcat ';
+	  } elsif ( $bzipped_read_file ) {
+	    $command .= ' --readFilesCommand bzip2 -c ';
+	  }
+	
+	  if ( $read_type == 0 || $read_type == 1 ) {
+	    $command .= " --readFilesIn $mate1_list ";
+	  } else {
+	    $command .= " --readFilesIn $mate1_list $mate2_list";
+	  }
+	
+	} elsif (!$bowtie2) {
 	$command = $bowtie_path."bowtie";
 	if ($no_qual) { $command .= " -f"; }
 	else { $command .= " -q"; }
@@ -307,6 +366,14 @@ if (!$is_sam && !$is_bam) {
 
     $inpF = "$imdName.bam";
     $is_bam = 1; # alignments are outputed as a BAM file
+
+    if ( $star_genome_dir ne '' ) {
+      my $star_tr_bam = $imdName . 'Aligned.toTranscriptome.out.bam';
+      symlink $star_tr_bam, $inpF 
+        or die "can't symlink $star_tr_bam to $inpF: $!\n";
+      unlink $imdName . "Aligned.out.bam";
+      rmdir $imdName . "_STARtmp/";
+    }
 }
 
 if ($mTime) { $time_start = time(); }
