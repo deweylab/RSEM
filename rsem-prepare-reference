@@ -8,7 +8,7 @@ use lib $FindBin::RealBin;
 use rsem_perl_utils;
 
 use Env qw(@PATH);
-@PATH = ($FindBin::RealBin, "$FindBin::RealBin/pRSEM", @PATH);
+@PATH = ($FindBin::RealBin, @PATH);
 
 use strict;
 use warnings;
@@ -150,7 +150,8 @@ if ($star) {
 }
 
 if ( $index_genome ) {
-    $command = "prsem-prepare-reference --bowtie-path $bowtie_path ";
+    $command = "$FindBin::RealBin/prsem-prepare-reference " .
+                 " --bowtie-path $bowtie_path ";
  
     if ( $quiet ) {
       $command .= ' --quiet ';

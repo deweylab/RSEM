@@ -8,8 +8,7 @@ use lib $FindBin::RealBin;
 use rsem_perl_utils qw(runCommand collectResults showVersionInfo);
 
 use Env qw(@PATH);
-@PATH = ($FindBin::RealBin, "$FindBin::RealBin/sam", "$FindBin::RealBin/pRSEM", 
-         @PATH);
+@PATH = ($FindBin::RealBin, "$FindBin::RealBin/sam", @PATH);
 
 use strict;
 use warnings;
@@ -567,17 +566,17 @@ if ($mTime) { $time_start = time(); }
 
 ## if run pRSEM
 if ( $run_prsem ) {
-    $command = 'prsem-calculate-expression ' .
+    $command = "$FindBin::RealBin/pRSEM/prsem-calculate-expression " .
                " --num-threads $nThreads " .
-               " --chipseq-target-read-files $chipseq_target_read_files ";
+               " --chipseq-target-read-files $chipseq_target_read_files " .
+               " --bowtie-bin-for-chipseq $bowtie_bin_for_chipseq" .
+               " --samtools-bin $FindBin::RealBin/sam/samtools " .
+               " --bedtools-bin-for-chipseq $bedtools_bin_for_chipseq";
  
     if ( $chipseq_control_read_files ne '' ) {
         $command .= " --chipseq-control-read-files $chipseq_control_read_files";
     }
  
-    $command .= " --bowtie-bin-for-chipseq $bowtie_bin_for_chipseq" .
-                " --samtools-bin $FindBin::RealBin/sam/samtools " .
-                " --bedtools-bin-for-chipseq $bedtools_bin_for_chipseq";
  
     if ( $quiet ) {
         $command .= ' --quiet ';
