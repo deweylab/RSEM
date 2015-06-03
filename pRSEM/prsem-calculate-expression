@@ -8,7 +8,7 @@ __doc__="""
 """
 
 
-import ChIPSeqExp
+import ChIPSeqExperiment
 import Param
 
 
@@ -16,7 +16,7 @@ def main():
   argdict = getCommandLineArguments()
 
   param = Param.initFromCommandLineArguments(argdict)
-  chipseqexp = ChIPSeqExp.initFromParam(param)
+  chipseqexp = ChIPSeqExperiment.initFromParam(param)
 
 
 def getCommandLineArguments():

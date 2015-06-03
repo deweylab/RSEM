@@ -7,15 +7,15 @@ __doc__="""
 
 import File
 
-class ChIPSeqRep:
+class ChIPSeqReplicate:
   def __init__(self):
     self.param     = None  ## reference to parameters
     self.rep_index = None
     self.is_target = None
     self.ffq       = None  ## File object for fastq
     self.fta       = None  ## File object for tagAlign
-    self.chipseqexp = None ## reference to ChIPSeqExp object
-    self.encoding   = None ## fastq encoding, not sure if needed
+    self.chipseqexperiment = None ## reference to ChIPSeqExperiment object
+    self.encoding          = None ## fastq encoding, not sure if needed
 
   @classmethod
   def initFromFastqFile(cls, ffq):
@@ -26,4 +26,4 @@ class ChIPSeqRep:
 
 
 def initFromFastqFile(ffq):
-  return ChIPSeqRep.initFromFastqFile(ffq)
+  return ChIPSeqReplicate.initFromFastqFile(ffq)

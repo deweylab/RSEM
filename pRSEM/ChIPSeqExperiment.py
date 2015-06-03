@@ -6,10 +6,10 @@ __doc__="""
   replicates of ChIP-seq data for target and/or control
 """
 
-import ChIPSeqRep
+import ChIPSeqReplicate
 
 
-class ChIPSeqExp:
+class ChIPSeqExperiment:
   def __init__(self):
     self.param = None ## reference to input parameters
     self.target_reps  = []
@@ -36,4 +36,4 @@ class ChIPSeqExp:
 
 
 def initFromParam(param):
-  return ChIPSeqExp.initFromParam(param)
+  return ChIPSeqExperiment.initFromParam(param)
