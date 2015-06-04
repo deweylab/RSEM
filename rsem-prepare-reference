@@ -29,7 +29,7 @@ my $help = 0;
 
 my $alleleMappingF = "";
 
-my $out_star_genome_dir = '';
+my $out_star_genome_path = '';
 my $star_nthreads = 1;
 
 GetOptions("gtf=s" => \$gtfF,
@@ -42,7 +42,7 @@ GetOptions("gtf=s" => \$gtfF,
 	   "bowtie-path=s" => \$bowtie_path,
 	   "bowtie2" => \$bowtie2,
 	   "bowtie2-path=s" => \$bowtie2_path,
- 	   'out-star-genome-dir=s' => \$out_star_genome_dir,
+ 	   'out-star-genome-path=s' => \$out_star_genome_path,
 	   'p|num-threads=i' => \$star_nthreads,
 	   "q|quiet" => \$quiet,
 	   "h|help" => \$help) or pod2usage(-exitval => 2, -verbose => 2);
@@ -120,20 +120,20 @@ if ($bowtie2) {
     &runCommand($command);
 }
 
-if ($out_star_genome_dir ne '') {
-    if ( not -e $out_star_genome_dir ) {
-      mkdir $out_star_genome_dir 
-        or die "can't mkdir $out_star_genome_dir: $!\n";
+if ($out_star_genome_path ne '') {
+    if ( not -e $out_star_genome_path ) {
+      mkdir $out_star_genome_path
+        or die "can't mkdir $out_star_genome_path: $!\n";
     }
 
     my $star_bin = "$FindBin::RealBin/STAR/source/STAR";
     $command = "$star_bin --runThreadN $star_nthreads " .
                         ' --runMode genomeGenerate ' .
-                        " --genomeDir $out_star_genome_dir " .
+                        " --genomeDir $out_star_genome_path " .
                         " --genomeFastaFiles @list " .
                         " --sjdbGTFfile $gtfF " .
                         ' --sjdbOverhang 100 ' .
-                        " --outFileNamePrefix $out_star_genome_dir/";
+                        " --outFileNamePrefix $out_star_genome_path/";
     &runCommand($command);
 }
 
@@ -229,6 +229,12 @@ Build Bowtie 2 indices. (Default: off)
 
 The path to the Bowtie 2 executables. (Default: the path to Bowtie 2 executables is assumed to be in the user's PATH environment variable)
 
+=item B<--out-star-genome-path> <path>
+The path to save STAR's genome indices. Once it is specified, RSEM will run STAR from its submodule directry to prepare genome indices. (Default: not specified)
+
+=item B<-p/--num-threads> <int>
+Number of threads to use for building STAR's genome indices. (Default: 1)
+
 =item B<-q/--quiet>
 
 Suppress the output of logging information. (Default: off)
@@ -241,11 +247,11 @@ Show help information.
 
 =head1 DESCRIPTION
 
-This program extracts/preprocesses the reference sequences for RSEM. It can optionally build Bowtie indices (with '--bowtie' option) and/or Bowtie 2 indices (with '--bowtie2' option) using their default parameters. If an alternative aligner is to be used, indices for that particular aligner can be built from either 'reference_name.idx.fa' or 'reference_name.n2g.idx.fa' (see OUTPUT for details). This program is used in conjunction with the 'rsem-calculate-expression' program.
+This program extracts/preprocesses the reference sequences for RSEM. It can optionally build Bowtie indices (with '--bowtie' option) and/or Bowtie 2 indices (with '--bowtie2' option) using their default parameters. It can also optionally build STAR indices (with '--out-star-genome-path' option) using parameters from ENCODE3's STAR-RSEM pipeline. If an alternative aligner is to be used, indices for that particular aligner can be built from either 'reference_name.idx.fa' or 'reference_name.n2g.idx.fa' (see OUTPUT for details). This program is used in conjunction with the 'rsem-calculate-expression' program.
 
 =head1 OUTPUT
 
-This program will generate 'reference_name.grp', 'reference_name.ti', 'reference_name.transcripts.fa', 'reference_name.seq', 'reference_name.chrlist' (if '--gtf' is on), 'reference_name.idx.fa', 'reference_name.n2g.idx.fa' and optional Bowtie/Bowtie 2 index files.
+This program will generate 'reference_name.grp', 'reference_name.ti', 'reference_name.transcripts.fa', 'reference_name.seq', 'reference_name.chrlist' (if '--gtf' is on), 'reference_name.idx.fa', 'reference_name.n2g.idx.fa', optional Bowtie/Bowtie 2 index files, and optional STAR index files.
 
 'reference_name.grp', 'reference_name.ti', 'reference_name.seq', and 'reference_name.chrlist' are used by RSEM internally.
 
@@ -286,11 +292,30 @@ OR
                         /data/mm9 \
                         /ref/mouse_0
 
-3) Suppose we only have transcripts from EST tags stored in 'mm9.fasta' and isoform-gene information stored in 'mapping.txt'. We want to add 125bp long poly(A) tails to all transcripts. The reference_name is set as 'mouse_125'. In addition, we do not want to build Bowtie/Bowtie 2 indices, and will use an alternative aligner to align reads against either 'mouse_125.idx.fa' or 'mouse_125.idx.n2g.fa':
+3) Suppose we want to build STAR indices in the above example, the command will be:
+
+ rsem-prepare-reference --gtf mm9.gtf \
+                        --out-star-genome-path /ref/star_genome \
+                        -p 8 \
+                        /data/mm9/chr1.fa,/data/mm9/chr2.fa,...,/data/mm9/chrM.fa \
+                        /ref/mouse_0
+
+OR
+
+ rsem-prepare-reference --gtf mm9.gtf \
+                        --out-star-genome-path /ref/star_genome \
+                        -p 8 \
+                        /data/mm9
+                        /ref/mouse_0
+
+STAR genome index files will be save at /ref/star_genome/. Note that executable file $RSEM/STAR/source/STAR is required, where $RSEM represents the path containing rsem-prepare-reference. We have linked STAR as a submodule in RSEM. User needs to download and compile its source code under $RSEM/STAR/source/ to obtain this executable file.
+
+4) Suppose we only have transcripts from EST tags stored in 'mm9.fasta' and isoform-gene information stored in 'mapping.txt'. We want to add 125bp long poly(A) tails to all transcripts. The reference_name is set as 'mouse_125'. In addition, we do not want to build Bowtie/Bowtie 2 indices, and will use an alternative aligner to align reads against either 'mouse_125.idx.fa' or 'mouse_125.idx.n2g.fa':
 
  rsem-prepare-reference --transcript-to-gene-map mapping.txt \
                         --polyA
                         mm9.fasta \
                         mouse_125
+
 
 =cut
