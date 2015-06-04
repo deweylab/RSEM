@@ -230,7 +230,7 @@ Build Bowtie 2 indices. (Default: off)
 The path to the Bowtie 2 executables. (Default: the path to Bowtie 2 executables is assumed to be in the user's PATH environment variable)
 
 =item B<--out-star-genome-path> <path>
-The path to save STAR's genome indices. Once it is specified, RSEM will run STAR from its submodule directry to prepare genome indices. (Default: not specified)
+The path to save STAR's genome indices. Once it is specified, RSEM will run STAR from its submodule directry to prepare genome indices. (Default: undefined)
 
 =item B<-p/--num-threads> <int>
 Number of threads to use for building STAR's genome indices. (Default: 1)
