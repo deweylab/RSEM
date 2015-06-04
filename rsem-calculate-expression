@@ -88,7 +88,7 @@ my $gap = 32;
 
 my $alleleS = 0;
 
-my $star_genome_dir   = '';
+my $star_genome_path  = '';
 my $gzipped_read_file = 0;
 my $bzipped_read_file = 0;
 
@@ -135,7 +135,7 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "ci-memory=i" => \$NMB,
 	   "ci-number-of-samples-per-count-vector=i" => \$NSPC,
 	   "samtools-sort-mem=s" => \$SortMem,
-	   'star-genome-dir=s' => \$star_genome_dir,
+	   'star-genome-path=s' => \$star_genome_path,
 	   "gzipped-read-file" => \$gzipped_read_file,
 	   "bzipped-read-file" => \$bzipped_read_file,
 	   "seed=i" => \$seed,
@@ -240,12 +240,12 @@ if ($bowtie2_path ne "") { $bowtie2_path .= "/"; }
 my $command = "";
 
 if (!$is_sam && !$is_bam) {
-	if ( $star_genome_dir ne '' ) {
+	if ( $star_genome_path ne '' ) {
 	  ## align reads by STAR
 	  my $star_bin = "$FindBin::RealBin/STAR/source/STAR";
 	  $command = $star_bin . 
 	               ## ENCODE3 pipeline parameters
-	               " --genomeDir $star_genome_dir " .
+	               " --genomeDir $star_genome_path " .
 	               ' --outSAMunmapped Within ' .
 	               ' --outFilterType BySJout ' .
 	               ' --outSAMattributes NH HI AS NM MD ' .
@@ -367,7 +367,7 @@ if (!$is_sam && !$is_bam) {
     $inpF = "$imdName.bam";
     $is_bam = 1; # alignments are outputed as a BAM file
 
-    if ( $star_genome_dir ne '' ) {
+    if ( $star_genome_path ne '' ) {
       my $star_tr_bam = $imdName . 'Aligned.toTranscriptome.out.bam';
       symlink $star_tr_bam, $inpF 
         or die "can't symlink $star_tr_bam to $inpF: $!\n";
