@@ -19,6 +19,8 @@ def main():
 
   chipseqexp.getFastqEncoding()
   chipseqexp.alignReadByBowtie()
+  chipseqexp.poolTagAlign()
+  chipseqexp.
 
 
 def getCommandLineArguments():

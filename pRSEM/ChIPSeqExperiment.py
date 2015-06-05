@@ -10,13 +10,14 @@ import ChIPSeqReplicate
 import File
 import Util
 
+
 class ChIPSeqExperiment:
   def __init__(self):
     self.param = None ## reference to input parameters
     self.target_reps  = []
     self.control_reps = []
-    self.fta_target_pool  = None  ## pooled tagAlign File object for target
-    self.fta_control_pool = None  ## pooled tagAlign File object for control
+    self.pooled_target_tagalign  = None # File object of pooled target tagAlign
+    self.pooled_control_tagalign = None # File object of pooled control tagAlign
 
 
   @classmethod
@@ -77,10 +78,7 @@ class ChIPSeqExperiment:
 
     bowtie_ref_name = "%s_prsem" % self.param.ref_name
     for rep in self.target_reps + self.control_reps:
-      if rep.fastq.is_gz:
-        cmd_cat = 'zcat'
-      else:
-        cmd_cat = 'cat'
+      cmd_cat = Util.getCatCommand(rep.fastq.is_gz)
 
       ## many pipes, have to use os.system
       cmds = [ "%s %s |" % (cmd_cat, rep.fastq.fullname) ] + \
@@ -94,8 +92,36 @@ class ChIPSeqExperiment:
              [ "gzip -c > %s " % rep.tagalign.fullname ]
 
       cmd = ' '.join(cmds)
-      print cmd;
+      print cmd, "\n";
       os.system(cmd)
+
+
+  def poolTagAlign(self):
+    import os
+
+    ftarget_rep0 = self.param.temp_dir + 'targetRep0.tagAlign.gz'
+    if os.path.exists(ftarget_rep0):
+      os.remove(ftarget_rep0)
+    self.pooled_target_tagalign = File.initFromFullFileName(ftarget_rep0)
+    for rep in self.target_reps:
+      cat_cmd = Util.getCatCommand(rep.fastq.is_gz)
+      cmd = "%s %s | gzip -c >> %s" % (cat_cmd, rep.tagalign.fullname,
+                                       ftarget_rep0)
+      print cmd, "\n";
+      os.system(cmd)
+
+    if len(self.control_reps) > 0:
+      fcontrol_rep0 = self.param.temp_dir + 'controlRep0.tagAlign.gz'
+      if os.path.exists(fcontrol_rep0):
+        os.remove(fcontrol_rep0)
+      self.pooled_control_tagalign = File.initFromFullFileName(fcontrol_rep0)
+      for rep in self.control_reps:
+        cat_cmd = Util.getCatCommand(rep.fastq.is_gz)
+        cmd = "%s %s | gzip -c >> %s" % (cat_cmd, rep.tagalign.fullname,
+                                         fcontrol_rep0)
+        print cmd, "\n";
+        os.system(cmd)
+
 
 
 def initFromParam(param):

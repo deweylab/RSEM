@@ -19,3 +19,11 @@ def runCommand(*args):
       print >> sys.stderr, 'Child was terminated by singal', -retcode;
   except OSError as e:
     print >> sys.stderr, 'Execution failed:', e;
+
+
+def getCatCommand(is_gzipped):
+  if is_gzipped:
+    cat_cmd = 'zcat'
+  else:
+    cat_cmd = 'cat'
+  return cat_cmd
