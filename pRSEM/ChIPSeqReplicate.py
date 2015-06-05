@@ -9,19 +9,27 @@ import File
 
 class ChIPSeqReplicate:
   def __init__(self):
-    self.param     = None  ## reference to parameters
-    self.rep_index = None
-    self.is_target = None
-    self.ffq       = None  ## File object for fastq
-    self.fta       = None  ## File object for tagAlign
-    self.chipseqexperiment = None ## reference to ChIPSeqExperiment object
-    self.encoding          = None ## fastq encoding, not sure if needed
+    self.fastq      = None  ## File object for fastq
+    self.name       = None  ## default: fastq file's basename
+    self.index      = None  ## replicate's index number
+    self.tagalign   = None  ## File object for tagAlign
+    self.is_control = None  ## True if replicate is ChIP-seq control
+    self.encoding   = None  ## fastq encoding, not sure if needed
+
+    self.param      = None  ## reference to parameters
+    self.chipseqexp = None  ## reference to ChIPSeqExperiment object
+
+
+  def __str__(self):
+    return "%s %s %d %s" % (self.fastq.fullname, self.name, self.index,
+                            self.encoding)
+
 
   @classmethod
   def initFromFastqFile(cls, ffq):
     csr = cls()
-    csr.ffq = File.initFromFullFileName(ffq)
-
+    csr.fastq = File.initFromFullFileName(ffq)
+    csr.name = csr.fastq.basename
     return csr
 
 

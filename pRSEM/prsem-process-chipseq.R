@@ -6,13 +6,13 @@
 #  module for processing ChIP-seq data
 #
 
-source('prsem-util.R')
+#source('prsem-util.R')
 
 main <- function() {
   name2func <- list(
-    'guessFqEncoding' = guessFqEncoding,
-    'alignReads'      = alignReads,
-    'poolAllRep'      = pooAllRep
+    'guessFqEncoding' = guessFqEncoding
+   #'alignReads'      = alignReads,
+   #'poolAllRep'      = poolAllRep
   )
 
   argv <- commandArgs(trailingOnly=T)
@@ -20,56 +20,56 @@ main <- function() {
 }
 
 
-poolAllRep <- function(argv) {
-  s_infiles <- argv[1]
-  imdname   <- argv[2]
+#poolAllRep <- function(argv) {
+# s_infiles <- argv[1]
+# imdname   <- argv[2]
 
-  ffqs <- strsplit(s_infiles, ',', fixed=T)[[1]]
-}
+# ffqs <- strsplit(s_infiles, ',', fixed=T)[[1]]
+#}
 
 
-alignReads <- function(argv) {
-  library(data.table)
+#alignReads <- function(argv) {
+# library(data.table)
 
-  nthr      <- strtoi(argv[1])
-  s_infiles <- argv[2]
-  fencod    <- argv[3]
-  refname   <- argv[4]
-  imdname   <- argv[5]
-  bowtie    <- argv[6]
-  samtools  <- argv[7]
-  bedtools  <- argv[8]
+# nthr      <- strtoi(argv[1])
+# s_infiles <- argv[2]
+# fencod    <- argv[3]
+# refname   <- argv[4]
+# imdname   <- argv[5]
+# bowtie    <- argv[6]
+# samtools  <- argv[7]
+# bedtools  <- argv[8]
 
-  ffqs <- strsplit(s_infiles, ',', fixed=T)[[1]]
-  encoddt <- fread(fencod, header=T, sep="\t")
-  nthr_bowtie <- ifelse(nthr > 4, nthr-4, 1) 
-  bowtie_ref <- paste0(refname, '_prsem')
+# ffqs <- strsplit(s_infiles, ',', fixed=T)[[1]]
+# encoddt <- fread(fencod, header=T, sep="\t")
+# nthr_bowtie <- ifelse(nthr > 4, nthr-4, 1) 
+# bowtie_ref <- paste0(refname, '_prsem')
 
-  for ( ffq in ffqs ) {
-    id <- Util$getFileNameSansExt(ffq)
-    fout <- paste0(imdname, '_prsem.', id, '.tagAlign.gz')
-    encod <- subset(encoddt, file == ffq)[, encoding]
-    cmd_cat <- ifelse(Util$checkIfGzipByExt(ffq), 'zcat', 'cat')
-    cmd <- paste0(cmd_cat, ' ', ffq , ' | ', 
-                  bowtie, ' -q -v 2 -a --best --strata -m 1 ', encod, 
-                          ' -S -p ', nthr_bowtie, ' ', bowtie_ref, ' - |',
-                  samtools, ' view -S -b -F 1548 - | ',
-                  bedtools, ' bamtobed -i stdin | ',
-                  quote(`awk 'BEGIN{FS=\"\t";OFS="\t"}{$4="N"; print $0}' |`),
-                  'gzip -c > ', fout)
+# for ( ffq in ffqs ) {
+#   id <- Util$getFileNameSansExt(ffq)
+#   fout <- paste0(imdname, '_prsem.', id, '.tagAlign.gz')
+#   encod <- subset(encoddt, file == ffq)[, encoding]
+#   cmd_cat <- ifelse(Util$checkIfGzipByExt(ffq), 'zcat', 'cat')
+#   cmd <- paste0(cmd_cat, ' ', ffq , ' | ', 
+#                 bowtie, ' -q -v 2 -a --best --strata -m 1 ', encod, 
+#                         ' -S -p ', nthr_bowtie, ' ', bowtie_ref, ' - |',
+#                 samtools, ' view -S -b -F 1548 - | ',
+#                 bedtools, ' bamtobed -i stdin | ',
+#                 quote(`awk 'BEGIN{FS=\"\t";OFS="\t"}{$4="N"; print $0}' |`),
+#                 'gzip -c > ', fout)
 
-    cat("\n", cmd, "\n")
-    system(cmd)
-  }
-}
+#   cat("\n", cmd, "\n")
+#   system(cmd)
+# }
+#}
 
 
 guessFqEncoding <- function(argv){
-  Util$checkInstallCRAN('data.table')
-  Util$checkInstallBioc('ShortRead')
+  checkInstallCRAN('data.table')
+  checkInstallBioc('ShortRead')
 
-  library(data.table)
-  library(ShortRead)
+  suppressPackageStartupMessages(library(data.table))
+  suppressPackageStartupMessages(library(ShortRead))
 
   nthr      <- strtoi(argv[1])
   s_infiles <- argv[2]
@@ -110,4 +110,21 @@ guessFqEncodingByFile <- function(fq) {
 }
 
 
-system.time( main() )
+checkInstallCRAN <- function(pkg_name) {
+  if ( ! pkg_name %in% rownames(installed.packages())){
+    install.packages(pkg_name)
+  }
+}
+
+checkInstallBioc <- function(pkg_name) {
+  if ( ! pkg_name %in% rownames(installed.packages() ) ){
+    source("http://bioconductor.org/biocLite.R")
+    biocLite(pkg_name)
+  }
+}
+
+
+# no need to report time cost
+#system.time( main() )
+
+main()

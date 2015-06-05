@@ -7,7 +7,6 @@ __doc__="""
   run pRSEM to calculate priors and use them for abundance estimation
 """
 
-
 import ChIPSeqExperiment
 import Param
 
@@ -17,6 +16,9 @@ def main():
 
   param = Param.initFromCommandLineArguments(argdict)
   chipseqexp = ChIPSeqExperiment.initFromParam(param)
+
+  chipseqexp.getFastqEncoding()
+  chipseqexp.alignReadByBowtie()
 
 
 def getCommandLineArguments():
@@ -32,10 +34,10 @@ def getCommandLineArguments():
   parser.add_argument('--quiet', action='store_true')
 
   ## need to be in the same order as feed in argument
-  parser.add_argument('ref-name')
-  parser.add_argument('sample-name')
-  parser.add_argument('stat-name')
-  parser.add_argument('imd-name')
+  parser.add_argument('ref_name')
+  parser.add_argument('sample_name')
+  parser.add_argument('stat_name')
+  parser.add_argument('imd_name')
   argdict = vars(parser.parse_args())
 
   return argdict
