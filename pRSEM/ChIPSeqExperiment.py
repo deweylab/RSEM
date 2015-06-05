@@ -14,11 +14,9 @@ import Util
 class ChIPSeqExperiment:
   def __init__(self):
     self.param = None ## reference to input parameters
-    self.target_reps  = []
-    self.control_reps = []
-    self.pooled_target_tagalign  = None # File object of pooled target tagAlign
-    self.pooled_control_tagalign = None # File object of pooled control tagAlign
-
+    self.reps  = []
+    self.is_control = None
+    self.pooled_tagalign  = None # File object of pooled tagAlign
 
   @classmethod
   def initFromParam(cls, param):
