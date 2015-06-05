@@ -15,12 +15,18 @@ def main():
   argdict = getCommandLineArguments()
 
   param = Param.initFromCommandLineArguments(argdict)
-  chipseqexp = ChIPSeqExperiment.initFromParam(param)
 
-  chipseqexp.getFastqEncoding()
-  chipseqexp.alignReadByBowtie()
-  chipseqexp.poolTagAlign()
-  chipseqexp.
+  cse_target = ChIPSeqExperiment.initFromParam(param, 'target')
+  cse_target.getFastqEncoding()
+  cse_target.alignReadByBowtie()
+  cse_target.poolTagAlign()
+
+  if param.chipseq_control_read_files is not None:
+    cse_control = ChIPSeqExperiment.initFromParam(param, 'control')
+    cse_control.getFastqEncoding()
+    cse_control.alignReadByBowtie()
+    cse_control.poolTagAlign()
+
 
 
 def getCommandLineArguments():

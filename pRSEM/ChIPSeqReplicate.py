@@ -13,7 +13,6 @@ class ChIPSeqReplicate:
     self.name       = None  ## default: fastq file's basename
     self.index      = None  ## replicate's index number
     self.tagalign   = None  ## File object for tagAlign
-    self.is_control = None  ## True if replicate is ChIP-seq control
     self.encoding   = None  ## fastq encoding, not sure if needed
 
     self.param      = None  ## reference to parameters
