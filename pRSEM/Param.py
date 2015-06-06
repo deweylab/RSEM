@@ -32,9 +32,11 @@ class Param:
 
     self.temp_dir    = None     ## dir to save RSEM/pRSEM intermediate files
     self.prsem_scr_dir   = None ## pRSEM scripts dir
+    self.prsem_rlib_dir  = None ## place to install pRSEM required R libraries
     self.chipseq_rscript = None ## fullname of prsem-process-chipseq.R
 
     ## for peak calling and IDR calculation
+    self.spp_tgz       = None
     self.spp_script    = None
     self.idr_script    = None
     self.fgenome_table = None
@@ -54,9 +56,15 @@ class Param:
     prm.argdict = argdict
     for (key, val) in argdict.items():
       setattr(prm, key, val)
+
     prm.temp_dir = os.path.split(prm.imd_name)[0] + '/'
     prm.prsem_scr_dir = os.path.dirname(os.path.realpath(__file__)) + '/'
+    prm.prsem_rlib_dir = prm.prsem_scr_dir + 'Rlib/'
+    if not os.path.exists(prm.prsem_rlib_dir):
+      os.mkdir(prm.prsem_rlib_dir)
+
     prm.chipseq_rscript = prm.prsem_scr_dir + 'prsem-process-chipseq.R'
+    prm.spp_tgz = prm.prsem_scr_dir + 'phantompeakqualtools/spp_1.10.1.tar.gz'
     prm.spp_script = prm.prsem_scr_dir + 'phantompeakqualtools/run_spp.R'
     prm.idr_script = prm.prsem_scr_dir + 'idrCode/batch-consistency-analysis.r'
     prm.fgenome_table = prm.ref_name + '.chrlist'

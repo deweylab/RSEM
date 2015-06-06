@@ -1,4 +1,4 @@
-#!/usr/bin/env Rscript
+#!/bin/env Rscript
 
 #
 #  pliu 20150509
@@ -6,11 +6,11 @@
 #  module for processing ChIP-seq data
 #
 
-#source('prsem-util.R')
 
 main <- function() {
   name2func <- list(
-    'guessFqEncoding' = guessFqEncoding
+    'guessFqEncoding' = guessFqEncoding,
+    'checkInstallSpp' = checkInstallSpp
   )
 
   argv <- commandArgs(trailingOnly=T)
@@ -19,11 +19,13 @@ main <- function() {
 
 
 guessFqEncoding <- function(argv){
-  checkInstallCRAN('data.table')
-  checkInstallBioc('ShortRead')
+  checkInstallCRAN('data.table', argv[4])
+  checkInstallBioc('ShortRead',  argv[4])
 
-  suppressPackageStartupMessages(library(data.table))
-  suppressPackageStartupMessages(library(ShortRead))
+  suppressPackageStartupMessages(library(data.table, 
+                                         lib.loc=c(.libPaths(), argv[4])))
+  suppressPackageStartupMessages(library(ShortRead, 
+                                         lib.loc=c(.libPaths(), argv[4])))
 
   nthr      <- strtoi(argv[1])
   s_infiles <- argv[2]
@@ -64,16 +66,28 @@ guessFqEncodingByFile <- function(fq) {
 }
 
 
-checkInstallCRAN <- function(pkg_name) {
-  if ( ! pkg_name %in% rownames(installed.packages())){
-    install.packages(pkg_name)
+checkInstallSpp <- function(argv) {
+  pkg <- argv[1]
+  lib <- argv[2]
+  if ( ! 'spp' %in% rownames(installed.packages(lib.loc=c(.libPaths(), lib)))) {
+    cat("\ninstall R package", pkg, 'to', lib, "\n\n")
+    install.packages(pkgs=pkg, lib=lib, repos=NULL, quiet=T)
   }
 }
 
-checkInstallBioc <- function(pkg_name) {
-  if ( ! pkg_name %in% rownames(installed.packages() ) ){
+
+checkInstallCRAN <- function(pkg, lib) {
+  if ( ! pkg %in% rownames(installed.packages(lib.loc=c(.libPaths(), lib)))){
+    cat("\ninstall R package", pkg, 'to', lib, "\n\n")
+    install.packages(pkgs=pkg, lib=lib, quiet=T)
+  }
+}
+
+checkInstallBioc <- function(pkg, lib) {
+  if ( ! pkg %in% rownames(installed.packages(lib.loc=c(.libPaths(), lib)))){
+    cat("\ninstall R package", pkg, 'to', lib, "\n\n")
     source("http://bioconductor.org/biocLite.R")
-    biocLite(pkg_name)
+    biocLite(pkgs=pkg, lib=lib, quiet=T)
   }
 }
 

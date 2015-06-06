@@ -27,6 +27,8 @@ def main():
     cse_control.alignReadByBowtie()
     cse_control.poolTagAlign()
 
+    cse_target.runSPP(cse_control.pooled_tagalign.fullname)
+
 
 
 def getCommandLineArguments():

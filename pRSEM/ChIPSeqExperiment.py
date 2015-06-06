@@ -44,7 +44,7 @@ class ChIPSeqExperiment:
       fenc = self.param.imd_name + '_prsem.chipseq_target_encoding'
 
     Util.runCommand(self.param.chipseq_rscript, 'guessFqEncoding',
-                    nthr, fin, fenc)
+                    nthr, fin, fenc, self.param.prsem_rlib_dir)
 
     with open(fenc, 'r') as f_fenc:
       next(f_fenc)
@@ -97,6 +97,39 @@ class ChIPSeqExperiment:
       cmd = "%s %s | gzip -c >> %s" % (cat_cmd, rep.tagalign.fullname, frep0)
       print cmd, "\n";
       os.system(cmd)
+
+
+  def runSPP(self, fctrl_tagalign):
+    """
+    in principle, this function is only for ChIP-seq target experiment
+    should make target and control inherit from ChIPSeqExperiment, do it later
+    """
+    import sys
+    if self.is_control:
+      sys.exit( "ChIPSeqExperiment::runSPP() cann't be applied to control" )
+
+    tgt_tagaligns = [self.pooled_tagalign] + [rep.tagalign for rep in self.reps]
+    prm = self.param
+
+    ## need to check and install spp ##
+    Util.runCommand(prm.chipseq_rscript, 'checkInstallSpp', prm.spp_tgz,
+                    prm.prsem_rlib_dir)
+    exit(-1)
+
+    for tgt_tagalign in tgt_tagaligns:
+      fout = "%sphantom_%s.tab" % (prm.temp_dir, tgt_tagalign.basename)
+      Util.runCommand('/bin/env', 'Rscript', prm.spp_script,
+                      "-c=%s"      % tgt_tagalign.fullname,
+                      "-i=%s"      % fctrl_tagalign,
+                      "-npeak=%d"  % prm.N_PEAK,
+                      prm.PEAK_TYPE,
+                      '-savp',
+                      "-x=%s"      % prm.EXCLUSION_ZONE,
+                      '-rf',
+                      "-odir=%s"   % prm.temp_dir,
+                      "-p=%d"      % prm.num_threads,
+                      "-tmpdir=%s" % prm.temp_dir,
+                      "-out=%s"    % fout )
 
 
 
