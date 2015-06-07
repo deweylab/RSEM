@@ -63,7 +63,7 @@ class Param:
     if not os.path.exists(prm.prsem_rlib_dir):
       os.mkdir(prm.prsem_rlib_dir)
 
-    prm.chipseq_rscript = prm.prsem_scr_dir + 'prsem-process-chipseq.R'
+    prm.chipseq_rscript = prm.prsem_scr_dir + 'process-chipseq.R'
     prm.spp_tgz = prm.prsem_scr_dir + 'phantompeakqualtools/spp_1.10.1.tar.gz'
     prm.spp_script = prm.prsem_scr_dir + 'phantompeakqualtools/run_spp.R'
     prm.idr_script = prm.prsem_scr_dir + 'idrCode/batch-consistency-analysis.r'

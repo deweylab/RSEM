@@ -7,14 +7,17 @@ __doc__="""
   run pRSEM to calculate priors and use them for abundance estimation
 """
 
-import ChIPSeqExperiment
-import Param
-
-
 def main():
+  import os
+
+  import ChIPSeqExperiment
+  import Param
+
   argdict = getCommandLineArguments()
 
   param = Param.initFromCommandLineArguments(argdict)
+
+  os.environ['R_LIBS'] = "%s:%s" % (os.environ['R_LIBS'], param.prsem_rlib_dir)
 
   cse_target = ChIPSeqExperiment.initFromParam(param, 'target')
   cse_target.getFastqEncoding()

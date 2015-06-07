@@ -11,14 +11,28 @@ def runCommand(*args):
   import sys
 
   str_args = [ str(arg) for arg in args ]
-  cmd = ' '.join(str_args)
-  print cmd;
+  print ' '.join(str_args), "\n";
   try:
     retcode = subprocess.call(str_args)
     if retcode < 0:
-      print >> sys.stderr, 'Child was terminated by singal', -retcode;
+      sys.exit("Terminated by singal %d" % -retcode)
+    elif retcode > 0:
+      sys.exit("failed with return code %d" % retcode)
   except OSError as e:
-    print >> sys.stderr, 'Execution failed:', e;
+    sys.exit("Execution failed: %s" % e)
+
+
+def runOneLineCommand(cmd):
+  import os
+  import sys
+
+  print cmd, "\n";
+  try:
+    retcode = os.system(cmd)
+    if retcode != 0:
+      sys.exit("Failed with return code %d" % retcode)
+  except OSError as e:
+    sys.exit("Execution failed: %s" % e)
 
 
 def getCatCommand(is_gzipped):

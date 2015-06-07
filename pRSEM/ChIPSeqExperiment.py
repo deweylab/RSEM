@@ -43,7 +43,8 @@ class ChIPSeqExperiment:
     else:
       fenc = self.param.imd_name + '_prsem.chipseq_target_encoding'
 
-    Util.runCommand(self.param.chipseq_rscript, 'guessFqEncoding',
+    Util.runCommand('/bin/env', 'Rscript', self.param.chipseq_rscript,
+                    'guessFqEncoding',
                     nthr, fin, fenc, self.param.prsem_rlib_dir)
 
     with open(fenc, 'r') as f_fenc:
@@ -55,7 +56,6 @@ class ChIPSeqExperiment:
 
 
   def alignReadByBowtie(self):
-    import os
     if self.param.num_threads > 4:
       nthr_bowtie = self.param.num_threads - 4
     else:
@@ -77,8 +77,7 @@ class ChIPSeqExperiment:
              [ "gzip -c > %s " % rep.tagalign.fullname ]
 
       cmd = ' '.join(cmds)
-      print cmd, "\n";
-      os.system(cmd)
+      Util.runOneLineCommand(cmd)
 
 
   def poolTagAlign(self):
@@ -95,8 +94,7 @@ class ChIPSeqExperiment:
     for rep in self.reps:
       cat_cmd = Util.getCatCommand(rep.fastq.is_gz)
       cmd = "%s %s | gzip -c >> %s" % (cat_cmd, rep.tagalign.fullname, frep0)
-      print cmd, "\n";
-      os.system(cmd)
+      Util.runOneLineCommand(cmd)
 
 
   def runSPP(self, fctrl_tagalign):
@@ -105,6 +103,7 @@ class ChIPSeqExperiment:
     should make target and control inherit from ChIPSeqExperiment, do it later
     """
     import sys
+    import multiprocessing as mp
     if self.is_control:
       sys.exit( "ChIPSeqExperiment::runSPP() cann't be applied to control" )
 
@@ -112,25 +111,39 @@ class ChIPSeqExperiment:
     prm = self.param
 
     ## need to check and install spp ##
-    Util.runCommand(prm.chipseq_rscript, 'checkInstallSpp', prm.spp_tgz,
-                    prm.prsem_rlib_dir)
-    exit(-1)
+    Util.runCommand('/bin/env', 'Rscript', prm.chipseq_rscript,
+                    'checkInstallSpp', prm.spp_tgz, prm.prsem_rlib_dir)
 
-    for tgt_tagalign in tgt_tagaligns:
-      fout = "%sphantom_%s.tab" % (prm.temp_dir, tgt_tagalign.basename)
-      Util.runCommand('/bin/env', 'Rscript', prm.spp_script,
-                      "-c=%s"      % tgt_tagalign.fullname,
-                      "-i=%s"      % fctrl_tagalign,
-                      "-npeak=%d"  % prm.N_PEAK,
-                      prm.PEAK_TYPE,
-                      '-savp',
-                      "-x=%s"      % prm.EXCLUSION_ZONE,
-                      '-rf',
-                      "-odir=%s"   % prm.temp_dir,
-                      "-p=%d"      % prm.num_threads,
-                      "-tmpdir=%s" % prm.temp_dir,
-                      "-out=%s"    % fout )
+    nthr = prm.num_threads/len(tgt_tagaligns)
+    procs = [ mp.Process(target=runSPP, args=(tgt_tagalign, fctrl_tagalign,
+                         prm, nthr)) for tgt_tagalign in tgt_tagaligns ]
 
+    for p in procs:
+      p.start()
+
+    for p in procs:
+      p.join()
+
+
+def runSPP(tgt_tagalign, fctrl_tagalign, prm, nthr):
+  import os
+  spp_tmpdir = prm.temp_dir + tgt_tagalign.basename + '_spp_tmp/'
+  if not os.path.exists(spp_tmpdir):
+    os.mkdir(spp_tmpdir)
+  fout = prm.temp_dir + tgt_tagalign.basename + '_phantom.tab'
+  Util.runCommand('/bin/env', 'Rscript', prm.spp_script,
+                  "-c=%s"      % tgt_tagalign.fullname,
+                  "-i=%s"      % fctrl_tagalign,
+                  "-npeak=%d"  % prm.N_PEAK,
+                  prm.PEAK_TYPE,
+                  '-savp',
+                  "-x=%s"      % prm.EXCLUSION_ZONE,
+                  '-rf',
+                  "-odir=%s"   % prm.temp_dir,
+                  "-p=%d"      % nthr,
+                  "-tmpdir=%s" % spp_tmpdir,
+                  "-out=%s"    % fout )
+  os.rmdir(spp_tmpdir)
 
 
 def initFromParam(param, typ):
