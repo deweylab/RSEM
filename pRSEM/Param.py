@@ -38,6 +38,7 @@ class Param:
     ## for peak calling and IDR calculation
     self.spp_tgz       = None
     self.spp_script    = None
+    self.idr_scr_dir   = None
     self.idr_script    = None
     self.fgenome_table = None
 
@@ -65,8 +66,9 @@ class Param:
 
     prm.chipseq_rscript = prm.prsem_scr_dir + 'process-chipseq.R'
     prm.spp_tgz = prm.prsem_scr_dir + 'phantompeakqualtools/spp_1.10.1.tar.gz'
-    prm.spp_script = prm.prsem_scr_dir + 'phantompeakqualtools/run_spp.R'
-    prm.idr_script = prm.prsem_scr_dir + 'idrCode/batch-consistency-analysis.r'
+    prm.spp_script  = prm.prsem_scr_dir + 'phantompeakqualtools/run_spp.R'
+    prm.idr_scr_dir = prm.prsem_scr_dir + 'idrCode/'
+    prm.idr_script  = prm.idr_scr_dir + 'batch-consistency-analysis.r'
     prm.fgenome_table = prm.ref_name + '.chrlist'
     return prm
 

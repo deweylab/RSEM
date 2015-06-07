@@ -1,3 +1,7 @@
+pliu 20150607
+genome_table.txt and genome_tables/ are removed. The same info can be obtained
+from rsem-prepare-reference
+
 ===========================
 README for consistency analysis of peak calling on replicates
 Qunhua Li and Anshul Kundaje (Oct,2010)

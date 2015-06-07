@@ -1,3 +1,5 @@
+# modified by pliu
+#
 # revised on 2-20-10
 # - fix error in pass.structure: reverse rank.combined, so that big sig.value
 #  are ranked with small numbers (1, 2, ...)
@@ -29,8 +31,17 @@
 # adjacent peaks, which creates trouble for finding correct intersect  
 process.narrowpeak <- function(narrow.file, chr.size, half.width=NULL, summit="offset", stop.exclusive=T, broadpeak=F){
 
-
-  aa <- read.table(narrow.file)
+  ## pliu 20150607 
+  ## to read gzipped files
+  library(tools)
+  narrow.file.ext <- file_ext(narrow.file)
+  if ( narrow.file.ext %in% c('gz', 'gzip') ) {
+    aa <- read.table(gzfile(narrow.file))
+  } else {
+    aa <- read.table(narrow.file)
+  }
+ #aa <- read.table(narrow.file)
+  ######
 
   if(broadpeak){
     bb.ori <- data.frame(chr=aa$V1, start=aa$V2, stop=aa$V3, signal.value=aa$V7, p.value=aa$V8, q.value=aa$V9)

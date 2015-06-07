@@ -20,17 +20,19 @@ def main():
   os.environ['R_LIBS'] = "%s:%s" % (os.environ['R_LIBS'], param.prsem_rlib_dir)
 
   cse_target = ChIPSeqExperiment.initFromParam(param, 'target')
+
   cse_target.getFastqEncoding()
   cse_target.alignReadByBowtie()
   cse_target.poolTagAlign()
 
   if param.chipseq_control_read_files is not None:
     cse_control = ChIPSeqExperiment.initFromParam(param, 'control')
+
     cse_control.getFastqEncoding()
     cse_control.alignReadByBowtie()
     cse_control.poolTagAlign()
-
-    cse_target.runSPP(cse_control.pooled_tagalign.fullname)
+    cse_target.callPeaksBySPP(cse_control.pooled_tagalign)
+    cse_target.getPeaksByIDR(cse_control.pooled_tagalign)
 
 
 

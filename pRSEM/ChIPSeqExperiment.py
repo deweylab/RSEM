@@ -17,6 +17,8 @@ class ChIPSeqExperiment:
     self.reps            = []   ## list of ChIPSeqReplciate object
     self.is_control      = None ## if is control
     self.pooled_tagalign = None ## File object of pooled tagAlign
+    self.peaks           = None ## File object of targetRep0_VS_controlRep0
+    self.final_peaks     = None ## File object of final peaks
 
 
   @classmethod
@@ -32,6 +34,20 @@ class ChIPSeqExperiment:
       rep.chipseqexp = cse
       tgt_fta = "%s/%s.tagAlign.gz" % (param.temp_dir, rep.name)
       rep.tagalign = File.initFromFullFileName(tgt_fta)
+
+    if cse.is_control:
+      frep0 = param.temp_dir + 'controlRep0.tagAlign.gz'
+    else:
+      frep0 = param.temp_dir + 'targetRep0.tagAlign.gz'
+    cse.pooled_tagalign = File.initFromFullFileName(frep0)
+
+    rep0_basename = 'targetRep0.tagAlign_VS_controlRep0.tagAlign.regionPeak.gz'
+    fpeaks    = param.temp_dir + rep0_basename
+    cse.peaks = File.initFromFullFileName(fpeaks)
+
+    ffinal_peaks    = param.temp_dir + 'idr_' + rep0_basename
+    cse.final_peaks = File.initFromFullFileName(ffinal_peaks)
+
     return cse
 
 
@@ -82,25 +98,19 @@ class ChIPSeqExperiment:
 
   def poolTagAlign(self):
     import os
-    if self.is_control:
-      frep0 = self.param.temp_dir + 'controlRep0.tagAlign.gz'
-    else:
-      frep0 = self.param.temp_dir + 'targetRep0.tagAlign.gz'
-
+    frep0 = self.pooled_tagalign.fullname
     if os.path.exists(frep0):
       os.remove(frep0)
-
-    self.pooled_tagalign = File.initFromFullFileName(frep0)
     for rep in self.reps:
       cat_cmd = Util.getCatCommand(rep.fastq.is_gz)
       cmd = "%s %s | gzip -c >> %s" % (cat_cmd, rep.tagalign.fullname, frep0)
       Util.runOneLineCommand(cmd)
 
 
-  def runSPP(self, fctrl_tagalign):
+  def callPeaksBySPP(self, ctrl_tagalign):
     """
     in principle, this function is only for ChIP-seq target experiment
-    should make target and control inherit from ChIPSeqExperiment, do it later
+    should make target and control inherit from ChIPSeqExperiment, will do
     """
     import sys
     import multiprocessing as mp
@@ -115,14 +125,66 @@ class ChIPSeqExperiment:
                     'checkInstallSpp', prm.spp_tgz, prm.prsem_rlib_dir)
 
     nthr = prm.num_threads/len(tgt_tagaligns)
+    fctrl_tagalign = ctrl_tagalign.fullname
     procs = [ mp.Process(target=runSPP, args=(tgt_tagalign, fctrl_tagalign,
                          prm, nthr)) for tgt_tagalign in tgt_tagaligns ]
-
     for p in procs:
       p.start()
-
     for p in procs:
       p.join()
+
+
+  def getPeaksByIDR(self, ctrl_tagalign):
+    """
+    in principle, this function is only for ChIP-seq target experiment
+    should make target and control inherit from ChIPSeqExperiment, will do
+    """
+    import sys
+    import itertools
+    import multiprocessing as mp
+    if self.is_control:
+      sys.exit( "ChIPSeqExperiment::runSPP() cann't be applied to control" )
+
+    procs = []
+    out_q = mp.Queue()
+    prm = self.param
+    for (repa, repb) in itertools.combinations(self.reps, 2):
+      fpeaka = prm.temp_dir + repa.tagalign.filename_sans_ext + '_VS_' + \
+               ctrl_tagalign.filename_sans_ext + '.regionPeak.gz'
+      fpeakb = prm.temp_dir + repb.tagalign.filename_sans_ext + '_VS_' + \
+               ctrl_tagalign.filename_sans_ext + '.regionPeak.gz'
+      idr_prefix = prm.temp_dir + 'idr_' + repa.tagalign.basename + '_vs_' + \
+                   repb.tagalign.basename
+      proc = mp.Process(target=getNPeaksByIDR,
+                        args=(fpeaka, fpeakb, idr_prefix, prm, out_q))
+      procs.append(proc)
+      proc.start()
+
+    fidr2npeaks = {}
+    for p in procs:
+      fidr2npeaks.update(out_q.get())
+      p.join()
+
+    max_npeaks = max(fidr2npeaks.values())
+    cmd = 'zcat %s %s %s' % ( self.peaks.fullname,
+            ' | sort -k7nr,8nr | head -n %d ' % max_npeaks,
+            ' | gzip -c > %s ' % self.final_peaks.fullname)
+
+    Util.runOneLineCommand(cmd)
+
+
+def getNPeaksByIDR(fpeaka, fpeakb, idr_prefix, prm, out_q):
+  Util.runCommand('/bin/env', 'Rscript', prm.idr_script, fpeaka, fpeakb,
+                  '-1', idr_prefix, '0', 'F', 'signal.value', prm.idr_scr_dir,
+                  prm.fgenome_table)
+  fidr = idr_prefix + '-overlapped-peaks.txt'
+  outdict = {}
+  with open(fidr, 'r') as f_fidr:
+    next(f_fidr)
+    ## count the number of peaks w/ IDR <= IDR_THRESHOLD
+    npk = sum( float(line.split()[10]) <= prm.IDR_THRESHOLD for line in f_fidr )
+    outdict[fidr] = npk
+    out_q.put(outdict)
 
 
 def runSPP(tgt_tagalign, fctrl_tagalign, prm, nthr):

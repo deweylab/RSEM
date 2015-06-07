@@ -1,3 +1,5 @@
+# modified 06/07/2015 pliu
+#
 # modified 3-29-10: Qunhua Li
 # add 2 columns in the output of "-overlapped-peaks.txt": local.idr and IDR
 
@@ -51,11 +53,17 @@ sig.value <- args[7]
 #overlap.ratio <- 0.1
 #sig.value <- "signal.value"
 
-
-source("functions-all-clayton-12-13.r")
+## pliu
+idr_code_path <- args[8]
+source(paste0(idr_code_path, "/functions-all-clayton-12-13.r"))
+#source("functions-all-clayton-12-13.r")
+##
 
 # read the length of the chromosomes, which will be used to concatenate chr's
-chr.file <- "genome_table.txt"
+## pliu 20150607
+#chr.file <- "genome_table.txt"
+chr.file <- args[9]
+##
 
 chr.size <- read.table(chr.file)
 
