@@ -102,7 +102,7 @@ my $chipseq_control_read_files = '';
 my $bowtie_bin_for_chipseq = '';
 my $bedtools_bin_for_chipseq = '';
 my $chipseq_peak_file = '';
-my $mappability_file = '';
+my $mappability_bigwig_file = '';
 
 GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "temporary-folder=s" => \$temp_dir,
@@ -163,7 +163,7 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   'bowtie-bin-for-chipseq=s' => \$bowtie_bin_for_chipseq,
 	   'bedtools-bin-for-chipseq=s' => \$bedtools_bin_for_chipseq,
 	   'chipseq-peak-file=s' => \$chipseq_peak_file,
-	   'mappability-file=s'  => \$mappability_file,
+	   'mappability-bigwig-file=s'  => \$mappability_bigwig_file,
 	   "time" => \$mTime,
 	   "version" => \$version,
 	   "q|quiet" => \$quiet,
@@ -573,7 +573,7 @@ if ( $run_prsem ) {
   ## required options to run pRSEM
   $cmd = "$FindBin::RealBin/pRSEM/prsem-calculate-expression " .
          " --num-threads $nThreads " .
-         " --mappability-file $mappability_file";
+         " --mappability-bigwig-file $mappability_file";
 
   ## either providing ChIP-seq peak file or others
   if ( $chipseq_peak_file ne '') {
