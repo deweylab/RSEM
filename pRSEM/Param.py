@@ -22,6 +22,7 @@ class Param:
     self.bowtie_bin_for_chipseq     = None
     self.samtools_bin               = None
     self.bedtools_bin_for_chipseq   = None
+    self.chipseq_peak_file          = None
     self.quiet                      = None
     ##
 

@@ -8,32 +8,37 @@ __doc__="""
 """
 
 def main():
-  import os
-
-  import ChIPSeqExperiment
   import Param
 
   argdict = getCommandLineArguments()
 
   param = Param.initFromCommandLineArguments(argdict)
 
+  if param.chipseq_peak_file is None:
+    genChIPSeqPeakFileBySPPIDR(param) ## save to param.chipseq_peak_file
+
+
+def genChIPSeqPeakFileBySPPIDR(param):
+  import os
+  import ChIPSeqExperiment
+
   os.environ['R_LIBS'] = "%s:%s" % (os.environ['R_LIBS'], param.prsem_rlib_dir)
-
   cse_target = ChIPSeqExperiment.initFromParam(param, 'target')
-
   cse_target.getFastqEncoding()
   cse_target.alignReadByBowtie()
   cse_target.poolTagAlign()
 
   if param.chipseq_control_read_files is not None:
     cse_control = ChIPSeqExperiment.initFromParam(param, 'control')
-
     cse_control.getFastqEncoding()
     cse_control.alignReadByBowtie()
     cse_control.poolTagAlign()
     cse_target.callPeaksBySPP(cse_control.pooled_tagalign)
     cse_target.getPeaksByIDR(cse_control.pooled_tagalign)
 
+    param.chipseq_peak_file = cse_target.final_peaks.fullname
+  else:
+    pass  ## to-be-implemented, call peaks by MOSAICs
 
 
 def getCommandLineArguments():
@@ -46,6 +51,7 @@ def getCommandLineArguments():
   parser.add_argument('--bowtie-bin-for-chipseq')
   parser.add_argument('--samtools-bin')
   parser.add_argument('--bedtools-bin-for-chipseq')
+  parser.add_argument('--chipseq-peak-file')
   parser.add_argument('--quiet', action='store_true')
 
   ## need to be in the same order as feed in argument
