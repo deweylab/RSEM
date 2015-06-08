@@ -101,6 +101,8 @@ my $chipseq_target_read_files  = '';
 my $chipseq_control_read_files = '';
 my $bowtie_bin_for_chipseq = '';
 my $bedtools_bin_for_chipseq = '';
+my $chipseq_peak_file = '';
+my $mappability_file = '';
 
 GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "temporary-folder=s" => \$temp_dir,
@@ -153,13 +155,15 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "sort-bam-by-read-name" => \$sort_bam_by_read_name,
 	   "sort-bam-buffer-size=s" => \$sort_bam_buffer_size,
 	   "seed=i" => \$seed,
-     'run-pRSEM' => \$run_prsem,
-     'chipseq-target-read-files=s' => \$chipseq_target_read_files, 
-                                          ## delimited by comma 
-     'chipseq-control-read-files=s' => \$chipseq_control_read_files, 
-                                          ## delimited by comma
-     'bowtie-bin-for-chipseq=s' => \$bowtie_bin_for_chipseq,
-     'bedtools-bin-for-chipseq=s' => \$bedtools_bin_for_chipseq,
+	   'run-pRSEM' => \$run_prsem,
+	   'chipseq-target-read-files=s' => \$chipseq_target_read_files, 
+	                                      ## delimited by comma if more than one
+	   'chipseq-control-read-files=s' => \$chipseq_control_read_files, 
+	                                      ## delimited by comma if more than one
+	   'bowtie-bin-for-chipseq=s' => \$bowtie_bin_for_chipseq,
+	   'bedtools-bin-for-chipseq=s' => \$bedtools_bin_for_chipseq,
+	   'chipseq-peak-file=s' => \$chipseq_peak_file,
+	   'mappability-file=s'  => \$mappability_file,
 	   "time" => \$mTime,
 	   "version" => \$version,
 	   "q|quiet" => \$quiet,
@@ -566,23 +570,30 @@ if ($mTime) { $time_start = time(); }
 
 ## if run pRSEM
 if ( $run_prsem ) {
-    $command = "$FindBin::RealBin/pRSEM/prsem-calculate-expression " .
-               " --num-threads $nThreads " .
-               " --chipseq-target-read-files $chipseq_target_read_files " .
-               " --bowtie-bin-for-chipseq $bowtie_bin_for_chipseq" .
-               " --samtools-bin $FindBin::RealBin/sam/samtools " .
-               " --bedtools-bin-for-chipseq $bedtools_bin_for_chipseq";
- 
+  ## required options to run pRSEM
+  $cmd = "$FindBin::RealBin/pRSEM/prsem-calculate-expression " .
+         " --num-threads $nThreads " .
+         " --mappability-file $mappability_file";
+
+  ## either providing ChIP-seq peak file or others
+  if ( $chipseq_peak_file ne '') {
+    $cmd .= " --chipseq-peak-file $chipseq_peak_file";
+  } else {
+    $cmd .= " --chipseq-target-read-files $chipseq_target_read_files " .
+            " --bowtie-bin-for-chipseq $bowtie_bin_for_chipseq" .
+            " --samtools-bin $FindBin::RealBin/sam/samtools " .
+            " --bedtools-bin-for-chipseq $bedtools_bin_for_chipseq";
     if ( $chipseq_control_read_files ne '' ) {
-        $command .= " --chipseq-control-read-files $chipseq_control_read_files";
+     $cmd .= " --chipseq-control-read-files $chipseq_control_read_files";
     }
+  }
  
- 
-    if ( $quiet ) {
-        $command .= ' --quiet ';
-    }
-    $command .= " $refName $sampleName $statName $imdName";
-    &runCommand($command);
+  if ( $quiet ) {
+      $command .= ' --quiet ';
+  }
+
+  $cmd .= " $refName $sampleName $statName $imdName";
+  &runCommand($cmd);
 }
 ####
 
