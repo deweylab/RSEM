@@ -60,8 +60,8 @@ class ChIPSeqExperiment:
       fenc = self.param.imd_name + '_prsem.chipseq_target_encoding'
 
     Util.runCommand('/bin/env', 'Rscript', self.param.chipseq_rscript,
-                    'guessFqEncoding',
-                    nthr, fin, fenc, self.param.prsem_rlib_dir)
+                    'guessFqEncoding', nthr, fin, fenc,
+                    self.param.prsem_rlib_dir, quiet=self.param.quiet )
 
     with open(fenc, 'r') as f_fenc:
       next(f_fenc)
@@ -93,7 +93,7 @@ class ChIPSeqExperiment:
              [ "gzip -c > %s " % rep.tagalign.fullname ]
 
       cmd = ' '.join(cmds)
-      Util.runOneLineCommand(cmd)
+      Util.runOneLineCommand(cmd, quiet=self.param.quiet)
 
 
   def poolTagAlign(self):
@@ -104,7 +104,7 @@ class ChIPSeqExperiment:
     for rep in self.reps:
       cat_cmd = Util.getCatCommand(rep.fastq.is_gz)
       cmd = "%s %s | gzip -c >> %s" % (cat_cmd, rep.tagalign.fullname, frep0)
-      Util.runOneLineCommand(cmd)
+      Util.runOneLineCommand(cmd, quiet=self.param.quiet)
 
 
   def callPeaksBySPP(self, ctrl_tagalign):
@@ -122,7 +122,8 @@ class ChIPSeqExperiment:
 
     ## need to check and install spp ##
     Util.runCommand('/bin/env', 'Rscript', prm.chipseq_rscript,
-                    'checkInstallSpp', prm.spp_tgz, prm.prsem_rlib_dir)
+                    'checkInstallSpp', prm.spp_tgz, prm.prsem_rlib_dir,
+                    quiet=prm.quiet)
 
     nthr = prm.num_threads/len(tgt_tagaligns)
     fctrl_tagalign = ctrl_tagalign.fullname
@@ -170,13 +171,13 @@ class ChIPSeqExperiment:
             ' | sort -k7nr,8nr | head -n %d ' % max_npeaks,
             ' | gzip -c > %s ' % self.final_peaks.fullname)
 
-    Util.runOneLineCommand(cmd)
+    Util.runOneLineCommand(cmd, quiet=prm.quiet)
 
 
 def getNPeaksByIDR(fpeaka, fpeakb, idr_prefix, prm, out_q):
   Util.runCommand('/bin/env', 'Rscript', prm.idr_script, fpeaka, fpeakb,
                   '-1', idr_prefix, '0', 'F', 'signal.value', prm.idr_scr_dir,
-                  prm.fgenome_table)
+                  prm.fgenome_table, quiet=prm.quiet)
   fidr = idr_prefix + '-overlapped-peaks.txt'
   outdict = {}
   with open(fidr, 'r') as f_fidr:
@@ -204,7 +205,8 @@ def runSPP(tgt_tagalign, fctrl_tagalign, prm, nthr):
                   "-odir=%s"   % prm.temp_dir,
                   "-p=%d"      % nthr,
                   "-tmpdir=%s" % spp_tmpdir,
-                  "-out=%s"    % fout )
+                  "-out=%s"    % fout,
+                  quiet=prm.quiet)
   os.rmdir(spp_tmpdir)
 
 

@@ -13,6 +13,7 @@ class Param:
                               ## GM12878, have to loose the criterion
   TRAINING_GENE_MIN_LEN   = 1003
   TRAINING_MIN_MAPPABILITY = 0.8
+  FLANKING_WIDTH = 500  ## in nt, flanking region around TSS and TES
 
   def __init__(self):
     self.argdict = None
@@ -40,7 +41,7 @@ class Param:
     self.prsem_rlib_dir = None ## place to install pRSEM required R libraries
 
     ## ChIP-seq
-    self.chipseq_rscript = None ## fullname of prsem-process-chipseq.R
+    self.chipseq_rscript = None ## fullname of process-chipseq.R
     self.spp_tgz       = None
     self.spp_script    = None
     self.idr_scr_dir   = None
@@ -48,8 +49,12 @@ class Param:
     self.fgenome_table = None
 
     ## RNA-seq
-    self.fti = None
-    self.bigwigsummary_bin = None
+    self.rnaseq_rscript    = None  ## fullname of R script for dealing RNA-seq
+    self.fti               = None  ## RSEM's reference .ti file
+    self.bigwigsummary_bin = None  ## bigWigSummary binary
+    self.falltrcrd         = None  ## tr info + mappability
+    self.ftraining_tr      = None  ## training set tr
+
 
   def __str__(self):
     ss = [ "%-28s %s\n" % (key, val) for (key, val) in self.argdict.items()] + \
@@ -81,8 +86,11 @@ class Param:
     prm.fgenome_table = prm.ref_name + '.chrlist'
 
     ## RNA-seq
+    prm.rnaseq_rscript = prm.prsem_scr_dir + 'process-rnaseq.R'
     prm.fti = prm.ref_name + '.ti'
     prm.bigwigsummary_bin = prm.prsem_scr_dir + 'bigWigSummary'
+    prm.falltrcrd    = prm.imd_name + '_prsem.alltrcrd'
+    prm.ftraining_tr = prm.imd_name + '_prsem.training_tr'
 
     return prm
 

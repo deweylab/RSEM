@@ -64,13 +64,13 @@ class Transcript:
    #self.overlap_with_transcript_from_other_gene = None
 
     ## mappability
-    self.ave_mpp_around_TSS = None  ## [TSS-500, TSS+500]
+    self.ave_mpp_around_TSS = None  ## [TSS-flanking_width, TSS+flanking_width]
    #self.max_mpp_around_TSS = None
 
-    self.ave_mpp_around_body = None ## (TSS+500, TES-500)
+    self.ave_mpp_around_body = None ## (TSS+flanking_width, TES-flanking_width)
    #self.max_mpp_around_body = None
 
-    self.ave_mpp_around_TES = None  ## [TES-500, TES+500]
+    self.ave_mpp_around_TES = None  ## [TES-flanking_width, TES+flanking_width]
    #self.max_mpp_around_TES = None
 
 
@@ -239,14 +239,15 @@ class Transcript:
  #  self.ave_mpp_over_exons = sum_mpp*1.0/total_exon_len
 
 
-  def calculateMappability(self, bin_bigwigsummary, fbigwig):
+  def calculateMappability(self, bin_bigwigsummary, fbigwig, width=500):
     """
     calculate average mappability for a transcript's
-    TSS region:  [TSS-500,   TSS+500],
-    body region: [start+501, end-501],
-    TES region:  [TES-500,   TES+500]
+    TSS region:  [TSS-width,   TSS+width],
+    body region: [start+width+1, end-width-1],
+    TES region:  [TES-width,   TES+width]
 
-    if start+501 > end-501, then define body region as [end-501, start+501]
+    if start+width+1 > end-width-1, then define body region as
+      [end-width-1, start+width+1]
 
     assign the values for
     self.ave_mpp_around_TSS,  self.max_mpp_around_TSS
@@ -259,22 +260,22 @@ class Transcript:
       self.defineTSSAndTES()
 
     self.ave_mpp_around_TSS = Util.calculateMappability('mean', self.chrom,
-                              self.tss - 500, self.tss + 500,
+                              self.tss - width, self.tss + width,
                               bin_bigwigsummary, fbigwig)
 
-    if (self.start + 501) < (self.end - 501):
+    if (self.start + width + 1) < (self.end - width - 1):
       self.ave_mpp_around_body = Util.calculateMappability('mean', self.chrom,
-                                 self.start+501, self.end-501,
+                                 self.start+width+1, self.end-width-1,
                                  bin_bigwigsummary, fbigwig)
-    elif (self.start + 501) > (self.end - 501):
+    elif (self.start + width + 1) > (self.end - width - 1):
       self.ave_mpp_around_body = Util.calculateMappability('mean', self.chrom,
-                                 self.end-501, self.start+501,
+                                 self.end-width-1, self.start+width+1,
                                  bin_bigwigsummary, fbigwig)
-    elif (self.start + 501) == (self.end - 501):
+    elif (self.start + width + 1) == (self.end - width - 1):
       self.ave_mpp_around_body = 1.0
 
     self.ave_mpp_around_TES = Util.calculateMappability('mean', self.chrom,
-                              self.tes - 500, self.tes + 500,
+                              self.tes - width, self.tes + width,
                               bin_bigwigsummary, fbigwig)
 
 

@@ -449,7 +449,7 @@ def constructGenesFromTranscripts(transcripts):
 
 def buildTrainingSet(genes, prm):
   """
-  return a list of training set genes
+  write training set in file Param.ftrainingg_tr
   """
   import Util
 
@@ -461,16 +461,24 @@ def buildTrainingSet(genes, prm):
 
   trid2mpps = Util.runMPOverAList(prm.num_threads, calTSSBodyTESMappability,
                                   [trs, prm])
-  for tr in trs:
-    mpps = trid2mpps[tr.transcript_id]
-    tr.ave_mpp_around_TSS  = mpps[0]
-    tr.ave_mpp_around_body = mpps[1]
-    tr.ave_mpp_around_TES  = mpps[2]
 
- #for g in ogot_genes:
- #  t = g.transcripts[0]
- #  print t.transcript_id, t.chrom, t.start, t.end, t.ave_mpp_around_TSS, \
- #        t.ave_mpp_around_body, t.ave_mpp_around_TES;
+  with open(prm.falltrcrd, 'w') as f_fout:
+    f_fout.write("geneid\ttrid\tchrom\tstrand\tstart\tend\t")
+    f_fout.write("tss_mpp\tbody_mpp\ttes_mpp\n")
+    for gene in genes:
+      for tr in gene.transcripts:
+        f_fout.write("%s\t%s\t%s\t%s\t%d\t%d\t" % ( tr.gene_id,
+                     tr.transcript_id, tr.chrom, tr.strand, tr.start, tr.end))
+        if tr.transcript_id in trid2mpps:
+          mpps = trid2mpps[tr.transcript_id]
+          f_fout.write("%4.2f\t%4.2f\t%4.2f\n" % mpps)
+        else:
+          f_fout.write("NA\tNA\tNA\n")
+
+  Util.runCommand('/bin/env', 'Rscript', prm.rnaseq_rscript, 'selTrainingTr',
+                  prm.prsem_rlib_dir, prm.falltrcrd,
+                  prm.TRAINING_MIN_MAPPABILITY, prm.FLANKING_WIDTH,
+                  prm.ftraining_tr, quiet=prm.quiet)
 
 
 def calTSSBodyTESMappability(trs, prm, out_q):
@@ -482,7 +490,8 @@ def calTSSBodyTESMappability(trs, prm, out_q):
   """
   outdict = {}
   for tr in trs:
-    tr.calculateMappability(prm.bigwigsummary_bin, prm.mappability_bigwig_file)
+    tr.calculateMappability(prm.bigwigsummary_bin, prm.mappability_bigwig_file,
+                            prm.FLANKING_WIDTH)
     outdict[tr.transcript_id] = (tr.ave_mpp_around_TSS, tr.ave_mpp_around_body,
                                  tr.ave_mpp_around_TES)
   out_q.put(outdict)
