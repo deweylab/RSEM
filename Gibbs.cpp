@@ -64,7 +64,10 @@ vector<Item> hits;
 vector<double> eel;
 double *mw;
 
-vector<int> pseudo_counts;
+// pliu
+//vector<int> pseudo_counts;
+vector<double> pseudo_counts;
+//////
 vector<double> pme_c, pve_c; //global posterior mean and variance vectors on counts
 vector<double> pme_tpm, pme_fpkm;
 
@@ -86,6 +89,12 @@ bool alleleS;
 int m_trans;
 GroupInfo gt, ta;
 vector<double> pve_c_genes, pve_c_trans;
+
+// pliu
+// if has prior file and file's name
+bool has_prior;
+char fprior[STRLEN];
+//////
 
 void load_data(char* refName, char* statName, char* imdName) {
 	ifstream fin;
@@ -149,6 +158,24 @@ void load_omit_info(const char* imdName) {
   while (fscanf(fi, "%d", &tid) == 1) pseudo_counts[tid] = 0;
   fclose(fi);
 }
+
+// pliu
+// load isoform's prior information
+void load_prior_info(const char* fprior){
+  ifstream fin;
+  string line;
+  fin.open(fprior);
+  for(int i=1; i<=M; ++i){
+    double prior;
+    getline(fin, line);
+    sscanf(line.c_str(), "%lf%*s", &prior);
+    if ( ! isZero(pseudo_counts[i]) ){
+      pseudo_counts[i] = prior;
+    }
+  }
+  fin.close();
+}
+//////
 
 template<class ModelType>
 void init_model_related(char* modelF) {
@@ -225,12 +252,23 @@ void sampleTheta(engine_type& engine, vector<double>& theta) {
 	for (int i = 0; i <= M; i++) theta[i] /= denom;
 }
 
+// pliu
+// in case of adding non-integer prior to counts, need to define it as double
+/*
 void writeCountVector(FILE* fo, vector<int>& counts) {
 	for (int i = 0; i < M; i++) {
 		fprintf(fo, "%d ", counts[i]);
 	}
 	fprintf(fo, "%d\n", counts[M]);
 }
+*/
+void writeCountVector(FILE* fo, vector<double>& counts) {
+	for (int i = 0; i < M; i++) {
+		fprintf(fo, "%d ", int (floor(counts[i]+0.5)));
+	}
+	fprintf(fo, "%d\n", int (floor(counts[M]+0.5)));
+}
+//////
 
 void* Gibbs(void* arg) {
 	int CHAINLEN;
@@ -238,7 +276,13 @@ void* Gibbs(void* arg) {
 	Params *params = (Params*)arg;
 
 	vector<double> theta, tpm, fpkm;
-	vector<int> z, counts(pseudo_counts);
+
+	// pliu
+	//vector<int> z, counts(pseudo_counts);
+	vector<int> z;
+	vector<double> counts(pseudo_counts);
+	//////
+
 	vector<double> arr;
 
 	uniform_01_generator rg(*params->engine, uniform_01_dist());
@@ -385,7 +429,17 @@ void release() {
 
 int main(int argc, char* argv[]) {
 	if (argc < 7) {
-		printf("Usage: rsem-run-gibbs reference_name imdName statName BURNIN NSAMPLES GAP [-p #Threads] [--seed seed] [-q]\n");
+		// pliu
+		// add an option to take priors
+		//printf("Usage: rsem-run-gibbs reference_name imdName statName BURNIN NSAMPLES GAP [-p #Threads] [--seed seed] [-q]\n");
+		printf("Usage: rsem-run-gibbs reference_name imdName statName BURNIN NSAMPLES GAP [-p #Threads] [--seed seed] [-q] [--prior file]\n");
+    printf("\n");
+    printf("Format of the prior file:\n");
+    printf("- One isoform's prior per line\n");
+    printf("- Priors must be in the same order as in the .ti file\n");
+    printf("- Priors for those to-be-omitted isoforms must be included as well\n");
+    printf("- Comments can be added after prior seperated by space(s)\n");
+		//////
 		exit(-1);
 	}
 
@@ -401,6 +455,10 @@ int main(int argc, char* argv[]) {
 	hasSeed = false;
 	quiet = false;
 
+	// pliu
+	has_prior = false;
+	//////
+
 	for (int i = 7; i < argc; i++) {
 		if (!strcmp(argv[i], "-p")) nThreads = atoi(argv[i + 1]);
 		if (!strcmp(argv[i], "--seed")) {
@@ -410,6 +468,13 @@ int main(int argc, char* argv[]) {
 		  for (int k = 0; k < len; k++) seed = seed * 10 + (argv[i + 1][k] - '0');
 		}
 		if (!strcmp(argv[i], "-q")) quiet = true;
+
+		// pliu
+		if ( ! strcmp(argv[i], "--prior") ) {
+			has_prior = true;
+			strcpy(fprior, argv[i+1]);
+		}
+		//////
 	}
 	verbose = !quiet;
 
@@ -423,6 +488,13 @@ int main(int argc, char* argv[]) {
 	load_data(refName, statName, imdName);
 	load_group_info(refName);
 	load_omit_info(imdName);
+
+	// pliu
+	// have to do it after load_data() in order to use 'M'
+	if ( has_prior ) {
+		load_prior_info(fprior);
+	}
+	//////
 
 	sprintf(modelF, "%s.model", statName);
 	FILE *fi = fopen(modelF, "r");
