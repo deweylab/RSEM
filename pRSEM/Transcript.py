@@ -325,7 +325,6 @@ def readRSEMTI(fin):
   """
   import Util
 
- #print "reading file:", fin;
   lines = Util.readFile(fin);
   (ntranscripts, foo) = lines[0].split();
   ntranscripts = int(ntranscripts);
@@ -349,7 +348,6 @@ def quicklyReadRSEMTI(fin):
   """
   import Util
 
-  print "quickly reading file:", fin;
   lines = Util.readFile(fin);
   (ntranscripts, foo) = lines[0].split();
   ntranscripts = int(ntranscripts);

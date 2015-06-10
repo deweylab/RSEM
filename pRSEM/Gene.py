@@ -1,6 +1,6 @@
 __doc__="""
 
-  peng 20131002
+  pliu 20131002
 
   module for gene
 """
@@ -255,52 +255,52 @@ class Gene:
 
 
   ## should be moved to TranscriptGroup file
-  def groupTranscriptsByTSS(self):
-    """
-    put transcripts that have TSS within certain distance into a group
-    """
-   #import Param;
+ #def groupTranscriptsByTSS(self):
+ #  """
+ #  put transcripts that have TSS within certain distance into a group
+ #  """
+ # #import Param;
 
-   #cutoff = 100; ## TSS within 100 bp
-   #cutoff = Param.TSS_GROUP_CUTOFF; ## cutoff for grouping TSS
-    cutoff = 500 ## cutoff for grouping TSS
+ # #cutoff = 100; ## TSS within 100 bp
+ # #cutoff = Param.TSS_GROUP_CUTOFF; ## cutoff for grouping TSS
+ #  cutoff = 500 ## cutoff for grouping TSS
 
-    group = [self.transcripts[0]]
-    self.transcript_tss_groups.append(group)
-    for tr in self.transcripts[1:]:
-      is_assigned = False
-      for grp in self.transcript_tss_groups:
-        if (self.strand == '+') and (abs(tr.start - grp[0].start)<=cutoff):
-          grp.append(tr)
-          is_assigned = True;
-        elif (self.strand == '-') and (abs(tr.end - grp[0].end)<=cutoff):
-          grp.append(tr)
-          is_assigned = True
+ #  group = [self.transcripts[0]]
+ #  self.transcript_tss_groups.append(group)
+ #  for tr in self.transcripts[1:]:
+ #    is_assigned = False
+ #    for grp in self.transcript_tss_groups:
+ #      if (self.strand == '+') and (abs(tr.start - grp[0].start)<=cutoff):
+ #        grp.append(tr)
+ #        is_assigned = True;
+ #      elif (self.strand == '-') and (abs(tr.end - grp[0].end)<=cutoff):
+ #        grp.append(tr)
+ #        is_assigned = True
 
-        if is_assigned:
-          break
+ #      if is_assigned:
+ #        break
 
-      if not is_assigned:
-        self.transcript_tss_groups.append([tr])
+ #    if not is_assigned:
+ #      self.transcript_tss_groups.append([tr])
 
 
   ## should be moved to TranscriptGroup file
-  def constructTranscriptGroups(self):
-    """
-    construct a list of TranscriptGroup objects
-    """
-    import TranscriptGroup
+ #def constructTranscriptGroups(self):
+ #  """
+ #  construct a list of TranscriptGroup objects
+ #  """
+ #  import TranscriptGroup
 
-    if len(self.transcript_tss_groups) == 0:
-      self.groupTranscriptsByTSS()
+ #  if len(self.transcript_tss_groups) == 0:
+ #    self.groupTranscriptsByTSS()
 
-    for transcripts in self.transcript_tss_groups:
-      grp = TranscriptGroup.TranscriptGroup()
-      grp.chrom = self.chrom
-      grp.gene_id = self.gene_id
-      grp.strand = self.strand
-      grp.transcripts = transcripts
-      self.transcript_groups.append(grp)
+ #  for transcripts in self.transcript_tss_groups:
+ #    grp = TranscriptGroup.TranscriptGroup()
+ #    grp.chrom = self.chrom
+ #    grp.gene_id = self.gene_id
+ #    grp.strand = self.strand
+ #    grp.transcripts = transcripts
+ #    self.transcript_groups.append(grp)
 
 
 
@@ -446,52 +446,3 @@ def constructGenesFromTranscripts(transcripts):
 
 # return genes;
 
-
-def buildTrainingSet(genes, prm):
-  """
-  write training set in file Param.ftrainingg_tr
-  """
-  import Util
-
-  ogot_genes = filter(lambda g: len(g.transcripts) == 1 and
-                                (g.end - g.start + 1) >=
-                                prm.TRAINING_GENE_MIN_LEN, genes)
-
-  trs = [tr for g in ogot_genes for tr in g.transcripts]
-
-  trid2mpps = Util.runMPOverAList(prm.num_threads, calTSSBodyTESMappability,
-                                  [trs, prm])
-
-  with open(prm.falltrcrd, 'w') as f_fout:
-    f_fout.write("geneid\ttrid\tchrom\tstrand\tstart\tend\t")
-    f_fout.write("tss_mpp\tbody_mpp\ttes_mpp\n")
-    for gene in genes:
-      for tr in gene.transcripts:
-        f_fout.write("%s\t%s\t%s\t%s\t%d\t%d\t" % ( tr.gene_id,
-                     tr.transcript_id, tr.chrom, tr.strand, tr.start, tr.end))
-        if tr.transcript_id in trid2mpps:
-          mpps = trid2mpps[tr.transcript_id]
-          f_fout.write("%4.2f\t%4.2f\t%4.2f\n" % mpps)
-        else:
-          f_fout.write("NA\tNA\tNA\n")
-
-  Util.runCommand('/bin/env', 'Rscript', prm.rnaseq_rscript, 'selTrainingTr',
-                  prm.prsem_rlib_dir, prm.falltrcrd,
-                  prm.TRAINING_MIN_MAPPABILITY, prm.FLANKING_WIDTH,
-                  prm.ftraining_tr, quiet=prm.quiet)
-
-
-def calTSSBodyTESMappability(trs, prm, out_q):
-  """
-  calculate average mappability around TSS, body, and TES for all transcripts of
-  given list of genes
-
-  save results in transcript's attribute
-  """
-  outdict = {}
-  for tr in trs:
-    tr.calculateMappability(prm.bigwigsummary_bin, prm.mappability_bigwig_file,
-                            prm.FLANKING_WIDTH)
-    outdict[tr.transcript_id] = (tr.ave_mpp_around_TSS, tr.ave_mpp_around_body,
-                                 tr.ave_mpp_around_TES)
-  out_q.put(outdict)

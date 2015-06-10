@@ -16,9 +16,9 @@ class ChIPSeqExperiment:
     self.param           = None ## reference to input parameters
     self.reps            = []   ## list of ChIPSeqReplciate object
     self.is_control      = None ## if is control
-    self.pooled_tagalign = None ## File object of pooled tagAlign
-    self.peaks           = None ## File object of targetRep0_VS_controlRep0
-    self.final_peaks     = None ## File object of final peaks
+    self.pooled_tagalign = None ## File obj of pooled tagAlign
+    self.peaks           = None ## File obj of targetRep0_VS_controlRep0 peaks
+    self.final_peaks     = None ## File obj of final peaks
 
 
   @classmethod
@@ -41,12 +41,11 @@ class ChIPSeqExperiment:
       frep0 = param.temp_dir + 'targetRep0.tagAlign.gz'
     cse.pooled_tagalign = File.initFromFullFileName(frep0)
 
-    rep0_basename = 'targetRep0.tagAlign_VS_controlRep0.tagAlign.regionPeak.gz'
+    rep0_basename = 'targetRep0_vs_controlRep0.regionPeak.gz'
     fpeaks    = param.temp_dir + rep0_basename
     cse.peaks = File.initFromFullFileName(fpeaks)
 
-    ffinal_peaks    = param.temp_dir + 'idr_' + rep0_basename
-    cse.final_peaks = File.initFromFullFileName(ffinal_peaks)
+    cse.final_peaks = File.initFromFullFileName(param.fchipseq_peaks)
 
     return cse
 
@@ -144,7 +143,7 @@ class ChIPSeqExperiment:
     import itertools
     import multiprocessing as mp
     if self.is_control:
-      sys.exit( "ChIPSeqExperiment::runSPP() cann't be applied to control" )
+      sys.exit( "ChIPSeqExperiment::runSPP() can't be applied to control" )
 
     procs = []
     out_q = mp.Queue()

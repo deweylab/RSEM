@@ -27,6 +27,10 @@ class Param:
     self.bedtools_bin_for_chipseq   = None
     self.chipseq_peak_file          = None
     self.mappability_bigwig_file    = None
+    self.partition_model            = None
+    self.gibbs_burnin               = None
+    self.gibbs_number_of_samples    = None
+    self.gibbs_sampling_gap         = None
     self.quiet                      = None
 
     ## arguments
@@ -41,19 +45,28 @@ class Param:
     self.prsem_rlib_dir = None ## place to install pRSEM required R libraries
 
     ## ChIP-seq
-    self.chipseq_rscript = None ## fullname of process-chipseq.R
-    self.spp_tgz       = None
-    self.spp_script    = None
-    self.idr_scr_dir   = None
-    self.idr_script    = None
-    self.fgenome_table = None
+    self.chipseqexperiment = None ## reference to ChIP-seq experiment
+    self.chipseq_rscript   = None ## fullname of process-chipseq.R
+    self.spp_tgz           = None
+    self.spp_script        = None
+    self.idr_scr_dir       = None
+    self.idr_script        = None
+    self.fgenome_table     = None
+    self.fchipseq_peaks    = None
+    self.fchipseq_signals  = None ## to-be-implemented
 
-    ## RNA-seq
-    self.rnaseq_rscript    = None  ## fullname of R script for dealing RNA-seq
-    self.fti               = None  ## RSEM's reference .ti file
-    self.bigwigsummary_bin = None  ## bigWigSummary binary
-    self.falltrcrd         = None  ## tr info + mappability
-    self.ftraining_tr      = None  ## training set tr
+    ## transcripts and RNA-seq
+    self.transcripts = None ## reference to all transcripts to be quantified
+    self.genes       = None ## reference to all genes to be quantified
+
+    self.rnaseq_rscript     = None ## fullname of R script for dealing RNA-seq
+    self.fti                = None ## RSEM's reference .ti file
+    self.bigwigsummary_bin  = None ## bigWigSummary binary
+    self.fall_tr_crd        = None ## tr info + mappability
+    self.ftraining_tr_crd   = None ## training set tr
+    self.fall_tr_features   = None ## file for all isoforms' features
+    self.fall_tr_prior      = None ## file for all isoforms' priors
+    self.fisoforms_results  = None ## file for RSEM .isoforms.results
 
 
   def __str__(self):
@@ -80,17 +93,23 @@ class Param:
     ## ChIP-seq
     prm.chipseq_rscript = prm.prsem_scr_dir + 'process-chipseq.R'
     prm.spp_tgz = prm.prsem_scr_dir + 'phantompeakqualtools/spp_1.10.1.tar.gz'
-    prm.spp_script  = prm.prsem_scr_dir + 'phantompeakqualtools/run_spp.R'
-    prm.idr_scr_dir = prm.prsem_scr_dir + 'idrCode/'
-    prm.idr_script  = prm.idr_scr_dir + 'batch-consistency-analysis.r'
+    prm.spp_script    = prm.prsem_scr_dir + 'phantompeakqualtools/run_spp.R'
+    prm.idr_scr_dir   = prm.prsem_scr_dir + 'idrCode/'
+    prm.idr_script    = prm.idr_scr_dir + 'batch-consistency-analysis.r'
     prm.fgenome_table = prm.ref_name + '.chrlist'
+    prm.fchipseq_peaks   = prm.temp_dir + \
+                            'idr_targetRep0_vs_controlRep0.regionPeak.gz'
+    prm.fchipseq_signals = prm.temp_dir + 'targetRep0_vs_controlRep0.signals'
 
-    ## RNA-seq
+    ## transcripts and RNA-seq
     prm.rnaseq_rscript = prm.prsem_scr_dir + 'process-rnaseq.R'
-    prm.fti = prm.ref_name + '.ti'
-    prm.bigwigsummary_bin = prm.prsem_scr_dir + 'bigWigSummary'
-    prm.falltrcrd    = prm.imd_name + '_prsem.alltrcrd'
-    prm.ftraining_tr = prm.imd_name + '_prsem.training_tr'
+    prm.fti            = prm.ref_name + '.ti'
+    prm.bigwigsummary_bin  = prm.prsem_scr_dir + 'bigWigSummary'
+    prm.fall_tr_crd        = prm.imd_name + '_prsem.all_tr_crd'
+    prm.ftraining_tr_crd   = prm.imd_name + '_prsem.training_tr_crd'
+    prm.fall_tr_features   = prm.imd_name + '_prsem.all_tr_features'
+    prm.fall_tr_prior      = prm.imd_name + '_prsem.all_tr_prior'
+    prm.fisoforms_results  = prm.sample_name + '.isoforms.results'
 
     return prm
 

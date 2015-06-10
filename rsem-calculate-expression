@@ -99,10 +99,11 @@ my $sort_bam_buffer_size = '60G';
 my $run_prsem = 0;
 my $chipseq_target_read_files  = '';
 my $chipseq_control_read_files = '';
-my $bowtie_bin_for_chipseq = '';
-my $bedtools_bin_for_chipseq = '';
-my $chipseq_peak_file = '';
-my $mappability_bigwig_file = '';
+my $bowtie_bin_for_chipseq     = '';
+my $bedtools_bin_for_chipseq   = '';
+my $chipseq_peak_file          = '';
+my $mappability_bigwig_file    = '';
+my $partition_model            = 'pk';
 
 GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "temporary-folder=s" => \$temp_dir,
@@ -164,6 +165,7 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   'bedtools-bin-for-chipseq=s' => \$bedtools_bin_for_chipseq,
 	   'chipseq-peak-file=s' => \$chipseq_peak_file,
 	   'mappability-bigwig-file=s'  => \$mappability_bigwig_file,
+	   'partition-model=s' => \$partition_model,
 	   "time" => \$mTime,
 	   "version" => \$version,
 	   "q|quiet" => \$quiet,
@@ -570,21 +572,28 @@ if ($mTime) { $time_start = time(); }
 
 ## if run pRSEM
 if ( $run_prsem ) {
-  ## required options to run pRSEM
-  $cmd = "$FindBin::RealBin/pRSEM/prsem-calculate-expression " .
-         " --num-threads $nThreads " .
-         " --mappability-bigwig-file $mappability_file";
+  ## I can make pRSEM save a pre-built training set for human and mouse 
+  ## therefore mappability bigwig file won't be required when user analyze the 
+  ## whole transcriptome
+  $command = "$FindBin::RealBin/pRSEM/prsem-calculate-expression " .
+             " --num-threads $nThreads " .
+             " --mappability-bigwig-file $mappability_bigwig_file " .
+             " --partition-model $partition_model" .
+	           " --gibbs-burnin $BURNIN " .
+	           " --gibbs-number-of-samples $NCV " .
+	           " --gibbs-sampling-gap $SAMPLEGAP ";
+  ####
 
-  ## either providing ChIP-seq peak file or others
+  ## either providing ChIP-seq peak file or other options
   if ( $chipseq_peak_file ne '') {
-    $cmd .= " --chipseq-peak-file $chipseq_peak_file";
+    $command .= " --chipseq-peak-file $chipseq_peak_file";
   } else {
-    $cmd .= " --chipseq-target-read-files $chipseq_target_read_files " .
-            " --bowtie-bin-for-chipseq $bowtie_bin_for_chipseq" .
-            " --samtools-bin $FindBin::RealBin/sam/samtools " .
-            " --bedtools-bin-for-chipseq $bedtools_bin_for_chipseq";
+    $command .= " --chipseq-target-read-files $chipseq_target_read_files " .
+                " --bowtie-bin-for-chipseq $bowtie_bin_for_chipseq" .
+                " --samtools-bin $FindBin::RealBin/sam/samtools " .
+                " --bedtools-bin-for-chipseq $bedtools_bin_for_chipseq";
     if ( $chipseq_control_read_files ne '' ) {
-     $cmd .= " --chipseq-control-read-files $chipseq_control_read_files";
+     $command .= " --chipseq-control-read-files $chipseq_control_read_files";
     }
   }
  
@@ -592,8 +601,27 @@ if ( $run_prsem ) {
       $command .= ' --quiet ';
   }
 
-  $cmd .= " $refName $sampleName $statName $imdName";
-  &runCommand($cmd);
+  $command .= " $refName $sampleName $statName $imdName";
+  &runCommand($command);
+
+  ## collect pRSEM results 
+  my $fiso_res  = "$imdName.iso_res";
+  my $fgene_res = "$imdName.gene_res";
+
+  my $fprsem_iso_res  = "${imdName}_prsem.iso_res";
+  my $fprsem_gene_res = "${imdName}_prsem.gene_res";
+
+  system("head -8 $fiso_res  > $fprsem_iso_res" );
+  system("tail -5 $fiso_res >> $fprsem_iso_res" );
+
+  system("head -7 $fgene_res  > $fprsem_gene_res");
+  system("tail -4 $fgene_res >> $fprsem_gene_res");
+
+  my $fprsem_iso_results  = "${sampleName}_prsem.isoforms.results";
+  my $fprsem_gene_results = "${sampleName}_prsem.genes.results";
+
+  collectResults("isoform", $fprsem_iso_res,  $fprsem_iso_results);
+  collectResults("gene",    $fprsem_gene_res, $fprsem_gene_results);
 }
 ####
 

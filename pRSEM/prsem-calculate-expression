@@ -19,11 +19,19 @@ def main():
  #if param.chipseq_peak_file is None:
  #  genChIPSeqPeakFileBySPPIDR(param) ## save to param.chipseq_peak_file
 
-  trs = Transcript.readRSEMTI(param.fti)
-  genes = Gene.constructGenesFromTranscripts(trs)
+ #param.transcripts = Transcript.quicklyReadRSEMTI(param.fti)
+ #param.genes = Gene.constructGenesFromTranscripts(param.transcripts)
 
-  training_genes = Gene.buildTrainingSet(genes, param)
+ #buildTrainingSet(param)
 
+ #if param.partition_model == 'pk':
+ #  genPriorByTSSPeak(param)
+ #else:
+ #  ## to-be-implemented for other partition models using ChIP-seq signals
+ #  pass
+ # #genPriorByAllPeakAndSignal(param)
+
+  runGibbsSampling(param)
 
 
 def getCommandLineArguments():
@@ -38,9 +46,13 @@ def getCommandLineArguments():
   parser.add_argument('--bedtools-bin-for-chipseq')
   parser.add_argument('--chipseq-peak-file')
   parser.add_argument('--mappability-bigwig-file')
+  parser.add_argument('--partition-model', )
+  parser.add_argument('--gibbs-burnin', type=int)
+  parser.add_argument('--gibbs-number-of-samples', type=int)
+  parser.add_argument('--gibbs-sampling-gap', type=int)
   parser.add_argument('--quiet', action='store_true')
 
-  ## need to be in the same order as feed in argument
+  ## need to be in the same order as fed in argument
   parser.add_argument('ref_name')
   parser.add_argument('sample_name')
   parser.add_argument('stat_name')
@@ -54,7 +66,7 @@ def genChIPSeqPeakFileBySPPIDR(param):
   import os
   import ChIPSeqExperiment
 
-  os.environ['R_LIBS'] = "%s:%s" % (os.environ['R_LIBS'], param.prsem_rlib_dir)
+ #os.environ['R_LIBS'] = "%s:%s" % (os.environ['R_LIBS'], param.prsem_rlib_dir)
   cse_target = ChIPSeqExperiment.initFromParam(param, 'target')
   cse_target.getFastqEncoding()
   cse_target.alignReadByBowtie()
@@ -71,6 +83,92 @@ def genChIPSeqPeakFileBySPPIDR(param):
     param.chipseq_peak_file = cse_target.final_peaks.fullname
   else:
     pass  ## to-be-implemented, call peaks by MOSAICs
+
+
+def buildTrainingSet(prm):
+  """
+  write training set in file Param.ftraining_tr_crd
+  transcript as listed in the same order as RSEM's .ti file
+  The order is required by rsem-run-gibbs so that prior can be assigned to
+  transcript correctly
+  """
+  import Util
+
+  ogot_genes = filter(lambda g: len(g.transcripts) == 1 and
+                                (g.end - g.start + 1) >=
+                                prm.TRAINING_GENE_MIN_LEN, prm.genes)
+
+  trs = [tr for g in ogot_genes for tr in g.transcripts]
+
+  trid2mpps = Util.runMPOverAList(prm.num_threads, calTSSBodyTESMappability,
+                                  [trs, prm])
+
+  with open(prm.fall_tr_crd, 'w') as f_fout:
+    f_fout.write("geneid\ttrid\tchrom\tstrand\tstart\tend\t")
+    f_fout.write("tss_mpp\tbody_mpp\ttes_mpp\n")
+    for tr in prm.transcripts: ## in the same order as RSEM's .ti file
+      f_fout.write("%s\t%s\t%s\t%s\t%d\t%d\t" % ( tr.gene_id,
+                   tr.transcript_id, tr.chrom, tr.strand, tr.start, tr.end))
+      if tr.transcript_id in trid2mpps:
+        mpps = trid2mpps[tr.transcript_id]
+        f_fout.write("%4.2f\t%4.2f\t%4.2f\n" % mpps)
+      else:
+        f_fout.write("NA\tNA\tNA\n")
+
+  Util.runCommand('/bin/env', 'Rscript', prm.rnaseq_rscript, 'selTrainingTr',
+                  prm.prsem_rlib_dir, prm.fall_tr_crd,
+                  prm.TRAINING_MIN_MAPPABILITY, prm.FLANKING_WIDTH,
+                  prm.ftraining_tr_crd, quiet=prm.quiet)
+
+
+def calTSSBodyTESMappability(trs, prm, out_q):
+  """
+  calculate average mappability around TSS, body, and TES for all transcripts of
+  given list of genes
+
+  save results in transcript's attribute
+  """
+  outdict = {}
+  for tr in trs:
+    tr.calculateMappability(prm.bigwigsummary_bin, prm.mappability_bigwig_file,
+                            prm.FLANKING_WIDTH)
+    outdict[tr.transcript_id] = (tr.ave_mpp_around_TSS, tr.ave_mpp_around_body,
+                                 tr.ave_mpp_around_TES)
+  out_q.put(outdict)
+
+
+def calChIPSeqSignal(prm):
+  """
+  to-be-implemented
+  calculate signals for the TSS, body, and TES regions
+  """
+  import Util
+ #Util.runCommand('/bin/env', 'Rscript', prm.chipseq_rscript, 'calSignal',
+ #                prm.prsem_rlib_dir, prm.fall_tr_crd, prm.
+
+
+def genPriorByTSSPeak(prm):
+  import Util
+  ## prepare a feature file of TSS peaks for training set isoforms
+  Util.runCommand('/bin/env', 'Rscript', prm.rnaseq_rscript,
+                  'prepTSSPeakFeatures', prm.prsem_rlib_dir,
+                  prm.fall_tr_crd, prm.ftraining_tr_crd, prm.fall_tr_features,
+                  prm.fisoforms_results, prm.FLANKING_WIDTH,
+                  prm.fchipseq_peaks, quiet=prm.quiet)
+
+  ## learn and generate prior for all transcripts
+  Util.runCommand('/bin/env', 'Rscript', prm.rnaseq_rscript,
+                  'genPriorByTSSPeak', prm.prsem_rlib_dir,
+                  prm.fall_tr_features,  prm.fall_tr_prior, quiet=prm.quiet)
+
+
+def runGibbsSampling(prm):
+  import Util
+  Util.runCommand("%s/../rsem-run-gibbs" % prm.prsem_scr_dir,
+                  prm.ref_name, prm.imd_name, prm.stat_name, prm.gibbs_burnin,
+                  prm.gibbs_number_of_samples, prm.gibbs_sampling_gap,
+                  '-p', prm.num_threads, '--prior', prm.fall_tr_prior,
+                  quiet=prm.quiet)
 
 
 if __name__=='__main__':

@@ -132,3 +132,37 @@ def runMPOverAList(nprocs, func, args):
     p.join()
 
   return dict_to_return
+
+
+def getFastaID2Seq(ffasta):
+  """
+  read fasta file, return a dict with key as seq_id and value as seq
+  """
+  assert os.path.exists(ffasta), "File not found: %s\n" % ffasta
+  print "reading FASTA file:", ffasta, "...\n";
+  fastas = {};
+  f_fin = open(ffasta, 'r');
+  entries = f_fin.read().split('>');
+  f_fin.close();
+  for entry in entries[1:]:
+    words = entry.split("\n");
+    fastas[words[0]] = words[1];
+
+  return fastas;
+
+
+def getGCContent(seq):
+  """
+  return the percetage of GC in the given sequence
+  """
+  length = len(seq);
+  if length == 0:
+    sys.stderr.write("Util::getGCContent(): sequence length is 0\n");
+    return 0;
+  else:
+    seq = seq.upper();
+    n_G = seq.count('G');
+    n_C = seq.count('C');
+
+    return (n_G + n_C) * 1.0/length;
+
