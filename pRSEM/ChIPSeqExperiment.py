@@ -148,6 +148,7 @@ class ChIPSeqExperiment:
     in principle, this function is only for ChIP-seq target experiment
     should make target and control inherit from ChIPSeqExperiment, will do
     """
+    import gzip
     import itertools
     if self.is_control:
       sys.exit( "ChIPSeqExperiment::runSPP() can't be applied to control" )
@@ -176,11 +177,20 @@ class ChIPSeqExperiment:
     if not os.path.exists(self.peaks.fullname):
       sys.exit("File not found: %s\n" % self.peaks.fullname)
 
-    cmd = 'zcat %s %s %s' % ( self.peaks.fullname,
-            ' | sort -k7nr,7nr | head -n %d ' % max_npeaks,
-            ' | gzip -c > %s ' % self.final_peaks.fullname)
+    with gzip.open(self.peaks.fullname, 'rb') as f_fin:
+      sig_line = [ (float(line.split("\t")[6]), line) for line in f_fin ]
+    sorted_sig_line = sorted(sig_line, key=lambda t: t[0], reverse=True)
 
-    Util.runCommand(cmd, quiet=False)
+    with gzip.open(self.final_peaks.fullname, 'wb') as f_fout:
+      for (sig, line) in sorted_sig_line[:max_npeaks]:
+        f_fout.write(line)
+
+    ## always report "sort: write failed: standard output: Broken pipe
+    ##                sort: write error"
+   #cmd = 'zcat %s %s %s' % ( self.peaks.fullname,
+   #        ' | sort -k7nr,7nr | head -n %d ' % max_npeaks,
+   #        ' | gzip -c > %s ' % self.final_peaks.fullname)
+   #Util.runCommand(cmd, quiet=False)
 
 
 def getNPeaksByIDR(fpeaka, fpeakb, idr_prefix, prm, out_q):
