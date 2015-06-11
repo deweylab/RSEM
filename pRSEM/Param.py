@@ -45,15 +45,18 @@ class Param:
     self.prsem_rlib_dir = None ## place to install pRSEM required R libraries
 
     ## ChIP-seq
-    self.chipseqexperiment = None ## reference to ChIP-seq experiment
+    self.chipseqexperiment_target  = None ## reference to ChIP-seq experiment
+    self.chipseqexperiment_control = None ## reference to ChIP-seq experiment
     self.chipseq_rscript   = None ## fullname of process-chipseq.R
     self.spp_tgz           = None
     self.spp_script        = None
     self.idr_scr_dir       = None
     self.idr_script        = None
     self.fgenome_table     = None
-    self.fchipseq_peaks    = None
-    self.fchipseq_signals  = None ## to-be-implemented
+    self.fidr_chipseq_peaks = None
+    self.fall_chipseq_peaks = None
+    self.fchipseq_target_signals  = None
+    self.fchipseq_control_signals = None
 
     ## transcripts and RNA-seq
     self.transcripts = None ## reference to all transcripts to be quantified
@@ -97,18 +100,25 @@ class Param:
     prm.idr_scr_dir   = prm.prsem_scr_dir + 'idrCode/'
     prm.idr_script    = prm.idr_scr_dir + 'batch-consistency-analysis.r'
     prm.fgenome_table = prm.ref_name + '.chrlist'
-    prm.fchipseq_peaks   = prm.temp_dir + \
-                            'idr_targetRep0_vs_controlRep0.regionPeak.gz'
-    prm.fchipseq_signals = prm.temp_dir + 'targetRep0_vs_controlRep0.signals'
+    prm.fidr_chipseq_peaks = "%s/%s" % (prm.temp_dir,
+                                        'idr_target_vs_control.regionPeak.gz')
+    ## have to name it this way due to run_spp.R's wired naming convention
+    ## this names depens on the next two names
+    prm.fall_chipseq_peaks = "%s/%s" % (prm.temp_dir,
+                            'target.tagAlign_VS_control.tagAlign.regionPeak.gz')
+    prm.fchipseq_target_signals  = prm.temp_dir + 'target.tagAlign.gz'
+    prm.fchipseq_control_signals = prm.temp_dir + 'control.tagAlign.gz'
 
     ## transcripts and RNA-seq
     prm.rnaseq_rscript = prm.prsem_scr_dir + 'process-rnaseq.R'
     prm.fti            = prm.ref_name + '.ti'
+    prm.ffasta         = prm.ref_name + '.transcripts.fa'
     prm.bigwigsummary_bin  = prm.prsem_scr_dir + 'bigWigSummary'
-    prm.fall_tr_crd        = prm.imd_name + '_prsem.all_tr_crd'
-    prm.ftraining_tr_crd   = prm.imd_name + '_prsem.training_tr_crd'
-    prm.fall_tr_features   = prm.imd_name + '_prsem.all_tr_features'
-    prm.fall_tr_prior      = prm.imd_name + '_prsem.all_tr_prior'
+    prm.fall_tr_crd        = prm.imd_name  + '_prsem.all_tr_crd'
+    prm.fall_tr_gc         = prm.imd_name  + '_prsem.all_tr_gc'
+    prm.ftraining_tr_crd   = prm.imd_name  + '_prsem.training_tr_crd'
+    prm.fall_tr_features   = prm.stat_name + '_prsem.all_tr_features'
+    prm.fall_tr_prior      = prm.stat_name + '_prsem.all_tr_prior'
     prm.fisoforms_results  = prm.sample_name + '.isoforms.results'
 
     return prm

@@ -6,13 +6,182 @@
 
 main <- function() {
   name2func <- list(
-    'selTrainingTr'       = selTrainingTr,
-    'prepTSSPeakFeatures' = prepTSSPeakFeatures,
-    'genPriorByTSSPeak'   = genPriorByTSSPeak
+    'selTrainingTr'               = selTrainingTr,
+    'prepTSSPeakFeatures'         = prepTSSPeakFeatures,
+    'prepPeakSignalGCLenFeatures' = prepPeakSignalGCLenFeatures,
+    'genPriorByTSSPeak'           = genPriorByTSSPeak,
+    'genPriorByPeakSignalGCLen'   = genPriorByPeakSignalGCLen
   )
 
   argv <- commandArgs(trailingOnly=T)
   name2func[[argv[1]]](argv[2:length(argv)])
+}
+
+
+genPriorByPeakSignalGCLen <- function(argv=NA) {
+  libloc           <- argv[1]
+  fall_tr_features <- argv[2]
+  partition_model  <- argv[3]
+  fout             <- argv[4]
+
+# libloc <- '/ua/pliu/dev/RSEM/pRSEM/Rlib/'
+# fall_tr_features <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.all_tr_features'
+# partition_model <- 'pk_lgtnopk'
+# fout <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.all_tr_prior'
+
+  partition_model2func <- list(
+    ## not needed in this function
+   #'pk'   = getSampleAndPriorByPeak
+   #'1prt' = getSampleAndPriorByOnePartition,
+
+    ## w/ peak + logit on no peak
+    'pk_lgtnopk' = getSampleAndPriorByPeakLogitNoPeak,
+
+    ## linear regression on all with different number of bins
+    'lm3'        = getSampleAndPriorByLM3,  # 3 bins
+    'lm4'        = getSampleAndPriorByLM4,  # 4 bins
+    'lm5'        = getSampleAndPriorByLM5,  # 5 bins
+    'lm6'        = getSampleAndPriorByLM6,  # 6 bins
+
+	  ## no peak + lm on w/ peak with different number of bins
+    'nopk_lm2pk' = getSampleAndPriorByNoPeakLM2Peak,
+    'nopk_lm3pk' = getSampleAndPriorByNoPeakLM3Peak,   
+    'nopk_lm4pk' = getSampleAndPriorByNoPeakLM4Peak,   
+    'nopk_lm5pk' = getSampleAndPriorByNoPeakLM5Peak,   
+
+    ## w/ peak + lm on no peak with different number of bins
+    'pk_lm2nopk' = getSampleAndPriorByPeakLM2NoPeak,   
+    'pk_lm3nopk' = getSampleAndPriorByPeakLM3NoPeak,   
+    'pk_lm4nopk' = getSampleAndPriorByPeakLM4NoPeak,   
+    'pk_lm5nopk' = getSampleAndPriorByPeakLM5NoPeak
+  )
+
+  checkInstallCRAN('data.table', libloc)
+  suppressMessages(library(data.table, lib.loc=c(.libPaths(), libloc)))
+
+  all_trdt <- fread(fall_tr_features, header=T, sep="\t")
+  GC_mean <- mean(all_trdt[, GC_fraction])
+  all_trdt[, `:=`( log10_count    = log10(pme_count + 1),
+                   log10_tss_sig  = ifelse(tss_sig > 0,  log10(tss_sig),  -4.0),
+                   log10_body_sig = ifelse(body_sig > 0, log10(body_sig), -4.0),
+                   log10_tes_sig  = ifelse(tes_sig > 0,  log10(tes_sig),  -4.0),
+                   log10_eff_len  = ifelse(efflen > 0,   log10(efflen),   -4.0),
+                   log10_GC_ov_mean = ifelse(GC_fraction > 0, 
+                                             log10(GC_fraction/GC_mean),  -4.0),
+                   no_tss_pk      = 1 - tss_pk,
+                   no_body_pk     = 1 - body_pk, 
+                   no_tes_pk      = 1 - tes_pk
+                 )]
+
+  training_trdt <- subset(all_trdt, is_training==1)
+
+  func <- partition_model2func[[partition_model]]
+
+  outdt <- func(training_trdt, all_trdt)
+  write.table(outdt[, list(prior, trid)], fout, quote=F, sep=' # ', col.names=F,
+              row.names=F)
+}
+
+
+prepPeakSignalGCLenFeatures <- function(argv=NA){
+  libloc            <- argv[1]
+  fall_tr_crd       <- argv[2]
+  ftraining_tr_crd  <- argv[3]
+  fout              <- argv[4]
+  fisoforms_results <- argv[5]
+  flanking_width    <- as.numeric(argv[6])
+  partition_model   <- argv[7]
+  fchipseq_peaks    <- argv[8]
+  fchipseq_target_signals <- argv[9]
+  fall_tr_gc        <- argv[10]
+
+# libloc            <- '/ua/pliu/dev/RSEM/pRSEM/Rlib/'
+# fall_tr_crd       <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.all_tr_crd'
+# ftraining_tr_crd  <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.training_tr_crd' 
+# fout              <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.all_tr_features' 
+# fisoforms_results <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.isoforms.results' 
+# flanking_width    <- 500 
+# partition_model   <- 'pk_lgtnopk'
+# fchipseq_peaks    <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/idr_targetRep0_vs_controlRep0.regionPeak.gz'
+# fchipseq_target_signals <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/targetRep0.tagAlign.gz' 
+# fall_tr_gc        <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.all_tr_gc'
+
+  checkInstallCRAN('data.table', libloc)
+  checkInstallBioc('GenomicRanges', libloc)
+  suppressMessages(library(data.table,    lib.loc=c(.libPaths(), libloc)))
+  suppressMessages(library(GenomicRanges, lib.loc=c(.libPaths(), libloc)))
+
+  all_trdt <- fread(fall_tr_crd, header=T, sep="\t")
+
+  rsemdt <- fread(fisoforms_results, header=T, sep="\t", select=c(
+                  'transcript_id', 'effective_length', 'posterior_mean_count')) 
+  setnames(rsemdt, 1:3, c('trid', 'efflen',  'pme_count'))
+
+  gcdt <- fread(fall_tr_gc, header=T, sep="\t")
+
+  trdt <- merge(all_trdt, rsemdt, by='trid', all.x=T)
+  trdt <- merge(trdt, gcdt, by='trid', all.x=T)
+
+  trdt[, `:=`( tss = ifelse(strand == '+', start, end  ),
+               tes = ifelse(strand == '+', end,   start))]
+  tssdt  <- trdt[, list(chrom, tss, trid)]
+  bodydt <- trdt[, list(chrom, start, end, trid)]
+  tesdt  <- trdt[, list(chrom, tes, trid)]
+
+  tssdt[,  `:=`( start = tss - flanking_width,
+                 end   = tss + flanking_width ) ]
+  bodydt[, `:=`( body_start = start + flanking_width + 1,
+                 body_end   = end   - flanking_width - 1)]
+  bodydt[, `:=`( start = ifelse(body_start <= body_end, body_start, body_end),
+                 end   = ifelse(body_start <= body_end, body_end, body_start))]
+  tesdt[,  `:=`( start = tes - flanking_width,
+                 end   = tes + flanking_width ) ]
+
+  pkdt <- data.table(read.table(gzfile(fchipseq_peaks), header=F, sep="\t", 
+                                colClasses=c('character', 'integer', 'integer',
+                                             rep('NULL', 7))))
+  setnames(pkdt, 1:3, c('chrom', 'start', 'end'))
+
+  has_tss_pk_trids  <- getRegionPeakOLTrID(tssdt,  pkdt)
+  has_body_pk_trids <- getRegionPeakOLTrID(bodydt, pkdt)
+  has_tes_pk_trids  <- getRegionPeakOLTrID(tesdt,  pkdt)
+
+  sigdt <- data.table(read.table(gzfile(fchipseq_target_signals), header=F, 
+                                 sep="\t", colClasses=c('character', 'integer',
+                                 'integer', rep('NULL', 3))))
+  setnames(sigdt, 1:3, c('chrom', 'start', 'end'))
+  tss_sigdt  <- countRegionSignal(tssdt,  sigdt, 'tss')
+  body_sigdt <- countRegionSignal(bodydt, sigdt, 'body')
+  tes_sigdt  <- countRegionSignal(tesdt,  sigdt, 'tes')
+
+  trdt <- merge(trdt, tss_sigdt,  by='trid', all.x=T)
+  trdt <- merge(trdt, body_sigdt, by='trid', all.x=T)
+  trdt <- merge(trdt, tes_sigdt,  by='trid', all.x=T)
+
+  training_trdt <- fread(ftraining_tr_crd, header=T, sep="\t", select='trid')
+  trdt[, `:=`( tss_pk  = ifelse(trid %in% has_tss_pk_trids,  1, 0),
+               body_pk = ifelse(trid %in% has_body_pk_trids, 1, 0),
+               tes_pk  = ifelse(trid %in% has_tes_pk_trids,  1, 0),
+               is_training = ifelse(trid %in% training_trdt[, trid], 1, 0))]
+
+  setkey(trdt, trid)
+  trdt <- trdt[all_trdt[, trid]] ## keep the order of original trids
+  write.table(trdt, fout, quote=F, sep="\t", col.names=T, row.names=F)
+}
+
+
+countRegionSignal <- function(regiondt, sigdt, prefix=''){
+  regiongrs <- makeGRangesFromDataFrame(regiondt[, list(chrom, start, end, 
+                                                        trid)], 
+                                        keep.extra.columns=T, ignore.strand=T)
+
+  peakgrs <- makeGRangesFromDataFrame(sigdt[, list(chrom, start, end)], 
+                                      ignore.strand=T)
+  nol <- countOverlaps(GNCList(regiongrs), GNCList(peakgrs), type='any', 
+                       ignore.strand=T)
+  outdt <- data.table(trid = mcols(regiongrs)$trid)
+  outdt[, eval(paste0(prefix, '_sig')) := nol/width(regiongrs)]
+  return(outdt)
 }
 
 
@@ -62,8 +231,6 @@ prepTSSPeakFeatures <- function(argv=NA) {
 
   intrdt <- fread(fall_tr_crd, header=T, sep="\t")
   trdt <- merge(intrdt, rsemdt, by='trid', all.x=T)
-  setkey(trdt, trid)
-  trdt <- trdt[intrdt[, trid]]  ## keep the order of original trid
   trdt[, tss := ifelse(strand=='+', start, end)]
   tssdt <- trdt[, list(chrom, tss, trid)]
   tssdt[, `:=`( start = tss - flanking_width,
@@ -75,10 +242,14 @@ prepTSSPeakFeatures <- function(argv=NA) {
   setnames(pkdt, 1:3, c('chrom', 'start', 'end'))
 
   has_pk_trids <- getRegionPeakOLTrID(tssdt, pkdt)
-  training_trids <- fread(ftraining_tr_crd, header=T, sep="\t")[, trid]
+  training_trids <- fread(ftraining_tr_crd, header=T, sep="\t", select='trid'
+                         )[, trid]
 
   trdt[, `:=`( tss_pk      = ifelse(trid %in% has_pk_trids,   1, 0),
                is_training = ifelse(trid %in% training_trids, 1, 0) )]
+
+  setkey(trdt, trid)
+  trdt <- trdt[intrdt[, trid]]  ## keep the order of original trid
   write.table(trdt, fout, quote=F, sep="\t", col.names=T, row.names=F)
 }
 
@@ -242,25 +413,6 @@ partitioned_log_likelihood_gradient <- function(alpha, counts, partition) {
 }
 
 
-readFeatureData <- function(fin) {
-  dt <- fread(fin, header=T, sep="\t")
- #setkey(dt, trid)
-  mean_GC <- mean(dt[, GC_prc])
-  dt[, `:=`( log10_count      = log10(pme_count + 1), 
-             log10_tss_sig    = ifelse(tss_sig > 0.0,  log10(tss_sig),  -4.0),
-             log10_body_sig   = ifelse(body_sig > 0.0, log10(body_sig), -4.0),
-             log10_tes_sig    = ifelse(tes_sig > 0.0,  log10(tes_sig),  -4.0),
-             log10_eff_len    = ifelse(eff_len > 0.0,  log10(eff_len),  -4.0),
-             log10_GC_ov_mean = ifelse(GC_prc > 0.0,   log10(GC_prc/mean_GC),   
-						                           -4.0),
-             no_tss_pk  = 1 - tss_pk,
-             no_body_pk = 1 - body_pk,
-             no_tes_pk  = 1 - tes_pk )]
-
-	return(dt)
-}
-
-
 #
 # create a new partition with give parition and data
 # the breaks from old partition will be kept
@@ -279,27 +431,27 @@ createPartitionForNewData <- function(partition, data){
 }
 
 
-getSampleAndPriorByOnePartition <- function(trndt, tstdt) {
-  trn_partition <- factor(rep(0, nrow(trndt)))
-  fit <- getFitByMLDM(trndt[, pme_count], trn_partition)
+#getSampleAndPriorByOnePartition <- function(trndt, tstdt) {
+# trn_partition <- factor(rep(0, nrow(trndt)))
+# fit <- getFitByMLDM(trndt[, pme_count], trn_partition)
 
- #cat('priors:', format(fit$par, digits=2, nsmall=3), "\n")
-  
-  tst_partition <- factor(rep(0, nrow(tstdt)))
-  prior <- fit$par[tst_partition]
+##cat('priors:', format(fit$par, digits=2, nsmall=3), "\n")
+# 
+# tst_partition <- factor(rep(0, nrow(tstdt)))
+# prior <- fit$par[tst_partition]
 
-  outdt <- tstdt[, list(trid, pme_count)]
-  outdt[, `:=`(partition = tst_partition,
-               sample    = getSampleByDM(fit$par, pme_count, tst_partition),
-               prior     = prior)]
+# outdt <- tstdt[, list(trid, pme_count)]
+# outdt[, `:=`(partition = tst_partition,
+#              sample    = getSampleByDM(fit$par, pme_count, tst_partition),
+#              prior     = prior)]
 
- #cat("training set's partition:")
- #print(table(trn_partition))
- #cat("testing set's prior:")
- #print(table(prior))
+##cat("training set's partition:")
+##print(table(trn_partition))
+##cat("testing set's prior:")
+##print(table(prior))
 
-  return(outdt)
-}
+# return(outdt)
+#}
 
 
 getSampleAndPriorByTSSPeak <- function(trndt, tstdt) {
@@ -316,10 +468,10 @@ getSampleAndPriorByTSSPeak <- function(trndt, tstdt) {
                sample    = getSampleByDM(fit$par, pme_count, tst_partition),
                prior     = prior)]
 
- #cat("training set's partition:")
- #print(table(trn_partition))
- #cat("testing set's prior:")
- #print(table(prior))
+  cat("training set's partition:")
+  print(table(trn_partition))
+  cat("testing set's prior:")
+  print(table(prior))
 
   return(outdt)
 }
@@ -349,10 +501,10 @@ getSampleAndPriorByLM <- function(trndt, tstdt, nbin=NULL) {
                sample    = getSampleByDM(fit$par, pme_count, tst_partition),
                prior     = prior)]
 
- #cat("training set's partition:")
- #print(table(trn_partition))
- #cat("testing set's prior:")
- #print(table(prior))
+  cat("training set's partition:")
+  print(table(trn_partition))
+  cat("testing set's prior:")
+  print(table(prior))
 
   return(outdt)
 }
@@ -402,11 +554,11 @@ getSampleAndPriorByPeakLM <- function(trndt, tstdt, nbin=NULL, lm_on_wpk=NULL) {
   outdt[, `:=`(sample = getSampleByDM(fit$par, pme_count, partition),
                prior  = prior)]
 
- #cat("training set's partition:")
- #print(table(slim_trndt[,partition]))
- #cat("testing set:")
- #print(table(prior))
- #cat("\n")
+  cat("training set's partition:")
+  print(table(slim_trndt[,partition]))
+  cat("testing set:")
+  print(table(prior))
+  cat("\n")
 
 	return(outdt)
 }
@@ -466,11 +618,11 @@ getSampleAndPriorByPeakLogitNoPeak <- function(trndt, tstdt) {
   outdt[, `:=`(sample = getSampleByDM(fit$par, pme_count, partition),
                prior  = prior)]
 
- #cat("training set's partition:")
- #print(table(slim_trndt[,partition]))
- #cat("testing set:")
- #print(table(prior))
- #cat("\n")
+  cat("training set's partition:")
+  print(table(slim_trndt[,partition]))
+  cat("testing set:")
+  print(table(prior))
+  cat("\n")
 
 	return(outdt)
 }
@@ -530,3 +682,5 @@ getSampleAndPriorByPeakLM5NoPeak <- function(trndt, tstdt) {
 main()
 #prepTSSPeakFeatures()
 #genPriorByTSSPeak()
+#prepPeakSignalGCLenFeatures()
+#genPriorByPeakSignalGCLen()

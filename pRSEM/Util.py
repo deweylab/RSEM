@@ -13,12 +13,15 @@ def runCommand(*args, **kwargs):
   str_args = [ str(arg) for arg in args ]
   if 'quiet' in kwargs:
     if not kwargs['quiet']:
-      print ' '.join(str_args), "\n";
+      sys.stdout.write("\n%s\n" % (' '.join(str_args)))
   else:
-    print ' '.join(str_args), "\n";
+    sys.stdout.write("\n%s\n" % (' '.join(str_args)))
 
   try:
-    retcode = subprocess.call(str_args)
+    if len(str_args) == 1:
+      retcode = subprocess.call(str_args[0], shell=True)
+    else:
+      retcode = subprocess.call(str_args)
     if retcode < 0:
       sys.exit("Terminated by singal %d" % -retcode)
     elif retcode > 0:
@@ -34,9 +37,9 @@ def runCommandAndGetOutput(*args, **kwargs):
   str_args = [ str(arg) for arg in args ]
   if 'quiet' in kwargs:
     if not kwargs['quiet']:
-      print ' '.join(str_args), "\n";
+      sys.stdout.write("\n%s\n" % (' '.join(str_args)))
   else:
-    print ' '.join(str_args), "\n";
+    sys.stdout.write("\n%s\n" % (' '.join(str_args)))
 
   try:
     output = subprocess.check_output(str_args)
@@ -46,19 +49,20 @@ def runCommandAndGetOutput(*args, **kwargs):
   return output
 
 
-def runOneLineCommand(cmd, quiet=True):
-  import os
-  import sys
+#def runOneLineCommand(cmd, quiet=True):
+# import os
+# import sys
 
-  if not quiet:
-    print cmd, "\n";
+# if not quiet:
+#   print cmd, "\n";
 
-  try:
-    retcode = os.system(cmd)
-    if retcode != 0:
-      sys.exit("Failed with return code %d" % retcode)
-  except OSError as e:
-    sys.exit("Execution failed: %s" % e)
+# try:
+#   retcode = os.system(cmd)
+#   print 'retcode = ', retcode;
+#   if retcode != 0:
+#     sys.exit("Failed with return code %d" % retcode)
+# except OSError as e:
+#   sys.exit("Execution failed: %s" % e)
 
 
 def getCatCommand(is_gzipped):
@@ -94,7 +98,7 @@ def readFile(fin):
 
 
 def calculateMappability(mpp_type, chrom, start, end, bigwigsummary_bin,
-                         fbigwig):
+                         fbigwig, quiet=True):
   """
   calculate mappability for the given genomic coordinate interval
   mpp_type = {mean|max}
@@ -138,8 +142,9 @@ def getFastaID2Seq(ffasta):
   """
   read fasta file, return a dict with key as seq_id and value as seq
   """
+  import os
   assert os.path.exists(ffasta), "File not found: %s\n" % ffasta
-  print "reading FASTA file:", ffasta, "...\n";
+ #print "reading FASTA file:", ffasta, "...\n";
   fastas = {};
   f_fin = open(ffasta, 'r');
   entries = f_fin.read().split('>');
@@ -151,13 +156,13 @@ def getFastaID2Seq(ffasta):
   return fastas;
 
 
-def getGCContent(seq):
+def getGCFraction(seq):
   """
   return the percetage of GC in the given sequence
   """
   length = len(seq);
   if length == 0:
-    sys.stderr.write("Util::getGCContent(): sequence length is 0\n");
+    sys.stderr.write("Util::getFraction(): sequence length is 0\n");
     return 0;
   else:
     seq = seq.upper();

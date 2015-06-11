@@ -19,10 +19,8 @@ guessFqEncoding <- function(argv){
   checkInstallCRAN('data.table', argv[4])
   checkInstallBioc('ShortRead',  argv[4])
 
-  suppressPackageStartupMessages(library(data.table, 
-                                         lib.loc=c(.libPaths(), argv[4])))
-  suppressPackageStartupMessages(library(ShortRead, 
-                                         lib.loc=c(.libPaths(), argv[4])))
+  suppressMessages(library(data.table, lib.loc=c(.libPaths(), argv[4])))
+  suppressMessages(library(ShortRead,  lib.loc=c(.libPaths(), argv[4])))
 
   nthr      <- strtoi(argv[1])
   s_infiles <- argv[2]
@@ -39,7 +37,7 @@ guessFqEncoding <- function(argv){
   outdt <- rbindlist(bplapply(files, guessFqEncodingByFile))
 
   write.table(outdt, fout, sep="\t", quote=F, col.names=T, row.names=F)
-  cat('File written:', fout, "\n")
+ #cat('File written:', fout, "\n")
 }
 
 

@@ -239,7 +239,8 @@ class Transcript:
  #  self.ave_mpp_over_exons = sum_mpp*1.0/total_exon_len
 
 
-  def calculateMappability(self, bin_bigwigsummary, fbigwig, width=500):
+  def calculateMappability(self, bin_bigwigsummary, fbigwig, width=500,
+                           quiet=True):
     """
     calculate average mappability for a transcript's
     TSS region:  [TSS-width,   TSS+width],
@@ -261,23 +262,22 @@ class Transcript:
 
     self.ave_mpp_around_TSS = Util.calculateMappability('mean', self.chrom,
                               self.tss - width, self.tss + width,
-                              bin_bigwigsummary, fbigwig)
+                              bin_bigwigsummary, fbigwig, quiet)
 
     if (self.start + width + 1) < (self.end - width - 1):
       self.ave_mpp_around_body = Util.calculateMappability('mean', self.chrom,
                                  self.start+width+1, self.end-width-1,
-                                 bin_bigwigsummary, fbigwig)
+                                 bin_bigwigsummary, fbigwig, quiet)
     elif (self.start + width + 1) > (self.end - width - 1):
       self.ave_mpp_around_body = Util.calculateMappability('mean', self.chrom,
                                  self.end-width-1, self.start+width+1,
-                                 bin_bigwigsummary, fbigwig)
+                                 bin_bigwigsummary, fbigwig, quiet)
     elif (self.start + width + 1) == (self.end - width - 1):
       self.ave_mpp_around_body = 1.0
 
     self.ave_mpp_around_TES = Util.calculateMappability('mean', self.chrom,
                               self.tes - width, self.tes + width,
-                              bin_bigwigsummary, fbigwig)
-
+                              bin_bigwigsummary, fbigwig, quiet)
 
 
  #def zeroChIPSeqSignal(self):

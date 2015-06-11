@@ -7,6 +7,8 @@ __doc__="""
   run pRSEM to calculate priors and use them for abundance estimation
 """
 
+import Util
+
 def main():
   import Gene
   import Param
@@ -16,20 +18,20 @@ def main():
 
   param = Param.initFromCommandLineArguments(argdict)
 
- #if param.chipseq_peak_file is None:
- #  genChIPSeqPeakFileBySPPIDR(param) ## save to param.chipseq_peak_file
+  if param.chipseq_peak_file is None:
+    ## IDR peaks will be saved in file param.fidr_chipseq_peaks
+    genChIPSeqPeakFileBySPPIDR(param)
 
- #param.transcripts = Transcript.quicklyReadRSEMTI(param.fti)
- #param.genes = Gene.constructGenesFromTranscripts(param.transcripts)
+  param.transcripts = Transcript.quicklyReadRSEMTI(param.fti)
+  param.genes = Gene.constructGenesFromTranscripts(param.transcripts)
 
- #buildTrainingSet(param)
+  buildTrainingSet(param)
 
- #if param.partition_model == 'pk':
- #  genPriorByTSSPeak(param)
- #else:
- #  ## to-be-implemented for other partition models using ChIP-seq signals
- #  pass
- # #genPriorByAllPeakAndSignal(param)
+  if param.partition_model == 'pk':
+    ## no need to calculate signals or body/tes peaks here
+    genPriorByTSSPeak(param)
+  else:
+    genPriorByPeakSignalGCLen(param)
 
   runGibbsSampling(param)
 
@@ -63,14 +65,14 @@ def getCommandLineArguments():
 
 
 def genChIPSeqPeakFileBySPPIDR(param):
-  import os
   import ChIPSeqExperiment
 
- #os.environ['R_LIBS'] = "%s:%s" % (os.environ['R_LIBS'], param.prsem_rlib_dir)
   cse_target = ChIPSeqExperiment.initFromParam(param, 'target')
   cse_target.getFastqEncoding()
   cse_target.alignReadByBowtie()
   cse_target.poolTagAlign()
+
+  param.chipseqexperiment_target = cse_target
 
   if param.chipseq_control_read_files is not None:
     cse_control = ChIPSeqExperiment.initFromParam(param, 'control')
@@ -81,8 +83,9 @@ def genChIPSeqPeakFileBySPPIDR(param):
     cse_target.getPeaksByIDR(cse_control.pooled_tagalign)
 
     param.chipseq_peak_file = cse_target.final_peaks.fullname
+    param.chipseqexperiment_control = cse_control
   else:
-    pass  ## to-be-implemented, call peaks by MOSAICs
+    pass  ## to-be-implemented, call peaks by MOSAiCS
 
 
 def buildTrainingSet(prm):
@@ -92,8 +95,6 @@ def buildTrainingSet(prm):
   The order is required by rsem-run-gibbs so that prior can be assigned to
   transcript correctly
   """
-  import Util
-
   ogot_genes = filter(lambda g: len(g.transcripts) == 1 and
                                 (g.end - g.start + 1) >=
                                 prm.TRAINING_GENE_MIN_LEN, prm.genes)
@@ -118,7 +119,7 @@ def buildTrainingSet(prm):
   Util.runCommand('/bin/env', 'Rscript', prm.rnaseq_rscript, 'selTrainingTr',
                   prm.prsem_rlib_dir, prm.fall_tr_crd,
                   prm.TRAINING_MIN_MAPPABILITY, prm.FLANKING_WIDTH,
-                  prm.ftraining_tr_crd, quiet=prm.quiet)
+                  prm.ftraining_tr_crd, quiet=False)
 
 
 def calTSSBodyTESMappability(trs, prm, out_q):
@@ -131,44 +132,72 @@ def calTSSBodyTESMappability(trs, prm, out_q):
   outdict = {}
   for tr in trs:
     tr.calculateMappability(prm.bigwigsummary_bin, prm.mappability_bigwig_file,
-                            prm.FLANKING_WIDTH)
+                            prm.FLANKING_WIDTH, prm.quiet)
     outdict[tr.transcript_id] = (tr.ave_mpp_around_TSS, tr.ave_mpp_around_body,
                                  tr.ave_mpp_around_TES)
   out_q.put(outdict)
 
 
-def calChIPSeqSignal(prm):
+def genPriorByPeakSignalGCLen(prm):
   """
-  to-be-implemented
-  calculate signals for the TSS, body, and TES regions
+  calculate peaks/signals for the TSS, body, and TES regions
+  calculate GC contenct and effective length
+  learn priors from training set and derived priors for all isoforms
   """
-  import Util
- #Util.runCommand('/bin/env', 'Rscript', prm.chipseq_rscript, 'calSignal',
- #                prm.prsem_rlib_dir, prm.fall_tr_crd, prm.
+  ## calculate GC contect for isoforms
+  trid2seq = Util.getFastaID2Seq(prm.ffasta)
+  with open(prm.fall_tr_gc, 'w') as f_fall_tr_gc:
+    f_fall_tr_gc.write("trid\tGC_fraction\n")
+    for tr in prm.transcripts:
+      gc_frac = Util.getGCFraction(trid2seq[tr.transcript_id])
+      f_fall_tr_gc.write("%s\t%.2f\n" % (tr.transcript_id, gc_frac) )
+
+  ## prepare a feature file of peaks and signals for all isoforms, 
+  ## isoforms in training set will be labeled
+  Util.runCommand('/bin/env', 'Rscript', prm.rnaseq_rscript,
+                  'prepPeakSignalGCLenFeatures', prm.prsem_rlib_dir,
+                  prm.fall_tr_crd, prm.ftraining_tr_crd, prm.fall_tr_features,
+                  prm.fisoforms_results, prm.FLANKING_WIDTH,
+                  prm.partition_model, prm.fidr_chipseq_peaks,
+                  prm.fchipseq_target_signals, prm.fall_tr_gc, quiet=False)
+
+  ## learn and generate prior for all transcripts
+  Util.runCommand('/bin/env', 'Rscript', prm.rnaseq_rscript,
+                  'genPriorByPeakSignalGCLen', prm.prsem_rlib_dir,
+                  prm.fall_tr_features, prm.partition_model, prm.fall_tr_prior,
+                  quiet=False)
 
 
 def genPriorByTSSPeak(prm):
-  import Util
-  ## prepare a feature file of TSS peaks for training set isoforms
+  """
+  determine if isoform have TSS peak or not
+  learn priors from training set and derived priors for all isoforms
+  """
+  ## prepare a feature file of TSS peaks for all isoforms, 
+  ## isoforms in training set will be labeled
   Util.runCommand('/bin/env', 'Rscript', prm.rnaseq_rscript,
                   'prepTSSPeakFeatures', prm.prsem_rlib_dir,
                   prm.fall_tr_crd, prm.ftraining_tr_crd, prm.fall_tr_features,
                   prm.fisoforms_results, prm.FLANKING_WIDTH,
-                  prm.fchipseq_peaks, quiet=prm.quiet)
+                  prm.fidr_chipseq_peaks, quiet=False)
 
   ## learn and generate prior for all transcripts
   Util.runCommand('/bin/env', 'Rscript', prm.rnaseq_rscript,
                   'genPriorByTSSPeak', prm.prsem_rlib_dir,
-                  prm.fall_tr_features,  prm.fall_tr_prior, quiet=prm.quiet)
+                  prm.fall_tr_features,  prm.fall_tr_prior, quiet=False)
 
 
 def runGibbsSampling(prm):
-  import Util
+  if prm.quiet:
+    run_gibbs_quiet = '-q'
+  else:
+    run_gibbs_quiet = ''
   Util.runCommand("%s/../rsem-run-gibbs" % prm.prsem_scr_dir,
                   prm.ref_name, prm.imd_name, prm.stat_name, prm.gibbs_burnin,
                   prm.gibbs_number_of_samples, prm.gibbs_sampling_gap,
-                  '-p', prm.num_threads, '--prior', prm.fall_tr_prior,
-                  quiet=prm.quiet)
+                  '-p', prm.num_threads, run_gibbs_quiet,
+                  '--prior', prm.fall_tr_prior,
+                  quiet=False)
 
 
 if __name__=='__main__':
