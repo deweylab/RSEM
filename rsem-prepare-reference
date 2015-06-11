@@ -150,7 +150,7 @@ if ($star) {
 }
 
 if ( $index_genome ) {
-    $command = "$FindBin::RealBin/prsem-prepare-reference " .
+    $command = "$FindBin::RealBin/pRSEM/prsem-prepare-reference " .
                  " --bowtie-path $bowtie_path ";
  
     if ( $quiet ) {
