@@ -7,6 +7,8 @@ __doc__="""
   run pRSEM to calculate priors and use them for abundance estimation
 """
 
+import os
+import sys
 import Util
 
 def main():
@@ -121,6 +123,9 @@ def buildTrainingSet(prm):
                   prm.TRAINING_MIN_MAPPABILITY, prm.FLANKING_WIDTH,
                   prm.ftraining_tr_crd, quiet=False)
 
+  if not os.path.exists(prm.ftraining_tr_crd):
+    sys.exit("Failed to generate file: %s\n" % prm.ftraining_tr_crd)
+
 
 def calTSSBodyTESMappability(trs, prm, out_q):
   """
@@ -161,11 +166,17 @@ def genPriorByPeakSignalGCLen(prm):
                   prm.partition_model, prm.fidr_chipseq_peaks,
                   prm.fchipseq_target_signals, prm.fall_tr_gc, quiet=False)
 
+  if not os.path.exists(prm.fall_tr_gc):
+    sys.exit("Failed to generate file: %s\n" % prm.fall_tr_gc)
+
   ## learn and generate prior for all transcripts
   Util.runCommand('/bin/env', 'Rscript', prm.rnaseq_rscript,
                   'genPriorByPeakSignalGCLen', prm.prsem_rlib_dir,
                   prm.fall_tr_features, prm.partition_model, prm.fall_tr_prior,
                   quiet=False)
+
+  if not os.path.exists(prm.fall_tr_prior):
+    sys.exit("Failed to generate file: %s\n" % prm.fall_tr_prior)
 
 
 def genPriorByTSSPeak(prm):
@@ -181,10 +192,16 @@ def genPriorByTSSPeak(prm):
                   prm.fisoforms_results, prm.FLANKING_WIDTH,
                   prm.fidr_chipseq_peaks, quiet=False)
 
+  if not os.path.exists(prm.fidr_chipseq_peaks):
+    sys.exit("Failed to generate file: %s\n" % prm.fidr_chipseq_peaks)
+
   ## learn and generate prior for all transcripts
   Util.runCommand('/bin/env', 'Rscript', prm.rnaseq_rscript,
                   'genPriorByTSSPeak', prm.prsem_rlib_dir,
                   prm.fall_tr_features,  prm.fall_tr_prior, quiet=False)
+
+  if not os.path.exists(prm.fall_tr_prior):
+    sys.exit("Failed to generate file: %s\n" % prm.fall_tr_prior)
 
 
 def runGibbsSampling(prm):

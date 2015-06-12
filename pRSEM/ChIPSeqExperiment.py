@@ -66,6 +66,9 @@ class ChIPSeqExperiment:
                     'guessFqEncoding', nthr, fin, fenc,
                     self.param.prsem_rlib_dir, quiet=False )
 
+    if not os.path.exists(fenc):
+      sys.exit("Failed to generate file: %s\n" % fenc)
+
     with open(fenc, 'r') as f_fenc:
       next(f_fenc)
       file2enc = dict([ line.rstrip("\n").split("\t") for line in f_fenc ])
@@ -99,7 +102,13 @@ class ChIPSeqExperiment:
              [ "gzip -c > %s " % rep.tagalign.fullname ]
 
       cmd = ' '.join(cmds)
+
+      ## use all threads to align ChIP-seq reads sequentially
       Util.runCommand(cmd, quiet=False)
+
+      if not os.path.exists(rep.tagalign.fullname):
+        sys.exit("failed to generate file: %s\n" % rep.tagalign.fullname)
+
 
 
   def poolTagAlign(self):
@@ -113,6 +122,9 @@ class ChIPSeqExperiment:
 
       cmd = "%s %s | gzip -c >> %s" % (cat_cmd, rep.tagalign.fullname, frep0)
       Util.runCommand(cmd, quiet=False)
+
+      if not os.path.exists(frep0):
+        sys.exit("Failed to generate file: %s\n" % frep0)
 
 
   def callPeaksBySPP(self, ctrl_tagalign):
@@ -226,6 +238,9 @@ def runSPP(tgt_tagalign, fctrl_tagalign, prm, nthr):
                   "-out=%s"    % fout,
                   quiet=False)
   Util.runCommand('rm', '-fr', spp_tmpdir, quiet=False)
+
+  if not os.path.exists(fout):
+    sys.exit("Failed to generate file: %s\n" % fout)
 
 
 def initFromParam(param, typ):
