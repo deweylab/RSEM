@@ -173,6 +173,11 @@ class ChIPSeqExperiment:
                ctrl_tagalign.filename_sans_ext + '.regionPeak.gz'
       fpeakb = prm.temp_dir + repb.tagalign.filename_sans_ext + '_VS_' + \
                ctrl_tagalign.filename_sans_ext + '.regionPeak.gz'
+      if not os.path.exists(fpeaka):
+        sys.exit("File not found: %s\n" % fpeaka)
+      if not os.path.exists(fpeakb):
+        sys.exit("File not found: %s\n" % fpeakb)
+
       idr_prefix = prm.temp_dir + 'idr_' + repa.tagalign.basename + '_vs_' + \
                    repb.tagalign.basename
       proc = mp.Process(target=getNPeaksByIDR,
@@ -220,6 +225,7 @@ def getNPeaksByIDR(fpeaka, fpeakb, idr_prefix, prm, out_q):
 
 
 def runSPP(tgt_tagalign, fctrl_tagalign, prm, nthr):
+  import time
   spp_tmpdir = prm.temp_dir + tgt_tagalign.basename + '_spp_tmp/'
   if not os.path.exists(spp_tmpdir):
     os.mkdir(spp_tmpdir)
@@ -237,6 +243,7 @@ def runSPP(tgt_tagalign, fctrl_tagalign, prm, nthr):
                   "-tmpdir=%s" % spp_tmpdir,
                   "-out=%s"    % fout,
                   quiet=False)
+  time.sleep(10)
   Util.runCommand('rm', '-fr', spp_tmpdir, quiet=False)
 
   if not os.path.exists(fout):
