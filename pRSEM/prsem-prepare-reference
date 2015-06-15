@@ -28,9 +28,8 @@ sub main {
   ## run bowtie-build/bowtie2-build for index whole genome for ChIP-seq
   ## use --offrate=3, which is 2 less than the default value 5
   ## will trade ~1.5 time memory for 1/4 alignment time for human genome
-  ## I will go back to the default option, --offrate=3 takes too long
- #$command = "$bw_path/$bw_build -o 3 ";
-  $command = "$bw_path/$bw_build -o 5 ";
+  $command = "$bw_path/$bw_build -o 3 ";
+ #$command = "$bw_path/$bw_build -o 5 ";
   if ( $quiet ) { 
     $command .= ' -q ';
   }
