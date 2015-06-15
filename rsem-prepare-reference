@@ -157,7 +157,30 @@ if ( $index_genome ) {
       $command .= ' --quiet ';
     }
  
-    my $ref_fas = join(',', @list);
+    ## prepare reference only for chromosomes listed in GTF file, rather than 
+    ## all chromosomes in the genome directory, because that's where we want to 
+    ## callpeaks and derive priors. This is different from RNA-seq, because 
+    ## where peaks called totally depends on reference, there's no option to
+    ## control it later.
+    #my $ref_fas = join(',', @list);
+    my %chrom2exists = ();
+    open(IN, "<$gtfF") or die "cannot open $gtfF: $!\n";
+    while(my $line = <IN>){
+      my @words = split(/\t/, $line);
+      $chrom2exists{$words[0]} = 1;
+    }
+    close IN;
+
+    my @reflist = ();
+    my @suffixlist = ('.fa', '.fasta');
+    foreach my $fullname (@list) {
+      my $basename = basename($fullname, @suffixlist); 
+      if ( exists $chrom2exists{$basename} ) {
+        push @reflist, $fullname;
+      }
+    }
+    my $ref_fas = join(',', @reflist);
+
     $command .= " $ref_fas $ARGV[1]";
     &runCommand($command);
 }
