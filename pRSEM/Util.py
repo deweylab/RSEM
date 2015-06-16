@@ -23,11 +23,11 @@ def runCommand(*args, **kwargs):
     else:
       retcode = subprocess.call(str_args)
     if retcode < 0:
-      sys.exit("Terminated by singal %d" % -retcode)
+      sys.exit("\nTerminated by singal %d\n" % -retcode)
     elif retcode > 0:
-      sys.exit("failed with return code %d" % retcode)
+      sys.exit("\nFailed with return code %d\n" % retcode)
   except OSError as e:
-    sys.exit("Execution failed: %s" % e)
+    sys.exit("\nExecution failed: %s\n" % e)
 
 
 def runCommandAndGetOutput(*args, **kwargs):
@@ -44,25 +44,9 @@ def runCommandAndGetOutput(*args, **kwargs):
   try:
     output = subprocess.check_output(str_args)
   except subprocess.CalledProcessError, e:
-    sys.exit("Execution failed: %s" % e.output)
+    sys.exit("\nExecution failed: %s\n" % e.output)
 
   return output
-
-
-#def runOneLineCommand(cmd, quiet=True):
-# import os
-# import sys
-
-# if not quiet:
-#   print cmd, "\n";
-
-# try:
-#   retcode = os.system(cmd)
-#   print 'retcode = ', retcode;
-#   if retcode != 0:
-#     sys.exit("Failed with return code %d" % retcode)
-# except OSError as e:
-#   sys.exit("Execution failed: %s" % e)
 
 
 def getCatCommand(is_gzipped):
