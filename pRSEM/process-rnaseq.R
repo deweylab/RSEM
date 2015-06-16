@@ -138,7 +138,7 @@ prepPeakSignalGCLenFeatures <- function(argv=NA){
                  end   = tes + flanking_width ) ]
 
   pkdt <- data.table(read.table(gzfile(fchipseq_peaks), header=F, sep="\t", 
-                                colClasses=c('character', 'integer', 'integer',
+                                colClasses=c('character', 'numeric', 'numeric',
                                              rep('NULL', 7))))
   setnames(pkdt, 1:3, c('chrom', 'start', 'end'))
 
@@ -147,8 +147,8 @@ prepPeakSignalGCLenFeatures <- function(argv=NA){
   has_tes_pk_trids  <- getRegionPeakOLTrID(tesdt,  pkdt)
 
   sigdt <- data.table(read.table(gzfile(fchipseq_target_signals), header=F, 
-                                 sep="\t", colClasses=c('character', 'integer',
-                                 'integer', rep('NULL', 3))))
+                                 sep="\t", colClasses=c('character', 'numeric',
+                                 'numeric', rep('NULL', 3))))
   setnames(sigdt, 1:3, c('chrom', 'start', 'end'))
   tss_sigdt  <- countRegionSignal(tssdt,  sigdt, 'tss')
   body_sigdt <- countRegionSignal(bodydt, sigdt, 'body')
@@ -237,7 +237,7 @@ prepTSSPeakFeatures <- function(argv=NA) {
                 end   = tss + flanking_width)]
 
   pkdt <- data.table(read.table(gzfile(fchipseq_peaks), header=F, sep="\t", 
-                                colClasses=c('character', 'integer', 'integer',
+                                colClasses=c('character', 'numeric', 'numeric',
                                              rep('NULL', 7))))
   setnames(pkdt, 1:3, c('chrom', 'start', 'end'))
 
