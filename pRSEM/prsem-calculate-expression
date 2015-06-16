@@ -114,7 +114,7 @@ def buildTrainingSet(prm):
                    tr.transcript_id, tr.chrom, tr.strand, tr.start, tr.end))
       if tr.transcript_id in trid2mpps:
         mpps = trid2mpps[tr.transcript_id]
-        f_fout.write("%4.2f\t%4.2f\t%4.2f\n" % mpps)
+        f_fout.write("%5.3f\t%5.3f\t%5.3f\n" % mpps)
       else:
         f_fout.write("NA\tNA\tNA\n")
 
