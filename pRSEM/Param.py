@@ -118,8 +118,8 @@ class Param:
     prm.fall_tr_crd        = prm.imd_name  + '_prsem.all_tr_crd'
     prm.fall_tr_gc         = prm.imd_name  + '_prsem.all_tr_gc'
     prm.ftraining_tr_crd   = prm.imd_name  + '_prsem.training_tr_crd'
-    prm.fall_tr_features   = prm.stat_name + '_prsem.all_tr_features'
-    prm.fall_tr_prior      = prm.stat_name + '_prsem.all_tr_prior'
+    prm.fall_tr_features   = prm.imd_name + '_prsem.all_tr_features'
+    prm.fall_tr_prior      = prm.imd_name + '_prsem.all_tr_prior'
     prm.fisoforms_results  = prm.sample_name + '.isoforms.results'
 
     return prm
