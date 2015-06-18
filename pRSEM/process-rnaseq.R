@@ -177,8 +177,9 @@ countRegionSignal <- function(regiondt, sigdt, prefix=''){
 
   peakgrs <- makeGRangesFromDataFrame(sigdt[, list(chrom, start, end)], 
                                       ignore.strand=T)
-  nol <- countOverlaps(GNCList(regiongrs), GNCList(peakgrs), type='any', 
-                       ignore.strand=T)
+ #nol <- countOverlaps(GNCList(regiongrs), GNCList(peakgrs), type='any', 
+ #                     ignore.strand=T)
+  nol <- countOverlaps(regiongrs, peakgrs, type='any', ignore.strand=T)
   outdt <- data.table(trid = mcols(regiongrs)$trid)
   outdt[, eval(paste0(prefix, '_sig')) := nol/width(regiongrs)]
   return(outdt)
@@ -261,58 +262,97 @@ getRegionPeakOLTrID <- function(regiondt, peakdt) {
 
   peakgrs <- makeGRangesFromDataFrame(peakdt[, list(chrom, start, end)], 
                                     ignore.strand=T)
-  olgrs <- subsetByOverlaps(GNCList(regiongrs), GNCList(peakgrs), type='any',
-                            ignore.strand=T)
+ #olgrs <- subsetByOverlaps(GNCList(regiongrs), GNCList(peakgrs), type='any',
+ #                          ignore.strand=T)
+  olgrs <- subsetByOverlaps(regiongrs, peakgrs, type='any', ignore.strand=T)
   has_peak_trids <- unique(mcols(olgrs)$trid)
   return(has_peak_trids)
 }
 
 
-selTrainingTr <- function(argv) {
-  libloc  <- argv[1]
-  fin     <- argv[2]
-  min_mpp <- as.numeric(argv[3])
-  flanking_width <- as.numeric(argv[4])
-  fout    <- argv[5]
+selTrainingTr <- function(argv=NA) {
+  libloc   <- argv[1]
+  fin_tr   <- argv[2]
+  fin_exon <- argv[3]
+  min_mpp  <- as.numeric(argv[4])
+  flanking_width <- as.numeric(argv[5])
+  fout     <- argv[6]
 
- #libloc  <- '/ua/pliu/dev/RSEM/pRSEM/Rlib/'
- #fin     <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.alltrcrd'
- #min_mpp <- 0.8
- #flanking_width <- 500
- #fout    <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.training_tr'
+# libloc   <- '/ua/pliu/dev/RSEM/pRSEM/Rlib/'
+# fin_tr   <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/test.temp/test_prsem.all_tr_crd'
+# fin_exon <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/test.temp/test_prsem.all_exon_crd'
+# min_mpp  <- 0.8
+# flanking_width <- 500
+# fout     <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/test.temp/test_prsem.training_tr_crd'
 
   checkInstallCRAN('data.table', libloc)
   checkInstallBioc('GenomicRanges',  libloc)
   suppressMessages(library(data.table,    lib.loc=c(.libPaths(), libloc)))
   suppressMessages(library(GenomicRanges, lib.loc=c(.libPaths(), libloc)))
 
-  alldt <- fread(fin, header=T, sep="\t")
-  alldt[, tss := ifelse(strand == '+', start, end)]
-  highmppdt <- subset(alldt, (! is.na(tss_mpp )) & ( tss_mpp  >= min_mpp ) & 
-                             (! is.na(body_mpp)) & ( body_mpp >= min_mpp ) & 
-                             (! is.na(tes_mpp )) & ( tes_mpp  >= min_mpp ) )
+  alltrdt <- fread(fin_tr, header=T, sep="\t")
+  alltrdt[, tss := ifelse(strand == '+', start, end)]
+  highmppdt <- subset(alltrdt, (! is.na(tss_mpp )) & ( tss_mpp  > min_mpp ) & 
+                               (! is.na(body_mpp)) & ( body_mpp > min_mpp ) & 
+                               (! is.na(tes_mpp )) & ( tes_mpp  > min_mpp ) )
+
+  ## select tr that are not nested with other tr regardless of strand
+  nested_trids <- getTrTrOLTrID(highmppdt, alltrdt, oltype='within', 
+                                ignore_strand=T)
+  not_nested_trdt <- subset(highmppdt, ! trid %in% nested_trids)
+
+  ## select tr that not have exon all nested with the union of other tr's exons
+  ## regardless of strand
+  allexondt <- fread(fin_exon, header=T, sep="\t")
+  exon_all_ol_trids <- getExonsAllOLTrID(not_nested_trdt[, trid], allexondt)
+  seltrdt <- subset(not_nested_trdt, ! trid %in% exon_all_ol_trids)
 
   ## select tr that don't overlap with other tr
-  ol_trid <- getTrTrOLTrID(highmppdt, alldt)
+ #ol_trid <- getTrTrOLTrID(highmppdt, alldt)
 
-  ## select tr that don't have other tr's TSS within its [TSS-width, TSS+width]
-  seltrdt <- subset(highmppdt, ! trid %in%  ol_trid)
+ ### select tr that don't have other tr's TSS within its [TSS-width, TSS+width]
+ #seltrdt <- subset(highmppdt, ! trid %in%  ol_trid)
 
   seltr_tss_region_dt <- copy(seltrdt)
   seltr_tss_region_dt[, `:=`( start = tss - flanking_width,
                               end   = tss + flanking_width )]
 
-  alltr_tss_dt <- copy(alldt)  
+  alltr_tss_dt <- copy(alltrdt)  
   alltr_tss_dt[, `:=`(start = tss, end=tss)]
 
-  tss_region_ol_trid <- getTrTrOLTrID(seltr_tss_region_dt, alltr_tss_dt)
+  tss_region_ol_trids <- getTrTrOLTrID(seltr_tss_region_dt, alltr_tss_dt, 
+                                       'any', ignore_strand=T)
 
-  outdt <- subset(seltrdt, ! trid %in% tss_region_ol_trid)
+  outdt <- subset(seltrdt, ! trid %in% tss_region_ol_trids)
   write.table(outdt, fout, quote=F, sep="\t", col.names=T, row.names=F)
 }
 
 
-getTrTrOLTrID <- function(querydt, subjectdt) {
+getExonsAllOLTrID <- function(query_trids, allexondt) {
+  allexongrs <- makeGRangesFromDataFrame(allexondt, keep.extra.columns=T,
+                                         ignore.strand=F)
+  queryexongrs <- subset(allexongrs, mcols(allexongrs)$trid %in% query_trids)
+  ol <- findOverlaps(queryexongrs, allexongrs, type='within', ignore.strand=T)
+
+  oldt <- data.table(query = queryHits(ol), subject=subjectHits(ol))
+  oldt[, `:=`( query_trid = mcols(queryexongrs)$trid[query],
+               query_exon_index = mcols(queryexongrs)$exon_index[query],
+               subject_trid = mcols(allexongrs)$trid[subject]
+             )]
+  oldt <- subset(oldt, query_trid != subject_trid)
+  nolexondt <- oldt[, list(nolexon = length(unique(query_exon_index))), 
+                      by=query_trid]
+  subexondt  <- subset(allexondt, trid %in% nolexondt[, query_trid])
+  subnexondt <- subexondt[, list(nexon = length(unique(exon_index))), by=trid]
+  setnames(nolexondt, 1, 'trid')
+  nolexondt <- merge(nolexondt, subnexondt, by='trid', all.x=T)
+  exon_all_ol_trids <- subset(nolexondt, nolexon == nexon)[, trid]
+
+  return(exon_all_ol_trids)
+}
+
+
+getTrTrOLTrID <- function(querydt, subjectdt, oltype, ignore_strand) {
   querygrs <- makeGRangesFromDataFrame(
                   querydt[, list(chrom, strand, start, end, trid)], 
                   keep.extra.columns=T, ignore.strand=F)
@@ -321,14 +361,16 @@ getTrTrOLTrID <- function(querydt, subjectdt) {
                   keep.extra.columns=T, ignore.strand=F)
 
   ## select tr not overlap with any other tr
-  ol <- findOverlaps(GNCList(querygrs), GNCList(subjectgrs), type='any', 
-                     ignore.strand=T)
+ #ol <- findOverlaps(GNCList(querygrs), GNCList(subjectgrs), type=oltype,
+ #                   ignore.strand=ignore_strand)
+  ol <- findOverlaps(querygrs, subjectgrs, type=oltype,
+                     ignore.strand=ignore_strand)
 
   oldt <- data.table(query=queryHits(ol), subject=subjectHits(ol))
   oldt[, `:=`(query_trid   = mcols(querygrs)$trid[query],
               subject_trid = mcols(subjectgrs)$trid[subject] )]
-  ol_trid <- subset(oldt, query_trid != subject_trid)[, query_trid] 
-  return(unique(ol_trid))
+  ol_trids <- subset(oldt, query_trid != subject_trid)[, query_trid] 
+  return(unique(ol_trids))
 }
 
 
@@ -680,6 +722,7 @@ getSampleAndPriorByPeakLM5NoPeak <- function(trndt, tstdt) {
 
 
 main()
+#selTrainingTr()
 #prepTSSPeakFeatures()
 #genPriorByTSSPeak()
 #prepPeakSignalGCLenFeatures()

@@ -118,8 +118,15 @@ def buildTrainingSet(prm):
       else:
         f_fout.write("NA\tNA\tNA\n")
 
+  with open(prm.fall_exon_crd, 'w') as f_fexon:
+    f_fexon.write("trid\texon_index\tchrom\tstrand\tstart\tend\n")
+    for tr in prm.transcripts:
+      for (i, (exon_start, exon_end)) in enumerate(tr.exon_ranges):
+        f_fexon.write("%s\t%d\t%s\t%s\t%d\t%d\n" % (tr.transcript_id, i+1,
+                      tr.chrom, tr.strand, exon_start, exon_end))
+
   Util.runCommand('/bin/env', 'Rscript', prm.rnaseq_rscript, 'selTrainingTr',
-                  prm.prsem_rlib_dir, prm.fall_tr_crd,
+                  prm.prsem_rlib_dir, prm.fall_tr_crd, prm.fall_exon_crd,
                   prm.TRAINING_MIN_MAPPABILITY, prm.FLANKING_WIDTH,
                   prm.ftraining_tr_crd, quiet=False)
 

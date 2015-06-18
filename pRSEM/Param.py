@@ -115,6 +115,7 @@ class Param:
     prm.fti            = prm.ref_name + '.ti'
     prm.ffasta         = prm.ref_name + '.transcripts.fa'
     prm.bigwigsummary_bin = prm.prsem_scr_dir + 'bigWigSummary'
+    prm.fall_exon_crd     = prm.imd_name  + '_prsem.all_exon_crd'
     prm.fall_tr_crd       = prm.imd_name  + '_prsem.all_tr_crd'
     prm.fall_tr_gc        = prm.imd_name  + '_prsem.all_tr_gc'
     prm.ftraining_tr_crd  = prm.imd_name  + '_prsem.training_tr_crd'
