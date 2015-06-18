@@ -177,6 +177,8 @@ pod2usage(-msg => "--sampling-for-bam cannot be specified if --no-bam-output is 
 pod2usage(-msg => "--output-genome-bam cannot be specified if --no-bam-output is specified!\n", -exitval => 2, -verbose => 2) if ($genGenomeBamF && !$genBamF);
 pod2usage(-msg => "The seed for random number generator must be a non-negative 32bit integer!\n", -exitval => 2, -verbose => 2) if (($seed ne "NULL") && ($seed < 0 || $seed > 0xffffffff));
 pod2usage(-msg => "The credibility level should be within (0, 1)!\n", -exitval => 2, -verbose => 2) if ($CONFIDENCE <= 0.0 || $CONFIDENCE >= 1.0);
+pod2usage(-msg => "Gzipped read files can only be used for aligner STAR\n", -exitval=>2, -verbose =>2) if ( ( $star == 0 ) && ( $gzipped_read_file != 0));
+pod2usage(-msg => "Bzipped read files can only be used for aligner STAR\n", -exitval=>2, -verbose =>2) if ( ( $star == 0 ) && ( $bzipped_read_file != 0));
 
 if ($L < 25) { print "Warning: the seed length set is less than 25! This is only allowed if the references are not added poly(A) tails.\n"; }
 
