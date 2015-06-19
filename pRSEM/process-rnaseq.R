@@ -24,7 +24,7 @@ genPriorByPeakSignalGCLen <- function(argv=NA) {
   partition_model  <- argv[3]
   fout             <- argv[4]
 
-# libloc <- '/ua/pliu/dev/RSEM/pRSEM/Rlib/'
+# libloc <- '/ua/pliu/dev/RSEM/pRSEM/RLib/'
 # fall_tr_features <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.all_tr_features'
 # partition_model <- 'pk_lgtnopk'
 # fout <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.all_tr_prior'
@@ -56,8 +56,9 @@ genPriorByPeakSignalGCLen <- function(argv=NA) {
     'pk_lm5nopk' = getSampleAndPriorByPeakLM5NoPeak
   )
 
-  checkInstallCRAN('data.table', libloc)
-  suppressMessages(library(data.table, lib.loc=c(.libPaths(), libloc)))
+ #checkInstallCRAN('data.table', libloc)
+  .libPaths(c(libloc, .libPaths()))
+  suppressMessages(library(data.table))
 
   all_trdt <- fread(fall_tr_features, header=T, sep="\t")
   GC_mean <- mean(all_trdt[, GC_fraction])
@@ -95,7 +96,7 @@ prepPeakSignalGCLenFeatures <- function(argv=NA){
   fchipseq_target_signals <- argv[9]
   fall_tr_gc        <- argv[10]
 
-# libloc            <- '/ua/pliu/dev/RSEM/pRSEM/Rlib/'
+# libloc            <- '/ua/pliu/dev/RSEM/pRSEM/RLib/'
 # fall_tr_crd       <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.all_tr_crd'
 # ftraining_tr_crd  <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.training_tr_crd' 
 # fout              <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.all_tr_features' 
@@ -106,10 +107,11 @@ prepPeakSignalGCLenFeatures <- function(argv=NA){
 # fchipseq_target_signals <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/targetRep0.tagAlign.gz' 
 # fall_tr_gc        <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.all_tr_gc'
 
-  checkInstallCRAN('data.table', libloc)
-  checkInstallBioc('GenomicRanges', libloc)
-  suppressMessages(library(data.table,    lib.loc=c(.libPaths(), libloc)))
-  suppressMessages(library(GenomicRanges, lib.loc=c(.libPaths(), libloc)))
+ #checkInstallCRAN('data.table', libloc)
+ #checkInstallBioc('GenomicRanges', libloc)
+  .libPaths(c(libloc, .libPaths()))
+  suppressMessages(library(data.table)) 
+  suppressMessages(library(GenomicRanges))
 
   all_trdt <- fread(fall_tr_crd, header=T, sep="\t")
 
@@ -191,9 +193,12 @@ genPriorByTSSPeak <- function(argv=NA){
   fall_tr_features <- argv[2]
   fall_tr_prior    <- argv[3]
 
- #libloc           <- '/ua/pliu/dev/RSEM/pRSEM/Rlib/' 
+ #libloc           <- '/ua/pliu/dev/RSEM/pRSEM/RLib/' 
  #fall_tr_features <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.all_tr_features'
  #fall_tr_prior    <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.all_tr_prior'
+
+  .libPaths(c(libloc, .libPaths()))
+  suppressMessages(library(data.table))
 
   selcols <- c('trid', 'tss_pk', 'pme_count', 'is_training')
   all_trdt <- fread(fall_tr_features, header=T, sep="\t", select=selcols)
@@ -213,7 +218,7 @@ prepTSSPeakFeatures <- function(argv=NA) {
   flanking_width    <- as.numeric(argv[6])
   fchipseq_peaks    <- argv[7]
 
-# libloc            <- '/ua/pliu/dev/RSEM/pRSEM/Rlib/'
+# libloc            <- '/ua/pliu/dev/RSEM/pRSEM/RLib/'
 # fall_tr_crd       <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.all_tr_crd'
 # ftraining_tr_crd  <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.training_tr_crd'
 # fout              <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.all_tr_features' 
@@ -221,10 +226,11 @@ prepTSSPeakFeatures <- function(argv=NA) {
 # flanking_width <- 500 
 # fchipseq_peaks <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/idr_targetRep0_vs_controlRep0.regionPeak.gz'
 
-  checkInstallCRAN('data.table', libloc)
-  checkInstallBioc('GenomicRanges', libloc)
-  suppressMessages(library(data.table,    lib.loc=c(.libPaths(), libloc)))
-  suppressMessages(library(GenomicRanges, lib.loc=c(.libPaths(), libloc)))
+ #checkInstallCRAN('data.table', libloc)
+ #checkInstallBioc('GenomicRanges', libloc)
+  .libPaths(c(libloc, .libPaths()))
+  suppressMessages(library(data.table)) 
+  suppressMessages(library(GenomicRanges))
 
   rsemdt <- fread(fisoforms_results, header=T, sep="\t", 
                   select=c('transcript_id', 'posterior_mean_count'))
@@ -278,17 +284,18 @@ selTrainingTr <- function(argv=NA) {
   flanking_width <- as.numeric(argv[5])
   fout     <- argv[6]
 
-# libloc   <- '/ua/pliu/dev/RSEM/pRSEM/Rlib/'
+# libloc   <- '/ua/pliu/dev/RSEM/pRSEM/RLib/'
 # fin_tr   <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/test.temp/test_prsem.all_tr_crd'
 # fin_exon <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/test.temp/test_prsem.all_exon_crd'
 # min_mpp  <- 0.8
 # flanking_width <- 500
 # fout     <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/test.temp/test_prsem.training_tr_crd'
 
-  checkInstallCRAN('data.table', libloc)
-  checkInstallBioc('GenomicRanges',  libloc)
-  suppressMessages(library(data.table,    lib.loc=c(.libPaths(), libloc)))
-  suppressMessages(library(GenomicRanges, lib.loc=c(.libPaths(), libloc)))
+ #checkInstallCRAN('data.table', libloc)
+ #checkInstallBioc('GenomicRanges',  libloc)
+  .libPaths(c(libloc, .libPaths()))
+  suppressMessages(library(data.table))
+  suppressMessages(library(GenomicRanges))
 
   alltrdt <- fread(fin_tr, header=T, sep="\t")
   alltrdt[, tss := ifelse(strand == '+', start, end)]
@@ -374,20 +381,20 @@ getTrTrOLTrID <- function(querydt, subjectdt, oltype, ignore_strand) {
 }
 
 
-checkInstallCRAN <- function(pkg, lib) {
-  if ( ! pkg %in% rownames(installed.packages(lib.loc=c(.libPaths(), lib)))){
-    cat("\ninstall R package", pkg, 'to', lib, "\n\n")
-    install.packages(pkgs=pkg, lib=lib, quiet=T)
-  }
-}
+#checkInstallCRAN <- function(pkg, lib) {
+# if ( ! pkg %in% rownames(installed.packages(lib.loc=c(.libPaths(), lib)))){
+#   cat("\ninstall R package", pkg, 'to', lib, "\n\n")
+#   install.packages(pkgs=pkg, lib=lib, quiet=T)
+# }
+#}
 
-checkInstallBioc <- function(pkg, lib) {
-  if ( ! pkg %in% rownames(installed.packages(lib.loc=c(.libPaths(), lib)))){
-    cat("\ninstall R package", pkg, 'to', lib, "\n\n")
-    source("http://bioconductor.org/biocLite.R")
-    biocLite(pkgs=pkg, lib=lib, quiet=T)
-  }
-}
+#checkInstallBioc <- function(pkg, lib) {
+# if ( ! pkg %in% rownames(installed.packages(lib.loc=c(.libPaths(), lib)))){
+#   cat("\ninstall R package", pkg, 'to', lib, "\n\n")
+#   source("http://bioconductor.org/biocLite.R")
+#   biocLite(pkgs=pkg, lib=lib, quiet=T)
+# }
+#}
 
 
 rdirichlet_multinomial <- function(alpha, n) {

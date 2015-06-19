@@ -138,13 +138,18 @@ class ChIPSeqExperiment:
     tgt_tagaligns = [self.pooled_tagalign] + [rep.tagalign for rep in self.reps]
     prm = self.param
 
-    ## need to check and install spp ##
-    Util.runCommand('/bin/env', 'Rscript', prm.chipseq_rscript,
-                    'checkInstallSpp', prm.spp_tgz, prm.prsem_rlib_dir,
-                    quiet=False)
+   ### need to check and install spp ##
+   #Util.runCommand('/bin/env', 'Rscript', prm.chipseq_rscript,
+   #                'checkInstallSpp', prm.spp_tgz, prm.prsem_rlib_dir,
+   #                quiet=False)
 
     ## need to add pRSEM's R_LIBS path so that run_spp.R can load spp library
-    os.environ['R_LIBS'] = "%s:%s" % (os.environ['R_LIBS'], prm.prsem_rlib_dir)
+    if 'R_LIBS' in os.environ:
+      os.environ['R_LIBS'] = "%s:%s" % (os.environ['R_LIBS'],
+                                        prm.prsem_rlib_dir)
+    else:
+      os.environ['R_LIBS'] = prm.prsem_rlib_dir
+
     nthr = prm.num_threads/len(tgt_tagaligns)
     fctrl_tagalign = ctrl_tagalign.fullname
     procs = [ mp.Process(target=runSPP, args=(tgt_tagalign, fctrl_tagalign,
@@ -201,13 +206,6 @@ class ChIPSeqExperiment:
     with gzip.open(self.final_peaks.fullname, 'wb') as f_fout:
       for (sig, line) in sorted_sig_line[:max_npeaks]:
         f_fout.write(line)
-
-    ## always report "sort: write failed: standard output: Broken pipe
-    ##                sort: write error"
-   #cmd = 'zcat %s %s %s' % ( self.peaks.fullname,
-   #        ' | sort -k7nr,7nr | head -n %d ' % max_npeaks,
-   #        ' | gzip -c > %s ' % self.final_peaks.fullname)
-   #Util.runCommand(cmd, quiet=False)
 
 
 def getNPeaksByIDR(fpeaka, fpeakb, idr_prefix, prm, out_q):

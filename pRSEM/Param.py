@@ -90,7 +90,7 @@ class Param:
 
     prm.temp_dir = os.path.split(prm.imd_name)[0] + '/'
     prm.prsem_scr_dir = os.path.dirname(os.path.realpath(__file__)) + '/'
-    prm.prsem_rlib_dir = prm.prsem_scr_dir + 'Rlib/'
+    prm.prsem_rlib_dir = prm.prsem_scr_dir + 'RLib/'
     if not os.path.exists(prm.prsem_rlib_dir):
       os.mkdir(prm.prsem_rlib_dir)
 

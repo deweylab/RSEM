@@ -6,8 +6,8 @@
 
 main <- function() {
   name2func <- list(
-    'guessFqEncoding' = guessFqEncoding,
-    'checkInstallSpp' = checkInstallSpp
+    'guessFqEncoding' = guessFqEncoding
+   #'checkInstallSpp' = checkInstallSpp
   )
 
   argv <- commandArgs(trailingOnly=T)
@@ -16,11 +16,12 @@ main <- function() {
 
 
 guessFqEncoding <- function(argv){
-  checkInstallCRAN('data.table', argv[4])
-  checkInstallBioc('ShortRead',  argv[4])
+ #checkInstallCRAN('data.table', argv[4])
+ #checkInstallBioc('ShortRead',  argv[4])
 
-  suppressMessages(library(data.table, lib.loc=c(.libPaths(), argv[4])))
-  suppressMessages(library(ShortRead,  lib.loc=c(.libPaths(), argv[4])))
+  .libPaths(c(argv[4], .libPaths()))
+  suppressMessages(library(data.table))
+  suppressMessages(library(ShortRead))
 
   nthr      <- strtoi(argv[1])
   s_infiles <- argv[2]
@@ -61,30 +62,30 @@ guessFqEncodingByFile <- function(fq) {
 }
 
 
-checkInstallSpp <- function(argv) {
-  pkg <- argv[1]
-  lib <- argv[2]
-  if ( ! 'spp' %in% rownames(installed.packages(lib.loc=c(.libPaths(), lib)))) {
-    cat("\ninstall R package", pkg, 'to', lib, "\n\n")
-    install.packages(pkgs=pkg, lib=lib, repos=NULL, quiet=T)
-  }
-}
+#checkInstallSpp <- function(argv) {
+# pkg <- argv[1]
+# lib <- argv[2]
+# if ( ! 'spp' %in% rownames(installed.packages(lib.loc=c(.libPaths(), lib)))) {
+#   cat("\ninstall R package", pkg, 'to', lib, "\n\n")
+#   install.packages(pkgs=pkg, lib=lib, repos=NULL, quiet=T)
+# }
+#}
 
 
-checkInstallCRAN <- function(pkg, lib) {
-  if ( ! pkg %in% rownames(installed.packages(lib.loc=c(.libPaths(), lib)))){
-    cat("\ninstall R package", pkg, 'to', lib, "\n\n")
-    install.packages(pkgs=pkg, lib=lib, quiet=T)
-  }
-}
+#checkInstallCRAN <- function(pkg, lib) {
+# if ( ! pkg %in% rownames(installed.packages(lib.loc=c(.libPaths(), lib)))){
+#   cat("\ninstall R package", pkg, 'to', lib, "\n\n")
+#   install.packages(pkgs=pkg, lib=lib, quiet=T)
+# }
+#}
 
-checkInstallBioc <- function(pkg, lib) {
-  if ( ! pkg %in% rownames(installed.packages(lib.loc=c(.libPaths(), lib)))){
-    cat("\ninstall R package", pkg, 'to', lib, "\n\n")
-    source("http://bioconductor.org/biocLite.R")
-    biocLite(pkgs=pkg, lib=lib, quiet=T)
-  }
-}
+#checkInstallBioc <- function(pkg, lib) {
+# if ( ! pkg %in% rownames(installed.packages(lib.loc=c(.libPaths(), lib)))){
+#   cat("\ninstall R package", pkg, 'to', lib, "\n\n")
+#   source("http://bioconductor.org/biocLite.R")
+#   biocLite(pkgs=pkg, lib=lib, quiet=T)
+# }
+#}
 
 
 main()
