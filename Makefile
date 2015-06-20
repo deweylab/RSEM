@@ -1,7 +1,7 @@
 CC = g++
 CFLAGS = -Wall -c -I.
 COFLAGS = -Wall -O3 -ffast-math -c -I.
-PROGRAMS = rsem-extract-reference-transcripts rsem-synthesis-reference-transcripts rsem-preref rsem-parse-alignments rsem-build-read-index rsem-run-em rsem-tbam2gbam rsem-run-gibbs rsem-calculate-credibility-intervals rsem-simulate-reads rsem-bam2wig rsem-get-unique rsem-bam2readdepth rsem-sam-validator rsem-scan-for-paired-end-reads pRSEM
+PROGRAMS = rsem-extract-reference-transcripts rsem-synthesis-reference-transcripts rsem-preref rsem-parse-alignments rsem-build-read-index rsem-run-em rsem-tbam2gbam rsem-run-gibbs rsem-calculate-credibility-intervals rsem-simulate-reads rsem-bam2wig rsem-get-unique rsem-bam2readdepth rsem-sam-validator rsem-scan-for-paired-end-reads pRSEM/bigWigSummary pRSEM/RLib
 
 .PHONY : all ebseq clean
 
@@ -142,19 +142,20 @@ rsem-scan-for-paired-end-reads : sam/bam.h sam/sam.h my_assert.h scanForPairedEn
 ebseq :
 	cd EBSeq ; ${MAKE} all
 
-bigWigSummary : pRSEM/bigWigSummary
+pRSEM/bigWigSummary : 
 	if [ ! -e "pRSEM/bigWigSummary" ]; then cd pRSEM/ ; \
 	wget -nc http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bigWigSummary -O bigWigSummary; \
 	chmod +x bigWigSummary; \
 	fi
 
-pRSEM_RLib : pRSEM/installRLib.R
+pRSEM/RLib : pRSEM/installRLib.R
 	if [ ! -d "pRSEM/RLib" ]; then mkdir pRSEM/RLib/; fi; \
 	cd pRSEM/RLib/; Rscript ../installRLib.R 
 
-pRSEM : bigWigSummary pRSEM_RLib
+pRSEM : pRSEM/bigWigSummary pRSEM/RLib
 
 clean :
-	rm -f *.o *~ $(PROGRAMS)
+	rm -fr *.o *~ $(PROGRAMS)
 	cd sam ; ${MAKE} clean
 	cd EBSeq ; ${MAKE} clean
+	cd pRSEM ; rm -f *.pyc
