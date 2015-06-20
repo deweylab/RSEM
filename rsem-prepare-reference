@@ -33,6 +33,7 @@ my $alleleMappingF = "";
 my $star = 0;
 my $star_path = '';
 my $star_nthreads = 1;
+my $star_sjdboverhang = 100;
 
 GetOptions("gtf=s" => \$gtfF,
 	   "transcript-to-gene-map=s" => \$mappingF,
@@ -46,6 +47,7 @@ GetOptions("gtf=s" => \$gtfF,
 	   "bowtie2-path=s" => \$bowtie2_path,
 	   'star' => \$star,
 	   'star-path=s' => \$star_path,
+	   'star-sjdboverhang=i' => \$star_sjdboverhang,
 	   'p|num-threads=i' => \$star_nthreads,
 	   "q|quiet" => \$quiet,
 	   "h|help" => \$help) or pod2usage(-exitval => 2, -verbose => 2);
@@ -130,7 +132,7 @@ if ($star) {
                         " --genomeDir $out_star_genome_path " .
                         " --genomeFastaFiles @list " .
                         " --sjdbGTFfile $gtfF " .
-                        ' --sjdbOverhang 100 ' .
+                        " --sjdbOverhang $star_sjdboverhang " .
                         " --outFileNamePrefix $ARGV[1]";
     &runCommand($command);
 }
@@ -234,6 +236,10 @@ Build STAR indices. (Default: off)
 =item B<--star-path> <path>
 
 The path to STAR's executable. (Default: undefined)
+
+=item B<--star-sjdboverhang> <int>
+
+Length of the genomic sequence around annotated junction. It is only used for STAT to build splice junctions database and not needed for Bowtie or Bowtie2. It will be passed as the --sjdbOverhang option to STAR. According to STAR's manual, its ideal value is max(ReadLength)-1, e.g. for 2x101 paired-end reads, the ideal value is 101-1=100. In most cases, the default value of 100 will work as well as the ideal value. (Default: 100)
 
 =item B<-p/--num-threads> <int>
 
