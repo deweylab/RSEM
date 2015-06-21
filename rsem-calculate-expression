@@ -240,6 +240,7 @@ my ($mate_minL, $mate_maxL) = (1, $maxL);
 
 if ($bowtie_path ne "") { $bowtie_path .= "/"; }
 if ($bowtie2_path ne "") { $bowtie2_path .= "/"; }
+if ($star_path ne '') { $star_path .= '/'; }
 
 my $command = "";
 
@@ -247,7 +248,7 @@ if (!$is_sam && !$is_bam) {
 	if ( $star ) {
 	  ## align reads by STAR
     my $star_genome_path = dirname($refName);
-	  $command = $star_path . 
+	  $command = "$star_path/STAR " . 
 	               ## ENCODE3 pipeline parameters
 	               " --genomeDir $star_genome_path " .
 	               ' --outSAMunmapped Within ' .
@@ -373,8 +374,8 @@ if (!$is_sam && !$is_bam) {
 
     if ( $star ) {
       my $star_tr_bam = $imdName . 'Aligned.toTranscriptome.out.bam';
-      symlink $star_tr_bam, $inpF 
-        or die "can't symlink $star_tr_bam to $inpF: $!\n";
+      rename $star_tr_bam, $inpF
+        or die "can't rename $star_tr_bam to $inpF: $!\n";
       unlink $imdName . "Aligned.out.bam";
       rmdir $imdName . "_STARtmp/";
     }
@@ -593,11 +594,11 @@ Use Bowtie 2 instead of Bowtie to align reads. Since currently RSEM does not han
 
 =item B<--star>
 
-Use STAR to align reads. Alignment parameters are from ENCODE3's STAR-RSEM pipeline, except that STAR's output BAM file is unsorted to save computational time and memory resources. Genome indices are loaded into shared memory and removed when there is no running jobs using it. (Default: off) 
+Use STAR to align reads. Alignment parameters are from ENCODE3's STAR-RSEM pipeline. To save computational time and memory resources, STAR's Output BAM file is unsorted. It is stored in RSEM's temporary directory with name as 'sample_name.bam'. Genome indices are loaded into shared memory and removed when there is no running jobs using it. (Default: off) 
 
 =item B<--star-path> <path>
 
-The path to STAR's executable. (Default: undefined)
+The path to STAR's executable. (Default: the path to STAR executable is assumed to be in user's PATH environment variable)
 
 =item B<--sam>
 
