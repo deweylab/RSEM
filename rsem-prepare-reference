@@ -302,7 +302,7 @@ OR
                         /data/mm9 \
                         /ref/mouse_0
 
-3) Suppose we want to build STAR indices in the above example and STAR executable is '/sw/STAR', the command will be:
+3) Suppose we want to build STAR indices in the above example and save index files under '/ref' with name 'mouse_0'. Assuming STAR executable is '/sw/STAR', the command will be:
 
  rsem-prepare-reference --gtf mm9.gtf \
                         --star \
