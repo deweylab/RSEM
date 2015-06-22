@@ -31,12 +31,12 @@ static int fetch_func(const bam1_t *b, void *data) {
 
 int main(int argc, char *argv[]) {
 	samfile_t *fp;
-	if (argc == 1) {
-		fprintf(stderr, "Usage: filterSam2Bed <in.sam>\n");
+	if (argc != 2) {
+		fprintf(stderr, "\nUsage: filterSam2Bed <in.sam>\n");
 		fprintf(stderr, "\n");
-		fprintf(stderr, "Filter Sam file by flag 1548 (0x4, 0x8, 0x200, 0x400)\n"); 
-		fprintf(stderr, "and write to stdout in Bed format\n");
-		fprintf(stderr, "<in.sam>: input Sam file name, '-' for stdin\n");
+		fprintf(stderr, "Filter SAM file by flag 1548 (0x4, 0x8, 0x200, 0x400)\n"); 
+		fprintf(stderr, "and write to STDOUT in BED format\n");
+		fprintf(stderr, "<in.sam>: input SAM file name, '-' for STDIN\n\n");
 		return 1;
 	}
 	if ((fp = samopen(argv[1], "r", 0)) == 0) {
