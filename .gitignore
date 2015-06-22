@@ -21,3 +21,4 @@ sam/samtools
 pRSEM/*.pyc
 pRSEM/RLib/
 pRSEM/bigWigSummary
+pRSEM/filterSam2Bed
