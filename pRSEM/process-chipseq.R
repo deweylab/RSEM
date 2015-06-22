@@ -18,7 +18,7 @@ main <- function() {
 guessFqEncoding <- function(argv){
  #checkInstallCRAN('data.table', argv[4])
  #checkInstallBioc('ShortRead',  argv[4])
-
+  
   .libPaths(c(argv[4], .libPaths()))
   suppressMessages(library(data.table))
   suppressMessages(library(ShortRead))

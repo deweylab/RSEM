@@ -100,7 +100,6 @@ my $run_prsem = 0;
 my $chipseq_target_read_files  = '';
 my $chipseq_control_read_files = '';
 my $bowtie_bin_for_chipseq     = '';
-my $bedtools_bin_for_chipseq   = '';
 my $chipseq_peak_file          = '';
 my $mappability_bigwig_file    = '';
 my $partition_model            = 'pk';
@@ -162,7 +161,6 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   'chipseq-control-read-files=s' => \$chipseq_control_read_files, 
 	                                      ## delimited by comma if more than one
 	   'bowtie-bin-for-chipseq=s' => \$bowtie_bin_for_chipseq,
-	   'bedtools-bin-for-chipseq=s' => \$bedtools_bin_for_chipseq,
 	   'chipseq-peak-file=s' => \$chipseq_peak_file,
 	   'mappability-bigwig-file=s'  => \$mappability_bigwig_file,
 	   'partition-model=s' => \$partition_model,
@@ -589,9 +587,7 @@ if ( $run_prsem ) {
     $command .= " --chipseq-peak-file $chipseq_peak_file";
   } else {
     $command .= " --chipseq-target-read-files $chipseq_target_read_files " .
-                " --bowtie-bin-for-chipseq $bowtie_bin_for_chipseq" .
-                " --samtools-bin $FindBin::RealBin/sam/samtools " .
-                " --bedtools-bin-for-chipseq $bedtools_bin_for_chipseq";
+                " --bowtie-bin-for-chipseq $bowtie_bin_for_chipseq" ;
     if ( $chipseq_control_read_files ne '' ) {
      $command .= " --chipseq-control-read-files $chipseq_control_read_files";
     }

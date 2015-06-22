@@ -46,8 +46,6 @@ def getCommandLineArguments():
   parser.add_argument('--chipseq-target-read-files')
   parser.add_argument('--chipseq-control-read-files')
   parser.add_argument('--bowtie-bin-for-chipseq')
-  parser.add_argument('--samtools-bin')
-  parser.add_argument('--bedtools-bin-for-chipseq')
   parser.add_argument('--chipseq-peak-file')
   parser.add_argument('--mappability-bigwig-file')
   parser.add_argument('--partition-model', )

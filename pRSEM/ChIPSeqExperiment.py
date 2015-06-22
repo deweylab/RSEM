@@ -78,8 +78,9 @@ class ChIPSeqExperiment:
 
 
   def alignReadByBowtie(self):
-    if self.param.num_threads > 4:
-      nthr_bowtie = self.param.num_threads - 4
+    ## running zat, filterSam2Bed and gzip takes about 1 thread
+    if self.param.num_threads > 2:
+      nthr_bowtie = self.param.num_threads - 1
     else:
       nthr_bowtie = 1
 
@@ -92,13 +93,10 @@ class ChIPSeqExperiment:
 
       ## many pipes, have to use os.system
       cmds = [ "%s %s |" % (cmd_cat, rep.fastq.fullname) ] + \
-             [ "%s -q -v 2 -a --best --strata -m 1 %s -S -p %d %s - |" % (
+             [ "%s -q -v 2 -a --best --strata -m 1 %s -S -p %d %s - | " % (
                self.param.bowtie_bin_for_chipseq, rep.encoding, nthr_bowtie,
                bowtie_ref_name ) ] + \
-             [ "%s view -S -b -F 1548 - |" % self.param.samtools_bin ] + \
-             [ "%s bamtobed -i stdin |" % (
-               self.param.bedtools_bin_for_chipseq ) ] + \
-             [ """awk 'BEGIN{FS="\\t";OFS="\\t"}{$4="N"; print $0}' |""" ] + \
+             [ "%s - | " % self.param.filterSam2Bed ] + \
              [ "gzip -c > %s " % rep.tagalign.fullname ]
 
       cmd = ' '.join(cmds)

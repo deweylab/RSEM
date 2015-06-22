@@ -24,8 +24,6 @@ class Param:
     self.chipseq_target_read_files  = None
     self.chipseq_control_read_files = None
     self.bowtie_bin_for_chipseq     = None
-    self.samtools_bin               = None
-    self.bedtools_bin_for_chipseq   = None
     self.chipseq_peak_file          = None
     self.mappability_bigwig_file    = None
     self.partition_model            = None
@@ -48,7 +46,8 @@ class Param:
     ## ChIP-seq
     self.chipseqexperiment_target  = None ## reference to ChIP-seq experiment
     self.chipseqexperiment_control = None ## reference to ChIP-seq experiment
-    self.chipseq_rscript   = None ## fullname of process-chipseq.R
+    self.chipseq_rscript   = None ## full name of process-chipseq.R
+    self.filterSam2Bed     = None ## full name of filterSam2Bed binary
     self.spp_tgz           = None
     self.spp_script        = None
     self.idr_scr_dir       = None
@@ -96,6 +95,7 @@ class Param:
 
     ## ChIP-seq
     prm.chipseq_rscript = prm.prsem_scr_dir + 'process-chipseq.R'
+    prm.filterSam2Bed   = prm.prsem_scr_dir + 'filterSam2Bed'
     prm.spp_tgz = prm.prsem_scr_dir + 'phantompeakqualtools/spp_1.10.1.tar.gz'
     prm.spp_script    = prm.prsem_scr_dir + 'phantompeakqualtools/run_spp.R'
     prm.idr_scr_dir   = prm.prsem_scr_dir + 'idrCode/'
