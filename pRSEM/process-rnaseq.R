@@ -56,7 +56,6 @@ genPriorByPeakSignalGCLen <- function(argv=NA) {
     'pk_lm5nopk' = getSampleAndPriorByPeakLM5NoPeak
   )
 
- #checkInstallCRAN('data.table', libloc)
   .libPaths(c(libloc, .libPaths()))
   suppressMessages(library(data.table))
 
@@ -107,8 +106,6 @@ prepPeakSignalGCLenFeatures <- function(argv=NA){
 # fchipseq_target_signals <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/targetRep0.tagAlign.gz' 
 # fall_tr_gc        <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.all_tr_gc'
 
- #checkInstallCRAN('data.table', libloc)
- #checkInstallBioc('GenomicRanges', libloc)
   .libPaths(c(libloc, .libPaths()))
   suppressMessages(library(data.table)) 
   suppressMessages(library(GenomicRanges))
@@ -368,8 +365,6 @@ getTrTrOLTrID <- function(querydt, subjectdt, oltype, ignore_strand) {
                   keep.extra.columns=T, ignore.strand=F)
 
   ## select tr not overlap with any other tr
- #ol <- findOverlaps(GNCList(querygrs), GNCList(subjectgrs), type=oltype,
- #                   ignore.strand=ignore_strand)
   ol <- findOverlaps(querygrs, subjectgrs, type=oltype,
                      ignore.strand=ignore_strand)
 
@@ -379,22 +374,6 @@ getTrTrOLTrID <- function(querydt, subjectdt, oltype, ignore_strand) {
   ol_trids <- subset(oldt, query_trid != subject_trid)[, query_trid] 
   return(unique(ol_trids))
 }
-
-
-#checkInstallCRAN <- function(pkg, lib) {
-# if ( ! pkg %in% rownames(installed.packages(lib.loc=c(.libPaths(), lib)))){
-#   cat("\ninstall R package", pkg, 'to', lib, "\n\n")
-#   install.packages(pkgs=pkg, lib=lib, quiet=T)
-# }
-#}
-
-#checkInstallBioc <- function(pkg, lib) {
-# if ( ! pkg %in% rownames(installed.packages(lib.loc=c(.libPaths(), lib)))){
-#   cat("\ninstall R package", pkg, 'to', lib, "\n\n")
-#   source("http://bioconductor.org/biocLite.R")
-#   biocLite(pkgs=pkg, lib=lib, quiet=T)
-# }
-#}
 
 
 rdirichlet_multinomial <- function(alpha, n) {
