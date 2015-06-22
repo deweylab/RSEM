@@ -1,7 +1,7 @@
 CC = g++
 CFLAGS = -Wall -c -I.
 COFLAGS = -Wall -O3 -ffast-math -c -I.
-PROGRAMS = rsem-extract-reference-transcripts rsem-synthesis-reference-transcripts rsem-preref rsem-parse-alignments rsem-build-read-index rsem-run-em rsem-tbam2gbam rsem-run-gibbs rsem-calculate-credibility-intervals rsem-simulate-reads rsem-bam2wig rsem-get-unique rsem-bam2readdepth rsem-sam-validator rsem-scan-for-paired-end-reads pRSEM/bigWigSummary pRSEM/RLib
+PROGRAMS = rsem-extract-reference-transcripts rsem-synthesis-reference-transcripts rsem-preref rsem-parse-alignments rsem-build-read-index rsem-run-em rsem-tbam2gbam rsem-run-gibbs rsem-calculate-credibility-intervals rsem-simulate-reads rsem-bam2wig rsem-get-unique rsem-bam2readdepth rsem-sam-validator rsem-scan-for-paired-end-reads pRSEM/bigWigSummary pRSEM/RLib pRSEM/filterSam2Bed
 
 .PHONY : all ebseq clean
 
@@ -152,7 +152,10 @@ pRSEM/RLib : pRSEM/installRLib.R
 	if [ ! -d "pRSEM/RLib" ]; then mkdir pRSEM/RLib/; fi; \
 	cd pRSEM/RLib/; Rscript ../installRLib.R 
 
-pRSEM : pRSEM/bigWigSummary pRSEM/RLib
+pRSEM/filterSam2Bed : pRSEM/filterSam2Bed.c sam/libbam.a
+	$(CC) $@.c sam/libbam.a -lz -lpthread -o $@
+
+pRSEM : pRSEM/bigWigSummary pRSEM/RLib pRSEM/filterSam2Bed
 
 clean :
 	rm -fr *.o *~ $(PROGRAMS)
