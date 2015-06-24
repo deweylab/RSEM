@@ -55,6 +55,8 @@ class Param:
     self.fgenome_table     = None
     self.fidr_chipseq_peaks = None
     self.fall_chipseq_peaks = None
+    self.fchipseq_peaks    = None ## full name of user supplied ChIP-seq peak
+                                  ## file, otherwise is fidr_chipseq_peaks
     self.fchipseq_target_signals  = None
     self.fchipseq_control_signals = None
 
@@ -107,6 +109,12 @@ class Param:
     ## this names depens on the next two names
     prm.fall_chipseq_peaks = "%s/%s" % (prm.temp_dir,
                             'target.tagAlign_VS_control.tagAlign.regionPeak.gz')
+
+    if prm.chipseq_peak_file is not None:
+      prm.fchipseq_peaks = prm.chipseq_peak_file
+    else:
+      prm.fchipseq_peaks = prm.fidr_chipseq_peaks
+
     prm.fchipseq_target_signals  = prm.temp_dir + 'target.tagAlign.gz'
     prm.fchipseq_control_signals = prm.temp_dir + 'control.tagAlign.gz'
 

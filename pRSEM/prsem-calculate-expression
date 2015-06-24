@@ -168,7 +168,7 @@ def genPriorByPeakSignalGCLen(prm):
                   'prepPeakSignalGCLenFeatures', prm.prsem_rlib_dir,
                   prm.fall_tr_crd, prm.ftraining_tr_crd, prm.fall_tr_features,
                   prm.fisoforms_results, prm.FLANKING_WIDTH,
-                  prm.partition_model, prm.fidr_chipseq_peaks,
+                  prm.partition_model, prm.fchipseq_peaks,
                   prm.fchipseq_target_signals, prm.fall_tr_gc, quiet=False)
 
   if not os.path.exists(prm.fall_tr_gc):
@@ -195,10 +195,10 @@ def genPriorByTSSPeak(prm):
                   'prepTSSPeakFeatures', prm.prsem_rlib_dir,
                   prm.fall_tr_crd, prm.ftraining_tr_crd, prm.fall_tr_features,
                   prm.fisoforms_results, prm.FLANKING_WIDTH,
-                  prm.fidr_chipseq_peaks, quiet=False)
+                  prm.fchipseq_peaks, quiet=False)
 
-  if not os.path.exists(prm.fidr_chipseq_peaks):
-    sys.exit("Failed to generate file: %s\n" % prm.fidr_chipseq_peaks)
+  if not os.path.exists(prm.fall_tr_features):
+    sys.exit("Failed to generate file: %s\n" % prm.fall_tr_features)
 
   ## learn and generate prior for all transcripts
   Util.runCommand('/bin/env', 'Rscript', prm.rnaseq_rscript,
