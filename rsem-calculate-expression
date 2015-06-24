@@ -203,6 +203,53 @@ pod2usage(-msg => "The credibility level should be within (0, 1)!\n", -exitval =
 pod2usage(-msg => "Gzipped read files can only be used for aligner STAR\n", -exitval=>2, -verbose =>2) if ( ( $star == 0 ) && ( $gzipped_read_file != 0));
 pod2usage(-msg => "Bzipped read files can only be used for aligner STAR\n", -exitval=>2, -verbose =>2) if ( ( $star == 0 ) && ( $bzipped_read_file != 0));
 
+if ( $run_prsem ) {
+  my $msg = '';
+  if ( $mappability_bigwig_file eq '' ) {
+    $msg = '--mappability-bigwig-file <file> is needed for calculating' .
+           ' mappabilities in pRSEM';
+  } else {
+    if ( ( $chipseq_peak_file eq '' ) && 
+         ( ( $chipseq_target_read_files eq ''  ) || 
+           ( $chipseq_control_read_files eq '' ) || 
+           ( $bowtie_bin_for_chipseq eq '' )
+         ) ) {
+      $msg = 'either define --chipseq-peak-file <file>, or ' .
+             '--chipseq-target-read-files <file> and ' .
+             '--chipseq-control-read-files <file> and ' .
+             '--bowtie-bin-for-chipseq <file> to run pRSEM';
+    }
+
+    my @prsem_partition_models = ( 
+       'pk', 'pk_lgtnopk', 
+       'lm3', 'lm4', 'lm5', 'lm6',
+       'nopk_lm2pk', 'nopk_lm3pk', 'nopk_lm4pk', 'nopk_lm5pk',
+       'pk_lm2nopk', 'pk_lm3nopk', 'pk_lm4nopk', 'pk_lm5nopk'
+    );
+
+    if ( $partition_model ~~ @prsem_partition_models ) {
+      if ( $partition_model ne 'pk' ) {
+        if ( ( $chipseq_target_read_files eq ''  ) || 
+             ( $chipseq_control_read_files eq '' ) || 
+             ( $bowtie_bin_for_chipseq eq '' ) ) {
+          $msg = '--chipseq-target-read-files <file> and ' .
+                 '--chipseq-control-read-files <file> and ' .
+                 '--bowtie-bin-for-chipseq <file> need to be defined for ' .
+                 "pRSEM's partition model: '$partition_model'";
+        }
+      }
+    } else {
+      $msg = '--partition-model <string> must be one of [' .
+             join(', ', @prsem_partition_models) . "]";
+    }
+  }
+
+  if ( $msg ne '' ) {
+    pod2usage(-msg => "$msg\n", -exitval => 2, -verbose => 2);
+  }
+}
+
+
 if ($L < 25) { print "Warning: the seed length set is less than 25! This is only allowed if the references are not added poly(A) tails.\n"; }
 
 if ($strand_specific) { $probF = 1.0; }
