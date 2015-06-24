@@ -92,6 +92,7 @@ my $star = 0;
 my $star_path  = '';
 my $gzipped_read_file = 0;
 my $bzipped_read_file = 0;
+my $output_star_genome_bam = 0;
 
 GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "temporary-folder=s" => \$temp_dir,
@@ -140,6 +141,7 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   'star-path=s' => \$star_path,
 	   "gzipped-read-file" => \$gzipped_read_file,
 	   "bzipped-read-file" => \$bzipped_read_file,
+	   "output-star-genome-bam" => \$output_star_genome_bam,
 	   "seed=i" => \$seed,
 	   "time" => \$mTime,
 	   "version" => \$version,
@@ -376,8 +378,15 @@ if (!$is_sam && !$is_bam) {
       my $star_tr_bam = $imdName . 'Aligned.toTranscriptome.out.bam';
       rename $star_tr_bam, $inpF
         or die "can't rename $star_tr_bam to $inpF: $!\n";
-      unlink $imdName . "Aligned.out.bam";
       rmdir $imdName . "_STARtmp/";
+      my $star_genome_bam = $imdName . "Aligned.out.bam";
+      my $rsem_star_genome_bam = $sampleName.'.STAR.genome.bam';
+      if ( $output_star_genome_bam ) {
+        rename $star_genome_bam, $rsem_star_genome_bam or die 
+          "can't move $star_genome_bam to $rsem_star_genome_bam: $!\n";
+      } else {
+        unlink $star_genome_bam or die "can't remove $star_genome_bam: $!\n";
+      }
     }
 }
 
@@ -721,6 +730,10 @@ Input read file(s) is compressed by gzip. This option can be only used when alig
 =item B<--bzipped-read-file>
 
 Input read file(s) is compressed by bzip2. This option can be only used when aligning reads by STAR, i.e. --star-genome-path <path> is defined (Default: off)
+
+=item B<--output-star-genome-bam>
+
+Save the BAM file from STAR alignment under genomic coordinate to 'sample_name.STAR.genome.bam'. This file is NOT sorted by genomic coordinate. In this file, according to STAR's manual, 'paired ends of an alignment are always adjacent, and multiple alignments of a read are adjacent as well'. (Default: off)
 
 =item B<--forward-prob> <double>
 
