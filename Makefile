@@ -144,7 +144,7 @@ ebseq :
 
 pRSEM/bigWigSummary : 
 	if [ ! -e "pRSEM/bigWigSummary" ]; then cd pRSEM/ ; \
-	wget -nc http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64/bigWigSummary -O bigWigSummary; \
+	wget -nc http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64.v287/bigWigSummary -O bigWigSummary; \
 	chmod +x bigWigSummary; \
 	fi
 
