@@ -9,8 +9,6 @@ class Param:
   IDR_THRESHOLD  = 0.05
   N_PEAK         = 300000
   PEAK_TYPE      = '-savr'
- #EXCLUSION_ZONE = '-500:80'  ## Anshul recommend -500:85, but no results for
- #                            ## GM12878, have to loose the criterion
   EXCLUSION_ZONE = '-500:85'  ## Anshul recommend -500:85
   TRAINING_GENE_MIN_LEN   = 1003
   TRAINING_MIN_MAPPABILITY = 0.8

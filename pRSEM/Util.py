@@ -128,7 +128,6 @@ def getFastaID2Seq(ffasta):
   """
   import os
   assert os.path.exists(ffasta), "File not found: %s\n" % ffasta
- #print "reading FASTA file:", ffasta, "...\n";
   fastas = {};
   f_fin = open(ffasta, 'r');
   entries = f_fin.read().split('>');

@@ -45,8 +45,6 @@ class ChIPSeqExperiment:
       frep0 = param.fchipseq_target_signals
     cse.pooled_tagalign = File.initFromFullFileName(frep0)
 
-   #rep0_basename = 'targetRep0_vs_controlRep0.regionPeak.gz'
-   #fpeaks    = param.temp_dir + rep0_basename
     cse.peaks = File.initFromFullFileName(param.fall_chipseq_peaks)
 
     cse.final_peaks = File.initFromFullFileName(param.fidr_chipseq_peaks)
@@ -135,11 +133,6 @@ class ChIPSeqExperiment:
 
     tgt_tagaligns = [self.pooled_tagalign] + [rep.tagalign for rep in self.reps]
     prm = self.param
-
-   ### need to check and install spp ##
-   #Util.runCommand('/bin/env', 'Rscript', prm.chipseq_rscript,
-   #                'checkInstallSpp', prm.spp_tgz, prm.prsem_rlib_dir,
-   #                quiet=False)
 
     ## need to add pRSEM's R_LIBS path so that run_spp.R can load spp library
     if 'R_LIBS' in os.environ:

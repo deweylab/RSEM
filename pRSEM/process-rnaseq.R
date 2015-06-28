@@ -176,8 +176,6 @@ countRegionSignal <- function(regiondt, sigdt, prefix=''){
 
   peakgrs <- makeGRangesFromDataFrame(sigdt[, list(chrom, start, end)], 
                                       ignore.strand=T)
- #nol <- countOverlaps(GNCList(regiongrs), GNCList(peakgrs), type='any', 
- #                     ignore.strand=T)
   nol <- countOverlaps(regiongrs, peakgrs, type='any', ignore.strand=T)
   outdt <- data.table(trid = mcols(regiongrs)$trid)
   outdt[, eval(paste0(prefix, '_sig')) := nol/width(regiongrs)]
@@ -223,8 +221,6 @@ prepTSSPeakFeatures <- function(argv=NA) {
 # flanking_width <- 500 
 # fchipseq_peaks <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/idr_targetRep0_vs_controlRep0.regionPeak.gz'
 
- #checkInstallCRAN('data.table', libloc)
- #checkInstallBioc('GenomicRanges', libloc)
   .libPaths(c(libloc, .libPaths()))
   suppressMessages(library(data.table)) 
   suppressMessages(library(GenomicRanges))
@@ -265,8 +261,6 @@ getRegionPeakOLTrID <- function(regiondt, peakdt) {
 
   peakgrs <- makeGRangesFromDataFrame(peakdt[, list(chrom, start, end)], 
                                     ignore.strand=T)
- #olgrs <- subsetByOverlaps(GNCList(regiongrs), GNCList(peakgrs), type='any',
- #                          ignore.strand=T)
   olgrs <- subsetByOverlaps(regiongrs, peakgrs, type='any', ignore.strand=T)
   has_peak_trids <- unique(mcols(olgrs)$trid)
   return(has_peak_trids)
@@ -288,8 +282,6 @@ selTrainingTr <- function(argv=NA) {
 # flanking_width <- 500
 # fout     <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/test.temp/test_prsem.training_tr_crd'
 
- #checkInstallCRAN('data.table', libloc)
- #checkInstallBioc('GenomicRanges',  libloc)
   .libPaths(c(libloc, .libPaths()))
   suppressMessages(library(data.table))
   suppressMessages(library(GenomicRanges))
@@ -310,12 +302,6 @@ selTrainingTr <- function(argv=NA) {
   allexondt <- fread(fin_exon, header=T, sep="\t")
   exon_all_ol_trids <- getExonsAllOLTrID(not_nested_trdt[, trid], allexondt)
   seltrdt <- subset(not_nested_trdt, ! trid %in% exon_all_ol_trids)
-
-  ## select tr that don't overlap with other tr
- #ol_trid <- getTrTrOLTrID(highmppdt, alldt)
-
- ### select tr that don't have other tr's TSS within its [TSS-width, TSS+width]
- #seltrdt <- subset(highmppdt, ! trid %in%  ol_trid)
 
   seltr_tss_region_dt <- copy(seltrdt)
   seltr_tss_region_dt[, `:=`( start = tss - flanking_width,
@@ -486,8 +472,6 @@ getSampleAndPriorByTSSPeak <- function(trndt, tstdt) {
   trn_partition <- factor(trndt[, tss_pk])
   fit <- getFitByMLDM(trndt[, pme_count], trn_partition)
 
- #cat('priors:', format(fit$par, digits=2, nsmall=3), "\n")
-  
   tst_partition <- factor(tstdt[, tss_pk])
   prior <- fit$par[tst_partition]
 
