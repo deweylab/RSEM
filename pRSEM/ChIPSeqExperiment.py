@@ -214,7 +214,6 @@ def getNPeaksByIDR(fpeaka, fpeakb, idr_prefix, prm, out_q):
 
 
 def runSPP(tgt_tagalign, fctrl_tagalign, prm, nthr):
-  import time
   spp_tmpdir = prm.temp_dir + tgt_tagalign.basename + '_spp_tmp/'
   if not os.path.exists(spp_tmpdir):
     os.mkdir(spp_tmpdir)
@@ -232,7 +231,6 @@ def runSPP(tgt_tagalign, fctrl_tagalign, prm, nthr):
                   "-tmpdir=%s" % spp_tmpdir,
                   "-out=%s"    % fout,
                   quiet=False)
-  time.sleep(10)
   Util.runCommand('rm', '-fr', spp_tmpdir, quiet=False)
 
   if not os.path.exists(fout):

@@ -85,7 +85,7 @@ def genChIPSeqPeakFileBySPPIDR(param):
     param.chipseq_peak_file = cse_target.final_peaks.fullname
     param.chipseqexperiment_control = cse_control
   else:
-    pass  ## to-be-implemented, call peaks by MOSAiCS
+    pass  ## to-be-implemented, call peaks by MOSAiCS without ChIP-seq control
 
 
 def buildTrainingSet(prm):
@@ -161,6 +161,10 @@ def genPriorByPeakSignalGCLen(prm):
     for tr in prm.transcripts:
       gc_frac = Util.getGCFraction(trid2seq[tr.transcript_id])
       f_fall_tr_gc.write("%s\t%.2f\n" % (tr.transcript_id, gc_frac) )
+  
+  with open(prm.fsppout_target, 'r') as f_fsppout_target:
+    words = f_fsppout_target.read().split("\t")
+    prm.chipseq_target_fraglen = int(words[2])
 
   ## prepare a feature file of peaks and signals for all isoforms, 
   ## isoforms in training set will be labeled
@@ -169,7 +173,8 @@ def genPriorByPeakSignalGCLen(prm):
                   prm.fall_tr_crd, prm.ftraining_tr_crd, prm.fall_tr_features,
                   prm.fisoforms_results, prm.FLANKING_WIDTH,
                   prm.partition_model, prm.fchipseq_peaks,
-                  prm.fchipseq_target_signals, prm.fall_tr_gc, quiet=False)
+                  prm.fchipseq_target_signals, prm.fall_tr_gc, prm.num_threads,
+                  prm.chipseq_target_fraglen, quiet=False)
 
   if not os.path.exists(prm.fall_tr_gc):
     sys.exit("Failed to generate file: %s\n" % prm.fall_tr_gc)

@@ -94,17 +94,40 @@ prepPeakSignalGCLenFeatures <- function(argv=NA){
   fchipseq_peaks    <- argv[8]
   fchipseq_target_signals <- argv[9]
   fall_tr_gc        <- argv[10]
+  nthr              <- argv[11]
+  fraglen           <- as.numeric(argv[12])
 
 # libloc            <- '/ua/pliu/dev/RSEM/pRSEM/RLib/'
-# fall_tr_crd       <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.all_tr_crd'
-# ftraining_tr_crd  <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.training_tr_crd' 
-# fout              <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.all_tr_features' 
-# fisoforms_results <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.isoforms.results' 
+# fall_tr_crd       <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/test.temp/test_prsem.all_tr_crd'
+# ftraining_tr_crd  <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/test.temp/test_prsem.training_tr_crd' 
+# fout              <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/test.temp/test_prsem.all_tr_features' 
+# fisoforms_results <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/test.isoforms.results' 
 # flanking_width    <- 500 
-# partition_model   <- 'pk_lgtnopk'
-# fchipseq_peaks    <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/idr_targetRep0_vs_controlRep0.regionPeak.gz'
-# fchipseq_target_signals <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/targetRep0.tagAlign.gz' 
-# fall_tr_gc        <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.all_tr_gc'
+# partition_model   <- 'lm4'
+# fchipseq_peaks    <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/test.temp/idr_target_vs_control.regionPeak.gz'
+# fchipseq_target_signals <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/test.temp/target.tagAlign.gz' 
+# fall_tr_gc        <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/test.temp/test_prsem.all_tr_gc'
+# nthr              <- 20
+# fraglen           <- 110
+
+# runid  <- 'lm4_k562rep1'
+# exprdir <- paste0('/tier2/deweylab/scratch/pliu/test/pRSEM/', runid, 
+#                   '/rsem_expr/')
+# tempdir <- paste0(exprdir, runid, '.temp/')
+# libloc            <- '/ua/pliu/dev/RSEM/pRSEM/RLib/'
+# fall_tr_crd       <- paste0(tempdir, runid, '_prsem.all_tr_crd')
+##fall_tr_crd       <- paste0(tempdir, 'tmp.all_tr_crd')
+# ftraining_tr_crd  <- paste0(tempdir, runid, '_prsem.training_tr_crd')
+# fout              <- paste0('./', runid, '_prsem.all_tr_features')
+# fisoforms_results <- paste0(exprdir, runid, '.isoforms.results') 
+# flanking_width    <- 500 
+# partition_model   <- 'lm4'
+# fchipseq_peaks    <- paste0(tempdir, 'idr_target_vs_control.regionPeak.gz')
+# fchipseq_target_signals <- paste0(tempdir, 'target.tagAlign.gz')
+##fchipseq_target_signals <- paste0(tempdir, 'tmp.chrX.tagAlign.gz')
+# fall_tr_gc        <- paste0(tempdir, runid, '_prsem.all_tr_gc')
+# nthr              <- 20
+# fraglen           <- 110
 
   .libPaths(c(libloc, .libPaths()))
   suppressMessages(library(data.table)) 
@@ -145,17 +168,21 @@ prepPeakSignalGCLenFeatures <- function(argv=NA){
   has_body_pk_trids <- getRegionPeakOLTrID(bodydt, pkdt)
   has_tes_pk_trids  <- getRegionPeakOLTrID(tesdt,  pkdt)
 
-  sigdt <- data.table(read.table(gzfile(fchipseq_target_signals), header=F, 
-                                 sep="\t", colClasses=c('character', 'numeric',
-                                 'numeric', rep('NULL', 3))))
-  setnames(sigdt, 1:3, c('chrom', 'start', 'end'))
-  tss_sigdt  <- countRegionSignal(tssdt,  sigdt, 'tss')
-  body_sigdt <- countRegionSignal(bodydt, sigdt, 'body')
-  tes_sigdt  <- countRegionSignal(tesdt,  sigdt, 'tes')
+  rddt <- data.table(read.table(gzfile(fchipseq_target_signals), header=F, 
+                                sep="\t", colClasses=c('character', 'numeric',
+                                'numeric', rep('NULL', 2), 'character')))
+  setnames(rddt, 1:4, c('chrom', 'start', 'end', 'strand'))
+  tss_sigdt  <- countRegionSignal(tssdt,  rddt, fraglen, nthr, 'tss')
+  body_sigdt <- countRegionSignal(bodydt, rddt, fraglen, nthr, 'body')
+  tes_sigdt  <- countRegionSignal(tesdt,  rddt, fraglen, nthr, 'tes')
 
   trdt <- merge(trdt, tss_sigdt,  by='trid', all.x=T)
   trdt <- merge(trdt, body_sigdt, by='trid', all.x=T)
   trdt <- merge(trdt, tes_sigdt,  by='trid', all.x=T)
+
+  trdt[, `:=`(tss_sig  = ifelse(is.na(tss_sig), 0.0, tss_sig),
+              body_sig = ifelse(is.na(body_sig), 0.0, body_sig),
+              tes_sig  = ifelse(is.na(tes_sig),  0.0, tes_sig ))]
 
   training_trdt <- fread(ftraining_tr_crd, header=T, sep="\t", select='trid')
   trdt[, `:=`( tss_pk  = ifelse(trid %in% has_tss_pk_trids,  1, 0),
@@ -168,18 +195,77 @@ prepPeakSignalGCLenFeatures <- function(argv=NA){
   write.table(trdt, fout, quote=F, sep="\t", col.names=T, row.names=F)
 }
 
+#
+#  need to modify the way to calculate signal as # of nuc from fragment rather
+#  than the number of read overlapping with selected region
+# 
+#  tagAlign list the read 
+#  '+' strand, [start, start + read_length]
+#  '-' strand, [end - read_length, end]
+# 
+#  1. extend read to fragment
+#  2. find fragmens overlapping target region
+#  3. remove fragments that have middle position outside target region (as how 
+#     dpeak works)
+#  4. count number of fragment nucleotide and average it by target region's 
+#     width to get signal
+# 
+countRegionSignal <- function(regiondt, readdt, fraglen, nthr, prefix=''){
+  regiondtl <- split(regiondt[, list(chrom, start, end, trid)], 
+                     regiondt[, chrom])
+  readdtl   <- split(readdt, readdt[, chrom])
 
-countRegionSignal <- function(regiondt, sigdt, prefix=''){
+ #outdt <- rbindlist( lapply(names(regiondtl), countRegionSignalByChrom, 
+ #                           regiondtl, readdtl, fraglen, prefix))
+
+  outdt <- rbindlist( mclapply(names(regiondtl), countRegionSignalByChrom, 
+                               regiondtl, readdtl, fraglen, prefix, 
+                               mc.cores = nthr))
+  return(outdt)              
+}
+
+
+countRegionSignalByChrom <- function(chrom, regiondtl, readdtl, fraglen, 
+                                     prefix) {
+  regiondt <- copy(regiondtl[[chrom]])
+  readdt   <- copy(readdtl[[chrom]])
+
+  readdt[, frag_start := ifelse(strand == '+', start, end-fraglen)]
+  readdt[, frag_end := frag_start + fraglen - 1]
+
+  fragdt <- readdt[, list(chrom, frag_start, frag_end)]
+  setnames(fragdt, 2:3, c('start', 'end'))
+  fraggrs <- makeGRangesFromDataFrame(fragdt, ignore.strand=T) 
+
   regiongrs <- makeGRangesFromDataFrame(regiondt[, list(chrom, start, end, 
                                                         trid)], 
                                         keep.extra.columns=T, ignore.strand=T)
+  
+  ol <- findOverlaps(regiongrs, fraggrs, type='any', ignore.strand=T)
+  oldt <- data.table(query=queryHits(ol), subject=subjectHits(ol))
 
-  peakgrs <- makeGRangesFromDataFrame(sigdt[, list(chrom, start, end)], 
-                                      ignore.strand=T)
-  nol <- countOverlaps(regiongrs, peakgrs, type='any', ignore.strand=T)
-  outdt <- data.table(trid = mcols(regiongrs)$trid)
-  outdt[, eval(paste0(prefix, '_sig')) := nol/width(regiongrs)]
-  return(outdt)
+  oldt[, `:=`( region_start = regiondt[, start][query],
+               region_end   = regiondt[, end][query],
+               trid         = regiondt[, trid][query],
+               frag_start   = fragdt[, start][subject],
+               frag_end     = fragdt[, end][subject] )]
+
+  oldt[, frag_mid := (frag_start + frag_end)/2]
+  
+  ## as dpeak, only select fragment which has mid position falling into region
+  seloldt <- subset(oldt, (frag_mid >= region_start) & (frag_mid <= region_end))
+
+  seloldt[, `:=`(start = ifelse(frag_start < region_start, region_start, 
+                                frag_start),
+                 end   = ifelse(frag_end   > region_end,   region_end,   
+                                frag_end))]
+
+  sigdt <- seloldt[, list(nuc = sum(end - start + 1)), by=trid]
+  sigdt <- merge(sigdt, regiondt, by='trid', all.x=T)
+  colname <- paste0(prefix, '_sig')
+  sigdt[, eval(colname) := nuc/(end - start + 1)]
+  sigdt[, `:=`(nuc=NULL, chrom=NULL, start=NULL, end=NULL)]
+  return(sigdt)
 }
 
 
@@ -219,7 +305,7 @@ prepTSSPeakFeatures <- function(argv=NA) {
 # fout              <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.all_tr_features' 
 # fisoforms_results <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.isoforms.results' 
 # flanking_width <- 500 
-# fchipseq_peaks <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/idr_targetRep0_vs_controlRep0.regionPeak.gz'
+# fchipseq_peaks <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/idr_target_vs_control.regionPeak.gz'
 
   .libPaths(c(libloc, .libPaths()))
   suppressMessages(library(data.table)) 

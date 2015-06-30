@@ -55,6 +55,10 @@ class Param:
     self.fall_chipseq_peaks = None
     self.fchipseq_peaks    = None ## full name of user supplied ChIP-seq peak
                                   ## file, otherwise is fidr_chipseq_peaks
+    self.chipseq_target_fraglen = None ## spp-estimated fragment length
+    self.fsppout_target = None ## full name of SPP output
+                               ## this implementation needs to be refined since
+                               ## the var is define in both Param and ChIPSeqExp
     self.fchipseq_target_signals  = None
     self.fchipseq_control_signals = None
 
@@ -113,6 +117,7 @@ class Param:
     else:
       prm.fchipseq_peaks = prm.fidr_chipseq_peaks
 
+    prm.fsppout_target           = prm.temp_dir + 'target_phantom.tab'
     prm.fchipseq_target_signals  = prm.temp_dir + 'target.tagAlign.gz'
     prm.fchipseq_control_signals = prm.temp_dir + 'control.tagAlign.gz'
 
