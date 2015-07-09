@@ -273,8 +273,8 @@ if (!$is_sam && !$is_bam) {
 	               ##
 	
 	               ## different than ENCODE3 pipeline 
-	               ## load genome into shared memory but remove it after run
-	               ' --genomeLoad LoadAndRemove ' .
+	               ## do not allow using shared memory
+	               ' --genomeLoad NoSharedMemory ' .
 	               ##
 	
 	               ## different than ENCODE3 pipeline, which sorts output BAM
@@ -626,7 +626,7 @@ Use Bowtie 2 instead of Bowtie to align reads. Since currently RSEM does not han
 
 =item B<--star>
 
-Use STAR to align reads. Alignment parameters are from ENCODE3's STAR-RSEM pipeline. To save computational time and memory resources, STAR's Output BAM file is unsorted. It is stored in RSEM's temporary directory with name as 'sample_name.bam'. Genome indices are loaded into shared memory and removed when there is no running jobs using it. (Default: off) 
+Use STAR to align reads. Alignment parameters are from ENCODE3's STAR-RSEM pipeline. To save computational time and memory resources, STAR's Output BAM file is unsorted. It is stored in RSEM's temporary directory with name as 'sample_name.bam'. Each STAR job will have its own private copy of the genome in memory. (Default: off) 
 
 =item B<--star-path> <path>
 
