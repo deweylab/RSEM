@@ -101,6 +101,7 @@ my $chipseq_target_read_files  = '';
 my $chipseq_control_read_files = '';
 my $bowtie_bin_for_chipseq     = '';
 my $chipseq_peak_file          = '';
+my $gzipped_chipseq_peak_file  = 0;
 my $mappability_bigwig_file    = '';
 my $partition_model            = 'pk';
 
@@ -162,6 +163,7 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	                                      ## delimited by comma if more than one
 	   'bowtie-bin-for-chipseq=s' => \$bowtie_bin_for_chipseq,
 	   'chipseq-peak-file=s' => \$chipseq_peak_file,
+	   'gzipped-chipseq-peak-file=i' => \$gzipped_chipseq_peak_file,
 	   'mappability-bigwig-file=s'  => \$mappability_bigwig_file,
 	   'partition-model=s' => \$partition_model,
 	   "time" => \$mTime,
@@ -632,6 +634,7 @@ if ( $run_prsem ) {
   if ( $chipseq_peak_file ne '') { ## only for partition model pk
                                    ## need to add sanity check!!
     $command .= " --chipseq-peak-file $chipseq_peak_file";
+    $command .= " --gzipped-chipseq-peak-file $gzipped_chipseq_peak_file";
   } else {
     $command .= " --chipseq-target-read-files $chipseq_target_read_files " .
                 " --bowtie-bin-for-chipseq $bowtie_bin_for_chipseq" ;

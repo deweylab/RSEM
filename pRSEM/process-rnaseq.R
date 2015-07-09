@@ -298,6 +298,7 @@ prepTSSPeakFeatures <- function(argv=NA) {
   fisoforms_results <- argv[5]
   flanking_width    <- as.numeric(argv[6])
   fchipseq_peaks    <- argv[7]
+  gzipped_chipseq_peak_file <- argv[8]
 
 # libloc            <- '/ua/pliu/dev/RSEM/pRSEM/RLib/'
 # fall_tr_crd       <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.all_tr_crd'
@@ -322,9 +323,14 @@ prepTSSPeakFeatures <- function(argv=NA) {
   tssdt[, `:=`( start = tss - flanking_width,
                 end   = tss + flanking_width)]
 
-  pkdt <- data.table(read.table(gzfile(fchipseq_peaks), header=F, sep="\t", 
-                                colClasses=c('character', 'numeric', 'numeric',
-                                             rep('NULL', 7))))
+  if ( gzipped_chipseq_peak_file == 1 ) {
+    pkdt <- data.table(read.table(gzfile(fchipseq_peaks), header=F, sep="\t", 
+                                  colClasses=c('character', 'numeric', 
+                                               'numeric', rep('NULL', 7))))
+  } else {
+    pkdt <- fread(fchipseq_peaks, header=F, sep="\t", colClasses=c('character',
+                  'numeric', 'numeric', rep('NULL', 7)))
+  }
   setnames(pkdt, 1:3, c('chrom', 'start', 'end'))
 
   has_pk_trids <- getRegionPeakOLTrID(tssdt, pkdt)

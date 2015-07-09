@@ -47,6 +47,7 @@ def getCommandLineArguments():
   parser.add_argument('--chipseq-control-read-files')
   parser.add_argument('--bowtie-bin-for-chipseq')
   parser.add_argument('--chipseq-peak-file')
+  parser.add_argument('--gzipped-chipseq-peak-file')
   parser.add_argument('--mappability-bigwig-file')
   parser.add_argument('--partition-model', )
   parser.add_argument('--gibbs-burnin', type=int)
@@ -200,7 +201,8 @@ def genPriorByTSSPeak(prm):
                   'prepTSSPeakFeatures', prm.prsem_rlib_dir,
                   prm.fall_tr_crd, prm.ftraining_tr_crd, prm.fall_tr_features,
                   prm.fisoforms_results, prm.FLANKING_WIDTH,
-                  prm.fchipseq_peaks, quiet=False)
+                  prm.fchipseq_peaks, prm.gzipped_chipseq_peak_file, 
+                  quiet=False)
 
   if not os.path.exists(prm.fall_tr_features):
     sys.exit("Failed to generate file: %s\n" % prm.fall_tr_features)
