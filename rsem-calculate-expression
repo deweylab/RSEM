@@ -93,6 +93,8 @@ my $star_path  = '';
 my $gzipped_read_file = 0;
 my $bzipped_read_file = 0;
 my $output_star_genome_bam = 0;
+my $sort_bam_by_read_mate = 0;
+my $sort_bam_buffer_size = '60G';
 
 GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "temporary-folder=s" => \$temp_dir,
@@ -142,6 +144,8 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "gzipped-read-file" => \$gzipped_read_file,
 	   "bzipped-read-file" => \$bzipped_read_file,
 	   "output-star-genome-bam" => \$output_star_genome_bam,
+	   "sort-bam-by-read-mate=i" => \$sort_bam_by_read_mate,
+	   "sort-bam-buffer-size=s" => \$sort_bam_buffer_size,
 	   "seed=i" => \$seed,
 	   "time" => \$mTime,
 	   "version" => \$version,
@@ -388,6 +392,25 @@ if (!$is_sam && !$is_bam) {
         unlink $star_genome_bam or die "can't remove $star_genome_bam: $!\n";
       }
     }
+}
+
+if ( $sort_bam_by_read_mate ) {
+  my $sorted_bam = "$imdName.mateSorted.bam";
+  my $sort_workdir = dirname($imdName);
+  $command = "cat <( samtools view -H $inpF ) " .
+                 "<( samtools view -@ $nThreads $inpF | " .
+                 q(awk '{printf "%s ", $0; getline; print}' | ) .
+                 "sort -S $sort_bam_buffer_size -T $sort_workdir | " .
+                 q(tr ' ' '\n' ) .
+                 ") | samtools view -@ $nThreads -bS - > $sorted_bam"; 
+
+  print "$command\n\n";
+
+  ## have to invoke BASH to use the <()<() substitutions
+  ## have to use LIST to invoke BASE
+  system( ('bash', '-c', $command) );
+
+  rename $sorted_bam, $inpF or die "can't rename $sorted_bam to $inpF: $!\n";
 }
 
 if ($mTime) { $time_start = time(); }
