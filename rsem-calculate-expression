@@ -144,7 +144,7 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "gzipped-read-file" => \$gzipped_read_file,
 	   "bzipped-read-file" => \$bzipped_read_file,
 	   "output-star-genome-bam" => \$output_star_genome_bam,
-	   "sort-bam-by-read-mate=i" => \$sort_bam_by_read_mate,
+	   "sort-bam-by-read-mate" => \$sort_bam_by_read_mate,
 	   "sort-bam-buffer-size=s" => \$sort_bam_buffer_size,
 	   "seed=i" => \$seed,
 	   "time" => \$mTime,
@@ -757,6 +757,14 @@ Input read file(s) is compressed by bzip2. This option can be only used when ali
 =item B<--output-star-genome-bam>
 
 Save the BAM file from STAR alignment under genomic coordinate to 'sample_name.STAR.genome.bam'. This file is NOT sorted by genomic coordinate. In this file, according to STAR's manual, 'paired ends of an alignment are always adjacent, and multiple alignments of a read are adjacent as well'. (Default: off)
+
+=item B<--sort-bam-by-read-mate>
+
+Sort BAM file aligned under transcript coordidate by read mate. Setting this option on will produce determinstic maximum likelihood estimations from independet runs. Note that sorting will take long time and lots of memory. (Default: off)
+
+=item B<--sort-bam-buffer-size> <string>
+
+Size for main memeory buffer when sorting BAM file. It can be any string acceptable to GNU sort's '-S' option. See "sort --help" for details. (Default: '60G')
 
 =item B<--forward-prob> <double>
 
