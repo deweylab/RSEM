@@ -93,7 +93,7 @@ my $star_path  = '';
 my $gzipped_read_file = 0;
 my $bzipped_read_file = 0;
 my $output_star_genome_bam = 0;
-my $sort_bam_by_read_mate = 0;
+my $sort_bam_by_read_name = 0;
 my $sort_bam_buffer_size = '60G';
 
 GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
@@ -144,7 +144,7 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "gzipped-read-file" => \$gzipped_read_file,
 	   "bzipped-read-file" => \$bzipped_read_file,
 	   "output-star-genome-bam" => \$output_star_genome_bam,
-	   "sort-bam-by-read-mate" => \$sort_bam_by_read_mate,
+	   "sort-bam-by-read-name" => \$sort_bam_by_read_name,
 	   "sort-bam-buffer-size=s" => \$sort_bam_buffer_size,
 	   "seed=i" => \$seed,
 	   "time" => \$mTime,
@@ -394,7 +394,7 @@ if (!$is_sam && !$is_bam) {
     }
 }
 
-if ( $sort_bam_by_read_mate ) {
+if ( $sort_bam_by_read_name ) {
   my $sorted_bam = "$imdName.mateSorted.bam";
   my $sort_workdir = dirname($imdName);
   $command = "cat <( samtools view -H $inpF ) " .
@@ -758,9 +758,9 @@ Input read file(s) is compressed by bzip2. This option can be only used when ali
 
 Save the BAM file from STAR alignment under genomic coordinate to 'sample_name.STAR.genome.bam'. This file is NOT sorted by genomic coordinate. In this file, according to STAR's manual, 'paired ends of an alignment are always adjacent, and multiple alignments of a read are adjacent as well'. (Default: off)
 
-=item B<--sort-bam-by-read-mate>
+=item B<--sort-bam-by-read-name>
 
-Sort BAM file aligned under transcript coordidate by read mate. Setting this option on will produce determinstic maximum likelihood estimations from independet runs. Note that sorting will take long time and lots of memory. (Default: off)
+Sort BAM file aligned under transcript coordidate by read name. Setting this option on will produce determinstic maximum likelihood estimations from independet runs. Note that sorting will take long time and lots of memory. (Default: off)
 
 =item B<--sort-bam-buffer-size> <string>
 
