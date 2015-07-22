@@ -2,7 +2,7 @@
 
 use Getopt::Long;
 use Pod::Usage;
-
+use File::Basename;
 use FindBin;
 use lib $FindBin::RealBin;
 use rsem_perl_utils qw(runCommand collectResults showVersionInfo);
@@ -88,6 +88,14 @@ my $gap = 32;
 
 my $alleleS = 0;
 
+my $star = 0;
+my $star_path  = '';
+my $gzipped_read_file = 0;
+my $bzipped_read_file = 0;
+my $output_star_genome_bam = 0;
+my $sort_bam_by_read_name = 0;
+my $sort_bam_buffer_size = '60G';
+
 GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "temporary-folder=s" => \$temp_dir,
 	   "no-qualities" => \$no_qual,
@@ -131,6 +139,13 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "ci-memory=i" => \$NMB,
 	   "ci-number-of-samples-per-count-vector=i" => \$NSPC,
 	   "samtools-sort-mem=s" => \$SortMem,
+	   'star' => \$star,
+	   'star-path=s' => \$star_path,
+	   "gzipped-read-file" => \$gzipped_read_file,
+	   "bzipped-read-file" => \$bzipped_read_file,
+	   "output-star-genome-bam" => \$output_star_genome_bam,
+	   "sort-bam-by-read-name" => \$sort_bam_by_read_name,
+	   "sort-bam-buffer-size=s" => \$sort_bam_buffer_size,
 	   "seed=i" => \$seed,
 	   "time" => \$mTime,
 	   "version" => \$version,
@@ -168,6 +183,8 @@ pod2usage(-msg => "--sampling-for-bam cannot be specified if --no-bam-output is 
 pod2usage(-msg => "--output-genome-bam cannot be specified if --no-bam-output is specified!\n", -exitval => 2, -verbose => 2) if ($genGenomeBamF && !$genBamF);
 pod2usage(-msg => "The seed for random number generator must be a non-negative 32bit integer!\n", -exitval => 2, -verbose => 2) if (($seed ne "NULL") && ($seed < 0 || $seed > 0xffffffff));
 pod2usage(-msg => "The credibility level should be within (0, 1)!\n", -exitval => 2, -verbose => 2) if ($CONFIDENCE <= 0.0 || $CONFIDENCE >= 1.0);
+pod2usage(-msg => "Gzipped read files can only be used for aligner STAR\n", -exitval=>2, -verbose =>2) if ( ( $star == 0 ) && ( $gzipped_read_file != 0));
+pod2usage(-msg => "Bzipped read files can only be used for aligner STAR\n", -exitval=>2, -verbose =>2) if ( ( $star == 0 ) && ( $bzipped_read_file != 0));
 
 if ($L < 25) { print "Warning: the seed length set is less than 25! This is only allowed if the references are not added poly(A) tails.\n"; }
 
@@ -229,11 +246,64 @@ my ($mate_minL, $mate_maxL) = (1, $maxL);
 
 if ($bowtie_path ne "") { $bowtie_path .= "/"; }
 if ($bowtie2_path ne "") { $bowtie2_path .= "/"; }
+if ($star_path ne '') { $star_path .= '/'; }
 
 my $command = "";
 
 if (!$is_sam && !$is_bam) {
-    if (!$bowtie2) {
+	if ( $star ) {
+	  ## align reads by STAR
+    my $star_genome_path = dirname($refName);
+	  $command = "$star_path/STAR " . 
+	               ## ENCODE3 pipeline parameters
+	               " --genomeDir $star_genome_path " .
+	               ' --outSAMunmapped Within ' .
+	               ' --outFilterType BySJout ' .
+	               ' --outSAMattributes NH HI AS NM MD ' .
+	               ' --outFilterMultimapNmax 20 ' .
+	               ' --outFilterMismatchNmax 999 ' .
+	               ' --outFilterMismatchNoverLmax 0.04 ' .
+	               ' --alignIntronMin 20 ' .
+	               ' --alignIntronMax 1000000 ' .
+	               ' --alignMatesGapMax 1000000 ' .
+	               ' --alignSJoverhangMin 8 ' .
+	               ' --alignSJDBoverhangMin 1 ' .
+	               ' --sjdbScore 1 ' .
+	               " --runThreadN $nThreads " .
+	               ##
+	
+	               ## different than ENCODE3 pipeline 
+	               ## do not allow using shared memory
+	               ' --genomeLoad NoSharedMemory ' .
+	               ##
+	
+	               ## different than ENCODE3 pipeline, which sorts output BAM
+	               ## no need to do it here to save time and memory 
+	               ' --outSAMtype BAM Unsorted ' .
+	               ##
+	
+	               ## unlike ENCODE3, we don't output bedGraph files
+	
+	               ' --quantMode TranscriptomeSAM '.
+	               ' --outSAMheaderHD \@HD VN:1.4 SO:unsorted '.
+	
+	               ## define output file prefix
+	               " --outFileNamePrefix $imdName ";
+	               ##
+	
+	  if ( $gzipped_read_file ) {
+	    $command .= ' --readFilesCommand zcat ';
+	  } elsif ( $bzipped_read_file ) {
+	    $command .= ' --readFilesCommand bzip2 -c ';
+	  }
+	
+	  if ( $read_type == 0 || $read_type == 1 ) {
+	    $command .= " --readFilesIn $mate1_list ";
+	  } else {
+	    $command .= " --readFilesIn $mate1_list $mate2_list";
+	  }
+	
+	} elsif (!$bowtie2) {
 	$command = $bowtie_path."bowtie";
 	if ($no_qual) { $command .= " -f"; }
 	else { $command .= " -q"; }
@@ -307,6 +377,40 @@ if (!$is_sam && !$is_bam) {
 
     $inpF = "$imdName.bam";
     $is_bam = 1; # alignments are outputed as a BAM file
+
+    if ( $star ) {
+      my $star_tr_bam = $imdName . 'Aligned.toTranscriptome.out.bam';
+      rename $star_tr_bam, $inpF
+        or die "can't rename $star_tr_bam to $inpF: $!\n";
+      rmdir $imdName . "_STARtmp/";
+      my $star_genome_bam = $imdName . "Aligned.out.bam";
+      my $rsem_star_genome_bam = $sampleName.'.STAR.genome.bam';
+      if ( $output_star_genome_bam ) {
+        rename $star_genome_bam, $rsem_star_genome_bam or die 
+          "can't move $star_genome_bam to $rsem_star_genome_bam: $!\n";
+      } else {
+        unlink $star_genome_bam or die "can't remove $star_genome_bam: $!\n";
+      }
+    }
+}
+
+if ( $sort_bam_by_read_name ) {
+  my $sorted_bam = "$imdName.mateSorted.bam";
+  my $sort_workdir = dirname($imdName);
+  $command = "cat <( samtools view -H $inpF ) " .
+                 "<( samtools view -@ $nThreads $inpF | " .
+                 q(awk '{printf "%s ", $0; getline; print}' | ) .
+                 "sort -S $sort_bam_buffer_size -T $sort_workdir | " .
+                 q(tr ' ' '\n' ) .
+                 ") | samtools view -@ $nThreads -bS - > $sorted_bam"; 
+
+  print "$command\n\n";
+
+  ## have to invoke BASH to use the <()<() substitutions
+  ## have to use LIST to invoke BASE
+  system( ('bash', '-c', $command) );
+
+  rename $sorted_bam, $inpF or die "can't rename $sorted_bam to $inpF: $!\n";
 }
 
 if ($mTime) { $time_start = time(); }
@@ -520,6 +624,14 @@ The RNA-Seq protocol used to generate the reads is strand specific, i.e., all (u
 
 Use Bowtie 2 instead of Bowtie to align reads. Since currently RSEM does not handle indel, local and discordant alignments, the Bowtie2 parameters are set in a way to avoid those alignments. In particular, we use options '--sensitive --dpad 0 --gbar 99999999 --mp 1,1 --np 1 --score-min L,0,-0.1' by default. The last parameter of '--score-min', '-0.1', is the negative of maximum mismatch rate. This rate can be set by option '--bowtie2-mismatch-rate'. If reads are paired-end, we additionally use options '--no-mixed' and '--no-discordant'. (Default: off)
 
+=item B<--star>
+
+Use STAR to align reads. Alignment parameters are from ENCODE3's STAR-RSEM pipeline. To save computational time and memory resources, STAR's Output BAM file is unsorted. It is stored in RSEM's temporary directory with name as 'sample_name.bam'. Each STAR job will have its own private copy of the genome in memory. (Default: off) 
+
+=item B<--star-path> <path>
+
+The path to STAR's executable. (Default: the path to STAR executable is assumed to be in user's PATH environment variable)
+
 =item B<--sam>
 
 Input file is in SAM format. (Default: off)
@@ -634,6 +746,26 @@ Input quality scores are solexa encoded (from GA Pipeline ver. < 1.3). (Default:
 
 (Bowtie 2 parameter) Set Bowtie 2's preset options in --end-to-end mode. This option controls how hard Bowtie 2 tries to find alignments. <string> must be one of "very_fast", "fast", "sensitive" and "very_sensitive". The four candidates correspond to Bowtie 2's "--very-fast", "--fast", "--sensitive" and "--very-sensitive" options. (Default: "sensitive" - use Bowtie 2's default)
 
+=item B<--gzipped-read-file>
+
+Input read file(s) is compressed by gzip. This option can be only used when aligning reads by STAR, i.e. --star-genome-path <path> is defined (Default: off)
+
+=item B<--bzipped-read-file>
+
+Input read file(s) is compressed by bzip2. This option can be only used when aligning reads by STAR, i.e. --star-genome-path <path> is defined (Default: off)
+
+=item B<--output-star-genome-bam>
+
+Save the BAM file from STAR alignment under genomic coordinate to 'sample_name.STAR.genome.bam'. This file is NOT sorted by genomic coordinate. In this file, according to STAR's manual, 'paired ends of an alignment are always adjacent, and multiple alignments of a read are adjacent as well'. (Default: off)
+
+=item B<--sort-bam-by-read-name>
+
+Sort BAM file aligned under transcript coordidate by read name. Setting this option on will produce determinstic maximum likelihood estimations from independet runs. Note that sorting will take long time and lots of memory. (Default: off)
+
+=item B<--sort-bam-buffer-size> <string>
+
+Size for main memeory buffer when sorting BAM file. It can be any string acceptable to GNU sort's '-S' option. See "sort --help" for details. (Default: '60G')
+
 =item B<--forward-prob> <double>
 
 Probability of generating a read from the forward strand of a transcript. Set to 1 for a strand-specific protocol where all (upstream) reads are derived from the forward strand, 0 for a strand-specific protocol where all (upstream) read are derived from the reverse strand, or 0.5 for a non-strand-specific protocol. (Default: 0.5)
@@ -706,7 +838,7 @@ Output time consumed by each step of RSEM to 'sample_name.time'. (Default: off)
 
 =head1 DESCRIPTION
 
-In its default mode, this program aligns input reads against a reference transcriptome with Bowtie and calculates expression values using the alignments.  RSEM assumes the data are single-end reads with quality scores, unless the '--paired-end' or '--no-qualities' options are specified.  Users may use an alternative aligner by specifying one of the --sam and --bam options, and providing an alignment file in the specified format. However, users should make sure that they align against the indices generated by 'rsem-prepare-reference' and the alignment file satisfies the requirements mentioned in ARGUMENTS section. 
+In its default mode, this program aligns input reads against a reference transcriptome with Bowtie and calculates expression values using the alignments.  RSEM assumes the data are single-end reads with quality scores, unless the '--paired-end' or '--no-qualities' options are specified. Alternatively, users can use STAR to align reads using the '--star' option. RSEM has provided options in 'rsem-prepare-reference' to prepare STAR's genome indices. Users may use an alternative aligner by specifying one of the --sam and --bam options, and providing an alignment file in the specified format. However, users should make sure that they align against the indices generated by 'rsem-prepare-reference' and the alignment file satisfies the requirements mentioned in ARGUMENTS section. 
 
 One simple way to make the alignment file satisfying RSEM's requirements (assuming the aligner used put mates in a paired-end read adjacent) is to use 'convert-sam-for-rsem' script. This script only accept SAM format files as input. If a BAM format file is obtained, please use samtools to convert it to a SAM file first. For example, if '/ref/mouse_125' is the 'reference_name' and the SAM file is named 'input.sam', you can run the following command: 
 
@@ -961,5 +1093,17 @@ Assume the path to the bowtie executables is in the user's PATH environment vari
                            /data/mmliver_paired_end_quals.bam \
                            /ref/mouse_125 \
                            mmliver_paired_end_quals
+
+6) '/data/mmliver_1.fq.gz' and '/data/mmliver_2.fq.gz', paired-end reads with quality scores and read files are compressed by gzip. We want to use STAR to aligned reads and assume STAR executable is '/sw/STAR'. Suppose we want to use 8 threads and do not generate a genome BAM file:
+
+ rsem-calculate-expression --star \
+                           --star-path /sw/STAR \
+                           --gzipped-read-file \
+                           -p 8 \
+                           /data/mmliver_1.fq.gz \
+                           /data/mmliver_2.fq.gz \
+                           /ref/mouse_125 \
+                           mmliver_paired_end_quals
+
 
 =cut
