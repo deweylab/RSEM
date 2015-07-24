@@ -89,7 +89,7 @@ To prepare the reference sequences, you should run the
     rsem-prepare-reference --help
 
 to get usage information or visit the [rsem-prepare-reference
-documentation page](http://deweylab.biostat.wisc.edu/rsem/rsem-prepare-reference.html).
+documentation page](rsem-prepare-reference.html).
 
 ### II. Calculating Expression Values
 
@@ -99,7 +99,7 @@ To calculate expression values, you should run the
     rsem-calculate-expression --help
 
 to get usage information or visit the [rsem-calculate-expression
-documentation page](http://deweylab.biostat.wisc.edu/rsem/rsem-calculate-expression.html).
+documentation page](rsem-calculate-expression.html).
 
 #### Calculating expression values from single-end data
 
@@ -145,7 +145,7 @@ process. Please run
 
 to get usage information or visit the [convert-sam-for-rsem
 documentation
-page](http://deweylab.biostat.wisc.edu/rsem/convert-sam-for-rsem.html).
+page](convert-sam-for-rsem.html).
 
 However, please note that RSEM does ** not ** support gapped
 alignments. So make sure that your aligner does not produce alignments
@@ -228,7 +228,7 @@ To generate transcript wiggle plots, you should run the
     rsem-plot-transcript-wiggles --help
 
 to get usage information or visit the [rsem-plot-transcript-wiggles
-documentation page](http://deweylab.biostat.wisc.edu/rsem/rsem-plot-transcript-wiggles.html).
+documentation page](rsem-plot-transcript-wiggles.html).
 
 #### e) Visualize the model learned by RSEM
 
@@ -397,7 +397,7 @@ transcripts whose lengths are less than k are assigned to cluster
 
 to get usage information or visit the [rsem-generate-ngvector
 documentation
-page](http://deweylab.biostat.wisc.edu/rsem/rsem-generate-ngvector.html).
+page](rsem-generate-ngvector.html).
 
 If your reference is a de novo assembled transcript set, you should
 run 'rsem-generate-ngvector' first. Then load the resulting
@@ -430,7 +430,7 @@ for all genes/transcripts. Run
     rsem-run-ebseq --help
 
 to get usage information or visit the [rsem-run-ebseq documentation
-page](http://deweylab.biostat.wisc.edu/rsem/rsem-run-ebseq.html). Second,
+page](rsem-run-ebseq.html). Second,
 'rsem-control-fdr' takes 'rsem-run-ebseq' 's result and reports called
 differentially expressed genes/transcripts by controlling the false
 discovery rate. Run
@@ -438,7 +438,7 @@ discovery rate. Run
     rsem-control-fdr --help
 
 to get usage information or visit the [rsem-control-fdr documentation
-page](http://deweylab.biostat.wisc.edu/rsem/rsem-control-fdr.html). These
+page](rsem-control-fdr.html). These
 two scripts can perform DE analysis on either 2 conditions or multiple
 conditions.
 
