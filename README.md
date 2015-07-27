@@ -452,7 +452,7 @@ be sent to <a href="mailto:nleng@wisc.edu">Ning Leng</a>.
 
 ## <a name="authors"></a> Authors
 
-The RSEM algorithm is developed by Bo Li and Colin Dewey. The RSEM software is mainly implemented by Bo Li.
+[Bo Li](http://bli25ucb.github.io/) and [Colin Dewey](https://www.biostat.wisc.edu/~cdewey/) designed the RSEM algorithm. [Bo Li](http://bli25ucb.github.io/) implemented the RSEM software. [Peng Liu](https://www.biostat.wisc.edu/~cdewey/group.html) contributed the STAR aligner options.
 
 ## <a name="acknowledgements"></a> Acknowledgements
 
