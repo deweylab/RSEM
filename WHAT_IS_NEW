@@ -1,3 +1,9 @@
+RSEM v1.2.22
+
+- Added options to run the STAR aligner
+
+--------------------------------------------------------------------------------------------
+
 RSEM v1.2.21
 
 - Strip read names of extra words to avoid mismatches of paired-end read names
