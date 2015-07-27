@@ -1,7 +1,7 @@
 README for RSEM
 ===============
 
-[Bo Li](http://pages.cs.wisc.edu/~bli) \(bli at cs dot wisc dot edu\)
+[Bo Li](http://bli25ucb.github.io/) \(bli at cs dot wisc dot edu\)
 
 * * *
 
