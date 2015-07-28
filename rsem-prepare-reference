@@ -277,7 +277,6 @@ Build Bowtie 2 indices. (Default: off)
 
 The path to the Bowtie 2 executables. (Default: the path to Bowtie 2 executables is assumed to be in the user's PATH environment variable)
 
-<<<<<<< HEAD
 =item B<--star>
 
 Build STAR indices. (Default: off)
