@@ -91,9 +91,9 @@ class ChIPSeqExperiment:
 
       ## many pipes, have to use os.system
       cmds = [ "%s %s |" % (cmd_cat, rep.fastq.fullname) ] + \
-             [ "%s -q -v 2 -a --best --strata -m 1 %s -S -p %d %s - | " % (
-               self.param.bowtie_bin_for_chipseq, rep.encoding, nthr_bowtie,
-               bowtie_ref_name ) ] + \
+             [ "%s/bowtie " % self.param.bowtie_path ]  + \
+             [ " -q -v 2 -a --best --strata -m 1 %s -S -p %d %s - | " % (
+               rep.encoding, nthr_bowtie, bowtie_ref_name ) ] + \
              [ "%s - | " % self.param.filterSam2Bed ] + \
              [ "gzip -c > %s " % rep.tagalign.fullname ]
 

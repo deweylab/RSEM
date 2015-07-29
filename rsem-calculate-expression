@@ -99,7 +99,7 @@ my $sort_bam_buffer_size = '60G';
 my $run_prsem = 0;
 my $chipseq_target_read_files  = '';
 my $chipseq_control_read_files = '';
-my $bowtie_bin_for_chipseq     = '';
+#my $bowtie_bin_for_chipseq    = ''; ## use $bowtie_path instead
 my $chipseq_peak_file          = '';
 #my $gzipped_chipseq_peak_file  = 0;
 my $mappability_bigwig_file    = '';
@@ -161,7 +161,7 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	                                      ## delimited by comma if more than one
 	   'chipseq-control-read-files=s' => \$chipseq_control_read_files, 
 	                                      ## delimited by comma if more than one
-	   'bowtie-bin-for-chipseq=s' => \$bowtie_bin_for_chipseq,
+	  #'bowtie-bin-for-chipseq=s' => \$bowtie_bin_for_chipseq,
 	   'chipseq-peak-file=s' => \$chipseq_peak_file,
 	  #'gzipped-chipseq-peak-file=i' => \$gzipped_chipseq_peak_file,
 	   'mappability-bigwig-file=s'  => \$mappability_bigwig_file,
@@ -214,12 +214,14 @@ if ( $run_prsem ) {
     if ( ( $chipseq_peak_file eq '' ) && 
          ( ( $chipseq_target_read_files eq ''  ) || 
            ( $chipseq_control_read_files eq '' ) || 
-           ( $bowtie_bin_for_chipseq eq '' )
+          #( $bowtie_bin_for_chipseq eq '' )
+           ( $bowtie_path eq '' )
          ) ) {
       $msg = 'either define --chipseq-peak-file <file>, or ' .
              '--chipseq-target-read-files <file> and ' .
              '--chipseq-control-read-files <file> and ' .
-             '--bowtie-bin-for-chipseq <file> to run pRSEM';
+            #'--bowtie-bin-for-chipseq <file> to run pRSEM';
+             '--bowtie-path <path> to run pRSEM';
     }
 
     my @prsem_partition_models = ( 
@@ -233,10 +235,12 @@ if ( $run_prsem ) {
       if ( $partition_model ne 'pk' ) {
         if ( ( $chipseq_target_read_files eq ''  ) || 
              ( $chipseq_control_read_files eq '' ) || 
-             ( $bowtie_bin_for_chipseq eq '' ) ) {
+            #( $bowtie_bin_for_chipseq eq '' ) ) {
+             ( $bowtie_path eq '' ) ) {
           $msg = '--chipseq-target-read-files <file> and ' .
                  '--chipseq-control-read-files <file> and ' .
-                 '--bowtie-bin-for-chipseq <file> need to be defined for ' .
+                #'--bowtie-bin-for-chipseq <file> need to be defined for ' .
+                 '--bowtie-path <path> need to be defined for ' .
                  "pRSEM's partition model: '$partition_model'";
         }
       }
@@ -637,7 +641,8 @@ if ( $run_prsem ) {
    #$command .= " --gzipped-chipseq-peak-file $gzipped_chipseq_peak_file";
   } else {
     $command .= " --chipseq-target-read-files $chipseq_target_read_files " .
-                " --bowtie-bin-for-chipseq $bowtie_bin_for_chipseq" ;
+               #" --bowtie-bin-for-chipseq $bowtie_bin_for_chipseq" ;
+                " --bowtie-path $bowtie_path" ;
     if ( $chipseq_control_read_files ne '' ) {
      $command .= " --chipseq-control-read-files $chipseq_control_read_files";
     }

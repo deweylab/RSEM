@@ -21,7 +21,8 @@ class Param:
     self.num_threads                = None
     self.chipseq_target_read_files  = None
     self.chipseq_control_read_files = None
-    self.bowtie_bin_for_chipseq     = None
+   #self.bowtie_bin_for_chipseq     = None
+    self.bowtie_path                = None
     self.chipseq_peak_file          = None
    #self.gzipped_chipseq_peak_file  = None
     self.mappability_bigwig_file    = None
