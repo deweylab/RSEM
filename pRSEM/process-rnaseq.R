@@ -323,14 +323,27 @@ prepTSSPeakFeatures <- function(argv=NA) {
   tssdt[, `:=`( start = tss - flanking_width,
                 end   = tss + flanking_width)]
 
-  if ( gzipped_chipseq_peak_file == 1 ) {
-    pkdt <- data.table(read.table(gzfile(fchipseq_peaks), header=F, sep="\t", 
-                                  colClasses=c('character', 'numeric', 
-                                               'numeric', rep('NULL', 7))))
-  } else {
-    pkdt <- fread(fchipseq_peaks, header=F, sep="\t", colClasses=c('character',
-                  'numeric', 'numeric', rep('NULL', 7)))
-  }
+
+  pkdt <- tryCatch({
+    if ( gzipped_chipseq_peak_file == 'True' ) {
+      data.table(read.table(gzfile(fchipseq_peaks), header=F, sep="\t", 
+                            colClasses=c('character', 'numeric', 
+                                         'numeric', rep('NULL', 7))))
+    } else if ( gzipped_chipseq_peak_file == 'False' ) {
+      fread(fchipseq_peaks, header=F, sep="\t", colClasses=c('character',
+            'numeric', 'numeric', rep('NULL', 7)))
+    }
+  }, error = function(err) {
+    if ( gzipped_chipseq_peak_file == 'True' ) {
+      extra_msg <- ' in gzipped mode'
+    } else if ( gzipped_chipseq_peak_file == 'False' ) {
+      extra_msg <- ' in un-gzipped mode'
+    }
+    message(paste0("\nFail to read file: ", fchipseq_peaks, extra_msg, "\n"))
+    message(err)
+    return(NA)
+  })
+
   setnames(pkdt, 1:3, c('chrom', 'start', 'end'))
 
   has_pk_trids <- getRegionPeakOLTrID(tssdt, pkdt)
