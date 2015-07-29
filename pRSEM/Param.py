@@ -23,7 +23,7 @@ class Param:
     self.chipseq_control_read_files = None
     self.bowtie_bin_for_chipseq     = None
     self.chipseq_peak_file          = None
-    self.gzipped_chipseq_peak_file  = None
+   #self.gzipped_chipseq_peak_file  = None
     self.mappability_bigwig_file    = None
     self.partition_model            = None
     self.gibbs_burnin               = None

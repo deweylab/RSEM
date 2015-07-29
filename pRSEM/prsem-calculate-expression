@@ -205,7 +205,8 @@ def genPriorByTSSPeak(prm):
                   'prepTSSPeakFeatures', prm.prsem_rlib_dir,
                   prm.fall_tr_crd, prm.ftraining_tr_crd, prm.fall_tr_features,
                   prm.fisoforms_results, prm.FLANKING_WIDTH,
-                  prm.fchipseq_peaks, prm.gzipped_chipseq_peak_file,
+                  prm.fchipseq_peaks,
+                 #prm.gzipped_chipseq_peak_file,
                   quiet=False)
 
   if not os.path.exists(prm.fall_tr_features):
