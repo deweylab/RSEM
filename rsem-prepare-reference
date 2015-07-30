@@ -295,7 +295,7 @@ Number of threads to use for building STAR's genome indices. (Default: 1)
 
 =item B<--index-genome>
 
-A Boolean indicating whether to build index for genome. This is prepared for aligning ChIP-seq reads in pRSEM. Path to Bowtie executables is required. Bowtie2 is not supported at the moment. (Default: off)
+A Boolean indicating whether to build Bowtie indices for a genome. The index files will be used for aligning ChIP-seq reads in prior-enhanced RSEM. The path to Bowtie executables is required when this option is on. Currently, Bowtie2 is not supported for prior-enhanced RSEM. (Default: off)
 
 =item B<-q/--quiet>
 
@@ -309,7 +309,7 @@ Show help information.
 
 =head1 DESCRIPTION
 
-This program extracts/preprocesses the reference sequences for RSEM. It can optionally build Bowtie indices (with '--bowtie' option) and/or Bowtie 2 indices (with '--bowtie2' option) using their default parameters. It can also optionally build STAR indices (with '--star' option) using parameters from ENCODE3's STAR-RSEM pipeline. If an alternative aligner is to be used, indices for that particular aligner can be built from either 'reference_name.idx.fa' or 'reference_name.n2g.idx.fa' (see OUTPUT for details). This program is used in conjunction with the 'rsem-calculate-expression' program.
+This program extracts/preprocesses the reference sequences for RSEM and prior-enhanced RSEM. It can optionally build Bowtie indices (with '--bowtie' option) and/or Bowtie 2 indices (with '--bowtie2' option) using their default parameters. It can also optionally build STAR indices (with '--star' option) using parameters from ENCODE3's STAR-RSEM pipeline. For prior-enhanced RSEM, it can build Bowtie indices (with '--index-genome' option) for the whole genome. If an alternative aligner is to be used, indices for that particular aligner can be built from either 'reference_name.idx.fa' or 'reference_name.n2g.idx.fa' (see OUTPUT for details). This program is used in conjunction with the 'rsem-calculate-expression' program.
 
 =head1 OUTPUT
 
@@ -374,7 +374,31 @@ OR
 
 STAR genome index files will be saved under '/ref/'. 
 
-4) Suppose we only have transcripts from EST tags stored in 'mm9.fasta' and isoform-gene information stored in 'mapping.txt'. We want to add 125bp long poly(A) tails to all transcripts. The reference_name is set as 'mouse_125'. In addition, we do not want to build Bowtie/Bowtie 2 indices, and will use an alternative aligner to align reads against either 'mouse_125.idx.fa' or 'mouse_125.idx.n2g.fa':
+4) Suppose we want to build STAR indices for prior-enhanced RSEM in the above example. In this scenario, both STAR and Bowtie are required to build genomic indices - STAR for RNA-seq reads and Bowtie for ChIP-seq reads. Assuming their executables are under '/sw/STAR' and '/sw/Bowtie', respectively, the command will be:
+
+ rsem-prepare-reference --gtf mm9.gtf \
+                        --star \
+                        --star-path /sw/STAR \
+                        -p 8 \
+                        --bowtie-path /sw/Bowtie \
+                        --index-genome \
+                        /data/mm9/chr1.fa,/data/mm9/chr2.fa,...,/data/mm9/chrM.fa \
+                        /ref/mouse_0
+
+OR
+
+ rsem-prepare-reference --gtf mm9.gtf \
+                        --star \
+                        --star-path /sw/STAR \
+                        -p 8 \
+                        --bowtie-path /sw/Bowtie \
+                        --index-genome \
+                        /data/mm9
+                        /ref/mouse_0
+
+Both STAR and Bowtie's index files will be saved under '/ref/'. Bowtie files will have name prefix 'mouse_0_prsem'
+
+5) Suppose we only have transcripts from EST tags stored in 'mm9.fasta' and isoform-gene information stored in 'mapping.txt'. We want to add 125bp long poly(A) tails to all transcripts. The reference_name is set as 'mouse_125'. In addition, we do not want to build Bowtie/Bowtie 2 indices, and will use an alternative aligner to align reads against either 'mouse_125.idx.fa' or 'mouse_125.idx.n2g.fa':
 
  rsem-prepare-reference --transcript-to-gene-map mapping.txt \
                         --polyA
