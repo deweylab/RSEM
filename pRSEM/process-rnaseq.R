@@ -298,7 +298,6 @@ prepTSSPeakFeatures <- function(argv=NA) {
   fisoforms_results <- argv[5]
   flanking_width    <- as.numeric(argv[6])
   fchipseq_peaks    <- argv[7]
- #gzipped_chipseq_peak_file <- argv[8]
 
 # libloc            <- '/ua/pliu/dev/RSEM/pRSEM/RLib/'
 # fall_tr_crd       <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.all_tr_crd'
@@ -325,21 +324,10 @@ prepTSSPeakFeatures <- function(argv=NA) {
 
 
   pkdt <- tryCatch({
-   #if ( gzipped_chipseq_peak_file == 'True' ) {
-      data.table(read.table(gzfile(fchipseq_peaks), header=F, sep="\t", 
-                            colClasses=c('character', 'numeric', 
-                                         'numeric', rep('NULL', 7))))
-   #} else if ( gzipped_chipseq_peak_file == 'False' ) {
-   #  fread(fchipseq_peaks, header=F, sep="\t", colClasses=c('character',
-   #        'numeric', 'numeric', rep('NULL', 7)))
-   #}
+    data.table(read.table(gzfile(fchipseq_peaks), header=F, sep="\t", 
+                          colClasses=c('character', 'numeric', 
+                                       'numeric', rep('NULL', 7))))
   }, error = function(err) {
-   #if ( gzipped_chipseq_peak_file == 'True' ) {
-   #  extra_msg <- ' in gzipped mode'
-   #} else if ( gzipped_chipseq_peak_file == 'False' ) {
-   #  extra_msg <- ' in un-gzipped mode'
-   #}
-   #message(paste0("\nFail to read file: ", fchipseq_peaks, extra_msg, "\n"))
     message(paste0("\nFail to read file: ", fchipseq_peaks, "\n"))
     message(err)
     return(NA)
@@ -456,7 +444,6 @@ getTrTrOLTrID <- function(querydt, subjectdt, oltype, ignore_strand) {
                   subjectdt[, list(chrom, strand, start, end, trid)], 
                   keep.extra.columns=T, ignore.strand=F)
 
-  ## select tr not overlap with any other tr
   ol <- findOverlaps(querygrs, subjectgrs, type=oltype,
                      ignore.strand=ignore_strand)
 
