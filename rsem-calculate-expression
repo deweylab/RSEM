@@ -1335,15 +1335,15 @@ Assume the path to the bowtie executables is in the user's PATH environment vari
                            /ref/mouse_125 \
                            mmliver_paired_end_quals
 
-8) Similar to the example in 7), suppose we want to use the partition model 'pk_lm2nopk' (partitioning isoforms by Pol II TSS peak first and then partitioning 'no TSS peak' isoforms into two bins by a linear regression model), and we want to partition isoforms by RNA Pol II's ChIP-seq read files '/data/mmliver.PolIIRep1.fq.gz' and '/data/mmliver.PolIIRep2.fq.gz', and the control ChIP-seq read files '/data/mmliver.ctrl.fq.gz'. Also, assuming Bowtie's executables are under '/sw/bowtie/': 
+8) Similar to the example in 7), suppose we want to use the partition model 'pk_lm2nopk' (partitioning isoforms by Pol II TSS peak first and then partitioning 'no TSS peak' isoforms into two bins by a linear regression model), and we want to partition isoforms by RNA Pol II's ChIP-seq read files '/data/mmliver_PolIIRep1.fq.gz' and '/data/mmliver_PolIIRep2.fq.gz', and the control ChIP-seq read files '/data/mmliver_ChIPseqCtrl.fq.gz'. Also, assuming Bowtie's executables are under '/sw/bowtie/': 
 
  rsem-calculate-expression --star \
                            --star-path /sw/STAR \
                            --gzipped-read-file \
                            --run-pRSEM \
                            --mappability-bigwig-file /data/mouse.bigWig \
-                           --chipseq-target-read-files /data/mmliver.PolIIRep1.fq.gz,/data/mmliver.PolIIRep2.fq.gz \
-                           --chipseq-control-read-files /data/mmliver.ctrl.fq.gz \
+                           --chipseq-target-read-files /data/mmliver_PolIIRep1.fq.gz,/data/mmliver_PolIIRep2.fq.gz \
+                           --chipseq-control-read-files /data/mmliver_ChIPseqCtrl.fq.gz \
                            --partition-model pk_lm2nopk \
                            --bowtie-path /sw/bowtie \
                            -p 8 \
