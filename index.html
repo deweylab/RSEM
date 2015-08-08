@@ -1,0 +1,78 @@
+<html>
+<head>
+<title>RNA-Seq gene expression estimation with read 
+mapping uncertainty</title>
+</head>
+<body>
+<h2>RSEM (RNA-Seq by Expectation-Maximization)</h2>
+<hr>
+<p><strong>Updates</strong></p>
+<p>Jul 27, 2015 &nbsp; RSEM v1.2.22 is online now. Added options to run the STAR aligner.</p>
+<p>May 6, 2015 &nbsp; RSEM v1.2.21 is online now. Strip read names of extra words to avoid mismatches of paired-end read names.</p>
+<p>Mar 23, 2015 &nbsp; RSEM v1.2.20 is online now. Fixed a problem that can lead to assertion error if any paired-end read's insert size > 32767 (by changing the type of insertL in PairedEndHit.h from short to int).</p>
+<p>Click <a href="updates.html">here</a> for full update information. </p>
+<p><strong>Authors</strong></p>
+<p><a href="http://bli25ucb.github.io/">Bo Li</a> and <a href="https://www.biostat.wisc.edu/~cdewey/">Colin Dewey</a> designed the RSEM algorithm. <a href="http://bli25ucb.github.io/">Bo Li</a> implemented the RSEM software. <a href="https://www.biostat.wisc.edu/~cdewey/group.html">Peng Liu</a> contributed the STAR aligner options.</p>
+<p><strong>License</strong></p>
+<p>RSEM is under the <a href="http://www.gnu.org/copyleft/gpl.html">GNU General Public License</a></p>
+<p><strong>Source Code</strong></p>
+<ul>
+<li><a href="https://github.com/deweylab/RSEM/archive/v1.2.22.tar.gz">Latest version</a>
+<li><a href="https://github.com/deweylab/RSEM/archive/v1.1.17.tar.gz">Version used by RSEM Galaxy Wrapper (RSEM v1.1.17)</a>
+<li><a href="https://github.com/deweylab/RSEM/releases">Archive of older versions</a>
+<li><a href="https://github.com/deweylab/RSEM">RSEM GitHub
+    repository<a/>
+</ul>
+<p><strong>Documentation</strong></p>
+<p><a href="README.html">README</a></p>
+<p><strong>Prebuilt RSEM Indices (RSEM v1.1.17) for Galaxy Wrapper</strong></p>
+<p>These indices are based on RefSeq containing NM accession numbers only.
+That means only curated genes (no experimental, no miRNA, no noncoding).
+Only mature RNAs. In addition, 125bp Poly(A) tails are added at the end of each transcript.</p>
+<p><a href="http://deweylab.biostat.wisc.edu/rsem/mouse_refseq_NMonly_125bpPolyATail_extractedFromMouseGenome_mm9.tar.gz">Mouse Indices</a>, extracted from mouse genome mm9</p>
+<p><a href="http://deweylab.biostat.wisc.edu/rsem/human_refseq_NMonly_125bpPolyATail_extractedFromHumanGenome_hg18.tar.gz">Human Indices</a>, extracted from human genome hg18</p>
+<p><strong>Reference annotations and Simulation Data used in the paper</strong></p>
+<p><a href="http://deweylab.biostat.wisc.edu/rsem/reference_gtfs.tar.gz">RefSeq and Ensembl annotation GTF files used in the paper</a></p>
+<p><a href="http://deweylab.biostat.wisc.edu/rsem/simulation_data.tar.gz">Simulation Data using Refseq set as reference</a></p>
+<p><a href="http://deweylab.biostat.wisc.edu/rsem/simulation_data_ensembl.tar.gz">Simulation Data using Ensembl set as reference</a></p>
+<p><strong>Google Users and Announce Groups</strong></p>
+<table border=0 style="background-color: #fff; padding: 5px;" cellspacing=0>
+  <tr><td>
+  <img src="groups_logo_sm.gif"
+         height=30 width=140 alt="Google Groups">
+  </td></tr>
+  <tr><td style="padding-left: 5px">
+  <b>Subscribe to RSEM Announce</b>
+  </td></tr>
+  <form action="http://groups.google.com/group/rsem-announce/boxsubscribe">
+  <tr><td style="padding-left: 5px;">
+  Email: <input type=text name=email>
+  <input type=submit name="sub" value="Subscribe">
+  </td></tr>
+</form>
+<tr><td align=right>
+  <a href="http://groups.google.com/group/rsem-announce">Visit this group</a>
+</td></tr>
+</table>
+<table border=0 style="background-color: #fff; padding: 5px;" cellspacing=0>
+  <tr><td>
+  <img src="groups_logo_sm.gif"
+         height=30 width=140 alt="Google Groups">
+  </td></tr>
+  <tr><td style="padding-left: 5px">
+  <b>Subscribe to RSEM Users</b>
+  </td></tr>
+  <form action="http://groups.google.com/group/rsem-users/boxsubscribe">
+  <tr><td style="padding-left: 5px;">
+  Email: <input type=text name=email>
+  <input type=submit name="sub" value="Subscribe">
+  </td></tr>
+</form>
+<tr><td align=right>
+  <a href="http://groups.google.com/group/rsem-users">Visit this group</a>
+</td></tr>
+</table>
+<hr>
+<p>(last modified on Jul 27, 2015)</p>
+</body>
+</html>
