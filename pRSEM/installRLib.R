@@ -39,6 +39,7 @@ main <- function() {
     )
   )
 
+  options(repos=structure(c(CRAN=param$repos$CRAN)))
   installRLib(param) 
 }
 
