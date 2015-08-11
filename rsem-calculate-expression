@@ -254,7 +254,7 @@ if (!$is_sam && !$is_bam) {
 	if ( $star ) {
 	  ## align reads by STAR
     my $star_genome_path = dirname($refName);
-	  $command = "$star_path/STAR " . 
+	  $command = "$star_path"."STAR" . 
 	               ## ENCODE3 pipeline parameters
 	               " --genomeDir $star_genome_path " .
 	               ' --outSAMunmapped Within ' .
