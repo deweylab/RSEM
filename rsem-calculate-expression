@@ -231,7 +231,12 @@ if ( $run_prsem ) {
        'pk_lm2nopk', 'pk_lm3nopk', 'pk_lm4nopk', 'pk_lm5nopk'
     );
 
-    if ( $partition_model ~~ @prsem_partition_models ) {
+    my %prtmdl2one = ();
+    foreach my $prtmdl (@prsem_partition_models) {
+      $prtmdl2one{$prtmdl} = 1;
+    }
+
+    if ( exists $prtmdl2one{$partition_model} ) {
       if ( $partition_model ne 'pk' ) {
         if ( ( $chipseq_target_read_files eq ''  ) || 
              ( $chipseq_control_read_files eq '' ) || 
