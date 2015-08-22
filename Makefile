@@ -3,6 +3,14 @@ CFLAGS = -Wall -c -I.
 COFLAGS = -Wall -O3 -ffast-math -c -I.
 PROGRAMS = rsem-extract-reference-transcripts rsem-synthesis-reference-transcripts rsem-preref rsem-parse-alignments rsem-build-read-index rsem-run-em rsem-tbam2gbam rsem-run-gibbs rsem-calculate-credibility-intervals rsem-simulate-reads rsem-bam2wig rsem-get-unique rsem-bam2readdepth rsem-sam-validator rsem-scan-for-paired-end-reads pRSEM/bigWigSummary pRSEM/RLib pRSEM/filterSam2Bed
 
+OS := $(shell uname)
+ifeq ($(OS),Darwin)
+	UCSCEXEDIR = http://hgdownload.cse.ucsc.edu/admin/exe/macOSX.x86_64
+endif
+ifeq ($(OS), Linux)
+	UCSCEXEDIR = http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64.v287
+endif
+
 .PHONY : all ebseq clean
 
 all : $(PROGRAMS)
@@ -143,8 +151,8 @@ ebseq :
 	cd EBSeq ; ${MAKE} all
 
 pRSEM/bigWigSummary : 
-	if [ ! -e "pRSEM/bigWigSummary" ]; then cd pRSEM/ ; \
-	wget -nc http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64.v287/bigWigSummary -O bigWigSummary; \
+	if [ ! -e "pRSEM/bigWigSummary" ]; then cd pRSEM/; \
+	curl -O $(UCSCEXEDIR)/bigWigSummary; \
 	chmod +x bigWigSummary; \
 	fi
 
