@@ -48,7 +48,7 @@ installRLib <- function(param) {
   prsem_installed_pkgs <- rownames(installed.packages(lib.loc=param$lib_loc))
 
   if ( ! 'devtools' %in% prsem_installed_pkgs ) {
-    install.packages('devtools', lib=param$lib_loc)
+    install.packages('devtools', lib=param$lib_loc, type='source')
   }
 
   .libPaths(c(param$lib_loc, .libPaths()))
@@ -58,7 +58,7 @@ installRLib <- function(param) {
     pkg_version <- param$pkg2ver[[pkg_name]]
     if ( ! pkg_name %in% prsem_installed_pkgs ) {
       install_version(pkg_name, version=pkg_version, repos=param$repos,
-                      lib=param$lib_loc)
+                      lib=param$lib_loc, type='source')
     }
   }
 
