@@ -67,8 +67,8 @@ void loadMappingInfo(int file_type, char* mappingF) {
   fin.close();
 }
 
-char check(char c) {
-	if (!isalpha(c)) { fprintf(stderr, "Sequence contains unknown letter '%c'!\n", c); exit(-1); }
+char check(char c, int line) {
+	if (!isalpha(c)) { fprintf(stderr, "Sequence contains unknown letter '%c' at line %d!\n", c, line); exit(-1); }
 	//assert(isalpha(c));
 	if (isupper(c) && c != 'A' && c != 'C' && c != 'G' && c != 'T') c = 'N';
 	if (islower(c) && c != 'a' && c != 'c' && c != 'g' && c != 't') c = 'n';
@@ -161,19 +161,22 @@ int main(int argc, char* argv[]) {
 	for (int i = start; i < argc; i++) {
 		fin.open(argv[i]);
 		general_assert(fin.is_open(), "Cannot open " + cstrtos(argv[i]) + "! It may not exist."); 
+		unsigned long int line_no = 0; //Keep track of file line number
 		getline(fin, line);
+		line_no += 1;
 		while ((fin) && (line[0] == '>')) {
 			istringstream strin(line.substr(1));
 			strin>>seqname;
 
 			gseq = "";
 			while((getline(fin, line)) && (line[0] != '>')) {
+			    line_no += 1;
 			    gseq += line;
 			}
 
 			int len = gseq.length();
 			assert(len > 0);
-			for (int j = 0; j < len; j++) gseq[j] = check(gseq[j]);
+			for (int j = 0; j < len; j++) gseq[j] = check(gseq[j],line_no);
 
 			name2seq[seqname] = gseq;
 
