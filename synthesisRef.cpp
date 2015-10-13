@@ -67,9 +67,9 @@ void loadMappingInfo(int file_type, char* mappingF) {
   fin.close();
 }
 
-char check(char c) {
-	if (!isalpha(c)) { fprintf(stderr, "Sequence contains unknown letter '%c'!\n", c); exit(-1); }
-	//assert(isalpha(c));
+
+inline char check(char c, string& seqname, int pos) {
+	general_assert(isalpha(c), "Sequence " + seqname + " contains an unknown letter (ASCII code " + itos(c) + ") at 0-based position " + itos(pos) + "!");
 	if (isupper(c) && c != 'A' && c != 'C' && c != 'G' && c != 'T') c = 'N';
 	if (islower(c) && c != 'a' && c != 'c' && c != 'g' && c != 't') c = 'n';
 	return c;
@@ -173,8 +173,7 @@ int main(int argc, char* argv[]) {
 
 			int len = gseq.length();
 			assert(len > 0);
-			for (int j = 0; j < len; j++) gseq[j] = check(gseq[j]);
-
+			for (int j = 0; j < len; j++) gseq[j] = check(gseq[j], seqname, j);
 			name2seq[seqname] = gseq;
 
 			transcript_id = seqname;
