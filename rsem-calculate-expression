@@ -1096,7 +1096,8 @@ Assume the path to the bowtie executables is in the user's PATH environment vari
 
 6) '/data/mmliver_1.fq.gz' and '/data/mmliver_2.fq.gz', paired-end reads with quality scores and read files are compressed by gzip. We want to use STAR to aligned reads and assume STAR executable is '/sw/STAR'. Suppose we want to use 8 threads and do not generate a genome BAM file:
 
- rsem-calculate-expression --star \
+ rsem-calculate-expression --paired-end \
+                           --star \
                            --star-path /sw/STAR \
                            --gzipped-read-file \
                            -p 8 \
