@@ -4,571 +4,581 @@
 <head>
 <title>rsem-calculate-expression</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:root@localhost" />
+<link rev="made" href="mailto:root@osx004.apple.com" />
 </head>
 
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#arguments">ARGUMENTS</a></li>
-	<li><a href="#basic_options">BASIC OPTIONS</a></li>
-	<li><a href="#advanced_options">ADVANCED OPTIONS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#output">OUTPUT</a></li>
-	<li><a href="#examples">EXAMPLES</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#ARGUMENTS">ARGUMENTS</a></li>
+  <li><a href="#BASIC-OPTIONS">BASIC OPTIONS</a></li>
+  <li><a href="#ADVANCED-OPTIONS">ADVANCED OPTIONS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OUTPUT">OUTPUT</a></li>
+  <li><a href="#EXAMPLES">EXAMPLES</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<h1><a name="name">NAME</a></h1>
 <p>rsem-calculate-expression</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
- rsem-calculate-expression [options] upstream_read_file(s) reference_name sample_name 
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code> rsem-calculate-expression [options] upstream_read_file(s) reference_name sample_name 
  rsem-calculate-expression [options] --paired-end upstream_read_file(s) downstream_read_file(s) reference_name sample_name 
- rsem-calculate-expression [options] --sam/--bam [--paired-end] input reference_name sample_name</pre>
-<p>
-</p>
-<hr />
-<h1><a name="arguments">ARGUMENTS</a></h1>
+ rsem-calculate-expression [options] --sam/--bam [--paired-end] input reference_name sample_name</code></pre>
+
+<h1 id="ARGUMENTS">ARGUMENTS</h1>
+
 <dl>
-<dt><strong><a name="upstream_read_files" class="item"><strong>upstream_read_files(s)</strong></a></strong></dt>
 
+<dt id="upstream_read_files-s"><b>upstream_read_files(s)</b></dt>
 <dd>
-<p>Comma-separated list of files containing single-end reads or upstream reads for paired-end data.  By default, these files are assumed to be in FASTQ format.  If the --no-qualities option is specified, then FASTA format is expected.</p>
+
+<p>Comma-separated list of files containing single-end reads or upstream reads for paired-end data. By default, these files are assumed to be in FASTQ format. If the --no-qualities option is specified, then FASTA format is expected.</p>
+
 </dd>
-<dt><strong><a name="downstream_read_file" class="item"><strong>downstream_read_file(s)</strong></a></strong></dt>
-
+<dt id="downstream_read_file-s"><b>downstream_read_file(s)</b></dt>
 <dd>
-<p>Comma-separated list of files containing downstream reads which are paired with the upstream reads.  By default, these files are assumed to be in FASTQ format.  If the --no-qualities option is specified, then FASTA format is expected.</p>
+
+<p>Comma-separated list of files containing downstream reads which are paired with the upstream reads. By default, these files are assumed to be in FASTQ format. If the --no-qualities option is specified, then FASTA format is expected.</p>
+
 </dd>
-<dt><strong><a name="input" class="item"><strong>input</strong></a></strong></dt>
-
+<dt id="input"><b>input</b></dt>
 <dd>
-<p>SAM/BAM formatted input file.  If &quot;-&quot; is specified for the filename, SAM/BAM input is instead assumed to come from standard input. RSEM requires all alignments of the same read group together. For paired-end reads, RSEM also requires the two mates of any alignment be adjacent. See Description section for how to make input file obey RSEM's requirements.</p>
+
+<p>SAM/BAM formatted input file. If &quot;-&quot; is specified for the filename, SAM/BAM input is instead assumed to come from standard input. RSEM requires all alignments of the same read group together. For paired-end reads, RSEM also requires the two mates of any alignment be adjacent. See Description section for how to make input file obey RSEM&#39;s requirements.</p>
+
 </dd>
-<dt><strong><a name="reference_name" class="item"><strong>reference_name</strong></a></strong></dt>
-
+<dt id="reference_name"><b>reference_name</b></dt>
 <dd>
-<p>The name of the reference used.  The user must have run 'rsem-prepare-reference' with this reference_name before running this program.</p>
+
+<p>The name of the reference used. The user must have run &#39;rsem-prepare-reference&#39; with this reference_name before running this program.</p>
+
 </dd>
-<dt><strong><a name="sample_name" class="item"><strong>sample_name</strong></a></strong></dt>
-
+<dt id="sample_name"><b>sample_name</b></dt>
 <dd>
+
 <p>The name of the sample analyzed. All output files are prefixed by this name (e.g., sample_name.genes.results)</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="basic_options">BASIC OPTIONS</a></h1>
-<dl>
-<dt><strong><a name="paired_end" class="item"><strong>--paired-end</strong></a></strong></dt>
 
+<h1 id="BASIC-OPTIONS">BASIC OPTIONS</h1>
+
+<dl>
+
+<dt id="paired-end"><b>--paired-end</b></dt>
 <dd>
+
 <p>Input reads are paired-end reads. (Default: off)</p>
-</dd>
-<dt><strong><a name="no_qualities" class="item"><strong>--no-qualities</strong></a></strong></dt>
 
+</dd>
+<dt id="no-qualities"><b>--no-qualities</b></dt>
 <dd>
+
 <p>Input reads do not contain quality scores. (Default: off)</p>
-</dd>
-<dt><strong><a name="strand_specific" class="item"><strong>--strand-specific</strong></a></strong></dt>
 
-<dd>
-<p>The RNA-Seq protocol used to generate the reads is strand specific, i.e., all (upstream) reads are derived from the forward strand.  This option is equivalent to --forward-prob=1.0.  With this option set, if RSEM runs the Bowtie/Bowtie 2 aligner, the '--norc' Bowtie/Bowtie 2 option will be used, which disables alignment to the reverse strand of transcripts.  (Default: off)</p>
 </dd>
-<dt><strong><a name="bowtie2" class="item"><strong>--bowtie2</strong></a></strong></dt>
-
+<dt id="strand-specific"><b>--strand-specific</b></dt>
 <dd>
-<p>Use Bowtie 2 instead of Bowtie to align reads. Since currently RSEM does not handle indel, local and discordant alignments, the Bowtie2 parameters are set in a way to avoid those alignments. In particular, we use options '--sensitive --dpad 0 --gbar 99999999 --mp 1,1 --np 1 --score-min L,0,-0.1' by default. The last parameter of '--score-min', '-0.1', is the negative of maximum mismatch rate. This rate can be set by option '--bowtie2-mismatch-rate'. If reads are paired-end, we additionally use options '--no-mixed' and '--no-discordant'. (Default: off)</p>
+
+<p>The RNA-Seq protocol used to generate the reads is strand specific, i.e., all (upstream) reads are derived from the forward strand. This option is equivalent to --forward-prob=1.0. With this option set, if RSEM runs the Bowtie/Bowtie 2 aligner, the &#39;--norc&#39; Bowtie/Bowtie 2 option will be used, which disables alignment to the reverse strand of transcripts. (Default: off)</p>
+
 </dd>
-<dt><strong><a name="star" class="item"><strong>--star</strong></a></strong></dt>
-
+<dt id="bowtie2"><b>--bowtie2</b></dt>
 <dd>
-<p>Use STAR to align reads. Alignment parameters are from ENCODE3's STAR-RSEM pipeline. To save computational time and memory resources, STAR's Output BAM file is unsorted. It is stored in RSEM's temporary directory with name as 'sample_name.bam'. Each STAR job will have its own private copy of the genome in memory. (Default: off)</p>
+
+<p>Use Bowtie 2 instead of Bowtie to align reads. Since currently RSEM does not handle indel, local and discordant alignments, the Bowtie2 parameters are set in a way to avoid those alignments. In particular, we use options &#39;--sensitive --dpad 0 --gbar 99999999 --mp 1,1 --np 1 --score-min L,0,-0.1&#39; by default. The last parameter of &#39;--score-min&#39;, &#39;-0.1&#39;, is the negative of maximum mismatch rate. This rate can be set by option &#39;--bowtie2-mismatch-rate&#39;. If reads are paired-end, we additionally use options &#39;--no-mixed&#39; and &#39;--no-discordant&#39;. (Default: off)</p>
+
 </dd>
-<dt><strong><a name="star_path_path" class="item"><strong>--star-path</strong> &lt;path&gt;</a></strong></dt>
-
+<dt id="star"><b>--star</b></dt>
 <dd>
-<p>The path to STAR's executable. (Default: the path to STAR executable is assumed to be in user's PATH environment variable)</p>
+
+<p>Use STAR to align reads. Alignment parameters are from ENCODE3&#39;s STAR-RSEM pipeline. To save computational time and memory resources, STAR&#39;s Output BAM file is unsorted. It is stored in RSEM&#39;s temporary directory with name as &#39;sample_name.bam&#39;. Each STAR job will have its own private copy of the genome in memory. (Default: off)</p>
+
 </dd>
-<dt><strong><a name="sam" class="item"><strong>--sam</strong></a></strong></dt>
-
+<dt id="star-path-path"><b>--star-path</b> &lt;path&gt;</dt>
 <dd>
+
+<p>The path to STAR&#39;s executable. (Default: the path to STAR executable is assumed to be in user&#39;s PATH environment variable)</p>
+
+</dd>
+<dt id="sam"><b>--sam</b></dt>
+<dd>
+
 <p>Input file is in SAM format. (Default: off)</p>
-</dd>
-<dt><strong><a name="bam" class="item"><strong>--bam</strong></a></strong></dt>
 
+</dd>
+<dt id="bam"><b>--bam</b></dt>
 <dd>
+
 <p>Input file is in BAM format. (Default: off)</p>
-</dd>
-<dt><strong><a name="p_num_threads_int" class="item"><strong>-p/--num-threads</strong> &lt;int&gt;</a></strong></dt>
 
-<dd>
-<p>Number of threads to use. Both Bowtie/Bowtie2, expression estimation and 'samtools sort' will use this many threads. (Default: 1)</p>
 </dd>
-<dt><strong><a name="no_bam_output" class="item"><strong>--no-bam-output</strong></a></strong></dt>
-
+<dt id="p---num-threads-int"><b>-p/--num-threads</b> &lt;int&gt;</dt>
 <dd>
+
+<p>Number of threads to use. Both Bowtie/Bowtie2, expression estimation and &#39;samtools sort&#39; will use this many threads. (Default: 1)</p>
+
+</dd>
+<dt id="no-bam-output"><b>--no-bam-output</b></dt>
+<dd>
+
 <p>Do not output any BAM file. (Default: off)</p>
-</dd>
-<dt><strong><a name="output_genome_bam" class="item"><strong>--output-genome-bam</strong></a></strong></dt>
 
-<dd>
-<p>Generate a BAM file, 'sample_name.genome.bam', with alignments mapped to genomic coordinates and annotated with their posterior probabilities. In addition, RSEM will call samtools (included in RSEM package) to sort and index the bam file. 'sample_name.genome.sorted.bam' and 'sample_name.genome.sorted.bam.bai' will be generated. (Default: off)</p>
 </dd>
-<dt><strong><a name="sampling_for_bam" class="item"><strong>--sampling-for-bam</strong></a></strong></dt>
-
+<dt id="output-genome-bam"><b>--output-genome-bam</b></dt>
 <dd>
+
+<p>Generate a BAM file, &#39;sample_name.genome.bam&#39;, with alignments mapped to genomic coordinates and annotated with their posterior probabilities. In addition, RSEM will call samtools (included in RSEM package) to sort and index the bam file. &#39;sample_name.genome.sorted.bam&#39; and &#39;sample_name.genome.sorted.bam.bai&#39; will be generated. (Default: off)</p>
+
+</dd>
+<dt id="sampling-for-bam"><b>--sampling-for-bam</b></dt>
+<dd>
+
 <p>When RSEM generates a BAM file, instead of outputing all alignments a read has with their posterior probabilities, one alignment is sampled according to the posterior probabilities. The sampling procedure includes the alignment to the &quot;noise&quot; transcript, which does not appear in the BAM file. Only the sampled alignment has a weight of 1. All other alignments have weight 0. If the &quot;noise&quot; transcript is sampled, all alignments appeared in the BAM file should have weight 0. (Default: off)</p>
-</dd>
-<dt><strong><a name="seed_uint32" class="item"><strong>--seed</strong> &lt;uint32&gt;</a></strong></dt>
 
+</dd>
+<dt id="seed-uint32"><b>--seed</b> &lt;uint32&gt;</dt>
 <dd>
+
 <p>Set the seed for the random number generators used in calculating posterior mean estimates and credibility intervals. The seed must be a non-negative 32 bit interger. (Default: off)</p>
-</dd>
-<dt><strong><a name="calc_pme" class="item"><strong>--calc-pme</strong></a></strong></dt>
 
-<dd>
-<p>Run RSEM's collapsed Gibbs sampler to calculate posterior mean estimates. (Default: off)</p>
 </dd>
-<dt><strong><a name="calc_ci" class="item"><strong>--calc-ci</strong></a></strong></dt>
-
+<dt id="calc-pme"><b>--calc-pme</b></dt>
 <dd>
-<p>Calculate 95% credibility intervals and posterior mean estimates. The credibility level can be changed by setting '--ci-credibility-level'. (Default: off)</p>
+
+<p>Run RSEM&#39;s collapsed Gibbs sampler to calculate posterior mean estimates. (Default: off)</p>
+
 </dd>
-<dt><strong><a name="q_quiet" class="item"><strong>-q/--quiet</strong></a></strong></dt>
-
+<dt id="calc-ci"><b>--calc-ci</b></dt>
 <dd>
+
+<p>Calculate 95% credibility intervals and posterior mean estimates. The credibility level can be changed by setting &#39;--ci-credibility-level&#39;. (Default: off)</p>
+
+</dd>
+<dt id="q---quiet"><b>-q/--quiet</b></dt>
+<dd>
+
 <p>Suppress the output of logging information. (Default: off)</p>
-</dd>
-<dt><strong><a name="h_help" class="item"><strong>-h/--help</strong></a></strong></dt>
 
+</dd>
+<dt id="h---help"><b>-h/--help</b></dt>
 <dd>
+
 <p>Show help information.</p>
-</dd>
-<dt><strong><a name="version" class="item"><strong>--version</strong></a></strong></dt>
 
+</dd>
+<dt id="version"><b>--version</b></dt>
 <dd>
+
 <p>Show version information.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="advanced_options">ADVANCED OPTIONS</a></h1>
-<dl>
-<dt><strong><a name="sam_header_info_file" class="item"><strong>--sam-header-info</strong> &lt;file&gt;</a></strong></dt>
 
+<h1 id="ADVANCED-OPTIONS">ADVANCED OPTIONS</h1>
+
+<dl>
+
+<dt id="sam-header-info-file"><b>--sam-header-info</b> &lt;file&gt;</dt>
 <dd>
+
 <p>RSEM reads header information from input by default. If this option is on, header information is read from the specified file. For the format of the file, please see SAM official website. (Default: &quot;&quot;)</p>
-</dd>
-<dt><strong><a name="seed_length_int" class="item"><strong>--seed-length</strong> &lt;int&gt;</a></strong></dt>
 
-<dd>
-<p>Seed length used by the read aligner.  Providing the correct value is important for RSEM. If RSEM runs Bowtie, it uses this value for Bowtie's seed length parameter. Any read with its or at least one of its mates' (for paired-end reads) length less than this value will be ignored. If the references are not added poly(A) tails, the minimum allowed value is 5, otherwise, the minimum allowed value is 25. Note that this script will only check if the value &gt;= 5 and give a warning message if the value &lt; 25 but &gt;= 5. (Default: 25)</p>
 </dd>
-<dt><strong><a name="tag_string" class="item"><strong>--tag</strong> &lt;string&gt;</a></strong></dt>
-
+<dt id="seed-length-int"><b>--seed-length</b> &lt;int&gt;</dt>
 <dd>
+
+<p>Seed length used by the read aligner. Providing the correct value is important for RSEM. If RSEM runs Bowtie, it uses this value for Bowtie&#39;s seed length parameter. Any read with its or at least one of its mates&#39; (for paired-end reads) length less than this value will be ignored. If the references are not added poly(A) tails, the minimum allowed value is 5, otherwise, the minimum allowed value is 25. Note that this script will only check if the value &gt;= 5 and give a warning message if the value &lt; 25 but &gt;= 5. (Default: 25)</p>
+
+</dd>
+<dt id="tag-string"><b>--tag</b> &lt;string&gt;</dt>
+<dd>
+
 <p>The name of the optional field used in the SAM input for identifying a read with too many valid alignments. The field should have the format &lt;tagName&gt;:i:&lt;value&gt;, where a &lt;value&gt; bigger than 0 indicates a read with too many alignments. (Default: &quot;&quot;)</p>
-</dd>
-<dt><strong><a name="bowtie_path_path" class="item"><strong>--bowtie-path</strong> &lt;path&gt;</a></strong></dt>
 
-<dd>
-<p>The path to the Bowtie executables. (Default: the path to the Bowtie executables is assumed to be in the user's PATH environment variable)</p>
 </dd>
-<dt><strong><a name="bowtie_n_int" class="item"><strong>--bowtie-n</strong> &lt;int&gt;</a></strong></dt>
-
+<dt id="bowtie-path-path"><b>--bowtie-path</b> &lt;path&gt;</dt>
 <dd>
+
+<p>The path to the Bowtie executables. (Default: the path to the Bowtie executables is assumed to be in the user&#39;s PATH environment variable)</p>
+
+</dd>
+<dt id="bowtie-n-int"><b>--bowtie-n</b> &lt;int&gt;</dt>
+<dd>
+
 <p>(Bowtie parameter) max # of mismatches in the seed. (Range: 0-3, Default: 2)</p>
-</dd>
-<dt><strong><a name="bowtie_e_int" class="item"><strong>--bowtie-e</strong> &lt;int&gt;</a></strong></dt>
 
+</dd>
+<dt id="bowtie-e-int"><b>--bowtie-e</b> &lt;int&gt;</dt>
 <dd>
+
 <p>(Bowtie parameter) max sum of mismatch quality scores across the alignment. (Default: 99999999)</p>
-</dd>
-<dt><strong><a name="bowtie_m_int" class="item"><strong>--bowtie-m</strong> &lt;int&gt;</a></strong></dt>
 
+</dd>
+<dt id="bowtie-m-int"><b>--bowtie-m</b> &lt;int&gt;</dt>
 <dd>
+
 <p>(Bowtie parameter) suppress all alignments for a read if &gt; &lt;int&gt; valid alignments exist. (Default: 200)</p>
-</dd>
-<dt><strong><a name="bowtie_chunkmbs_int" class="item"><strong>--bowtie-chunkmbs</strong> &lt;int&gt;</a></strong></dt>
 
-<dd>
-<p>(Bowtie parameter) memory allocated for best first alignment calculation (Default: 0 - use Bowtie's default)</p>
 </dd>
-<dt><strong><a name="phred33_quals" class="item"><strong>--phred33-quals</strong></a></strong></dt>
-
+<dt id="bowtie-chunkmbs-int"><b>--bowtie-chunkmbs</b> &lt;int&gt;</dt>
 <dd>
+
+<p>(Bowtie parameter) memory allocated for best first alignment calculation (Default: 0 - use Bowtie&#39;s default)</p>
+
+</dd>
+<dt id="phred33-quals"><b>--phred33-quals</b></dt>
+<dd>
+
 <p>Input quality scores are encoded as Phred+33. (Default: on)</p>
-</dd>
-<dt><strong><a name="phred64_quals" class="item"><strong>--phred64-quals</strong></a></strong></dt>
 
+</dd>
+<dt id="phred64-quals"><b>--phred64-quals</b></dt>
 <dd>
+
 <p>Input quality scores are encoded as Phred+64 (default for GA Pipeline ver. &gt;= 1.3). (Default: off)</p>
-</dd>
-<dt><strong><a name="solexa_quals" class="item"><strong>--solexa-quals</strong></a></strong></dt>
 
+</dd>
+<dt id="solexa-quals"><b>--solexa-quals</b></dt>
 <dd>
+
 <p>Input quality scores are solexa encoded (from GA Pipeline ver. &lt; 1.3). (Default: off)</p>
-</dd>
-<dt><strong><a name="bowtie2_path_path" class="item"><strong>--bowtie2-path</strong> &lt;path&gt;</a></strong></dt>
 
-<dd>
-<p>(Bowtie 2 parameter) The path to the Bowtie 2 executables. (Default: the path to the Bowtie 2 executables is assumed to be in the user's PATH environment variable)</p>
 </dd>
-<dt><strong><a name="bowtie2_mismatch_rate_double" class="item"><strong>--bowtie2-mismatch-rate</strong> &lt;double&gt;</a></strong></dt>
-
+<dt id="bowtie2-path-path"><b>--bowtie2-path</b> &lt;path&gt;</dt>
 <dd>
+
+<p>(Bowtie 2 parameter) The path to the Bowtie 2 executables. (Default: the path to the Bowtie 2 executables is assumed to be in the user&#39;s PATH environment variable)</p>
+
+</dd>
+<dt id="bowtie2-mismatch-rate-double"><b>--bowtie2-mismatch-rate</b> &lt;double&gt;</dt>
+<dd>
+
 <p>(Bowtie 2 parameter) The maximum mismatch rate allowed. (Default: 0.1)</p>
-</dd>
-<dt><strong><a name="bowtie2_k_int" class="item"><strong>--bowtie2-k</strong> &lt;int&gt;</a></strong></dt>
 
+</dd>
+<dt id="bowtie2-k-int"><b>--bowtie2-k</b> &lt;int&gt;</dt>
 <dd>
+
 <p>(Bowtie 2 parameter) Find up to &lt;int&gt; alignments per read. (Default: 200)</p>
-</dd>
-<dt><strong><a name="bowtie2_sensitivity_level_string" class="item"><strong>--bowtie2-sensitivity-level</strong> &lt;string&gt;</a></strong></dt>
 
-<dd>
-<p>(Bowtie 2 parameter) Set Bowtie 2's preset options in --end-to-end mode. This option controls how hard Bowtie 2 tries to find alignments. &lt;string&gt; must be one of &quot;very_fast&quot;, &quot;fast&quot;, &quot;sensitive&quot; and &quot;very_sensitive&quot;. The four candidates correspond to Bowtie 2's &quot;--very-fast&quot;, &quot;--fast&quot;, &quot;--sensitive&quot; and &quot;--very-sensitive&quot; options. (Default: &quot;sensitive&quot; - use Bowtie 2's default)</p>
 </dd>
-<dt><strong><a name="gzipped_read_file" class="item"><strong>--gzipped-read-file</strong></a></strong></dt>
-
+<dt id="bowtie2-sensitivity-level-string"><b>--bowtie2-sensitivity-level</b> &lt;string&gt;</dt>
 <dd>
+
+<p>(Bowtie 2 parameter) Set Bowtie 2&#39;s preset options in --end-to-end mode. This option controls how hard Bowtie 2 tries to find alignments. &lt;string&gt; must be one of &quot;very_fast&quot;, &quot;fast&quot;, &quot;sensitive&quot; and &quot;very_sensitive&quot;. The four candidates correspond to Bowtie 2&#39;s &quot;--very-fast&quot;, &quot;--fast&quot;, &quot;--sensitive&quot; and &quot;--very-sensitive&quot; options. (Default: &quot;sensitive&quot; - use Bowtie 2&#39;s default)</p>
+
+</dd>
+<dt id="gzipped-read-file"><b>--gzipped-read-file</b></dt>
+<dd>
+
 <p>Input read file(s) is compressed by gzip. This option can be only used when aligning reads by STAR, i.e. --star-genome-path &lt;path&gt; is defined (Default: off)</p>
-</dd>
-<dt><strong><a name="bzipped_read_file" class="item"><strong>--bzipped-read-file</strong></a></strong></dt>
 
+</dd>
+<dt id="bzipped-read-file"><b>--bzipped-read-file</b></dt>
 <dd>
+
 <p>Input read file(s) is compressed by bzip2. This option can be only used when aligning reads by STAR, i.e. --star-genome-path &lt;path&gt; is defined (Default: off)</p>
-</dd>
-<dt><strong><a name="output_star_genome_bam" class="item"><strong>--output-star-genome-bam</strong></a></strong></dt>
 
-<dd>
-<p>Save the BAM file from STAR alignment under genomic coordinate to 'sample_name.STAR.genome.bam'. This file is NOT sorted by genomic coordinate. In this file, according to STAR's manual, 'paired ends of an alignment are always adjacent, and multiple alignments of a read are adjacent as well'. (Default: off)</p>
 </dd>
-<dt><strong><a name="sort_bam_by_read_name" class="item"><strong>--sort-bam-by-read-name</strong></a></strong></dt>
-
+<dt id="output-star-genome-bam"><b>--output-star-genome-bam</b></dt>
 <dd>
+
+<p>Save the BAM file from STAR alignment under genomic coordinate to &#39;sample_name.STAR.genome.bam&#39;. This file is NOT sorted by genomic coordinate. In this file, according to STAR&#39;s manual, &#39;paired ends of an alignment are always adjacent, and multiple alignments of a read are adjacent as well&#39;. (Default: off)</p>
+
+</dd>
+<dt id="sort-bam-by-read-name"><b>--sort-bam-by-read-name</b></dt>
+<dd>
+
 <p>Sort BAM file aligned under transcript coordidate by read name. Setting this option on will produce determinstic maximum likelihood estimations from independet runs. Note that sorting will take long time and lots of memory. (Default: off)</p>
-</dd>
-<dt><strong><a name="sort_bam_buffer_size_string" class="item"><strong>--sort-bam-buffer-size</strong> &lt;string&gt;</a></strong></dt>
 
-<dd>
-<p>Size for main memeory buffer when sorting BAM file. It can be any string acceptable to GNU sort's '-S' option. See &quot;sort --help&quot; for details. (Default: '60G')</p>
 </dd>
-<dt><strong><a name="forward_prob_double" class="item"><strong>--forward-prob</strong> &lt;double&gt;</a></strong></dt>
-
+<dt id="sort-bam-buffer-size-string"><b>--sort-bam-buffer-size</b> &lt;string&gt;</dt>
 <dd>
+
+<p>Size for main memeory buffer when sorting BAM file. It can be any string acceptable to GNU sort&#39;s &#39;-S&#39; option. See &quot;sort --help&quot; for details. (Default: &#39;60G&#39;)</p>
+
+</dd>
+<dt id="forward-prob-double"><b>--forward-prob</b> &lt;double&gt;</dt>
+<dd>
+
 <p>Probability of generating a read from the forward strand of a transcript. Set to 1 for a strand-specific protocol where all (upstream) reads are derived from the forward strand, 0 for a strand-specific protocol where all (upstream) read are derived from the reverse strand, or 0.5 for a non-strand-specific protocol. (Default: 0.5)</p>
-</dd>
-<dt><strong><a name="fragment_length_min_int" class="item"><strong>--fragment-length-min</strong> &lt;int&gt;</a></strong></dt>
 
+</dd>
+<dt id="fragment-length-min-int"><b>--fragment-length-min</b> &lt;int&gt;</dt>
 <dd>
+
 <p>Minimum read/insert length allowed. This is also the value for the Bowtie/Bowtie2 -I option. (Default: 1)</p>
-</dd>
-<dt><strong><a name="fragment_length_max_int" class="item"><strong>--fragment-length-max</strong> &lt;int&gt;</a></strong></dt>
 
+</dd>
+<dt id="fragment-length-max-int"><b>--fragment-length-max</b> &lt;int&gt;</dt>
 <dd>
+
 <p>Maximum read/insert length allowed. This is also the value for the Bowtie/Bowtie 2 -X option. (Default: 1000)</p>
-</dd>
-<dt><strong><a name="fragment_length_mean_double" class="item"><strong>--fragment-length-mean</strong> &lt;double&gt;</a></strong></dt>
 
+</dd>
+<dt id="fragment-length-mean-double"><b>--fragment-length-mean</b> &lt;double&gt;</dt>
 <dd>
+
 <p>(single-end data only) The mean of the fragment length distribution, which is assumed to be a Gaussian. (Default: -1, which disables use of the fragment length distribution)</p>
-</dd>
-<dt><strong><a name="fragment_length_sd_double" class="item"><strong>--fragment-length-sd</strong> &lt;double&gt;</a></strong></dt>
 
-<dd>
-<p>(single-end data only) The standard deviation of the fragment length distribution, which is assumed to be a Gaussian.  (Default: 0, which assumes that all fragments are of the same length, given by the rounded value of <strong>--fragment-length-mean</strong>)</p>
 </dd>
-<dt><strong><a name="estimate_rspd" class="item"><strong>--estimate-rspd</strong></a></strong></dt>
-
+<dt id="fragment-length-sd-double"><b>--fragment-length-sd</b> &lt;double&gt;</dt>
 <dd>
+
+<p>(single-end data only) The standard deviation of the fragment length distribution, which is assumed to be a Gaussian. (Default: 0, which assumes that all fragments are of the same length, given by the rounded value of <b>--fragment-length-mean</b>)</p>
+
+</dd>
+<dt id="estimate-rspd"><b>--estimate-rspd</b></dt>
+<dd>
+
 <p>Set this option if you want to estimate the read start position distribution (RSPD) from data. Otherwise, RSEM will use a uniform RSPD. (Default: off)</p>
-</dd>
-<dt><strong><a name="num_rspd_bins_int" class="item"><strong>--num-rspd-bins</strong> &lt;int&gt;</a></strong></dt>
 
-<dd>
-<p>Number of bins in the RSPD. Only relevant when '--estimate-rspd' is specified.  Use of the default setting is recommended. (Default: 20)</p>
 </dd>
-<dt><strong><a name="gibbs_burnin_int" class="item"><strong>--gibbs-burnin</strong> &lt;int&gt;</a></strong></dt>
-
+<dt id="num-rspd-bins-int"><b>--num-rspd-bins</b> &lt;int&gt;</dt>
 <dd>
-<p>The number of burn-in rounds for RSEM's Gibbs sampler. Each round passes over the entire data set once. If RSEM can use multiple threads, multiple Gibbs samplers will start at the same time and all samplers share the same burn-in number. (Default: 200)</p>
+
+<p>Number of bins in the RSPD. Only relevant when &#39;--estimate-rspd&#39; is specified. Use of the default setting is recommended. (Default: 20)</p>
+
 </dd>
-<dt><strong><a name="gibbs_number_of_samples_int" class="item"><strong>--gibbs-number-of-samples</strong> &lt;int&gt;</a></strong></dt>
-
+<dt id="gibbs-burnin-int"><b>--gibbs-burnin</b> &lt;int&gt;</dt>
 <dd>
+
+<p>The number of burn-in rounds for RSEM&#39;s Gibbs sampler. Each round passes over the entire data set once. If RSEM can use multiple threads, multiple Gibbs samplers will start at the same time and all samplers share the same burn-in number. (Default: 200)</p>
+
+</dd>
+<dt id="gibbs-number-of-samples-int"><b>--gibbs-number-of-samples</b> &lt;int&gt;</dt>
+<dd>
+
 <p>The total number of count vectors RSEM will collect from its Gibbs samplers. (Default: 1000)</p>
-</dd>
-<dt><strong><a name="gibbs_sampling_gap_int" class="item"><strong>--gibbs-sampling-gap</strong> &lt;int&gt;</a></strong></dt>
 
+</dd>
+<dt id="gibbs-sampling-gap-int"><b>--gibbs-sampling-gap</b> &lt;int&gt;</dt>
 <dd>
+
 <p>The number of rounds between two succinct count vectors RSEM collects. If the count vector after round N is collected, the count vector after round N + &lt;int&gt; will also be collected. (Default: 1)</p>
-</dd>
-<dt><strong><a name="ci_credibility_level_double" class="item"><strong>--ci-credibility-level</strong> &lt;double&gt;</a></strong></dt>
 
+</dd>
+<dt id="ci-credibility-level-double"><b>--ci-credibility-level</b> &lt;double&gt;</dt>
 <dd>
+
 <p>The credibility level for credibility intervals. (Default: 0.95)</p>
-</dd>
-<dt><strong><a name="ci_memory_int" class="item"><strong>--ci-memory</strong> &lt;int&gt;</a></strong></dt>
 
+</dd>
+<dt id="ci-memory-int"><b>--ci-memory</b> &lt;int&gt;</dt>
 <dd>
+
 <p>Maximum size (in memory, MB) of the auxiliary buffer used for computing credibility intervals (CI). Set it larger for a faster CI calculation. However, leaving 2 GB memory free for other usage is recommended. (Default: 1024)</p>
-</dd>
-<dt><strong><a name="ci_number_of_samples_per_count_vector_int" class="item"><strong>--ci-number-of-samples-per-count-vector</strong> &lt;int&gt;</a></strong></dt>
 
+</dd>
+<dt id="ci-number-of-samples-per-count-vector-int"><b>--ci-number-of-samples-per-count-vector</b> &lt;int&gt;</dt>
 <dd>
+
 <p>The number of read generating probability vectors sampled per sampled count vector. The crebility intervals are calculated by first sampling P(C | D) and then sampling P(Theta | C) for each sampled count vector. This option controls how many Theta vectors are sampled per sampled count vector. (Default: 50)</p>
-</dd>
-<dt><strong><a name="samtools_sort_mem_string" class="item"><strong>--samtools-sort-mem</strong> &lt;string&gt;</a></strong></dt>
 
-<dd>
-<p>Set the maximum memory per thread that can be used by 'samtools sort'. &lt;string&gt; represents the memory and accepts suffices 'K/M/G'. RSEM will pass &lt;string&gt; to the '-m' option of 'samtools sort'.  Please note that the default used here is different from the default used by samtools. (Default: 1G)</p>
 </dd>
-<dt><strong><a name="keep_intermediate_files" class="item"><strong>--keep-intermediate-files</strong></a></strong></dt>
-
+<dt id="samtools-sort-mem-string"><b>--samtools-sort-mem</b> &lt;string&gt;</dt>
 <dd>
-<p>Keep temporary files generated by RSEM.  RSEM creates a temporary directory, 'sample_name.temp', into which it puts all intermediate output files. If this directory already exists, RSEM overwrites all files generated by previous RSEM runs inside of it. By default, after RSEM finishes, the temporary directory is deleted.  Set this option to prevent the deletion of this directory and the intermediate files inside of it. (Default: off)</p>
+
+<p>Set the maximum memory per thread that can be used by &#39;samtools sort&#39;. &lt;string&gt; represents the memory and accepts suffices &#39;K/M/G&#39;. RSEM will pass &lt;string&gt; to the &#39;-m&#39; option of &#39;samtools sort&#39;. Please note that the default used here is different from the default used by samtools. (Default: 1G)</p>
+
 </dd>
-<dt><strong><a name="temporary_folder_string" class="item"><strong>--temporary-folder</strong> &lt;string&gt;</a></strong></dt>
-
+<dt id="keep-intermediate-files"><b>--keep-intermediate-files</b></dt>
 <dd>
+
+<p>Keep temporary files generated by RSEM. RSEM creates a temporary directory, &#39;sample_name.temp&#39;, into which it puts all intermediate output files. If this directory already exists, RSEM overwrites all files generated by previous RSEM runs inside of it. By default, after RSEM finishes, the temporary directory is deleted. Set this option to prevent the deletion of this directory and the intermediate files inside of it. (Default: off)</p>
+
+</dd>
+<dt id="temporary-folder-string"><b>--temporary-folder</b> &lt;string&gt;</dt>
+<dd>
+
 <p>Set where to put the temporary files generated by RSEM. If the folder specified does not exist, RSEM will try to create it. (Default: sample_name.temp)</p>
-</dd>
-<dt><strong><a name="time" class="item"><strong>--time</strong></a></strong></dt>
 
+</dd>
+<dt id="time"><b>--time</b></dt>
 <dd>
-<p>Output time consumed by each step of RSEM to 'sample_name.time'. (Default: off)</p>
+
+<p>Output time consumed by each step of RSEM to &#39;sample_name.time&#39;. (Default: off)</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p>In its default mode, this program aligns input reads against a reference transcriptome with Bowtie and calculates expression values using the alignments.  RSEM assumes the data are single-end reads with quality scores, unless the '--paired-end' or '--no-qualities' options are specified. Alternatively, users can use STAR to align reads using the '--star' option. RSEM has provided options in 'rsem-prepare-reference' to prepare STAR's genome indices. Users may use an alternative aligner by specifying one of the --sam and --bam options, and providing an alignment file in the specified format. However, users should make sure that they align against the indices generated by 'rsem-prepare-reference' and the alignment file satisfies the requirements mentioned in ARGUMENTS section.</p>
-<p>One simple way to make the alignment file satisfying RSEM's requirements (assuming the aligner used put mates in a paired-end read adjacent) is to use 'convert-sam-for-rsem' script. This script only accept SAM format files as input. If a BAM format file is obtained, please use samtools to convert it to a SAM file first. For example, if '/ref/mouse_125' is the 'reference_name' and the SAM file is named 'input.sam', you can run the following command:</p>
-<pre>
-  convert-sam-for-rsem /ref/mouse_125 input.sam -o input_for_rsem.sam</pre>
-<p>For details, please refer to 'convert-sam-for-rsem's documentation page.</p>
-<p>The SAM/BAM format RSEM uses is v1.4. However, it is compatible with old SAM/BAM format. However, RSEM cannot recognize 0x100 in the FLAG field. In addition, RSEM requires SEQ and QUAL are not '*'.</p>
-<p>The user must run 'rsem-prepare-reference' with the appropriate reference before using this program.</p>
-<p>For single-end data, it is strongly recommended that the user provide the fragment length distribution parameters (--fragment-length-mean and --fragment-length-sd).  For paired-end data, RSEM will automatically learn a fragment length distribution from the data.</p>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p>In its default mode, this program aligns input reads against a reference transcriptome with Bowtie and calculates expression values using the alignments. RSEM assumes the data are single-end reads with quality scores, unless the &#39;--paired-end&#39; or &#39;--no-qualities&#39; options are specified. Alternatively, users can use STAR to align reads using the &#39;--star&#39; option. RSEM has provided options in &#39;rsem-prepare-reference&#39; to prepare STAR&#39;s genome indices. Users may use an alternative aligner by specifying one of the --sam and --bam options, and providing an alignment file in the specified format. However, users should make sure that they align against the indices generated by &#39;rsem-prepare-reference&#39; and the alignment file satisfies the requirements mentioned in ARGUMENTS section.</p>
+
+<p>One simple way to make the alignment file satisfying RSEM&#39;s requirements (assuming the aligner used put mates in a paired-end read adjacent) is to use &#39;convert-sam-for-rsem&#39; script. This script only accept SAM format files as input. If a BAM format file is obtained, please use samtools to convert it to a SAM file first. For example, if &#39;/ref/mouse_125&#39; is the &#39;reference_name&#39; and the SAM file is named &#39;input.sam&#39;, you can run the following command:</p>
+
+<pre><code>  convert-sam-for-rsem /ref/mouse_125 input.sam -o input_for_rsem.sam  </code></pre>
+
+<p>For details, please refer to &#39;convert-sam-for-rsem&#39;s documentation page.</p>
+
+<p>The SAM/BAM format RSEM uses is v1.4. However, it is compatible with old SAM/BAM format. However, RSEM cannot recognize 0x100 in the FLAG field. In addition, RSEM requires SEQ and QUAL are not &#39;*&#39;.</p>
+
+<p>The user must run &#39;rsem-prepare-reference&#39; with the appropriate reference before using this program.</p>
+
+<p>For single-end data, it is strongly recommended that the user provide the fragment length distribution parameters (--fragment-length-mean and --fragment-length-sd). For paired-end data, RSEM will automatically learn a fragment length distribution from the data.</p>
+
 <p>Please note that some of the default values for the Bowtie parameters are not the same as those defined for Bowtie itself.</p>
-<p>The temporary directory and all intermediate files will be removed when RSEM finishes unless '--keep-intermediate-files' is specified.</p>
-<p>With the '--calc-pme' option, posterior mean estimates will be calculated in addition to maximum likelihood estimates.</p>
-<p>With the '--calc-ci' option, 95% credibility intervals and posterior mean estimates will be calculated in addition to maximum likelihood estimates.</p>
-<p>
-</p>
-<hr />
-<h1><a name="output">OUTPUT</a></h1>
+
+<p>The temporary directory and all intermediate files will be removed when RSEM finishes unless &#39;--keep-intermediate-files&#39; is specified.</p>
+
+<p>With the &#39;--calc-pme&#39; option, posterior mean estimates will be calculated in addition to maximum likelihood estimates.</p>
+
+<p>With the &#39;--calc-ci&#39; option, 95% credibility intervals and posterior mean estimates will be calculated in addition to maximum likelihood estimates.</p>
+
+<h1 id="OUTPUT">OUTPUT</h1>
+
 <dl>
-<dt><strong><a name="sample_name_isoforms_results" class="item"><strong>sample_name.isoforms.results</strong></a></strong></dt>
 
+<dt id="sample_name.isoforms.results"><b>sample_name.isoforms.results</b></dt>
 <dd>
-<p>File containing isoform level expression estimates. The first line
-contains column names separated by the tab character. The format of
-each line in the rest of this file is:</p>
+
+<p>File containing isoform level expression estimates. The first line contains column names separated by the tab character. The format of each line in the rest of this file is:</p>
+
 <p>transcript_id gene_id length effective_length expected_count TPM FPKM IsoPct [posterior_mean_count posterior_standard_deviation_of_count pme_TPM pme_FPKM IsoPct_from_pme_TPM TPM_ci_lower_bound TPM_ci_upper_bound FPKM_ci_lower_bound FPKM_ci_upper_bound]</p>
-<p>Fields are separated by the tab character. Fields within &quot;[]&quot; are
-optional. They will not be presented if neither '--calc-pme' nor
-'--calc-ci' is set.</p>
-<p>'transcript_id' is the transcript name of this transcript. 'gene_id'
-is the gene name of the gene which this transcript belongs to (denote
-this gene as its parent gene). If no gene information is provided,
-'gene_id' and 'transcript_id' are the same.</p>
-<p>'length' is this transcript's sequence length (poly(A) tail is not
-counted). 'effective_length' counts only the positions that can
-generate a valid fragment. If no poly(A) tail is added,
-'effective_length' is equal to transcript length - mean fragment
-length + 1. If one transcript's effective length is less than 1, this
-transcript's both effective length and abundance estimates are set to
-0.</p>
-<p>'expected_count' is the sum of the posterior probability of each read
-comes from this transcript over all reads. Because 1) each read
-aligning to this transcript has a probability of being generated from
-background noise; 2) RSEM may filter some alignable low quality reads,
-the sum of expected counts for all transcript are generally less than
-the total number of reads aligned.</p>
-<p>'TPM' stands for Transcripts Per Million. It is a relative measure of
-transcript abundance. The sum of all transcripts' TPM is 1
-million. 'FPKM' stands for Fragments Per Kilobase of transcript per
-Million mapped reads. It is another relative measure of transcript
-abundance. If we define l_bar be the mean transcript length in a
-sample, which can be calculated as</p>
+
+<p>Fields are separated by the tab character. Fields within &quot;[]&quot; are optional. They will not be presented if neither &#39;--calc-pme&#39; nor &#39;--calc-ci&#39; is set.</p>
+
+<p>&#39;transcript_id&#39; is the transcript name of this transcript. &#39;gene_id&#39; is the gene name of the gene which this transcript belongs to (denote this gene as its parent gene). If no gene information is provided, &#39;gene_id&#39; and &#39;transcript_id&#39; are the same.</p>
+
+<p>&#39;length&#39; is this transcript&#39;s sequence length (poly(A) tail is not counted). &#39;effective_length&#39; counts only the positions that can generate a valid fragment. If no poly(A) tail is added, &#39;effective_length&#39; is equal to transcript length - mean fragment length + 1. If one transcript&#39;s effective length is less than 1, this transcript&#39;s both effective length and abundance estimates are set to 0.</p>
+
+<p>&#39;expected_count&#39; is the sum of the posterior probability of each read comes from this transcript over all reads. Because 1) each read aligning to this transcript has a probability of being generated from background noise; 2) RSEM may filter some alignable low quality reads, the sum of expected counts for all transcript are generally less than the total number of reads aligned.</p>
+
+<p>&#39;TPM&#39; stands for Transcripts Per Million. It is a relative measure of transcript abundance. The sum of all transcripts&#39; TPM is 1 million. &#39;FPKM&#39; stands for Fragments Per Kilobase of transcript per Million mapped reads. It is another relative measure of transcript abundance. If we define l_bar be the mean transcript length in a sample, which can be calculated as</p>
+
 <p>l_bar = \sum_i TPM_i / 10^6 * effective_length_i (i goes through every transcript),</p>
+
 <p>the following equation is hold:</p>
+
 <p>FPKM_i = 10^3 / l_bar * TPM_i.</p>
+
 <p>We can see that the sum of FPKM is not a constant across samples.</p>
-<p>'IsoPct' stands for isoform percentage. It is the percentage of this
-transcript's abandunce over its parent gene's abandunce. If its parent
-gene has only one isoform or the gene information is not provided,
-this field will be set to 100.</p>
-<p>'posterior_mean_count', 'pme_TPM', 'pme_FPKM' are posterior mean
-estimates calculated by RSEM's Gibbs
-sampler. 'posterior_standard_deviation_of_count' is the posterior
-standard deviation of counts. 'IsoPct_from_pme_TPM' is the isoform
-percentage calculated from 'pme_TPM' values.</p>
-<p>'TPM_ci_lower_bound', 'TPM_ci_upper_bound', 'FPKM_ci_lower_bound' and
-'FPKM_ci_upper_bound' are lower(l) and upper(u) bounds of 95%
-credibility intervals for TPM and FPKM values. The bounds are
-inclusive (i.e. [l, u]).</p>
-</dd>
-<dt><strong><a name="sample_name_genes_results" class="item"><strong>sample_name.genes.results</strong></a></strong></dt>
 
+<p>&#39;IsoPct&#39; stands for isoform percentage. It is the percentage of this transcript&#39;s abandunce over its parent gene&#39;s abandunce. If its parent gene has only one isoform or the gene information is not provided, this field will be set to 100.</p>
+
+<p>&#39;posterior_mean_count&#39;, &#39;pme_TPM&#39;, &#39;pme_FPKM&#39; are posterior mean estimates calculated by RSEM&#39;s Gibbs sampler. &#39;posterior_standard_deviation_of_count&#39; is the posterior standard deviation of counts. &#39;IsoPct_from_pme_TPM&#39; is the isoform percentage calculated from &#39;pme_TPM&#39; values.</p>
+
+<p>&#39;TPM_ci_lower_bound&#39;, &#39;TPM_ci_upper_bound&#39;, &#39;FPKM_ci_lower_bound&#39; and &#39;FPKM_ci_upper_bound&#39; are lower(l) and upper(u) bounds of 95% credibility intervals for TPM and FPKM values. The bounds are inclusive (i.e. [l, u]).</p>
+
+</dd>
+<dt id="sample_name.genes.results"><b>sample_name.genes.results</b></dt>
 <dd>
-<p>File containing gene level expression estimates. The first line
-contains column names separated by the tab character. The format of
-each line in the rest of this file is:</p>
+
+<p>File containing gene level expression estimates. The first line contains column names separated by the tab character. The format of each line in the rest of this file is:</p>
+
 <p>gene_id transcript_id(s) length effective_length expected_count TPM FPKM [posterior_mean_count posterior_standard_deviation_of_count pme_TPM pme_FPKM TPM_ci_lower_bound TPM_ci_upper_bound FPKM_ci_lower_bound FPKM_ci_upper_bound]</p>
-<p>Fields are separated by the tab character. Fields within &quot;[]&quot; are
-optional. They will not be presented if neither '--calc-pme' nor
-'--calc-ci' is set.</p>
-<p>'transcript_id(s)' is a comma-separated list of transcript_ids
-belonging to this gene. If no gene information is provided, 'gene_id'
-and 'transcript_id(s)' are identical (the 'transcript_id').</p>
-<p>A gene's 'length' and 'effective_length' are
-defined as the weighted average of its transcripts' lengths and
-effective lengths (weighted by 'IsoPct'). A gene's abundance estimates
-are just the sum of its transcripts' abundance estimates.</p>
-</dd>
-<dt><strong><a name="sample_name_alleles_results" class="item"><strong>sample_name.alleles.results</strong></a></strong></dt>
 
+<p>Fields are separated by the tab character. Fields within &quot;[]&quot; are optional. They will not be presented if neither &#39;--calc-pme&#39; nor &#39;--calc-ci&#39; is set.</p>
+
+<p>&#39;transcript_id(s)&#39; is a comma-separated list of transcript_ids belonging to this gene. If no gene information is provided, &#39;gene_id&#39; and &#39;transcript_id(s)&#39; are identical (the &#39;transcript_id&#39;).</p>
+
+<p>A gene&#39;s &#39;length&#39; and &#39;effective_length&#39; are defined as the weighted average of its transcripts&#39; lengths and effective lengths (weighted by &#39;IsoPct&#39;). A gene&#39;s abundance estimates are just the sum of its transcripts&#39; abundance estimates.</p>
+
+</dd>
+<dt id="sample_name.alleles.results"><b>sample_name.alleles.results</b></dt>
 <dd>
-<p>Only generated when the RSEM references are built with allele-specific
-transcripts.</p>
-<p>This file contains allele level expression estimates for
-allele-specific expression calculation. The first line
-contains column names separated by the tab character. The format of
-each line in the rest of this file is:</p>
+
+<p>Only generated when the RSEM references are built with allele-specific transcripts.</p>
+
+<p>This file contains allele level expression estimates for allele-specific expression calculation. The first line contains column names separated by the tab character. The format of each line in the rest of this file is:</p>
+
 <p>allele_id transcript_id gene_id length effective_length expected_count TPM FPKM AlleleIsoPct AlleleGenePct [posterior_mean_count posterior_standard_deviation_of_count pme_TPM pme_FPKM AlleleIsoPct_from_pme_TPM AlleleGenePct_from_pme_TPM TPM_ci_lower_bound TPM_ci_upper_bound FPKM_ci_lower_bound FPKM_ci_upper_bound]</p>
-<p>Fields are separated by the tab character. Fields within &quot;[]&quot; are
-optional. They will not be presented if neither '--calc-pme' nor
-'--calc-ci' is set.</p>
-<p>'allele_id' is the allele-specific name of this allele-specific transcript.</p>
-<p>'AlleleIsoPct' stands for allele-specific percentage on isoform
-level. It is the percentage of this allele-specific transcript's
-abundance over its parent transcript's abundance. If its parent
-transcript has only one allele variant form, this field will be set to
-100.</p>
-<p>'AlleleGenePct' stands for allele-specific percentage on gene
-level. It is the percentage of this allele-specific transcript's
-abundance over its parent gene's abundance.</p>
-<p>'AlleleIsoPct_from_pme_TPM' and 'AlleleGenePct_from_pme_TPM' have
-similar meanings. They are calculated based on posterior mean
-estimates.</p>
-<p>Please note that if this file is present, the fields 'length' and
-'effective_length' in 'sample_name.isoforms.results' should be
-interpreted similarly as the corresponding definitions in
-'sample_name.genes.results'.</p>
-</dd>
-<dt><strong><a name="sample_name_transcript_bam_sample_name_transcript_sorted_bam_and_sample_name_transcript_sorted_bam_bai" class="item"><strong>sample_name.transcript.bam, sample_name.transcript.sorted.bam and sample_name.transcript.sorted.bam.bai</strong></a></strong></dt>
 
+<p>Fields are separated by the tab character. Fields within &quot;[]&quot; are optional. They will not be presented if neither &#39;--calc-pme&#39; nor &#39;--calc-ci&#39; is set.</p>
+
+<p>&#39;allele_id&#39; is the allele-specific name of this allele-specific transcript.</p>
+
+<p>&#39;AlleleIsoPct&#39; stands for allele-specific percentage on isoform level. It is the percentage of this allele-specific transcript&#39;s abundance over its parent transcript&#39;s abundance. If its parent transcript has only one allele variant form, this field will be set to 100.</p>
+
+<p>&#39;AlleleGenePct&#39; stands for allele-specific percentage on gene level. It is the percentage of this allele-specific transcript&#39;s abundance over its parent gene&#39;s abundance.</p>
+
+<p>&#39;AlleleIsoPct_from_pme_TPM&#39; and &#39;AlleleGenePct_from_pme_TPM&#39; have similar meanings. They are calculated based on posterior mean estimates.</p>
+
+<p>Please note that if this file is present, the fields &#39;length&#39; and &#39;effective_length&#39; in &#39;sample_name.isoforms.results&#39; should be interpreted similarly as the corresponding definitions in &#39;sample_name.genes.results&#39;.</p>
+
+</dd>
+<dt id="sample_name.transcript.bam-sample_name.transcript.sorted.bam-and-sample_name.transcript.sorted.bam.bai"><b>sample_name.transcript.bam, sample_name.transcript.sorted.bam and sample_name.transcript.sorted.bam.bai</b></dt>
 <dd>
+
 <p>Only generated when --no-bam-output is not specified.</p>
-<p>'sample_name.transcript.bam' is a BAM-formatted file of read
-alignments in transcript coordinates. The MAPQ field of each alignment
-is set to min(100, floor(-10 * log10(1.0 - w) + 0.5)), where w is the
-posterior probability of that alignment being the true mapping of a
-read.  In addition, RSEM pads a new tag ZW:f:value, where value is a
-single precision floating number representing the posterior
-probability. Because this file contains all alignment lines produced
-by bowtie or user-specified aligners, it can also be used as a
-replacement of the aligner generated BAM/SAM file. For paired-end
-reads, if one mate has alignments but the other does not, this file
-marks the alignable mate as &quot;unmappable&quot; (flag bit 0x4) and appends an
-optional field &quot;Z0:A:!&quot;.</p>
-<p>'sample_name.transcript.sorted.bam' and
-'sample_name.transcript.sorted.bam.bai' are the sorted BAM file and
-indices generated by samtools (included in RSEM package).</p>
-</dd>
-<dt><strong><a name="sample_name_genome_bam_sample_name_genome_sorted_bam_and_sample_name_genome_sorted_bam_bai" class="item"><strong>sample_name.genome.bam, sample_name.genome.sorted.bam and sample_name.genome.sorted.bam.bai</strong></a></strong></dt>
 
+<p>&#39;sample_name.transcript.bam&#39; is a BAM-formatted file of read alignments in transcript coordinates. The MAPQ field of each alignment is set to min(100, floor(-10 * log10(1.0 - w) + 0.5)), where w is the posterior probability of that alignment being the true mapping of a read. In addition, RSEM pads a new tag ZW:f:value, where value is a single precision floating number representing the posterior probability. Because this file contains all alignment lines produced by bowtie or user-specified aligners, it can also be used as a replacement of the aligner generated BAM/SAM file. For paired-end reads, if one mate has alignments but the other does not, this file marks the alignable mate as &quot;unmappable&quot; (flag bit 0x4) and appends an optional field &quot;Z0:A:!&quot;.</p>
+
+<p>&#39;sample_name.transcript.sorted.bam&#39; and &#39;sample_name.transcript.sorted.bam.bai&#39; are the sorted BAM file and indices generated by samtools (included in RSEM package).</p>
+
+</dd>
+<dt id="sample_name.genome.bam-sample_name.genome.sorted.bam-and-sample_name.genome.sorted.bam.bai"><b>sample_name.genome.bam, sample_name.genome.sorted.bam and sample_name.genome.sorted.bam.bai</b></dt>
 <dd>
+
 <p>Only generated when --no-bam-output is not specified and --output-genome-bam is specified.</p>
-<p>'sample_name.genome.bam' is a BAM-formatted file of read alignments in
-genomic coordinates. Alignments of reads that have identical genomic
-coordinates (i.e., alignments to different isoforms that share the
-same genomic region) are collapsed into one alignment.  The MAPQ field
-of each alignment is set to min(100, floor(-10 * log10(1.0 - w) +
-0.5)), where w is the posterior probability of that alignment being
-the true mapping of a read.  In addition, RSEM pads a new tag
-ZW:f:value, where value is a single precision floating number
-representing the posterior probability. If an alignment is spliced, a
-XS:A:value tag is also added, where value is either '+' or '-'
-indicating the strand of the transcript it aligns to.</p>
-<p>'sample_name.genome.sorted.bam' and 'sample_name.genome.sorted.bam.bai' are the
-sorted BAM file and indices generated by samtools (included in RSEM package).</p>
-</dd>
-<dt><strong><a name="sample_name_time" class="item"><strong>sample_name.time</strong></a></strong></dt>
 
+<p>&#39;sample_name.genome.bam&#39; is a BAM-formatted file of read alignments in genomic coordinates. Alignments of reads that have identical genomic coordinates (i.e., alignments to different isoforms that share the same genomic region) are collapsed into one alignment. The MAPQ field of each alignment is set to min(100, floor(-10 * log10(1.0 - w) + 0.5)), where w is the posterior probability of that alignment being the true mapping of a read. In addition, RSEM pads a new tag ZW:f:value, where value is a single precision floating number representing the posterior probability. If an alignment is spliced, a XS:A:value tag is also added, where value is either &#39;+&#39; or &#39;-&#39; indicating the strand of the transcript it aligns to.</p>
+
+<p>&#39;sample_name.genome.sorted.bam&#39; and &#39;sample_name.genome.sorted.bam.bai&#39; are the sorted BAM file and indices generated by samtools (included in RSEM package).</p>
+
+</dd>
+<dt id="sample_name.time"><b>sample_name.time</b></dt>
 <dd>
+
 <p>Only generated when --time is specified.</p>
-<p>It contains time (in seconds) consumed by aligning reads, estimating expression levels and calculating credibility intervals.</p>
-</dd>
-<dt><strong><a name="sample_name_stat" class="item"><strong>sample_name.stat</strong></a></strong></dt>
 
+<p>It contains time (in seconds) consumed by aligning reads, estimating expression levels and calculating credibility intervals.</p>
+
+</dd>
+<dt id="sample_name.stat"><b>sample_name.stat</b></dt>
 <dd>
-<p>This is a folder instead of a file. All model related statistics are stored in this folder. Use 'rsem-plot-model' can generate plots using this folder.</p>
-<p>'sample_name.stat/sample_name.cnt' contains alignment statistics. The format and meanings of each field are described in 'cnt_file_description.txt' under RSEM directory.</p>
-<p>'sample_name.stat/sample_name.model' stores RNA-Seq model parameters learned from the data. The format and meanings of each filed of this file are described in 'model_file_description.txt' under RSEM directory.</p>
+
+<p>This is a folder instead of a file. All model related statistics are stored in this folder. Use &#39;rsem-plot-model&#39; can generate plots using this folder.</p>
+
+<p>&#39;sample_name.stat/sample_name.cnt&#39; contains alignment statistics. The format and meanings of each field are described in &#39;cnt_file_description.txt&#39; under RSEM directory.</p>
+
+<p>&#39;sample_name.stat/sample_name.model&#39; stores RNA-Seq model parameters learned from the data. The format and meanings of each filed of this file are described in &#39;model_file_description.txt&#39; under RSEM directory.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="examples">EXAMPLES</a></h1>
-<p>Assume the path to the bowtie executables is in the user's PATH environment variable. Reference files are under '/ref' with name 'mouse_125'.</p>
-<p>1) '/data/mmliver.fq', single-end reads with quality scores. Quality scores are encoded as for 'GA pipeline version &gt;= 1.3'. We want to use 8 threads and generate a genome BAM file:</p>
-<pre>
- rsem-calculate-expression --phred64-quals \
+
+<h1 id="EXAMPLES">EXAMPLES</h1>
+
+<p>Assume the path to the bowtie executables is in the user&#39;s PATH environment variable. Reference files are under &#39;/ref&#39; with name &#39;mouse_125&#39;.</p>
+
+<p>1) &#39;/data/mmliver.fq&#39;, single-end reads with quality scores. Quality scores are encoded as for &#39;GA pipeline version &gt;= 1.3&#39;. We want to use 8 threads and generate a genome BAM file:</p>
+
+<pre><code> rsem-calculate-expression --phred64-quals \
                            -p 8 \
                            --output-genome-bam \
                            /data/mmliver.fq \
                            /ref/mouse_125 \
-                           mmliver_single_quals
+                           mmliver_single_quals</code></pre>
 
-</pre>
-<p>2) '/data/mmliver_1.fq' and '/data/mmliver_2.fq', paired-end reads with quality scores. Quality scores are in SANGER format. We want to use 8 threads and do not generate a genome BAM file:</p>
-<pre>
- rsem-calculate-expression -p 8 \
+<p>2) &#39;/data/mmliver_1.fq&#39; and &#39;/data/mmliver_2.fq&#39;, paired-end reads with quality scores. Quality scores are in SANGER format. We want to use 8 threads and do not generate a genome BAM file:</p>
+
+<pre><code> rsem-calculate-expression -p 8 \
                            --paired-end \
                            /data/mmliver_1.fq \
                            /data/mmliver_2.fq \
                            /ref/mouse_125 \
-                           mmliver_paired_end_quals
+                           mmliver_paired_end_quals</code></pre>
 
-</pre>
-<p>3) '/data/mmliver.fa', single-end reads without quality scores. We want to use 8 threads:</p>
-<pre>
- rsem-calculate-expression -p 8 \
+<p>3) &#39;/data/mmliver.fa&#39;, single-end reads without quality scores. We want to use 8 threads:</p>
+
+<pre><code> rsem-calculate-expression -p 8 \
                            --no-qualities \
                            /data/mmliver.fa \
                            /ref/mouse_125 \
-                           mmliver_single_without_quals
+                           mmliver_single_without_quals</code></pre>
 
-</pre>
-<p>4) Data are the same as 1). This time we assume the bowtie executables are under '/sw/bowtie'. We want to take a fragment length distribution into consideration. We set the fragment length mean to 150 and the standard deviation to 35. In addition to a BAM file, we also want to generate credibility intervals. We allow RSEM to use 1GB of memory for CI calculation:</p>
-<pre>
- rsem-calculate-expression --bowtie-path /sw/bowtie \
+<p>4) Data are the same as 1). This time we assume the bowtie executables are under &#39;/sw/bowtie&#39;. We want to take a fragment length distribution into consideration. We set the fragment length mean to 150 and the standard deviation to 35. In addition to a BAM file, we also want to generate credibility intervals. We allow RSEM to use 1GB of memory for CI calculation:</p>
+
+<pre><code> rsem-calculate-expression --bowtie-path /sw/bowtie \
                            --phred64-quals \
                            --fragment-length-mean 150.0 \
                            --fragment-length-sd 35.0 \
@@ -578,32 +588,32 @@ sorted BAM file and indices generated by samtools (included in RSEM package).</p
                            --ci-memory 1024 \
                            /data/mmliver.fq \
                            /ref/mouse_125 \
-                           mmliver_single_quals
+                           mmliver_single_quals</code></pre>
 
-</pre>
-<p>5) '/data/mmliver_paired_end_quals.bam', paired-end reads with quality scores. We want to use 8 threads:</p>
-<pre>
- rsem-calculate-expression --paired-end \
+<p>5) &#39;/data/mmliver_paired_end_quals.bam&#39;, paired-end reads with quality scores. We want to use 8 threads:</p>
+
+<pre><code> rsem-calculate-expression --paired-end \
                            --bam \
                            -p 8 \
                            /data/mmliver_paired_end_quals.bam \
                            /ref/mouse_125 \
-                           mmliver_paired_end_quals
+                           mmliver_paired_end_quals</code></pre>
 
-</pre>
-<p>6) '/data/mmliver_1.fq.gz' and '/data/mmliver_2.fq.gz', paired-end reads with quality scores and read files are compressed by gzip. We want to use STAR to aligned reads and assume STAR executable is '/sw/STAR'. Suppose we want to use 8 threads and do not generate a genome BAM file:</p>
-<pre>
- rsem-calculate-expression --star \
+<p>6) &#39;/data/mmliver_1.fq.gz&#39; and &#39;/data/mmliver_2.fq.gz&#39;, paired-end reads with quality scores and read files are compressed by gzip. We want to use STAR to aligned reads and assume STAR executable is &#39;/sw/STAR&#39;. Suppose we want to use 8 threads and do not generate a genome BAM file:</p>
+
+<pre><code> rsem-calculate-expression --paired-end \
+                           --star \
                            --star-path /sw/STAR \
                            --gzipped-read-file \
                            -p 8 \
                            /data/mmliver_1.fq.gz \
                            /data/mmliver_2.fq.gz \
                            /ref/mouse_125 \
-                           mmliver_paired_end_quals
+                           mmliver_paired_end_quals</code></pre>
 
-</pre>
 
 </body>
 
 </html>
+
+
