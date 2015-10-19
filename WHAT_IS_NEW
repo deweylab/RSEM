@@ -1,3 +1,12 @@
+RSEM v1.2.23
+
+- Moved version information from WHAT_IS_NEW to rsem_perl_utils.pm in order to make sure the '--version' option always output the version information
+- Fixed a typo in 'rsem-calculate-expression' that can lead an error when '--star' is set and '--star-path' is not set
+- Fixed a bug that can occasionally crash the RSEM simulator
+- Added user-friendly error messages that are triggered when RSEM detects invalid bases in the input FASTA file during reference building
+
+--------------------------------------------------------------------------------------------
+
 RSEM v1.2.22
 
 - Added options to run the STAR aligner

@@ -9,6 +9,8 @@ our @ISA = qw(Exporter);
 our @EXPORT = qw(runCommand);
 our @EXPORT_OK = qw(runCommand collectResults showVersionInfo);
 
+my $version = "RSEM v1.2.23";
+
 # command, {err_msg}
 sub runCommand {
     print $_[0]."\n";
@@ -88,11 +90,7 @@ sub collectResults {
 
 # 0, dir
 sub showVersionInfo {
-    open(INPUT, "$_[0]/WHAT_IS_NEW");
-    my $line = <INPUT>;
-    chomp($line);
-    close(INPUT);
-    print "Current version is $line\n";
+    print "Current version: $version\n";
     exit(0);
 }
 
