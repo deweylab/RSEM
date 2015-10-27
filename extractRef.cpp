@@ -74,6 +74,8 @@ bool buildTranscript(int sp, int ep) {
 
 	string transcript_id = items[sp].getTranscriptID();
 	string gene_id = items[sp].getGeneID();
+	string gene_name = "", transcript_name = "";
+	
 	char strand = items[sp].getStrand();
 	string seqname = items[sp].getSeqName();
 	string left = items[sp].getLeft();
@@ -87,6 +89,15 @@ bool buildTranscript(int sp, int ep) {
 		general_assert(strand == items[i].getStrand(), "According to the GTF file given, a transcript has exons from different orientations!");
 		general_assert(seqname == items[i].getSeqName(), "According to the GTF file given, a transcript has exons on multiple chromosomes!");
 
+		if (items[i].getGeneName() != "") {
+		  if (gene_name == "") gene_name = items[i].getGeneName();
+		  else general_assert(gene_name == items[i].getGeneName(), "A transcript is associated with multiple gene names!");
+		}
+		if (items[i].getTranscriptName() != "") {
+		  if (transcript_name == "") transcript_name = items[i].getTranscriptName();
+		  else general_assert(transcript_name == items[i].getTranscriptName(), "A transcript is associated with multiple transcript names!");
+		}
+
 		if (cur_e + 1 < start) {
 			if (cur_s > 0) vec.push_back(Interval(cur_s, cur_e));
 			cur_s = start;
@@ -94,6 +105,9 @@ bool buildTranscript(int sp, int ep) {
 		cur_e = (cur_e < end ? end : cur_e);
 	}
 	if (cur_s > 0) vec.push_back(Interval(cur_s, cur_e));
+
+	if (gene_name != "") gene_id += "_" + gene_name;
+	if (transcript_name != "") transcript_id += "_" + transcript_name;
 
 	transcripts.add(Transcript(transcript_id, gene_id, seqname, strand, vec, left));
 
