@@ -12,7 +12,6 @@ token <- strvec[length(strvec)]
 stat.dir <- paste(argv[1], ".stat", sep = "")
 if (!file.exists(stat.dir)) {
   cat("Error: directory does not exist: ", stat.dir, "\n", sep = "")
-  cat(strwrap("This version of rsem-plot-model only works with the output of RSEM versions >= 1.1.8"), sep="\n")
   q(status = 1)
 }
 modelF <- paste(stat.dir, "/", token, ".model", sep = "")
