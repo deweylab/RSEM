@@ -31,13 +31,15 @@ vec <- as.numeric(strsplit(strvec[1], split = " ")[[1]])
 maxL <- vec[2] # maxL used for Profile
 x <- (vec[1] + 1) : vec[2]
 y <- as.numeric(strsplit(strvec[2], split = " ")[[1]])
+mode_len = which(y == max(y)) + vec[1]
 mean <- weighted.mean(x, y)
 std <- sqrt(weighted.mean((x - mean)^2, y))
 plot(x, y, type = "h",
      main = "Fragment Length Distribution",
-     sub = paste("Mean = ", round(mean, 1), ", Std = ", round(std, 1)),
+     sub = sprintf("Mode = %d, Mean = %.1f, and Std = %.1f", mode_len, mean, std),
      xlab = "Fragment Length",
      ylab = "Probability")
+abline(v = mode_len, col = "red", lty = "dashed")
 
 # mate length distribution
 if (model_type == 0 || model_type == 1) bval <- as.numeric(readLines(con, n = 1)[1]) else bval <- 1
@@ -48,11 +50,12 @@ if (bval == 1) {
   maxL <- vec[2]
   x <- (vec[1] + 1) : vec[2]
   y <- as.numeric(list[[2]])
+  mode_len = which(y == max(y)) + vec[1]
   mean <- weighted.mean(x, y)
   std <- sqrt(weighted.mean((x - mean)^2, y))
   plot(x, y, type = "h",
        main = "Read Length Distribution",
-       sub=paste("Mean = ", round(mean, 1), ", Std = ", round(std, 1)),
+       sub = sprintf("Mode = %d, Mean = %.1f, and Std = %.1f", mode_len, mean, std),
        xlab = "Read Length",
        ylab = "Probability")
 }
