@@ -12,4 +12,4 @@ rsem-for-ebseq-calculate-clustering-info : calcClusteringInfo.cpp
 	$(CC) -O3 -Wall calcClusteringInfo.cpp -o $@
 
 clean : 
-	rm -rf blockmodeling $(PROGRAMS) *~ BiocInstaller
+	rm -rf blockmodeling gplots $(PROGRAMS) *~ BiocInstaller

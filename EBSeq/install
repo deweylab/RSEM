@@ -6,14 +6,15 @@ result <- suppressWarnings(tryCatch({
 	  cat("EBSeq v", as.character(packageVersion("EBSeq")), " already exists.\n", sep = "")
        }, error = function(err) {
             tryCatch({
-		source("http://www.bioconductor.org/biocLite.R") 
+		source("http://www.bioconductor.org/biocLite.R")
+                biocLite("BiocUpgrade")
     		biocLite("EBSeq", lib = ".")
     		library("EBSeq")
 		cat("EBSeq v", as.character(packageVersion("EBSeq")), " is successfully installed from Bioconductor.\n", sep = "")
 		}, error = function(err) {
 		     tryCatch({
 		         cat("Failed to install EBSeq from Bioconductor! Try to install EBSeq v1.2.0 locally instead.\n")
-      			 install.packages(c("blockmodeling_0.1.8.tar.gz", "EBSeq_1.2.0.tar.gz"), lib = ".", repos = NULL, type = "source")
+      			 install.packages(c("blockmodeling_0.1.8.tar.gz", "gplots_2.17.0.tar.gz", "EBSeq_1.2.0.tar.gz"), lib = ".", repos = NULL, type = "source")
       			 library("EBSeq") 
 			 cat("EBSeq v1.2.0 is successfully installed locally.\n")
 			 }, error = function(err) { cat("Failed to install EBSeq v1.2.0 locally!\n") })
