@@ -39,9 +39,10 @@ struct CIParams {
 };
 
 struct CIType {
-	float lb, ub; // the interval is [lb, ub]
-
-	CIType() { lb = ub = 0.0; }
+  float lb, ub; // the interval is [lb, ub]
+  float cqv; // coefficient of quartile variation
+  
+  CIType() { lb = ub = cqv = 0.0; }
 };
 
 int model_type;
@@ -210,14 +211,16 @@ void sample_theta_vectors_from_count_vectors() {
 	if (verbose) { printf("Sampling is finished!\n"); }
 }
 
-void calcCI(int nSamples, float *samples, float &lb, float &ub) {
+void calcCI(int nSamples, float *samples, CIType& ci) {
 	int p, q; // p pointer for lb, q pointer for ub;
 	int newp, newq;
 	int threshold = nSamples - (int(confidence * nSamples - 1e-8) + 1);
 	int nOutside = 0;
 
+	// sort values
 	sort(samples, samples + nSamples);
 
+	// calculate credibility interval
 	p = 0; q = nSamples - 1;
 	newq = nSamples - 1;
 	do {
@@ -228,11 +231,11 @@ void calcCI(int nSamples, float *samples, float &lb, float &ub) {
 
 	nOutside = nSamples - (q + 1);
 
-	lb = -1e30; ub = 1e30;
+	ci.lb = -1e30; ci.ub = 1e30;
 	do {
-		if (samples[q] - samples[p] < ub - lb) {
-			lb = samples[p];
-			ub = samples[q];
+		if (samples[q] - samples[p] < ci.ub - ci.lb) {
+			ci.lb = samples[p];
+			ci.ub = samples[q];
 		}
 
 		newp = p;
@@ -251,6 +254,29 @@ void calcCI(int nSamples, float *samples, float &lb, float &ub) {
 		}
 		else p = newp;
 	} while (p <= threshold);
+
+	
+	// calculate coefficient of quartile variation
+	float Q1, Q3; // the first and third quartiles
+
+	// calculate Tukey's hinges
+	int quotient = nSamples / 4;
+	int residue = nSamples % 4;
+
+	if (residue == 0) {
+	  Q1 = (samples[quotient - 1] + samples[quotient]) / 2.0;
+	  Q3 = (samples[3 * quotient - 1] + samples[3 * quotient]) / 2.0;
+	}
+	else if (residue == 3) {
+	  Q1 = (samples[quotient] + samples[quotient + 1]) / 2.0;
+	  Q3 = (samples[quotient * 3 + 1] + samples[quotient * 3 + 2]) / 2.0;
+	}
+	else {
+	  Q1 = samples[quotient];
+	  Q3 = samples[3 * quotient];
+	}
+
+	ci.cqv = (Q3 - Q1 > 0.0 ? (Q3 - Q1) / (Q3 + Q1) : 0.0);
 }
 
 void* calcCI_batch(void* arg) {
@@ -290,8 +316,8 @@ void* calcCI_batch(void* arg) {
 			  if (curtid != tid) {
 			    if (curtid >= 0) {
 			      if (j - curaid > 1) {
-				calcCI(nSamples, itsamples, iso_tpm[curtid].lb, iso_tpm[curtid].ub);
-				calcCI(nSamples, ifsamples, iso_fpkm[curtid].lb, iso_fpkm[curtid].ub);
+				calcCI(nSamples, itsamples, iso_tpm[curtid]);
+				calcCI(nSamples, ifsamples, iso_fpkm[curtid]);
 			      }
 			      else {
 				iso_tpm[curtid] = tpm[curaid];
@@ -313,13 +339,13 @@ void* calcCI_batch(void* arg) {
 				gtsamples[k] += tsamples[k];
 				gfsamples[k] += fsamples[k];
 			}
-			calcCI(nSamples, tsamples, tpm[j].lb, tpm[j].ub);
-			calcCI(nSamples, fsamples, fpkm[j].lb, fpkm[j].ub);
+			calcCI(nSamples, tsamples, tpm[j]);
+			calcCI(nSamples, fsamples, fpkm[j]);
 		}
 
 		if (e - b > 1) {
-			calcCI(nSamples, gtsamples, gene_tpm[i].lb, gene_tpm[i].ub);
-			calcCI(nSamples, gfsamples, gene_fpkm[i].lb, gene_fpkm[i].ub);
+		  calcCI(nSamples, gtsamples, gene_tpm[i]);
+		  calcCI(nSamples, gfsamples, gene_fpkm[i]);
 		}
 		else {
 			gene_tpm[i] = tpm[b];
@@ -333,8 +359,8 @@ void* calcCI_batch(void* arg) {
 
 	if (alleleS && (curtid >= 0)) {
 	  if (gi.spAt(ciParams->end_gene_id) - curaid > 1) {
-	    calcCI(nSamples, itsamples, iso_tpm[curtid].lb, iso_tpm[curtid].ub);
-	    calcCI(nSamples, ifsamples, iso_fpkm[curtid].lb, iso_fpkm[curtid].ub);
+	    calcCI(nSamples, itsamples, iso_tpm[curtid]);
+	    calcCI(nSamples, ifsamples, iso_fpkm[curtid]);
 	  }
 	  else {
 	    iso_tpm[curtid] = tpm[curaid];
@@ -420,9 +446,13 @@ void calculate_credibility_intervals(char* imdName) {
 	for (int i = 1; i <= M; i++)
 	  fprintf(fo, "%.6g%c", tpm[i].ub, (i < M ? '\t' : '\n'));
 	for (int i = 1; i <= M; i++)
+	  fprintf(fo, "%.6g%c", tpm[i].cqv, (i < M ? '\t' : '\n'));
+	for (int i = 1; i <= M; i++)
 	  fprintf(fo, "%.6g%c", fpkm[i].lb, (i < M ? '\t' : '\n'));
 	for (int i = 1; i <= M; i++)
 	  fprintf(fo, "%.6g%c", fpkm[i].ub, (i < M ? '\t' : '\n'));
+	for (int i = 1; i <= M; i++)
+	  fprintf(fo, "%.6g%c", fpkm[i].cqv, (i < M ? '\t' : '\n'));
 	fclose(fo);
 
 	if (alleleS) {
@@ -434,9 +464,13 @@ void calculate_credibility_intervals(char* imdName) {
 	  for (int i = 0; i < m_trans; i++)
 	    fprintf(fo, "%.6g%c", iso_tpm[i].ub, (i < m_trans - 1 ? '\t' : '\n'));
 	  for (int i = 0; i < m_trans; i++)
+	    fprintf(fo, "%.6g%c", iso_tpm[i].cqv, (i < m_trans - 1 ? '\t' : '\n'));
+	  for (int i = 0; i < m_trans; i++)
 	    fprintf(fo, "%.6g%c", iso_fpkm[i].lb, (i < m_trans - 1 ? '\t' : '\n'));
 	  for (int i = 0; i < m_trans; i++)
 	    fprintf(fo, "%.6g%c", iso_fpkm[i].ub, (i < m_trans - 1 ? '\t' : '\n'));
+	  for (int i = 0; i < m_trans; i++)
+	    fprintf(fo, "%.6g%c", iso_fpkm[i].cqv, (i < m_trans - 1 ? '\t' : '\n'));
 	  fclose(fo);
 	}
 
@@ -444,13 +478,17 @@ void calculate_credibility_intervals(char* imdName) {
 	sprintf(outF, "%s.gene_res", imdName);
 	fo = fopen(outF, "a");
 	for (int i = 0; i < m; i++)
-		fprintf(fo, "%.6g%c", gene_tpm[i].lb, (i < m - 1 ? '\t' : '\n'));
+	  fprintf(fo, "%.6g%c", gene_tpm[i].lb, (i < m - 1 ? '\t' : '\n'));
 	for (int i = 0; i < m; i++)
-		fprintf(fo, "%.6g%c", gene_tpm[i].ub, (i < m - 1 ? '\t' : '\n'));
+	  fprintf(fo, "%.6g%c", gene_tpm[i].ub, (i < m - 1 ? '\t' : '\n'));
 	for (int i = 0; i < m; i++)
-		fprintf(fo, "%.6g%c", gene_fpkm[i].lb, (i < m - 1 ? '\t' : '\n'));
+	  fprintf(fo, "%.6g%c", gene_tpm[i].cqv, (i < m - 1 ? '\t' : '\n'));
 	for (int i = 0; i < m; i++)
-		fprintf(fo, "%.6g%c", gene_fpkm[i].ub, (i < m - 1 ? '\t' : '\n'));
+	  fprintf(fo, "%.6g%c", gene_fpkm[i].lb, (i < m - 1 ? '\t' : '\n'));
+	for (int i = 0; i < m; i++)
+	  fprintf(fo, "%.6g%c", gene_fpkm[i].ub, (i < m - 1 ? '\t' : '\n'));
+	for (int i = 0; i < m; i++)
+	  fprintf(fo, "%.6g%c", gene_fpkm[i].cqv, (i < m - 1 ? '\t' : '\n'));
 	fclose(fo);
 
 	delete[] tpm;
