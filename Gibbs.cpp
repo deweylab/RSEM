@@ -64,7 +64,8 @@ vector<Item> hits;
 vector<double> eel;
 double *mw;
 
-vector<int> pseudo_counts;
+vector<int> init_counts;
+double pseudoC;
 vector<double> pme_c, pve_c; //global posterior mean and variance vectors on counts
 vector<double> pme_tpm, pme_fpkm;
 
@@ -122,8 +123,6 @@ void load_data(char* refName, char* statName, char* imdName) {
 	N1 = s.size() - 1;
 	nHits = hits.size();
 
-	totc = N0 + N1 + (M + 1);
-
 	if (verbose) { printf("Loading data is finished!\n"); }
 }
 
@@ -139,15 +138,22 @@ void load_group_info(char* refName) {
   if (verbose) { printf("Loading group information is finished!\n"); }
 }
 
-// Load imdName.omit and initialize the pseudo count vector.
+// Load imdName.omit and initialize the init count vector.
 void load_omit_info(const char* imdName) {
   char omitF[STRLEN];
-  sprintf(omitF, "%s.omit", imdName);
-  FILE *fi = fopen(omitF, "r");
-  pseudo_counts.assign(M + 1, 1);
+  FILE *fi = NULL;
   int tid;
-  while (fscanf(fi, "%d", &tid) == 1) pseudo_counts[tid] = 0;
+  
+  sprintf(omitF, "%s.omit", imdName);
+  fi = fopen(omitF, "r");
+  init_counts.assign(M + 1, 0);
+  totc = M + 1;
+  while (fscanf(fi, "%d", &tid) == 1) {
+    init_counts[tid] = -1;
+    --totc;
+  }
   fclose(fi);
+  totc = totc * pseudoC + N0 + N1;
 }
 
 template<class ModelType>
@@ -209,22 +215,6 @@ void init() {
 	if (verbose) { printf("Initialization finished!\n"); }
 }
 
-//sample theta from Dir(1)
-void sampleTheta(engine_type& engine, vector<double>& theta) {
-	gamma_dist gm(1);
-	gamma_generator gmg(engine, gm);
-	double denom;
-
-	theta.assign(M + 1, 0);
-	denom = 0.0;
-	for (int i = 0; i <= M; i++) {
-		theta[i] = (pseudo_counts[i] > 0 ? gmg() : 0.0);
-		denom += theta[i];
-	}
-	assert(denom > EPSILON);
-	for (int i = 0; i <= M; i++) theta[i] /= denom;
-}
-
 void writeCountVector(FILE* fo, vector<int>& counts) {
 	for (int i = 0; i < M; i++) {
 		fprintf(fo, "%d ", counts[i]);
@@ -238,14 +228,12 @@ void* Gibbs(void* arg) {
 	Params *params = (Params*)arg;
 
 	vector<double> theta, tpm, fpkm;
-	vector<int> z, counts(pseudo_counts);
+	vector<int> z, counts(init_counts);
 	vector<double> arr;
 
 	uniform_01_generator rg(*params->engine, uniform_01_dist());
 
 	// generate initial state
-	sampleTheta(*params->engine, theta);
-
 	z.assign(N1, 0);
 	counts[0] += N0;
 
@@ -254,7 +242,7 @@ void* Gibbs(void* arg) {
 		len = to - fr;
 		arr.assign(len, 0);
 		for (HIT_INT_TYPE j = fr; j < to; j++) {
-			arr[j - fr] = theta[hits[j].sid] * hits[j].conprb;
+			arr[j - fr] = hits[j].conprb;
 			if (j > fr) arr[j - fr] += arr[j - fr - 1];  // cumulative
 		}
 		z[i] = hits[fr + sample(rg, arr, len)].sid;
@@ -270,8 +258,8 @@ void* Gibbs(void* arg) {
 			fr = s[i]; to = s[i + 1]; len = to - fr;
 			arr.assign(len, 0);
 			for (HIT_INT_TYPE j = fr; j < to; j++) {
-				arr[j - fr] = counts[hits[j].sid] * hits[j].conprb;
-				if (j > fr) arr[j - fr] += arr[j - fr - 1]; //cumulative
+			  arr[j - fr] = (counts[hits[j].sid] + pseudoC) * hits[j].conprb;
+			  if (j > fr) arr[j - fr] += arr[j - fr - 1]; //cumulative
 			}
 			z[i] = hits[fr + sample(rg, arr, len)].sid;
 			++counts[z[i]];
@@ -280,12 +268,12 @@ void* Gibbs(void* arg) {
 		if (ROUND > BURNIN) {
 			if ((ROUND - BURNIN - 1) % GAP == 0) {
 				writeCountVector(params->fo, counts);
-				for (int i = 0; i <= M; i++) theta[i] = counts[i] / totc;
+				for (int i = 0; i <= M; i++) theta[i] = (counts[i] < 0 ? 0.0 : (counts[i] + pseudoC) / totc);
 				polishTheta(M, theta, eel, mw);
 				calcExpressionValues(M, theta, eel, tpm, fpkm);
 				for (int i = 0; i <= M; i++) {
-					params->pme_c[i] += counts[i] - pseudo_counts[i];
-					params->pve_c[i] += double(counts[i] - pseudo_counts[i]) * (counts[i] - pseudo_counts[i]);
+					params->pme_c[i] += counts[i];
+					params->pve_c[i] += double(counts[i]) * counts[i];
 					params->pme_tpm[i] += tpm[i];
 					params->pme_fpkm[i] += fpkm[i];
 				}
@@ -293,7 +281,7 @@ void* Gibbs(void* arg) {
 				for (int i = 0; i < m; i++) {
 				  int b = gi.spAt(i), e = gi.spAt(i + 1);
 				  double count = 0.0;
-				  for (int j = b; j < e; j++) count += counts[j] - pseudo_counts[j];
+				  for (int j = b; j < e; j++) count += counts[j];
 				  params->pve_c_genes[i] += count * count;
 				}
 
@@ -301,7 +289,7 @@ void* Gibbs(void* arg) {
 				  for (int i = 0; i < m_trans; i++) {
 				    int b = ta.spAt(i), e = ta.spAt(i + 1);
 				    double count = 0.0;
-				    for (int j = b; j < e; j++) count += counts[j] - pseudo_counts[j];
+				    for (int j = b; j < e; j++) count += counts[j];
 				    params->pve_c_trans[i] += count * count;
 				  }
 			}
@@ -385,7 +373,7 @@ void release() {
 
 int main(int argc, char* argv[]) {
 	if (argc < 7) {
-		printf("Usage: rsem-run-gibbs reference_name imdName statName BURNIN NSAMPLES GAP [-p #Threads] [--seed seed] [-q]\n");
+		printf("Usage: rsem-run-gibbs reference_name imdName statName BURNIN NSAMPLES GAP [-p #Threads] [--seed seed] [--pseudo-count pseudo_count] [-q]\n");
 		exit(-1);
 	}
 
@@ -399,6 +387,7 @@ int main(int argc, char* argv[]) {
 
 	nThreads = 1;
 	hasSeed = false;
+	pseudoC = 1.0;
 	quiet = false;
 
 	for (int i = 7; i < argc; i++) {
@@ -409,6 +398,7 @@ int main(int argc, char* argv[]) {
 		  seed = 0;
 		  for (int k = 0; k < len; k++) seed = seed * 10 + (argv[i + 1][k] - '0');
 		}
+		if (!strcmp(argv[i], "--pseudo-count")) pseudoC = atof(argv[i + 1]);
 		if (!strcmp(argv[i], "-q")) quiet = true;
 	}
 	verbose = !quiet;

@@ -47,6 +47,8 @@ struct CIType {
 
 int model_type;
 
+double pseudoC; // pseudo count, default is 1
+
 int nMB;
 double confidence;
 int nCV, nSpC, nSamples; // nCV: number of count vectors; nSpC: number of theta vectors sampled per count vector; nSamples: nCV * nSpC
@@ -107,14 +109,14 @@ void* sample_theta_from_c(void* arg) {
 	int cnt = 0;
 	while (fscanf(fi, "%d", &cvec[0]) == 1) {
 		for (int j = 1; j <= M; j++) assert(fscanf(fi, "%d", &cvec[j]) == 1);
-		assert(cvec[0] > 0);
+		assert(cvec[0] >= 0);
 
 		++cnt;
 
 		for (int j = 0; j <= M; j++) {
 		  gammas[j] = NULL; rgs[j] = NULL;
-		  if (cvec[j] > 0) {
-		    gammas[j] = new gamma_dist(cvec[j]);
+		  if (cvec[j] >= 0) {
+		    gammas[j] = new gamma_dist(cvec[j] + pseudoC);
 		    rgs[j] = new gamma_generator(*(params->engine), *gammas[j]);
 		  }
 		}
@@ -122,7 +124,7 @@ void* sample_theta_from_c(void* arg) {
 		for (int i = 0; i < nSpC; i++) {
 			double sum = 0.0;
 			for (int j = 0; j <= M; j++) {
-				theta[j] = ((j == 0 || (cvec[j] > 0 && eel[j] >= EPSILON && mw[j] >= EPSILON)) ? (*rgs[j])() / mw[j] : 0.0);
+				theta[j] = ((j == 0 || (cvec[j] >= 0 && eel[j] >= EPSILON && mw[j] >= EPSILON)) ? (*rgs[j])() / mw[j] : 0.0);
 				sum += theta[j];
 			}
 			assert(sum >= EPSILON);
@@ -505,7 +507,7 @@ void calculate_credibility_intervals(char* imdName) {
 
 int main(int argc, char* argv[]) {
 	if (argc < 8) {
-		printf("Usage: rsem-calculate-credibility-intervals reference_name imdName statName confidence nCV nSpC nMB [-p #Threads] [--seed seed] [-q]\n");
+		printf("Usage: rsem-calculate-credibility-intervals reference_name imdName statName confidence nCV nSpC nMB [-p #Threads] [--seed seed] [--pseudo-count pseudo_count] [-q]\n");
 		exit(-1);
 	}
 
@@ -521,6 +523,7 @@ int main(int argc, char* argv[]) {
 	nThreads = 1;
 	quiet = false;
 	hasSeed = false;
+	pseudoC = 1.0;
 	for (int i = 8; i < argc; i++) {
 		if (!strcmp(argv[i], "-p")) nThreads = atoi(argv[i + 1]);
 		if (!strcmp(argv[i], "--seed")) {
@@ -529,6 +532,7 @@ int main(int argc, char* argv[]) {
 		  seed = 0;
 		  for (int k = 0; k < len; k++) seed = seed * 10 + (argv[i + 1][k] - '0');
 		}
+		if (!strcmp(argv[i], "--pseudo-count")) pseudoC = atof(argv[i + 1]);
 		if (!strcmp(argv[i], "-q")) quiet = true;
 	}
 	verbose = !quiet;

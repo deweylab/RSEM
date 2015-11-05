@@ -57,6 +57,7 @@ my $genGenomeBamF = 0;
 my $sampling = 0;
 my $calcPME = 0;
 my $calcCI = 0;
+my $single_cell_prior = 0;
 my $quiet = 0;
 my $help = 0;
 
@@ -130,6 +131,7 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "no-bam-output" => sub { $genBamF = 0; },
 	   "output-genome-bam" => \$genGenomeBamF,
 	   "sampling-for-bam" => \$sampling,
+	   "single-cell-prior" => \$single_cell_prior,
 	   "calc-pme" => \$calcPME,
 	   "gibbs-burnin=i" => \$BURNIN,
 	   "gibbs-number-of-samples=i" => \$NCV,
@@ -502,6 +504,7 @@ if ($calcPME || $calcCI ) {
     $command = "rsem-run-gibbs $refName $imdName $statName $BURNIN $NCV $SAMPLEGAP";
     $command .= " -p $nThreads";
     if ($seed ne "NULL") { $command .= " --seed $seeds[1]"; }
+    if ($single_cell_prior) { $command .= " --pseudo-count 0.1"; }
     if ($quiet) { $command .= " -q"; }
     &runCommand($command);
 }
@@ -527,6 +530,7 @@ if ($calcCI) {
     $command = "rsem-calculate-credibility-intervals $refName $imdName $statName $CONFIDENCE $NCV $NSPC $NMB";
     $command .= " -p $nThreads";
     if ($seed ne "NULL") { $command .= " --seed $seeds[2]"; }
+    if ($single_cell_prior) { $command .= " --pseudo-count 0.1"; }
     if ($quiet) { $command .= " -q"; }
     &runCommand($command);
 
@@ -659,6 +663,10 @@ When RSEM generates a BAM file, instead of outputing all alignments a read has w
 =item B<--seed> <uint32>
 
 Set the seed for the random number generators used in calculating posterior mean estimates and credibility intervals. The seed must be a non-negative 32 bit interger. (Default: off)
+
+=item B<--single-cell-prior>
+
+By default, RSEM uses Dirichlet(1) as the prior to calculate posterior mean estimates and credibility intervals. However, much less genes are expressed in single cell RNA-Seq data. Thus, if you want to compute posterior mean estimates and/or credibility intervals and you have single-cell RNA-Seq data, you should turn on this option. Then RSEM will use Dirichlet(0.1) as the prior which encourage the sparsity of the expression levels. (Default: off)
 
 =item B<--calc-pme>
 
