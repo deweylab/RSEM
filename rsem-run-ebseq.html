@@ -105,15 +105,15 @@
 
 <h1 id="EXAMPLES">EXAMPLES</h1>
 
-<p>1) We&#39;re interested in isoform-level differential expression analysis and there are two conditions. Each condition has 5 replicates. We have already collected the data matrix as &#39;IsoMat&#39; and generated ngvector as &#39;ngvector.ngvec&#39;:</p>
+<p>1) We&#39;re interested in isoform-level differential expression analysis and there are two conditions. Each condition has 5 replicates. We have already collected the data matrix as &#39;IsoMat.txt&#39; and generated ngvector as &#39;ngvector.ngvec&#39;:</p>
 
-<pre><code> rsem-run-ebseq --ngvector ngvector.ngvec IsoMat 5,5 IsoMat.results</code></pre>
+<pre><code> rsem-run-ebseq --ngvector ngvector.ngvec IsoMat.txt 5,5 IsoMat.results</code></pre>
 
 <p>The results will be in &#39;IsoMat.results&#39;.</p>
 
-<p>2) We&#39;re interested in gene-level analysis and there are 3 conditions. The first condition has 3 replicates and the other two has 4 replicates each. The data matrix is named as &#39;GeneMat&#39;:</p>
+<p>2) We&#39;re interested in gene-level analysis and there are 3 conditions. The first condition has 3 replicates and the other two has 4 replicates each. The data matrix is named as &#39;GeneMat.txt&#39;:</p>
 
-<pre><code> rsem-run-ebseq GeneMat 3,4,4 GeneMat.results</code></pre>
+<pre><code> rsem-run-ebseq GeneMat.txt 3,4,4 GeneMat.results</code></pre>
 
 <p>Three files, &#39;GeneMat.results&#39;, &#39;GeneMat.results.pattern&#39;, and &#39;GeneMat.results.condmeans&#39;, will be generated.</p>
 
