@@ -666,7 +666,7 @@ Set the seed for the random number generators used in calculating posterior mean
 
 =item B<--single-cell-prior>
 
-By default, RSEM uses Dirichlet(1) as the prior to calculate posterior mean estimates and credibility intervals. However, much less genes are expressed in single cell RNA-Seq data. Thus, if you want to compute posterior mean estimates and/or credibility intervals and you have single-cell RNA-Seq data, you should turn on this option. Then RSEM will use Dirichlet(0.1) as the prior which encourage the sparsity of the expression levels. (Default: off)
+By default, RSEM uses Dirichlet(1) as the prior to calculate posterior mean estimates and credibility intervals. However, much less genes are expressed in single cell RNA-Seq data. Thus, if you want to compute posterior mean estimates and/or credibility intervals and you have single-cell RNA-Seq data, you are recommended to turn on this option. Then RSEM will use Dirichlet(0.1) as the prior which encourage the sparsity of the expression levels. (Default: off)
 
 =item B<--calc-pme>
 
@@ -820,7 +820,7 @@ The credibility level for credibility intervals. (Default: 0.95)
 
 =item B<--ci-memory> <int>
 
-Maximum size (in memory, MB) of the auxiliary buffer used for computing credibility intervals (CI). Set it larger for a faster CI calculation. However, leaving 2 GB memory free for other usage is recommended. (Default: 1024)
+Maximum size (in memory, MB) of the auxiliary buffer used for computing credibility intervals (CI). (Default: 1024)
 
 =item B<--ci-number-of-samples-per-count-vector> <int>
 
@@ -878,7 +878,7 @@ File containing isoform level expression estimates. The first line
 contains column names separated by the tab character. The format of
 each line in the rest of this file is:
 
-transcript_id gene_id length effective_length expected_count TPM FPKM IsoPct [posterior_mean_count posterior_standard_deviation_of_count pme_TPM pme_FPKM IsoPct_from_pme_TPM TPM_ci_lower_bound TPM_ci_upper_bound FPKM_ci_lower_bound FPKM_ci_upper_bound]
+transcript_id gene_id length effective_length expected_count TPM FPKM IsoPct [posterior_mean_count posterior_standard_deviation_of_count pme_TPM pme_FPKM IsoPct_from_pme_TPM TPM_ci_lower_bound TPM_ci_upper_bound TPM_coefficient_of_quartile_variation FPKM_ci_lower_bound FPKM_ci_upper_bound FPKM_coefficient_of_quartile_variation]
 
 Fields are separated by the tab character. Fields within "[]" are
 optional. They will not be presented if neither '--calc-pme' nor
@@ -933,7 +933,17 @@ percentage calculated from 'pme_TPM' values.
 'TPM_ci_lower_bound', 'TPM_ci_upper_bound', 'FPKM_ci_lower_bound' and
 'FPKM_ci_upper_bound' are lower(l) and upper(u) bounds of 95%
 credibility intervals for TPM and FPKM values. The bounds are
-inclusive (i.e. [l, u]).
+inclusive (i.e. [l, u]). 
+
+'TPM_coefficient_of_quartile_variation' and
+'FPKM_coefficient_of_quartile_variation' are coefficients of quartile
+variation (CQV) for TPM and FPKM values. CQV is a robust way of
+measuring the ratio between the standard deviation and the mean. It is
+defined as
+
+CQV := (Q3 - Q1) / (Q3 + Q1),
+
+where Q1 and Q3 are the first and third quartiles. 
 
 =item B<sample_name.genes.results>
 
@@ -941,7 +951,7 @@ File containing gene level expression estimates. The first line
 contains column names separated by the tab character. The format of
 each line in the rest of this file is:
 
-gene_id transcript_id(s) length effective_length expected_count TPM FPKM [posterior_mean_count posterior_standard_deviation_of_count pme_TPM pme_FPKM TPM_ci_lower_bound TPM_ci_upper_bound FPKM_ci_lower_bound FPKM_ci_upper_bound]
+gene_id transcript_id(s) length effective_length expected_count TPM FPKM [posterior_mean_count posterior_standard_deviation_of_count pme_TPM pme_FPKM TPM_ci_lower_bound TPM_ci_upper_bound TPM_coefficient_of_quartile_variation FPKM_ci_lower_bound FPKM_ci_upper_bound FPKM_coefficient_of_quartile_variation]
 
 Fields are separated by the tab character. Fields within "[]" are
 optional. They will not be presented if neither '--calc-pme' nor
@@ -966,7 +976,7 @@ allele-specific expression calculation. The first line
 contains column names separated by the tab character. The format of
 each line in the rest of this file is:
 
-allele_id transcript_id gene_id length effective_length expected_count TPM FPKM AlleleIsoPct AlleleGenePct [posterior_mean_count posterior_standard_deviation_of_count pme_TPM pme_FPKM AlleleIsoPct_from_pme_TPM AlleleGenePct_from_pme_TPM TPM_ci_lower_bound TPM_ci_upper_bound FPKM_ci_lower_bound FPKM_ci_upper_bound]
+allele_id transcript_id gene_id length effective_length expected_count TPM FPKM AlleleIsoPct AlleleGenePct [posterior_mean_count posterior_standard_deviation_of_count pme_TPM pme_FPKM AlleleIsoPct_from_pme_TPM AlleleGenePct_from_pme_TPM TPM_ci_lower_bound TPM_ci_upper_bound TPM_coefficient_of_quartile_variation FPKM_ci_lower_bound FPKM_ci_upper_bound FPKM_coefficient_of_quartile_variation]
 
 Fields are separated by the tab character. Fields within "[]" are
 optional. They will not be presented if neither '--calc-pme' nor

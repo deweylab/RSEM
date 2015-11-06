@@ -9,7 +9,7 @@ our @ISA = qw(Exporter);
 our @EXPORT = qw(runCommand);
 our @EXPORT_OK = qw(runCommand collectResults showVersionInfo);
 
-my $version = "RSEM v1.2.23";
+my $version = "RSEM v1.2.24";
 
 # command, {err_msg}
 sub runCommand {
