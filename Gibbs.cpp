@@ -234,6 +234,7 @@ void* Gibbs(void* arg) {
 	uniform_01_generator rg(*params->engine, uniform_01_dist());
 
 	// generate initial state
+	theta.assign(M + 1, 0.0);
 	z.assign(N1, 0);
 	counts[0] += N0;
 
