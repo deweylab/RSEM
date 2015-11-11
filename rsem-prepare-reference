@@ -104,7 +104,8 @@ else {
     &runCommand($command);
 }
 
-$command = "rsem-preref $ARGV[1].transcripts.fa $polyAChoice $ARGV[1] -l $polyALen";
+$command = "rsem-preref $ARGV[1].transcripts.fa $polyAChoice $ARGV[1]";
+if ($polyAChoice != 1) { $command .= " -l $polyALen"; }
 if ($polyAChoice == 2) { $command .= " -f $subsetFile"; }
 if ($quiet) { $command .= " -q"; }
 
