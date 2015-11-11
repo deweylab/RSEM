@@ -232,7 +232,11 @@ void writeResultsEM(int M, const char* refName, const char* imdName, Transcripts
 	  }
 	  for (int i = 1; i <= M; i++) {
 	    const Transcript& transcript = transcripts.getTranscriptAt(i);
-	    fprintf(fo, "%s%c", transcript.getGeneID().c_str(), (i < M ? '\t' : '\n'));
+	    
+	    fprintf(fo, "%s", transcript.getGeneID().c_str());
+	    if (appendNames && transcript.getGeneName() != "")
+	      fprintf(fo, "_%s", transcript.getGeneName().c_str());
+	    fprintf(fo, "%c", (i < M ? '\t' : '\n'));
 	  }
 	  for (int i = 1; i <= M; i++)
 	    fprintf(fo, "%d%c", tlens[i], (i < M ? '\t' : '\n'));
@@ -313,7 +317,8 @@ void writeResultsEM(int M, const char* refName, const char* imdName, Transcripts
 		const Transcript& transcript = transcripts.getTranscriptAt(gi.spAt(i));
 		
 		fprintf(fo, "%s", transcript.getGeneID().c_str());
-		if (appendNames && transcript.getGeneName() != "") fprintf(fo, "_%s", transcript.getGeneName().c_str());
+		if (appendNames && transcript.getGeneName() != "")
+		  fprintf(fo, "_%s", transcript.getGeneName().c_str());
 		fprintf(fo, "%c", (i < m - 1 ? '\t' : '\n'));
 	}
 	for (int i = 0; i < m; i++) {

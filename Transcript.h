@@ -126,7 +126,7 @@ void Transcript::read(std::ifstream& fin) {
 	strin>> transcript_id>> transcript_name;
 	
 	getline(fin, tmp);
-	strin.str(tmp);
+	strin.clear(); strin.str(tmp);
 	strin>> gene_id>> gene_name;
 	
 	getline(fin, seqname);
