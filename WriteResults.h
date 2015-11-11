@@ -131,8 +131,6 @@ void writeResultsEM(int M, const char* refName, const char* imdName, Transcripts
 	std::vector<int> tlens;
 	std::vector<double> fpkm, tpm, isopct;
 	std::vector<double> glens, gene_eels, gene_counts, gene_tpm, gene_fpkm;
-
-	std::string transcript_name, gene_name;
 	
 	// Load group info
 	sprintf(groupF, "%s.grp", refName);
@@ -228,9 +226,9 @@ void writeResultsEM(int M, const char* refName, const char* imdName, Transcripts
 	    const Transcript& transcript = transcripts.getTranscriptAt(i);
 
 	    fprintf(fo, "%s", transcript.getTranscriptID().c_str());
-	    transcript_name = transcript.getTranscriptName();
-	    if (transcript_name != "") fprintf(fo, "_%s", transcript_name.c_str());
-	    fprintf(fo, "%c", , (i < M ? '\t' : '\n'));
+	    if (appendNames && transcript.getTranscriptName() != "") 
+	      fprintf(fo, "_%s", transcript.getTranscriptName().c_str());
+	    fprintf(fo, "%c", (i < M ? '\t' : '\n'));
 	  }
 	  for (int i = 1; i <= M; i++) {
 	    const Transcript& transcript = transcripts.getTranscriptAt(i);
@@ -315,18 +313,20 @@ void writeResultsEM(int M, const char* refName, const char* imdName, Transcripts
 		const Transcript& transcript = transcripts.getTranscriptAt(gi.spAt(i));
 		
 		fprintf(fo, "%s", transcript.getGeneID().c_str());
-		gene_name = transcript.getGeneName();
-		if (appendNames && gene_name != "") fprintf(fo, "_%s", gene_name.c_str());
+		if (appendNames && transcript.getGeneName() != "") fprintf(fo, "_%s", transcript.getGeneName().c_str());
 		fprintf(fo, "%c", (i < m - 1 ? '\t' : '\n'));
 	}
 	for (int i = 0; i < m; i++) {
 		int b = gi.spAt(i), e = gi.spAt(i + 1);
 		std::string curtid = "", tid;
 		for (int j = b; j < e; j++) {
-			tid = transcripts.getTranscriptAt(j).getTranscriptID();
+			const Transcript& transcript = transcripts.getTranscriptAt(j);
+			tid = transcript.getTranscriptID();
 			if (curtid != tid) {
 			  if (curtid != "") fprintf(fo, ",");
 			  fprintf(fo, "%s", tid.c_str());
+			  if (appendNames && transcript.getTranscriptName() != "")
+			    fprintf(fo, "_%s", transcript.getTranscriptName().c_str());
 			  curtid = tid;
 			}
 		}

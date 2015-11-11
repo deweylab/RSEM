@@ -552,9 +552,9 @@ int main(int argc, char* argv[]) {
 		printf("  -b: produce bam format output file. (default: off)\n");
 		printf("  -q: set it quiet\n");
 		printf("  --gibbs-out: generate output file used by Gibbs sampler. (default: off)\n");
-		printf("  --sampling: sample each read from its posterior distribution when bam file is generated. (default: off)\n");
+		printf("  --sampling: sample each read from its posterior distribution when BAM file is generated. (default: off)\n");
 		printf("  --seed uint32: the seed used for the BAM sampling. (default: off)\n");
-		printf("  --append-names: append transcript_name/gene_names when available. (default: off)\n");
+		printf("  --append-names: append transcript_name/gene_name when available. (default: off)\n");
 		printf("// model parameters should be in imdName.mparams.\n");
 		exit(-1);
 	}

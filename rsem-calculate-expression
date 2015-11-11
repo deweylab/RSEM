@@ -75,6 +75,8 @@ my $bowtie2_sensitivity_level = "sensitive"; # must be one of "very_fast", "fast
 
 my $seed = "NULL";
 
+my $appendNames = 0;
+
 my $version = 0;
 
 my $mTime = 0;
@@ -128,6 +130,7 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "estimate-rspd" => \$estRSPD,
 	   "num-rspd-bins=i" => \$B,
 	   "p|num-threads=i" => \$nThreads,
+	   "append-names" => \$appendNames,
 	   "no-bam-output" => sub { $genBamF = 0; },
 	   "output-genome-bam" => \$genGenomeBamF,
 	   "sampling-for-bam" => \$sampling,
@@ -466,6 +469,7 @@ if ($genBamF) {
     if ($seed ne "NULL") { $command .= " --seed $seeds[0]"; }
 }
 if ($calcPME || $calcCI) { $command .= " --gibbs-out"; }
+if ($appendNames) { $command .= " --append-names"; }
 if ($quiet) { $command .= " -q"; }
 
 &runCommand($command);
@@ -647,6 +651,10 @@ Input file is in BAM format. (Default: off)
 =item B<-p/--num-threads> <int>
 
 Number of threads to use. Both Bowtie/Bowtie2, expression estimation and 'samtools sort' will use this many threads. (Default: 1)
+
+=item B<--append-names>
+
+If gene_name/transcript_name is available, append it to the end of gene_id/transcript_id (separated by '_') in files 'sample_name.isoforms.results' and 'sample_name.genes.results'. (Default: off)
 
 =item B<--no-bam-output>
 
