@@ -92,6 +92,8 @@ ModelParams mparams;
 bool hasSeed;
 seedType seed;
 
+bool appendNames;
+
 template<class ReadType, class HitType, class ModelType>
 void init(ReadReader<ReadType> **&readers, HitContainer<HitType> **&hitvs, double **&ncpvs, ModelType **&mhps) {
 	READ_INT_TYPE nReads;
@@ -279,7 +281,7 @@ template<class ModelType>
 void writeResults(ModelType& model, double* counts) {
   sprintf(modelF, "%s.model", statName);
   model.write(modelF);
-  writeResultsEM(M, refName, imdName, transcripts, theta, eel, countvs[0]);
+  writeResultsEM(M, refName, imdName, transcripts, theta, eel, countvs[0], appendNames);
 }
 
 template<class ReadType, class HitType, class ModelType>
@@ -541,7 +543,7 @@ int main(int argc, char* argv[]) {
 	bool quiet = false;
 
 	if (argc < 6) {
-		printf("Usage : rsem-run-em refName read_type sampleName imdName statName [-p #Threads] [-b samInpType samInpF has_fn_list_? [fn_list]] [-q] [--gibbs-out] [--sampling] [--seed seed]\n\n");
+		printf("Usage : rsem-run-em refName read_type sampleName imdName statName [-p #Threads] [-b samInpType samInpF has_fn_list_? [fn_list]] [-q] [--gibbs-out] [--sampling] [--seed seed] [--append-names]\n\n");
 		printf("  refName: reference name\n");
 		printf("  read_type: 0 single read without quality score; 1 single read with quality score; 2 paired-end read without quality score; 3 paired-end read with quality score.\n");
 		printf("  sampleName: sample's name, including the path\n");
@@ -552,6 +554,7 @@ int main(int argc, char* argv[]) {
 		printf("  --gibbs-out: generate output file used by Gibbs sampler. (default: off)\n");
 		printf("  --sampling: sample each read from its posterior distribution when bam file is generated. (default: off)\n");
 		printf("  --seed uint32: the seed used for the BAM sampling. (default: off)\n");
+		printf("  --append-names: append transcript_name/gene_names when available. (default: off)\n");
 		printf("// model parameters should be in imdName.mparams.\n");
 		exit(-1);
 	}
@@ -571,7 +574,8 @@ int main(int argc, char* argv[]) {
 	genGibbsOut = false;
 	pt_fn_list = NULL;
 	hasSeed = false;
-
+	appendNames = false;
+	
 	for (int i = 6; i < argc; i++) {
 		if (!strcmp(argv[i], "-p")) { nThreads = atoi(argv[i + 1]); }
 		if (!strcmp(argv[i], "-b")) {
@@ -592,6 +596,7 @@ int main(int argc, char* argv[]) {
 		  seed = 0;
 		  for (int k = 0; k < len; k++) seed = seed * 10 + (argv[i + 1][k] - '0');
 		}
+		if (!strcmp(argv[i], "--append-names")) appendNames = true;
 	}
 
 	general_assert(nThreads > 0, "Number of threads should be bigger than 0!");

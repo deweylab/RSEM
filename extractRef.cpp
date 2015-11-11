@@ -106,10 +106,7 @@ bool buildTranscript(int sp, int ep) {
 	}
 	if (cur_s > 0) vec.push_back(Interval(cur_s, cur_e));
 
-	if (gene_name != "") gene_id += "_" + gene_name;
-	if (transcript_name != "") transcript_id += "_" + transcript_name;
-
-	transcripts.add(Transcript(transcript_id, gene_id, seqname, strand, vec, left));
+	transcripts.add(Transcript(transcript_id, gene_id, seqname, strand, vec, left, transcript_name, gene_name));
 
 	return true;
 }
