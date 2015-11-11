@@ -1,3 +1,9 @@
+RSEM v1.2.25
+
+- RSEM will extract gene_name/transcript_name from GTF file when possible; however, it only appends them to the 'sample_name.*.results' files if '--append-names' option is specified; unlike v1.2.24, this version is compatible with STAR aligner even when '--append-names' is set
+
+--------------------------------------------------------------------------------------------
+
 RSEM v1.2.24
 
 - RSEM will extract gene_name/transcript_name from GTF file when possible; if extracted, gene_name/transcript_name will append at the end of gene_id/transcript_id with an underscore in between
