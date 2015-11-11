@@ -43,15 +43,22 @@ build_map <- function(filename) {
   map
 }
 
+canonical_id = function(id) {
+  pos = regexpr("_", id, fixed = T)
+  ifelse(pos > 0, substr(id, 1, pos - 1), id)
+}
+
 make_a_plot <- function(id) {
-  vec <- readdepth[[id]]	
+  cid = canonical_id(id)
+  
+  vec <- readdepth[[cid]]	
   if (is.null(vec)) exit_with_error(sprintf("Unknown %s detected, %s is not included in RSEM's indices.", ifelse(alleleS, "allele-specific transcript", "transcript"), id))
   if (is.na(vec[[2]])) wiggle <- rep(0, vec[[1]]) else wiggle <- as.numeric(unlist(strsplit(vec[[2]], split = " ")))
   len <- length(wiggle)
   if (!show_uniq) {
     plot(wiggle, type = "h")
   } else {
-    vec <- readdepth_uniq[[id]]
+    vec <- readdepth_uniq[[cid]]
     stopifnot(!is.null(vec))
     if (is.na(vec[[2]])) wiggle_uniq <- rep(0, vec[[1]]) else wiggle_uniq <- as.numeric(unlist(strsplit(vec[[2]], split = " ")))
     stopifnot(len == length(wiggle_uniq))
