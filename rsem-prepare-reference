@@ -101,6 +101,7 @@ if ($gff3F ne "") {
 
 if ($gtfF ne "") {
     $"=" ";
+    $gtf_sources =~ s/ /\\ /g;
     $command = "rsem-extract-reference-transcripts $ARGV[1] $quiet $gtfF $gtf_sources";
     if ($mappingF ne "") { $command .= " 1 $mappingF"; }
     else { $command .= " 0"; }

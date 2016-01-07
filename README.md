@@ -101,18 +101,32 @@ documentation page](rsem-prepare-reference.html).
 RefSeq and Ensembl are two frequently used annotations. For human and
 mouse, GENCODE annotaions are also available. In this section, we show
 how to build RSEM references using these annotations. Without loss of
-generality, we use human genome as an example.
+generality, we use human genome as an example and in addition build
+Bowtie indices.
 
 For RefSeq, the genome and annotation file in GFF3 format can be found
-at [RefSeq genomes
-FTP](ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/). For example, the
-human genome and GFF3 file locate at subdirectory
+at RefSeq genomes FTP:
+
+```
+ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/
+```
+
+For example, the human genome and GFF3 file locate at the subdirectory
 `vertebrate_mammalian/Homo_sapiens/all_assembly_versions/GCF_000001405.31_GRCh38.p5`. `GCF_000001405.31_GRCh38.p5`
-is the latest version when this section was written. Download and
-unzip the genome
-[GCF_000001405.31_GRCh38.p5_genomic.fna.gz](ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Homo_sapiens/all_assembly_versions/GCF_000001405.31_GRCh38.p5/GCF_000001405.31_GRCh38.p5_genomic.fna.gz)
-and the annotation file
-[GCF_000001405.31_GRCh38.p5_genomic.gff.gz](ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Homo_sapiens/all_assembly_versions/GCF_000001405.31_GRCh38.p5/GCF_000001405.31_GRCh38.p5_genomic.gff.gz).
+is the latest annotation version when this section was written.
+
+Download and unzip the genome and annotation files to your working directory:
+
+```
+ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Homo_sapiens/all_assembly_versions/GCF_000001405.31_GRCh38.p5/GCF_000001405.31_GRCh38.p5_genomic.fna.gz
+ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Homo_sapiens/all_assembly_versions/GCF_000001405.31_GRCh38.p5/GCF_000001405.31_GRCh38.p5_genomic.gff.gz
+```
+
+Then type the following RSEM commands:
+
+```
+rsem-prepare-reference --gff3 GCF_000001405.31_GRCh38.p5_genomic.gff --trusted-sources BestRefSeq,Curated\ Genomic --bowtie GCF_000001405.31_GRCh38.p5_genomic.fna ref/human_ref
+```
 
 
 
