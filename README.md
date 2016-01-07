@@ -66,7 +66,7 @@ perl scripts and 'WHAT_IS_NEW' contains the RSEM version information.
 
 C++, Perl and R are required to be installed. 
 
-To use the '--gff3' option of 'rsem-prepare-reference', Python is also
+To use the `--gff3` option of `rsem-prepare-reference`, Python is also
 required to be installed.
 
 To take advantage of RSEM's built-in support for the Bowtie/Bowtie
@@ -96,7 +96,17 @@ To prepare the reference sequences, you should run the
 to get usage information or visit the [rsem-prepare-reference
 documentation page](rsem-prepare-reference.html).
 
-#### <a name="built"></a> Built
+#### <a name="built"></a> Build RSEM references using RefSeq, Ensembl, or GENCODE annotations
+
+RefSeq and Ensembl are two frequently used annotations. For human and
+mouse, GENCODE annotaions are also available. In this section, we show
+how to build RSEM references using these annotations. Without loss of
+generality, we use human genome as an example.
+
+For RefSeq, the genome and annotation file in GFF3 format can be found
+at [RefSeq genomes FTP](ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/). For example, the human genome and GFF3 file are at subdirectory `vertebrate_mammalian/Homo_sapiens/latest_assembly_versions/`
+
+
 
 ### II. Calculating Expression Values
 
