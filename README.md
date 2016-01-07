@@ -100,9 +100,10 @@ documentation page](rsem-prepare-reference.html).
 
 RefSeq and Ensembl are two frequently used annotations. For human and
 mouse, GENCODE annotaions are also available. In this section, we show
-how to build RSEM references using these annotations. Without loss of
-generality, we use human genome as an example and in addition build
-Bowtie indices.
+how to build RSEM references using these annotations. Note that it is
+important to pair the genome with the annotation file for each
+annotation source. Without loss of generality, we use human genome as
+an example and in addition build Bowtie indices.
 
 For **RefSeq**, the genome and annotation file in GFF3 format can be found
 at RefSeq genomes FTP:
@@ -115,7 +116,7 @@ For example, the human genome and GFF3 file locate at the subdirectory
 `vertebrate_mammalian/Homo_sapiens/all_assembly_versions/GCF_000001405.31_GRCh38.p5`. `GCF_000001405.31_GRCh38.p5`
 is the latest annotation version when this section was written.
 
-Download and unzip the genome and annotation files to your working directory:
+Download and decompress the genome and annotation files to your working directory:
 
 ```
 ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Homo_sapiens/all_assembly_versions/GCF_000001405.31_GRCh38.p5/GCF_000001405.31_GRCh38.p5_genomic.fna.gz
@@ -129,19 +130,69 @@ rsem-prepare-reference --gff3 GCF_000001405.31_GRCh38.p5_genomic.gff \
 		       --trusted-sources BestRefSeq,Curated\ Genomic \
 		       --bowtie \
 		       GCF_000001405.31_GRCh38.p5_genomic.fna \
-		       ref/human_ref
+		       ref/human_refseq
 ```
 
 In the above command, `--trusted-sources` tells RSEM to only extract
-transcripts from sources like `BestRefSeq` or `Curated Genomic`. By
+transcripts from RefSeq sources like `BestRefSeq` or `Curated Genomic`. By
 default, RSEM trust all sources. There is also an
 `--gff3-RNA-patterns` option and its default is `mRNA`. Setting
 `--gff3-RNA-patterns mRNA,rRNA` will allow RSEM to extract all mRNAs
 and rRNAs from the genome. Visit [here](rsem-prepare-reference.html)
 for more details.
 
+Because the gene and transcript IDs (e.g. gene1000, rna28655)
+extracted from RefSeq GFF3 files are hard to understand, it is
+recommended to turn on the `--append-names` option in
+`rsem-calculate-expression` for better interpretation of
+quantification results.
 
+For **Ensembl**, the genome and annotation files can be found at
+[Ensembl FTP](http://uswest.ensembl.org/info/data/ftp/index.html).
 
+Download and decompress the human genome and GTF files:
+
+```
+ftp://ftp.ensembl.org/pub/release-83/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.toplevel.fa.gz
+ftp://ftp.ensembl.org/pub/release-83/gtf/homo_sapiens/Homo_sapiens.GRCh38.83.gtf.gz
+```
+
+Then use the following command to build RSEM references:
+
+```
+rsem-prepare-reference --gtf Homo_sapiens.GRCh38.83.gtf \
+		       --bowtie \
+		       Homo_sapiens.GRCh38.dna.toplevel.fa \
+		       ref/human_ensembl
+```
+
+If you want to use GFF3 file instead, which is unnecessary and not
+recommended, you should set `--gff3-RNA-patterns transcript` because
+`mRNA` is replaced by `transcript` in Ensembl GFF3 files.
+
+**GENCODE** only provides human and mouse annotations. The genome and
+  annotation files can be found from [GENCODE
+  website](http://www.gencodegenes.org/).
+
+Download and decompress the human genome and GTF files:
+
+```
+ftp://ftp.sanger.ac.uk/pub/gencode/Gencode_human/release_24/GRCh38.p5.genome.fa.gz
+ftp://ftp.sanger.ac.uk/pub/gencode/Gencode_human/release_24/gencode.v24.annotation.gtf.gz
+```
+
+Then type the following command:
+
+```
+rsem-prepare-reference --gtf gencode.v24.annotation.gtf \
+		       --bowtie \
+		       GRCh38.p5.genome.fa \
+		       ref/human_gencode
+
+```
+
+Similar to Ensembl annotation, if you want to use GFF3 files (not
+recommended), set `--gff3-RNA-patterns transcript`.
 
 ### II. Calculating Expression Values
 
