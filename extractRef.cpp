@@ -4,9 +4,11 @@
 #include<cstdlib>
 #include<fstream>
 #include<sstream>
+#include<set>
 #include<map>
 #include<vector>
 #include<algorithm>
+#include<string>
 
 #include "utils.h"
 #include "my_assert.h"
@@ -49,6 +51,20 @@ char mappingFile[STRLEN];
 
 map<string, string> mi_table; // mapping info table
 map<string, string>::iterator mi_iter; //mapping info table's iterator
+
+set<string> sources;
+
+void parseSources(char* sstr) {
+  char* p = strtok(sstr, ",");
+  while (p != NULL) {
+    sources.insert(p);
+    p = strtok(NULL, ",");
+  }
+}
+
+inline bool isTrusted(const string& source) {
+  return sources.size() == 0 || sources.find(source) != sources.end();
+}
 
 void loadMappingInfo(char* mappingF) {
 	ifstream fin(mappingF);
@@ -124,8 +140,7 @@ void parse_gtf_file(char* gtfF) {
  	while (getline(fin, line)) {
  		if (line[0] == '#') continue; // if this line is comment, jump it
  		item.parse(line);
- 		string feature = item.getFeature();
- 		if (feature == "exon") {
+  		if (item.getFeature() == "exon" && isTrusted(item.getSource())) {
  			if (item.getStart() > item.getEnd()) {
 				printf("Warning: exon's start position is larger than its end position! This exon is discarded.\n");
  				printf("\t%s\n\n", line.c_str());
@@ -151,7 +166,7 @@ void parse_gtf_file(char* gtfF) {
  		if (verbose && cnt % 200000 == 0) { printf("Parsed %d lines\n", cnt); }
 	}
 	fin.close();
-
+	
 	sort(items.begin(), items.end());
 
 	int sp = 0, ep; // start pointer, end pointer
@@ -267,19 +282,20 @@ void writeResults(char* refName) {
 }
 
 int main(int argc, char* argv[]) {
-  if (argc < 6 || ((hasMappingFile = atoi(argv[4])) && argc < 7)) {
-		printf("Usage: rsem-extract-reference-transcripts refName quiet gtfF hasMappingFile [mappingFile] chromosome_file_1 [chromosome_file_2 ...]\n");
+  if (argc < 7 || ((hasMappingFile = atoi(argv[5])) && argc < 8)) {
+		printf("Usage: rsem-extract-reference-transcripts refName quiet gtfF sources hasMappingFile [mappingFile] chromosome_file_1 [chromosome_file_2 ...]\n");
 		exit(-1);
 	}
 
 	verbose = !atoi(argv[2]);
 	if (hasMappingFile) {
-		loadMappingInfo(argv[5]);
+		loadMappingInfo(argv[6]);
 	}
-	parse_gtf_file(argv[3]);
 
-	printf("Done!\n");
-	exit(-1);
+	sources.clear();
+	if (strcmp(argv[4], "None")) parseSources(argv[4]);
+	
+	parse_gtf_file(argv[3]);
 	
 	ifstream fin;
 	string line, gseq, seqname;
@@ -288,7 +304,7 @@ int main(int argc, char* argv[]) {
 
 	seqs.clear();
 	seqs.resize(M + 1, "");
-	int start = hasMappingFile ? 6 : 5;
+	int start = hasMappingFile ? 7 : 6;
 	for (int i = start; i < argc; i++) {
 		fin.open(argv[i]);
 		general_assert(fin.is_open(), "Cannot open " + cstrtos(argv[i]) + "! It may not exist.");

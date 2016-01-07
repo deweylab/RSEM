@@ -1,3 +1,12 @@
+RSEM v1.2.26
+
+- RSEM supports GFF3 annotation format now
+- Added instructions to build RSEM references using RefSeq, Ensembl, or GENCODE annotations
+- Added an option to extract only transcripts from certain resources given a GTF/GFF3 file
+- Fixed a bug and improved the clarity of error messages for extracting transcripts from genome
+
+--------------------------------------------------------------------------------------------
+
 RSEM v1.2.25
 
 - RSEM will extract gene_name/transcript_name from GTF file when possible; however, it only appends them to the 'sample_name.*.results' files if '--append-names' option is specified; unlike v1.2.24, this version is compatible with STAR aligner even when '--append-names' is set

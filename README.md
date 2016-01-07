@@ -11,6 +11,7 @@ Table of Contents
 * [Introduction](#introduction)
 * [Compilation & Installation](#compilation)
 * [Usage](#usage)
+  * [Build RSEM references using RefSeq, Ensembl, or GENCODE annotations](#built)
 * [Example](#example)
 * [Simulation](#simulation)
 * [Generate Transcript-to-Gene-Map from Trinity Output](#gen_trinity)
@@ -65,10 +66,14 @@ perl scripts and 'WHAT_IS_NEW' contains the RSEM version information.
 
 C++, Perl and R are required to be installed. 
 
-To take advantage of RSEM's built-in support for the Bowtie/Bowtie 2
-alignment program, you must have
-[Bowtie](http://bowtie-bio.sourceforge.net) and/or [Bowtie
-2](http://bowtie-bio.sourceforge.net/bowtie2) installed.
+To use the '--gff3' option of 'rsem-prepare-reference', Python is also
+required to be installed.
+
+To take advantage of RSEM's built-in support for the Bowtie/Bowtie
+2/STAR alignment program, you must have
+[Bowtie](http://bowtie-bio.sourceforge.net)/[Bowtie
+2](http://bowtie-bio.sourceforge.net/bowtie2)/[STAR](https://github.com/alexdobin/STAR)
+installed.
 
 ## <a name="usage"></a> Usage
 
@@ -90,6 +95,8 @@ To prepare the reference sequences, you should run the
 
 to get usage information or visit the [rsem-prepare-reference
 documentation page](rsem-prepare-reference.html).
+
+#### <a name="built"></a> Built
 
 ### II. Calculating Expression Values
 
