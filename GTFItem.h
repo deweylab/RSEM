@@ -77,7 +77,7 @@ class GTFItem {
     std::string attribute, identifier;
     int nleft = 4;
     
-    while (getline(strin, attribute, ';') && (nleft > 0)) {
+    while (getline(strin, attribute, ';') && nleft > 0 && !strin.eof()) {
       size_t pos = 0, rpos, len = attribute.length();
       // locate identifier
       while (pos < len && isspace(attribute[pos])) ++pos;

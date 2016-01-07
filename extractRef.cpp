@@ -86,16 +86,16 @@ bool buildTranscript(int sp, int ep) {
 		int start = items[i].getStart();
 		int end = items[i].getEnd();
 
-		general_assert(strand == items[i].getStrand(), "According to the GTF file given, a transcript has exons from different orientations!");
-		general_assert(seqname == items[i].getSeqName(), "According to the GTF file given, a transcript has exons on multiple chromosomes!");
+		general_assert(strand == items[i].getStrand(), "According to the GTF file given, transcript " + transcript_id + " has exons from different orientations!");
+		general_assert(seqname == items[i].getSeqName(), "According to the GTF file given, transcript " + transcript_id + " has exons on multiple chromosomes!");
 
 		if (items[i].getGeneName() != "") {
 		  if (gene_name == "") gene_name = items[i].getGeneName();
-		  else general_assert(gene_name == items[i].getGeneName(), "A transcript is associated with multiple gene names!");
+		  else general_assert(gene_name == items[i].getGeneName(), "Transcript " + transcript_id + " is associated with multiple gene names!");
 		}
 		if (items[i].getTranscriptName() != "") {
 		  if (transcript_name == "") transcript_name = items[i].getTranscriptName();
-		  else general_assert(transcript_name == items[i].getTranscriptName(), "A transcript is associated with multiple transcript names!");
+		  else general_assert(transcript_name == items[i].getTranscriptName(), "Transcript " + transcript_id + " is associated with multiple transcript names!");
 		}
 
 		if (cur_e + 1 < start) {
@@ -278,6 +278,9 @@ int main(int argc, char* argv[]) {
 	}
 	parse_gtf_file(argv[3]);
 
+	printf("Done!\n");
+	exit(-1);
+	
 	ifstream fin;
 	string line, gseq, seqname;
 
