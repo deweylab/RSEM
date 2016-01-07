@@ -104,7 +104,7 @@ how to build RSEM references using these annotations. Without loss of
 generality, we use human genome as an example and in addition build
 Bowtie indices.
 
-For RefSeq, the genome and annotation file in GFF3 format can be found
+For **RefSeq**, the genome and annotation file in GFF3 format can be found
 at RefSeq genomes FTP:
 
 ```
@@ -122,11 +122,23 @@ ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Homo_sapiens/all_
 ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Homo_sapiens/all_assembly_versions/GCF_000001405.31_GRCh38.p5/GCF_000001405.31_GRCh38.p5_genomic.gff.gz
 ```
 
-Then type the following RSEM commands:
+Then type the following command:
 
 ```
-rsem-prepare-reference --gff3 GCF_000001405.31_GRCh38.p5_genomic.gff --trusted-sources BestRefSeq,Curated\ Genomic --bowtie GCF_000001405.31_GRCh38.p5_genomic.fna ref/human_ref
+rsem-prepare-reference --gff3 GCF_000001405.31_GRCh38.p5_genomic.gff \
+		       --trusted-sources BestRefSeq,Curated\ Genomic \
+		       --bowtie \
+		       GCF_000001405.31_GRCh38.p5_genomic.fna \
+		       ref/human_ref
 ```
+
+In the above command, `--trusted-sources` tells RSEM to only extract
+transcripts from sources like `BestRefSeq` or `Curated Genomic`. By
+default, RSEM trust all sources. There is also an
+`--gff3-RNA-patterns` option and its default is `mRNA`. Setting
+`--gff3-RNA-patterns mRNA,rRNA` will allow RSEM to extract all mRNAs
+and rRNAs from the genome. Visit [here](rsem-prepare-reference.html)
+for more details.
 
 
 
