@@ -4,7 +4,7 @@
 <head>
 <title>rsem-prepare-reference</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:root@osx004.apple.com" />
+<link rev="made" href="mailto:nlo@osx004.apple.com" />
 </head>
 
 <body style="background-color: white">
@@ -36,13 +36,13 @@
 <dt id="reference_fasta_file-s"><b>reference_fasta_file(s)</b></dt>
 <dd>
 
-<p>Either a comma-separated list of Multi-FASTA formatted files OR a directory name. If a directory name is specified, RSEM will read all files with suffix &quot;.fa&quot; or &quot;.fasta&quot; in this directory. The files should contain either the sequences of transcripts or an entire genome, depending on whether the --gtf option is used.</p>
+<p>Either a comma-separated list of Multi-FASTA formatted files OR a directory name. If a directory name is specified, RSEM will read all files with suffix &quot;.fa&quot; or &quot;.fasta&quot; in this directory. The files should contain either the sequences of transcripts or an entire genome, depending on whether the &#39;--gtf&#39; option is used.</p>
 
 </dd>
 <dt id="reference-name"><b>reference name</b></dt>
 <dd>
 
-<p>The name of the reference used. RSEM will generate several reference-related files that are prefixed by this name. This name can contain path information (e.g. /ref/mm9).</p>
+<p>The name of the reference used. RSEM will generate several reference-related files that are prefixed by this name. This name can contain path information (e.g. &#39;/ref/mm9&#39;).</p>
 
 </dd>
 </dl>
@@ -56,9 +56,27 @@
 
 <p>If this option is on, RSEM assumes that &#39;reference_fasta_file(s)&#39; contains the sequence of a genome, and will extract transcript reference sequences using the gene annotations specified in &lt;file&gt;, which should be in GTF format.</p>
 
-<p>If this option is off, RSEM will assume &#39;reference_fasta_file(s)&#39; contains the reference transcripts. In this case, RSEM assumes that name of each sequence in the Multi-FASTA files is its transcript_id.</p>
+<p>If this and &#39;--gff3&#39; options are off, RSEM will assume &#39;reference_fasta_file(s)&#39; contains the reference transcripts. In this case, RSEM assumes that name of each sequence in the Multi-FASTA files is its transcript_id.</p>
 
 <p>(Default: off)</p>
+
+</dd>
+<dt id="gff3-file"><b>--gff3</b> &lt;file&gt;</dt>
+<dd>
+
+<p>The annotation file is in GFF3 format instead of GTF format. RSEM will first convert it to GTF format with the file name &#39;reference_name.gtf&#39;. Please make sure that &#39;reference_name.gtf&#39; does not exist. (Default: off)</p>
+
+</dd>
+<dt id="gff3-RNA-patterns-pattern"><b>--gff3-RNA-patterns</b> &lt;pattern&gt;</dt>
+<dd>
+
+<p>&lt;pattern&gt; is a comma-separated list of transcript categories, e.g. &quot;mRNA,rRNA&quot;. Only transcripts that match the &lt;pattern&gt; will be extracted. (Default: &quot;mRNA&quot;)</p>
+
+</dd>
+<dt id="trusted-sources-sources"><b>--trusted-sources</b> &lt;sources&gt;</dt>
+<dd>
+
+<p>&lt;sources&gt; is a comma-separated list of trusted sources, e.g. &quot;ENSEMBL,HAVANA&quot;. Only transcripts coming from these sources will be extracted. If this option is off, all sources are accepted. (Default: off)</p>
 
 </dd>
 <dt id="transcript-to-gene-map-file"><b>--transcript-to-gene-map</b> &lt;file&gt;</dt>
@@ -72,7 +90,7 @@
 
 <p>If you are using a GTF file for the &quot;UCSC Genes&quot; gene set from the UCSC Genome Browser, then the &quot;knownIsoforms.txt&quot; file (obtained from the &quot;Downloads&quot; section of the UCSC Genome Browser site) is of this format.</p>
 
-<p>If this option is off, then the mapping of isoforms to genes depends on whether the --gtf option is specified. If --gtf is specified, then RSEM uses the &quot;gene_id&quot; and &quot;transcript_id&quot; attributes in the GTF file. Otherwise, RSEM assumes that each sequence in the reference sequence files is a separate gene.</p>
+<p>If this option is off, then the mapping of isoforms to genes depends on whether the &#39;--gtf&#39; option is specified. If &#39;--gtf&#39; is specified, then RSEM uses the &quot;gene_id&quot; and &quot;transcript_id&quot; attributes in the GTF file. Otherwise, RSEM assumes that each sequence in the reference sequence files is a separate gene.</p>
 
 <p>(Default: off)</p>
 

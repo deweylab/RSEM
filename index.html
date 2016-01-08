@@ -20,13 +20,13 @@
 <h2>RSEM (RNA-Seq by Expectation-Maximization)</h2>
 <hr>
 <p><strong>Updates</strong></p>
+<p>Jan 7, 2016 &nbsp; RSEM v1.2.26 is online now. RSEM supports GFF3 annotation format now. Added instructions to build RSEM references using RefSeq, Ensembl, or GENCODE annotations. Added an option to extract only transcripts from certain resources given a GTF/GFF3 file. Fixed a bug and improved the clarity of error messages for extracting transcripts from genome.</p>
 <p>Nov 11, 2015 &nbsp; RSEM v1.2.25 is online now. RSEM will extract gene_name/transcript_name from GTF file when possible; however, it only appends them to the 'sample_name.*.results' files if '--append-names' option is specified; unlike v1.2.24, this version is compatible with STAR aligner even when '--append-names' is set.</p>
 <p>Nov 6, 2015 &nbsp; RSEM v1.2.24 is online now. RSEM will extract gene_name/transcript_name from GTF file when possible; if extracted, gene_name/transcript_name will append at the end of gene_id/transcript_id with an underscore in between. Modified 'rsem-plot-model' to indicate the modes of fragment length and read length distributions. Modified 'rsem-plot-model' to present alignment statistics better using both barplot and pie chart. Updated 'EBSeq' to version 1.2.0. Added coefficient of quartile variation in addition to credibility intervals when '--calc-ci' is turned on. Added '--single-cell-prior' option to notify RSEM to use a sparse prior (Dir(0.1)) for single cell data; this option only makes sense if '--calc-pme' or '--calc-ci' is set.</p>
-<p>Oct 19, 2015 &nbsp; RSEM v1.2.23 is online now. Moved version information from WHAT_IS_NEW to rsem_perl_utils.pm in order to make sure the '--version' option always output the version information. Fixed a typo in 'rsem-calculate-expression' that can lead an error when '--star' is set and '--star-path' is not set. Fixed a bug that can occasionally crash the RSEM simulator. Added user-friendly error messages that are triggered when RSEM detects invalid bases in the input FASTA file during reference building.</p>
 <p>Click <a href="updates.html">here</a> for full update information. </p>
 <p><strong>Source Code</strong></p>
 <ul>
-<li><a href="https://github.com/deweylab/RSEM/archive/v1.2.25.tar.gz" onclick="ga('send', 'event', { eventCategory: 'download', eventAction: 'click', eventLabel: 'latest source codes', nonIteraction: true });">Latest version</a>
+<li><a href="https://github.com/deweylab/RSEM/archive/v1.2.26.tar.gz" onclick="ga('send', 'event', { eventCategory: 'download', eventAction: 'click', eventLabel: 'latest source codes', nonIteraction: true });">Latest version</a>
 <li><a href="https://github.com/deweylab/RSEM/archive/v1.1.17.tar.gz">Version used by RSEM Galaxy Wrapper (RSEM v1.1.17)</a>
 <li><a href="https://github.com/deweylab/RSEM/releases">Archive of older versions</a>
 <li><a href="https://github.com/deweylab/RSEM">RSEM GitHub
@@ -89,6 +89,6 @@ Only mature RNAs. In addition, 125bp Poly(A) tails are added at the end of each 
 </td></tr>
 </table>
 <hr>
-<p>(last modified on Nov 11, 2015)</p>
+<p>(last modified on Jan 7, 2016)</p>
 </body>
 </html>

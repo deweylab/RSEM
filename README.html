@@ -10,6 +10,7 @@
 <li><a href="#introduction">Introduction</a></li>
 <li><a href="#compilation">Compilation &amp; Installation</a></li>
 <li><a href="#usage">Usage</a></li>
+<li><a href="#built">Build RSEM references using RefSeq, Ensembl, or GENCODE annotations</a></li>
 <li><a href="#example">Example</a></li>
 <li><a href="#simulation">Simulation</a></li>
 <li><a href="#gen_trinity">Generate Transcript-to-Gene-Map from Trinity Output</a></li>
@@ -48,7 +49,7 @@ also be visualized. Last but not least, RSEM contains a simulator.</p>
 </code></pre>
 
 <p>For cygwin users, please uncomment the 3rd and 7th line in
-&#8216;sam/Makefile&#8217; before you run &#8216;make&#8217;.</p>
+<code>sam/Makefile</code> before you run <code>make</code>.</p>
 
 <p>To compile EBSeq, which is included in the RSEM package, run</p>
 
@@ -59,18 +60,22 @@ also be visualized. Last but not least, RSEM contains a simulator.</p>
 variable.</p>
 
 <p>If you prefer to put all RSEM executables to a bin directory, please
-also remember to put &#8216;rsem_perl_utils.pm&#8217; and &#8216;WHAT_IS_NEW&#8217; to the
-same bin directory. &#8216;rsem_perl_utils.pm&#8217; is required for most RSEM&#8217;s
-perl scripts and &#8216;WHAT_IS_NEW&#8217; contains the RSEM version information.</p>
+also remember to put <code>rsem_perl_utils.pm</code> and <code>WHAT_IS_NEW</code> to the
+same bin directory. <code>rsem_perl_utils.pm</code> is required for most RSEM&#8217;s
+perl scripts and <code>WHAT_IS_NEW</code> contains the RSEM version information.</p>
 
 <h3 id="prerequisites">Prerequisites</h3>
 
 <p>C++, Perl and R are required to be installed. </p>
 
-<p>To take advantage of RSEM&#8217;s built-in support for the Bowtie/Bowtie 2
-alignment program, you must have
-<a href="http://bowtie-bio.sourceforge.net">Bowtie</a> and/or <a href="http://bowtie-bio.sourceforge.net/bowtie2">Bowtie
-2</a> installed.</p>
+<p>To use the <code>--gff3</code> option of <code>rsem-prepare-reference</code>, Python is also
+required to be installed.</p>
+
+<p>To take advantage of RSEM&#8217;s built-in support for the Bowtie/Bowtie
+2/STAR alignment program, you must have
+<a href="http://bowtie-bio.sourceforge.net">Bowtie</a>/<a href="http://bowtie-bio.sourceforge.net/bowtie2">Bowtie
+2</a>/<a href="https://github.com/alexdobin/STAR">STAR</a>
+installed.</p>
 
 <h2 id="anameusageausage"><a name="usage"></a> Usage</h2>
 
@@ -86,7 +91,7 @@ UCSC Genes annotation track, this information can be recovered by
 downloading the knownIsoforms.txt file for the appropriate genome.</p>
 
 <p>To prepare the reference sequences, you should run the
-&#8216;rsem-prepare-reference&#8217; program. Run </p>
+<code>rsem-prepare-reference</code> program. Run </p>
 
 <pre><code>rsem-prepare-reference --help
 </code></pre>
@@ -94,10 +99,108 @@ downloading the knownIsoforms.txt file for the appropriate genome.</p>
 <p>to get usage information or visit the <a href="rsem-prepare-reference.html">rsem-prepare-reference
 documentation page</a>.</p>
 
+<h4 id="anamebuiltabuildrsemreferencesusingrefseqensemblorgencodeannotations"><a name="built"></a> Build RSEM references using RefSeq, Ensembl, or GENCODE annotations</h4>
+
+<p>RefSeq and Ensembl are two frequently used annotations. For human and
+mouse, GENCODE annotaions are also available. In this section, we show
+how to build RSEM references using these annotations. Note that it is
+important to pair the genome with the annotation file for each
+annotation source. In addition, we recommend users to use the primary
+assemblies of genomes. Without loss of generality, we use human genome as
+an example and in addition build Bowtie indices. </p>
+
+<p>For <strong>RefSeq</strong>, the genome and annotation file in GFF3 format can be found
+at RefSeq genomes FTP:</p>
+
+<pre><code>ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/
+</code></pre>
+
+<p>For example, the human genome and GFF3 file locate at the subdirectory
+<code>vertebrate_mammalian/Homo_sapiens/all_assembly_versions/GCF_000001405.31_GRCh38.p5</code>. <code>GCF_000001405.31_GRCh38.p5</code>
+is the latest annotation version when this section was written.</p>
+
+<p>Download and decompress the genome and annotation files to your working directory:</p>
+
+<pre><code>ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Homo_sapiens/all_assembly_versions/GCF_000001405.31_GRCh38.p5/GCF_000001405.31_GRCh38.p5_genomic.fna.gz
+ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Homo_sapiens/all_assembly_versions/GCF_000001405.31_GRCh38.p5/GCF_000001405.31_GRCh38.p5_genomic.gff.gz
+</code></pre>
+
+<p><code>GCF_000001405.31_GRCh38.p5_genomic.fna</code> contains all top level
+sequences, including patches and haplotypes. To obtain the primary
+assembly, run the following RSEM python script:</p>
+
+<pre><code>rsem-refseq-extract-primary-assembly GCF_000001405.31_GRCh38.p5_genomic.fna GCF_000001405.31_GRCh38.p5_genomic.primary_assembly.fna
+</code></pre>
+
+<p>Then type the following command to build RSEM references:</p>
+
+<pre><code>rsem-prepare-reference --gff3 GCF_000001405.31_GRCh38.p5_genomic.gff \
+               --trusted-sources BestRefSeq,Curated\ Genomic \
+               --bowtie \
+               GCF_000001405.31_GRCh38.p5_genomic.primary_assembly.fna \
+               ref/human_refseq
+</code></pre>
+
+<p>In the above command, <code>--trusted-sources</code> tells RSEM to only extract
+transcripts from RefSeq sources like <code>BestRefSeq</code> or <code>Curated Genomic</code>. By
+default, RSEM trust all sources. There is also an
+<code>--gff3-RNA-patterns</code> option and its default is <code>mRNA</code>. Setting
+<code>--gff3-RNA-patterns mRNA,rRNA</code> will allow RSEM to extract all mRNAs
+and rRNAs from the genome. Visit <a href="rsem-prepare-reference.html">here</a>
+for more details.</p>
+
+<p>Because the gene and transcript IDs (e.g. gene1000, rna28655)
+extracted from RefSeq GFF3 files are hard to understand, it is
+recommended to turn on the <code>--append-names</code> option in
+<code>rsem-calculate-expression</code> for better interpretation of
+quantification results.</p>
+
+<p>For <strong>Ensembl</strong>, the genome and annotation files can be found at
+<a href="http://uswest.ensembl.org/info/data/ftp/index.html">Ensembl FTP</a>.</p>
+
+<p>Download and decompress the human genome and GTF files:</p>
+
+<pre><code>ftp://ftp.ensembl.org/pub/release-83/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz
+ftp://ftp.ensembl.org/pub/release-83/gtf/homo_sapiens/Homo_sapiens.GRCh38.83.gtf.gz
+</code></pre>
+
+<p>Then use the following command to build RSEM references:</p>
+
+<pre><code>rsem-prepare-reference --gtf Homo_sapiens.GRCh38.83.gtf \
+               --bowtie \
+               Homo_sapiens.GRCh38.dna.primary_assembly.fa \
+               ref/human_ensembl
+</code></pre>
+
+<p>If you want to use GFF3 file instead, which is unnecessary and not
+recommended, you should add option <code>--gff3-RNA-patterns transcript</code>
+because <code>mRNA</code> is replaced by <code>transcript</code> in Ensembl GFF3 files.</p>
+
+<p><strong>GENCODE</strong> only provides human and mouse annotations. The genome and
+ annotation files can be found from <a href="http://www.gencodegenes.org/">GENCODE
+ website</a>.</p>
+
+<p>Download and decompress the human genome and GTF files:</p>
+
+<pre><code>ftp://ftp.sanger.ac.uk/pub/gencode/Gencode_human/release_24/GRCh38.primary_assembly.genome.fa.gz
+ftp://ftp.sanger.ac.uk/pub/gencode/Gencode_human/release_24/gencode.v24.annotation.gtf.gz
+</code></pre>
+
+<p>Then type the following command:</p>
+
+<pre><code>rsem-prepare-reference --gtf gencode.v24.annotation.gtf \
+               --bowtie \
+               GRCh38.primary_assembly.genome.fa \
+               ref/human_gencode
+</code></pre>
+
+<p>Similar to Ensembl annotation, if you want to use GFF3 files (not
+recommended), add option <code>--gff3-RNA-patterns transcript</code>.</p>
+
 <h3 id="ii.calculatingexpressionvalues">II. Calculating Expression Values</h3>
 
 <p>To calculate expression values, you should run the
-&#8216;rsem-calculate-expression&#8217; program. Run </p>
+<code>rsem-calculate-expression</code> program. Run </p>
 
 <pre><code>rsem-calculate-expression --help
 </code></pre>
@@ -108,8 +211,8 @@ documentation page</a>.</p>
 <h4 id="calculatingexpressionvaluesfromsingle-enddata">Calculating expression values from single-end data</h4>
 
 <p>For single-end models, users have the option of providing a fragment
-length distribution via the &#8216;&#8211;fragment-length-mean&#8217; and
-&#8216;&#8211;fragment-length-sd&#8217; options. The specification of an accurate fragment
+length distribution via the <code>--fragment-length-mean</code> and
+<code>--fragment-length-sd</code> options. The specification of an accurate fragment
 length distribution is important for the accuracy of expression level
 estimates from single-end data. If the fragment length mean and sd are
 not provided, RSEM will not take a fragment length distribution into
@@ -118,19 +221,19 @@ consideration.</p>
 <h4 id="usinganalternativealigner">Using an alternative aligner</h4>
 
 <p>By default, RSEM automates the alignment of reads to reference
-transcripts using the Bowtie aligner. Turn on &#8216;&#8211;bowtie2&#8217; for
-&#8216;rsem-prepare-reference&#8217; and &#8216;rsem-calculate-expression&#8217; will allow
+transcripts using the Bowtie aligner. Turn on <code>--bowtie2</code> for
+<code>rsem-prepare-reference</code> and <code>rsem-calculate-expression</code> will allow
 RSEM to use the Bowtie 2 alignment program instead. Please note that
 indel alignments, local alignments and discordant alignments are
 disallowed when RSEM uses Bowtie 2 since RSEM currently cannot handle
-them. See the description of &#8216;&#8211;bowtie2&#8217; option in
-&#8216;rsem-calculate-expression&#8217; for more details. Similarly, turn on
-&#8216;&#8211;star&#8217; will allow RSEM to use the STAR aligner. To use an
+them. See the description of <code>--bowtie2</code> option in
+<code>rsem-calculate-expression</code> for more details. Similarly, turn on
+<code>--star</code> will allow RSEM to use the STAR aligner. To use an
 alternative alignment program, align the input reads against the file
-&#8216;reference_name.idx.fa&#8217; generated by &#8216;rsem-prepare-reference&#8217;, and
+<code>reference_name.idx.fa</code> generated by <code>rsem-prepare-reference</code>, and
 format the alignment output in SAM or BAM format. Then, instead of
-providing reads to &#8216;rsem-calculate-expression&#8217;, specify the &#8216;&#8211;sam&#8217; or
-&#8216;&#8211;bam&#8217; option and provide the SAM or BAM file as an argument.</p>
+providing reads to <code>rsem-calculate-expression</code>, specify the <code>--sam</code> or
+<code>--bam</code> option and provide the SAM or BAM file as an argument.</p>
 
 <p>RSEM requires the alignments of a read to be adjacent. For
 paired-end reads, RSEM also requires the two mates of any alignment be
@@ -141,7 +244,7 @@ please run</p>
 </code></pre>
 
 <p>If your file does not satisfy the requirements, you can use
-&#8216;convert-sam-for-rsem&#8217; to convert it into a BAM file which RSEM can
+<code>convert-sam-for-rsem</code> to convert it into a BAM file which RSEM can
 process. Please run</p>
 
 <pre><code>convert-sam-for-rsem --help
@@ -154,29 +257,29 @@ page</a>.</p>
 <p>However, please note that RSEM does ** not ** support gapped
 alignments. So make sure that your aligner does not produce alignments
 with intersions/deletions. Also, please make sure that you use
-&#8216;reference_name.idx.fa&#8217; , which is generated by RSEM, to build your
+<code>reference_name.idx.fa</code> , which is generated by RSEM, to build your
 aligner&#8217;s indices.</p>
 
 <h3 id="iii.visualization">III. Visualization</h3>
 
-<p>RSEM contains a version of samtools in the &#8216;sam&#8217; subdirectory. RSEM
-will always produce three files:&#8217;sample_name.transcript.bam&#8217;, the
-unsorted BAM file, &#8216;sample_name.transcript.sorted.bam&#8217; and
-&#8216;sample_name.transcript.sorted.bam.bai&#8217; the sorted BAM file and
+<p>RSEM contains a version of samtools in the <code>sam</code> subdirectory. RSEM
+will always produce three files:<code>sample_name.transcript.bam</code>, the
+unsorted BAM file, <code>sample_name.transcript.sorted.bam</code> and
+<code>sample_name.transcript.sorted.bam.bai</code> the sorted BAM file and
 indices generated by the samtools included. All three files are in
 transcript coordinates. When users specify the &#8211;output-genome-bam
-option RSEM will produce three files: &#8216;sample_name.genome.bam&#8217;, the
-unsorted BAM file, &#8216;sample_name.genome.sorted.bam&#8217; and
-&#8216;sample_name.genome.sorted.bam.bai&#8217; the sorted BAM file and indices
+option RSEM will produce three files: <code>sample_name.genome.bam</code>, the
+unsorted BAM file, <code>sample_name.genome.sorted.bam</code> and
+<code>sample_name.genome.sorted.bam.bai</code> the sorted BAM file and indices
 generated by the samtools included. All these files are in genomic
 coordinates.</p>
 
 <h4 id="aconvertingtranscriptbamfileintogenomebamfile">a) Converting transcript BAM file into genome BAM file</h4>
 
-<p>Normally, RSEM will do this for you via &#8216;&#8211;output-genome-bam&#8217; option
-of &#8216;rsem-calculate-expression&#8217;. However, if you have run
-&#8216;rsem-prepare-reference&#8217; and use &#8216;reference_name.idx.fa&#8217; to build
-indices for your aligner, you can use &#8216;rsem-tbam2gbam&#8217; to convert your
+<p>Normally, RSEM will do this for you via <code>--output-genome-bam</code> option
+of <code>rsem-calculate-expression</code>. However, if you have run
+<code>rsem-prepare-reference</code> and use <code>reference_name.idx.fa</code> to build
+indices for your aligner, you can use <code>rsem-tbam2gbam</code> to convert your
 transcript coordinate BAM alignments file into a genomic coordinate
 BAM alignments file without the need to run the whole RSEM
 pipeline.</p>
@@ -186,7 +289,7 @@ pipeline.</p>
 <pre><code>rsem-tbam2gbam reference_name unsorted_transcript_bam_input genome_bam_output
 </code></pre>
 
-<p>reference_name : The name of reference built by &#8216;rsem-prepare-reference&#8217;<br/>
+<p>reference_name : The name of reference built by <code>rsem-prepare-reference</code><br/>
 unsorted_transcript_bam_input : This file should satisfy: 1) the alignments of a same read are grouped together, 2) for any paired-end alignment, the two mates should be adjacent to each other, 3) this file should not be sorted by samtools
 genome_bam_output : The output genomic coordinate BAM file&#8217;s name</p>
 
@@ -195,8 +298,8 @@ genome_bam_output : The output genomic coordinate BAM file&#8217;s name</p>
 <p>A wiggle plot representing the expected number of reads overlapping
 each position in the genome/transcript set can be generated from the
 sorted genome/transcript BAM file output. To generate the wiggle
-plot, run the &#8216;rsem-bam2wig&#8217; program on the
-&#8216;sample_name.genome.sorted.bam&#8217;/&#8216;sample_name.transcript.sorted.bam&#8217; file.</p>
+plot, run the <code>rsem-bam2wig</code> program on the
+<code>sample_name.genome.sorted.bam</code>/<code>sample_name.transcript.sorted.bam</code> file.</p>
 
 <p>Usage: </p>
 
@@ -218,7 +321,7 @@ wiggle_name : The name of this wiggle plot<br/>
 
 <p>1) Import the transcript sequences as a genome </p>
 
-<p>Select File -&gt; Import Genome, then fill in ID, Name and Fasta file. Fasta file should be &#8216;reference_name.idx.fa&#8217;. After that, click Save button. Suppose ID is filled as &#8216;reference_name&#8217;, a file called &#8216;reference_name.genome&#8217; will be generated. Next time, we can use: File -&gt; Load Genome, then select &#8216;reference_name.genome&#8217;.</p>
+<p>Select File -&gt; Import Genome, then fill in ID, Name and Fasta file. Fasta file should be <code>reference_name.idx.fa</code>. After that, click Save button. Suppose ID is filled as <code>reference_name</code>, a file called <code>reference_name.genome</code> will be generated. Next time, we can use: File -&gt; Load Genome, then select <code>reference_name.genome</code>.</p>
 
 <p>2) Load visualization files</p>
 
@@ -230,7 +333,7 @@ wiggle_name : The name of this wiggle plot<br/>
 <h4 id="dgeneratingtranscriptwiggleplots">d) Generating Transcript Wiggle Plots</h4>
 
 <p>To generate transcript wiggle plots, you should run the
-&#8216;rsem-plot-transcript-wiggles&#8217; program. Run </p>
+<code>rsem-plot-transcript-wiggles</code> program. Run </p>
 
 <pre><code>rsem-plot-transcript-wiggles --help
 </code></pre>
@@ -240,7 +343,7 @@ documentation page</a>.</p>
 
 <h4 id="evisualizethemodellearnedbyrsem">e) Visualize the model learned by RSEM</h4>
 
-<p>RSEM provides an R script, &#8216;rsem-plot-model&#8217;, for visulazing the model learned.</p>
+<p>RSEM provides an R script, <code>rsem-plot-model</code>, for visulazing the model learned.</p>
 
 <p>Usage:</p>
 
@@ -270,9 +373,9 @@ number of alignments.</p>
 <h2 id="anameexampleaexample"><a name="example"></a> Example</h2>
 
 <p>Suppose we download the mouse genome from UCSC Genome Browser. We do
-not add poly(A) tails and use &#8216;/ref/mouse_0&#8217; as the reference name.
-We have a FASTQ-formatted file, &#8216;mmliver.fq&#8217;, containing single-end
-reads from one sample, which we call &#8216;mmliver_single_quals&#8217;. We want
+not add poly(A) tails and use <code>/ref/mouse_0</code> as the reference name.
+We have a FASTQ-formatted file, <code>mmliver.fq</code>, containing single-end
+reads from one sample, which we call <code>mmliver_single_quals</code>. We want
 to estimate expression values by using the single-end model with a
 fragment length distribution. We know that the fragment length
 distribution is approximated by a normal distribution with a mean of
@@ -281,9 +384,9 @@ credibility intervals in addition to maximum likelihood estimates.
 RSEM will be allowed 1G of memory for the credibility interval
 calculation. We will visualize the probabilistic read mappings
 generated by RSEM on UCSC genome browser. We will generate a list of
-genes&#8217; transcript wiggle plots in &#8216;output.pdf&#8217;. The list is
-&#8216;gene_ids.txt&#8217;. We will visualize the models learned in
-&#8216;mmliver_single_quals.models.pdf&#8217;</p>
+genes<code>transcript wiggle plots in</code>output.pdf<code>. The list is
+</code>gene_ids.txt<code>. We will visualize the models learned in
+</code>mmliver_single_quals.models.pdf`</p>
 
 <p>The commands for this scenario are as follows:</p>
 
@@ -296,7 +399,7 @@ rsem-plot-model mmliver_single_quals mmliver_single_quals.models.pdf
 
 <h2 id="anamesimulationasimulation"><a name="simulation"></a> Simulation</h2>
 
-<p>RSEM provides users the &#8216;rsem-simulate-reads&#8217; program to simulate RNA-Seq data based on parameters learned from real data sets. Run</p>
+<p>RSEM provides users the <code>rsem-simulate-reads</code> program to simulate RNA-Seq data based on parameters learned from real data sets. Run</p>
 
 <pre><code>rsem-simulate-reads
 </code></pre>
@@ -308,15 +411,15 @@ rsem-plot-model mmliver_single_quals mmliver_single_quals.models.pdf
 <pre><code>rsem-simulate-reads reference_name estimated_model_file estimated_isoform_results theta0 N output_name [-q]
 </code></pre>
 
-<p><strong>reference_name:</strong> The name of RSEM references, which should be already generated by &#8216;rsem-prepare-reference&#8217; </p>
+<p><strong>reference_name:</strong> The name of RSEM references, which should be already generated by <code>rsem-prepare-reference</code> </p>
 
-<p><strong>estimated_model_file:</strong> This file describes how the RNA-Seq reads will be sequenced given the expression levels. It determines what kind of reads will be simulated (single-end/paired-end, w/o quality score) and includes parameters for fragment length distribution, read start position distribution, sequencing error models, etc. Normally, this file should be learned from real data using &#8216;rsem-calculate-expression&#8217;. The file can be found under the &#8216;sample_name.stat&#8217; folder with the name of &#8216;sample_name.model&#8217;. &#8216;model_file_description.txt&#8217; provides the format and meanings of this file. </p>
+<p><strong>estimated_model_file:</strong> This file describes how the RNA-Seq reads will be sequenced given the expression levels. It determines what kind of reads will be simulated (single-end/paired-end, w/o quality score) and includes parameters for fragment length distribution, read start position distribution, sequencing error models, etc. Normally, this file should be learned from real data using <code>rsem-calculate-expression</code>. The file can be found under the <code>sample_name.stat</code> folder with the name of <code>sample_name.model</code>. <code>model_file_description.txt</code> provides the format and meanings of this file. </p>
 
-<p><strong>estimated_isoform_results:</strong> This file contains expression levels for all isoforms recorded in the reference. It can be learned using &#8216;rsem-calculate-expression&#8217; from real data. The corresponding file users want to use is &#8216;sample_name.isoforms.results&#8217;. If simulating from user-designed expression profile is desired, start from a learned &#8216;sample_name.isoforms.results&#8217; file and only modify the &#8216;TPM&#8217; column. The simulator only reads the TPM column. But keeping the file format the same is required. If the RSEM references built are aware of allele-specific transcripts, &#8216;sample_name.alleles.results&#8217; should be used instead. </p>
+<p><strong>estimated_isoform_results:</strong> This file contains expression levels for all isoforms recorded in the reference. It can be learned using <code>rsem-calculate-expression</code> from real data. The corresponding file users want to use is <code>sample_name.isoforms.results</code>. If simulating from user-designed expression profile is desired, start from a learned <code>sample_name.isoforms.results</code> file and only modify the <code>TPM</code> column. The simulator only reads the TPM column. But keeping the file format the same is required. If the RSEM references built are aware of allele-specific transcripts, <code>sample_name.alleles.results</code> should be used instead. </p>
 
-<p><strong>theta0:</strong> This parameter determines the fraction of reads that are coming from background &#8220;noise&#8221; (instead of from a transcript). It can also be estimated using &#8216;rsem-calculate-expression&#8217; from real data. Users can find it as the first value of the third line of the file &#8216;sample_name.stat/sample_name.theta&#8217;. </p>
+<p><strong>theta0:</strong> This parameter determines the fraction of reads that are coming from background &#8220;noise&#8221; (instead of from a transcript). It can also be estimated using <code>rsem-calculate-expression</code> from real data. Users can find it as the first value of the third line of the file <code>sample_name.stat/sample_name.theta</code>. </p>
 
-<p><strong>N:</strong> The total number of reads to be simulated. If &#8216;rsem-calculate-expression&#8217; is executed on a real data set, the total number of reads can be found as the 4th number of the first line of the file &#8216;sample_name.stat/sample_name.cnt&#8217;. </p>
+<p><strong>N:</strong> The total number of reads to be simulated. If <code>rsem-calculate-expression</code> is executed on a real data set, the total number of reads can be found as the 4th number of the first line of the file <code>sample_name.stat/sample_name.cnt</code>. </p>
 
 <p><strong>output_name:</strong> Prefix for all output files. </p>
 
@@ -346,7 +449,7 @@ output_name_1.fq &amp; output_name_2.fq if paired-end with quality score. </p>
 
 <p><strong>dir:</strong> The direction of the simulated read. 0 refers to forward strand (&#8216;+&#8217;) and 1 refers to reverse strand (&#8216;-&#8217;) </p>
 
-<p><strong>sid:</strong> Represent which transcript this read is simulated from. It ranges between 0 and M, where M is the total number of transcripts. If sid=0, the read is simulated from the background noise. Otherwise, the read is simulated from a transcript with index sid. Transcript sid&#8217;s transcript name can be found in the &#8216;transcript_id&#8217; column of the &#8216;sample_name.isoforms.results&#8217; file (at line sid + 1, line 1 is for column names) </p>
+<p><strong>sid:</strong> Represent which transcript this read is simulated from. It ranges between 0 and M, where M is the total number of transcripts. If sid=0, the read is simulated from the background noise. Otherwise, the read is simulated from a transcript with index sid. Transcript sid&#8217;s transcript name can be found in the <code>transcript_id</code> column of the <code>sample_name.isoforms.results</code> file (at line sid + 1, line 1 is for column names) </p>
 
 <p><strong>pos:</strong> The start position of the simulated read in strand dir of transcript sid. It is numbered from 0 </p>
 
@@ -354,7 +457,7 @@ output_name_1.fq &amp; output_name_2.fq if paired-end with quality score. </p>
 
 <h3 id="example:">Example:</h3>
 
-<p>Suppose we want to simulate 50 millon single-end reads with quality scores and use the parameters learned from <a href="#example">Example</a>. In addition, we set theta0 as 0.2 and output_name as &#8216;simulated_reads&#8217;. The command is:</p>
+<p>Suppose we want to simulate 50 millon single-end reads with quality scores and use the parameters learned from <a href="#example">Example</a>. In addition, we set theta0 as 0.2 and output_name as <code>simulated_reads</code>. The command is:</p>
 
 <pre><code>rsem-simulate-reads /ref/mouse_0 mmliver_single_quals.stat/mmliver_single_quals.model mmliver_single_quals.isoforms.results 0.2 50000000 simulated_reads
 </code></pre>
@@ -386,7 +489,7 @@ it is more robust to outliers. For more information about EBSeq
 (including the paper describing their method), please visit <a href="http://www.biostat.wisc.edu/~ningleng/EBSeq_Package">EBSeq&#8217;s
 website</a>.</p>
 
-<p>RSEM includes EBSeq in its folder named &#8216;EBSeq&#8217;. To use it, first type</p>
+<p>RSEM includes EBSeq in its folder named <code>EBSeq</code>. To use it, first type</p>
 
 <pre><code>make ebseq
 </code></pre>
@@ -396,7 +499,7 @@ website</a>.</p>
 <p>EBSeq requires gene-isoform relationship for its isoform DE
 detection. However, for de novo assembled transcriptome, it is hard to
 obtain an accurate gene-isoform relationship. Instead, RSEM provides a
-script &#8216;rsem-generate-ngvector&#8217;, which clusters transcripts based on
+script <code>rsem-generate-ngvector</code>, which clusters transcripts based on
 measures directly relating to read mappaing ambiguity. First, it
 calcualtes the &#8216;unmappability&#8217; of each transcript. The &#8216;unmappability&#8217;
 of a transcript is the ratio between the number of k mers with at
@@ -416,17 +519,17 @@ documentation
 page</a>.</p>
 
 <p>If your reference is a de novo assembled transcript set, you should
-run &#8216;rsem-generate-ngvector&#8217; first. Then load the resulting
-&#8216;output_name.ngvec&#8217; into R. For example, you can use </p>
+run <code>rsem-generate-ngvector</code> first. Then load the resulting
+<code>output_name.ngvec</code> into R. For example, you can use </p>
 
 <pre><code>NgVec &lt;- scan(file=&quot;output_name.ngvec&quot;, what=0, sep=&quot;\n&quot;)
 </code></pre>
 
 <p>. After that, set &#8220;NgVector = NgVec&#8221; for your differential expression
-test (either &#8216;EBTest&#8217; or &#8216;EBMultiTest&#8217;).</p>
+test (either <code>EBTest</code> or <code>EBMultiTest</code>).</p>
 
 <p>For users&#8217; convenience, RSEM also provides a script
-&#8216;rsem-generate-data-matrix&#8217; to extract input matrix from expression
+<code>rsem-generate-data-matrix</code> to extract input matrix from expression
 results:</p>
 
 <pre><code>rsem-generate-data-matrix sampleA.[genes/isoforms].results sampleB.[genes/isoforms].results ... &gt; output_name.counts.matrix
@@ -438,11 +541,11 @@ all isoform level results. You can load the matrix into R by</p>
 <pre><code>IsoMat &lt;- data.matrix(read.table(file=&quot;output_name.counts.matrix&quot;))
 </code></pre>
 
-<p>before running either &#8216;EBTest&#8217; or &#8216;EBMultiTest&#8217;.</p>
+<p>before running either <code>EBTest</code> or <code>EBMultiTest</code>.</p>
 
-<p>Lastly, RSEM provides two scripts, &#8216;rsem-run-ebseq&#8217; and
-&#8216;rsem-control-fdr&#8217;, to help users find differential expressed
-genes/transcripts. First, &#8216;rsem-run-ebseq&#8217; calls EBSeq to calculate related statistics
+<p>Lastly, RSEM provides two scripts, <code>rsem-run-ebseq</code> and
+<code>rsem-control-fdr</code>, to help users find differential expressed
+genes/transcripts. First, <code>rsem-run-ebseq</code> calls EBSeq to calculate related statistics
 for all genes/transcripts. Run </p>
 
 <pre><code>rsem-run-ebseq --help
@@ -450,7 +553,7 @@ for all genes/transcripts. Run </p>
 
 <p>to get usage information or visit the <a href="rsem-run-ebseq.html">rsem-run-ebseq documentation
 page</a>. Second,
-&#8216;rsem-control-fdr&#8217; takes &#8216;rsem-run-ebseq&#8217; &#8217;s result and reports called
+<code>rsem-control-fdr</code> takes <code>rsem-run-ebseq</code> &#8217;s result and reports called
 differentially expressed genes/transcripts by controlling the false
 discovery rate. Run</p>
 
@@ -462,7 +565,7 @@ page</a>. These
 two scripts can perform DE analysis on either 2 conditions or multiple
 conditions.</p>
 
-<p>Please note that &#8216;rsem-run-ebseq&#8217; and &#8216;rsem-control-fdr&#8217; use EBSeq&#8217;s
+<p>Please note that <code>rsem-run-ebseq</code> and <code>rsem-control-fdr</code> use EBSeq&#8217;s
 default parameters. For advanced use of EBSeq or information about how
 EBSeq works, please refer to <a href="http://www.bioconductor.org/packages/devel/bioc/vignettes/EBSeq/inst/doc/EBSeq_Vignette.pdf">EBSeq&#8217;s
 manual</a>.</p>
