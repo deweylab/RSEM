@@ -102,8 +102,9 @@ RefSeq and Ensembl are two frequently used annotations. For human and
 mouse, GENCODE annotaions are also available. In this section, we show
 how to build RSEM references using these annotations. Note that it is
 important to pair the genome with the annotation file for each
-annotation source. Without loss of generality, we use human genome as
-an example and in addition build Bowtie indices.
+annotation source. In addition, we recommend users to use the primary
+assemblies of genomes. Without loss of generality, we use human genome as
+an example and in addition build Bowtie indices. 
 
 For **RefSeq**, the genome and annotation file in GFF3 format can be found
 at RefSeq genomes FTP:
@@ -123,13 +124,21 @@ ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Homo_sapiens/all_
 ftp://ftp.ncbi.nlm.nih.gov/genomes/refseq/vertebrate_mammalian/Homo_sapiens/all_assembly_versions/GCF_000001405.31_GRCh38.p5/GCF_000001405.31_GRCh38.p5_genomic.gff.gz
 ```
 
-Then type the following command:
+`GCF_000001405.31_GRCh38.p5_genomic.fna` contains all top level
+sequences, including patches and haplotypes. To obtain the primary
+assembly, run the following RSEM python script:
+
+```
+rsem-refseq-extract-primary-assembly GCF_000001405.31_GRCh38.p5_genomic.fna GCF_000001405.31_GRCh38.p5_genomic.primary_assembly.fna
+```
+
+Then type the following command to build RSEM references:
 
 ```
 rsem-prepare-reference --gff3 GCF_000001405.31_GRCh38.p5_genomic.gff \
 		       --trusted-sources BestRefSeq,Curated\ Genomic \
 		       --bowtie \
-		       GCF_000001405.31_GRCh38.p5_genomic.fna \
+		       GCF_000001405.31_GRCh38.p5_genomic.primary_assembly.fna \
 		       ref/human_refseq
 ```
 
@@ -153,7 +162,7 @@ For **Ensembl**, the genome and annotation files can be found at
 Download and decompress the human genome and GTF files:
 
 ```
-ftp://ftp.ensembl.org/pub/release-83/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.toplevel.fa.gz
+ftp://ftp.ensembl.org/pub/release-83/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz
 ftp://ftp.ensembl.org/pub/release-83/gtf/homo_sapiens/Homo_sapiens.GRCh38.83.gtf.gz
 ```
 
@@ -162,7 +171,7 @@ Then use the following command to build RSEM references:
 ```
 rsem-prepare-reference --gtf Homo_sapiens.GRCh38.83.gtf \
 		       --bowtie \
-		       Homo_sapiens.GRCh38.dna.toplevel.fa \
+		       Homo_sapiens.GRCh38.dna.primary_assembly.fa \
 		       ref/human_ensembl
 ```
 
@@ -177,7 +186,7 @@ because `mRNA` is replaced by `transcript` in Ensembl GFF3 files.
 Download and decompress the human genome and GTF files:
 
 ```
-ftp://ftp.sanger.ac.uk/pub/gencode/Gencode_human/release_24/GRCh38.p5.genome.fa.gz
+ftp://ftp.sanger.ac.uk/pub/gencode/Gencode_human/release_24/GRCh38.primary_assembly.genome.fa.gz
 ftp://ftp.sanger.ac.uk/pub/gencode/Gencode_human/release_24/gencode.v24.annotation.gtf.gz
 ```
 
@@ -186,9 +195,8 @@ Then type the following command:
 ```
 rsem-prepare-reference --gtf gencode.v24.annotation.gtf \
 		       --bowtie \
-		       GRCh38.p5.genome.fa \
+		       GRCh38.primary_assembly.genome.fa \
 		       ref/human_gencode
-
 ```
 
 Similar to Ensembl annotation, if you want to use GFF3 files (not
