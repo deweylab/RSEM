@@ -11,7 +11,7 @@ Table of Contents
 * [Introduction](#introduction)
 * [Compilation & Installation](#compilation)
 * [Usage](#usage)
-  * [Build RSEM references using RefSeq, Ensembl, or GENCODE annotations](#built)
+    * [Build RSEM references using RefSeq, Ensembl, or GENCODE annotations](#built)
 * [Example](#example)
 * [Simulation](#simulation)
 * [Generate Transcript-to-Gene-Map from Trinity Output](#gen_trinity)
