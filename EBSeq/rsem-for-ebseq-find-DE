@@ -10,7 +10,7 @@ path <- argv[1]
 ngvector_file <- argv[2]
 data_matrix_file <- argv[3]
 output_file <- argv[4]
-norm_out_file <- paste0("norm_", data_matrix_file)
+norm_out_file <- paste0(output_file, ".normalized_data_matrix")
 
 nc <- length(argv) - 4;
 num_reps <- as.numeric(argv[5:(5+nc-1)])
