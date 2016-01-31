@@ -8,7 +8,9 @@ use lib $FindBin::RealBin;
 use rsem_perl_utils qw(runCommand collectResults showVersionInfo);
 
 use Env qw(@PATH);
-@PATH = ($FindBin::RealBin, "$FindBin::RealBin/sam", @PATH);
+
+my $SAMTOOLS = "samtools-1.3"; # If update to another version of SAMtools, need to change this
+@PATH = ($FindBin::RealBin, "$FindBin::RealBin/$SAMTOOLS", @PATH);
 
 use strict;
 

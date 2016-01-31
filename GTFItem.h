@@ -67,50 +67,53 @@ class GTFItem {
     
     getline(strin, left); // assign attributes and possible comments into "left"
   }
-  
+
   void parseAttributes(const std::string& line) {
     assert(feature == "exon");
     gene_id = transcript_id = "";
     gene_name = transcript_name = "";
-    
-    std::istringstream strin(left);
-    std::string attribute, identifier;
-    int nleft = 4;
-    
-    while (getline(strin, attribute, ';') && nleft > 0 && !strin.eof()) {
-      size_t pos = 0, rpos, len = attribute.length();
-      // locate identifier
-      while (pos < len && isspace(attribute[pos])) ++pos;
-      rpos = pos + 1;
-      while (rpos < len && !isspace(attribute[rpos])) ++rpos;
-      gtf_assert(pos < len && rpos < len, line, "Cannot separate the identifier from the value for attribute " + attribute + "!");
-      identifier = attribute.substr(pos, rpos - pos);
-      // locate value
-      pos = rpos + 1;
-      while (pos < len && attribute[pos] != '"') ++pos;
-      rpos = len - 1;
-      while (rpos > pos && attribute[rpos] != '"') --rpos;
 
+    int nleft = 4;
+    int pos, lpos = 0, rpos, left_len = left.length();    
+    std::string identifier;
+
+    while (nleft > 0 && get_an_attribute(lpos, rpos, left_len)) {
+      // locate identifier
+      pos = lpos;
+      while (pos < rpos && !isspace(left[pos])) ++pos;
+      gtf_assert(isspace(left[pos]), line, "Cannot locate the identifier from attribute " + left.substr(lpos, rpos + 1 - lpos) + "!");
+      identifier = left.substr(lpos, pos - lpos);
+
+      // prepare for the next attribute
+      lpos = rpos + 1;
+
+      // locate value
+      ++pos;
+      while (pos < rpos && isspace(left[pos])) ++lpos;
+      if (left[pos] != '"') pos = rpos;
+      --rpos;
+      while (rpos > pos && isspace(left[rpos])) --rpos;
+      if (rpos > pos && left[rpos] != '"') rpos = pos;
+
+      // test if the identifier is interested
       if (identifier == "gene_id") {
 	gtf_assert(gene_id == "", line, "gene_id appear more than once!");
-	gtf_assert(pos < len && rpos > pos, line, "Attribute " + identifier + "'s value should be surrounded by double quotes!");
-	gtf_assert(pos + 1 < rpos, line, "gene_id cannot be empty!");
-	gene_id = attribute.substr(pos + 1, rpos - pos - 1);
+	gtf_assert(rpos - pos > 1 , line, "Attribute " + identifier + "'s value should be surrounded by double quotes and cannot be empty!");
+	gene_id = left.substr(pos + 1, rpos - pos - 1);
 	--nleft;
       }
       else if (identifier == "transcript_id") {
 	gtf_assert(transcript_id == "", line, "transcript_id appear more than once!");
-	gtf_assert(pos < len && rpos > pos, line, "Attribute " + identifier + "'s value should be surrounded by double quotes!");
-	gtf_assert(pos + 1 < rpos, line, "transcript_id cannot be empty!");
-	transcript_id = attribute.substr(pos + 1, rpos - pos - 1);
+	gtf_assert(rpos - pos > 1 , line, "Attribute " + identifier + "'s value should be surrounded by double quotes and cannot be empty!");
+	transcript_id = left.substr(pos + 1, rpos - pos - 1);
 	--nleft;
       }
-      else if (identifier == "gene_name" && gene_name == "" && (pos < len && rpos > pos + 1)) {
-	gene_name = attribute.substr(pos + 1, rpos - pos - 1);
+      else if (identifier == "gene_name" && gene_name == "" && rpos - pos > 1) {        
+	gene_name = left.substr(pos + 1, rpos - pos - 1);
 	--nleft;
       }
-      else if (identifier == "transcript_name" && transcript_name == "" && (pos < len && rpos > pos + 1)) {
-	transcript_name = attribute.substr(pos + 1, rpos - pos - 1);
+      else if (identifier == "transcript_name" && transcript_name == "" && rpos - pos > 1) {
+	transcript_name = left.substr(pos + 1, rpos - pos - 1);
 	--nleft;
       }
     }
@@ -152,6 +155,21 @@ class GTFItem {
   std::string gene_id, transcript_id;
   std::string gene_name, transcript_name;
   std::string left;
+
+
+  bool get_an_attribute(int& lpos, int& rpos, int left_len) {
+    bool in_quote;
+
+    while (lpos < left_len && isspace(left[lpos])) ++lpos; // remove leading white spaces
+
+    rpos = lpos; in_quote = false;
+    while (rpos < left_len && (left[rpos] != ';' || in_quote)) {
+      if (left[rpos] == '"') in_quote ^= true;
+      ++rpos;
+    }
+
+    return rpos < left_len;
+  }
 
   void gtf_assert(char value, const std::string& line, const std::string& msg) {
     if (!value) {

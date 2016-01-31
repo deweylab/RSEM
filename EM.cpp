@@ -147,7 +147,7 @@ void init(ReadReader<ReadType> **&readers, HitContainer<HitType> **&hitvs, doubl
 			general_assert(hitvs[i]->read(fin), "Cannot read alignments from .dat file!");
 
 			--nrLeft;
-			if (verbose && nrLeft % 1000000 == 0) { cout<< "DAT "<< nrLeft << " reads left"<< endl; }
+			if (verbose && nrLeft > 0 && nrLeft % 1000000 == 0) { cout<< "DAT "<< nrLeft << " reads left"<< endl; }
 		}
 		ncpvs[i] = new double[hitvs[i]->getN()];
 		memset(ncpvs[i], 0, sizeof(double) * hitvs[i]->getN());
