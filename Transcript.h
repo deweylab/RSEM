@@ -123,11 +123,13 @@ void Transcript::read(std::ifstream& fin) {
 
 	getline(fin, tmp);
 	strin.str(tmp);
-	strin>> transcript_id>> transcript_name;
+	getline(strin, transcript_id, '\t');
+	getline(strin, transcript_name);
 	
 	getline(fin, tmp);
 	strin.clear(); strin.str(tmp);
-	strin>> gene_id>> gene_name;
+	getline(strin, gene_id, '\t');
+	getline(strin, gene_name);
 	
 	getline(fin, seqname);
 	
