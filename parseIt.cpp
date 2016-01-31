@@ -11,6 +11,7 @@
 #include<map>
 
 #include "utils.h"
+#include "my_assert.h"
 
 #include "GroupInfo.h"
 #include "Transcripts.h"
@@ -27,11 +28,13 @@
 
 using namespace std;
 
+bool verbose = true;
+
 int read_type; // 0 SingleRead, 1 SingleReadQ, 2 PairedEndRead, 3 PairedEndReadQ
 READ_INT_TYPE N[3]; // note, N = N0 + N1 + N2 , but may not be equal to the total number of reads in data
 HIT_INT_TYPE nHits; // # of hits
 READ_INT_TYPE nUnique, nMulti, nIsoMulti;
-char fn_list[STRLEN];
+char *aux;
 char groupF[STRLEN], tiF[STRLEN];
 char datF[STRLEN], cntF[STRLEN];
 
@@ -48,11 +51,8 @@ char readOutFs[3][2][STRLEN];
 map<int, READ_INT_TYPE> counter;
 map<int, READ_INT_TYPE>::iterator iter;
 
-void init(const char* imdName, char alignFType, const char* alignF) {
-
-	char* aux = 0;
-	if (strcmp(fn_list, "")) aux = fn_list;
-	parser = new SamParser(alignFType, alignF, aux, transcripts, imdName);
+void init(const char* imdName, const char* alignF) {
+	parser = new SamParser(alignF, aux, transcripts, imdName);
 
 	memset(cat, 0, sizeof(cat));
 	memset(readOutFs, 0, sizeof(readOutFs));
@@ -95,7 +95,7 @@ void parseIt(SamParser *parser) {
 				++N[record_val];
 			}
 
-			general_assert(record_val == 1 || hits.getNHits() == 0, "Read " + record_read.getName() + " is both unalignable and alignable according to the input SAM/BAM file!");
+			general_assert(record_val == 1 || hits.getNHits() == 0, "Read " + record_read.getName() + " is both unalignable and alignable according to the input file!");
 
 			// flush out previous read's hits if the read is alignable reads
 			if (record_val == 1) {
@@ -166,31 +166,21 @@ void release() {
 }
 
 int main(int argc, char* argv[]) {
-	bool quiet = false;
-
 	if (argc < 6) {
-		printf("Usage : rsem-parse-alignments refName imdName statName alignFType('s' for sam, 'b' for bam) alignF [-t Type] [-l fn_list] [-tag tagName] [-q]\n");
+		printf("Usage : rsem-parse-alignments refName imdName statName alignF read_type [-t fai_file] [-tag tagName] [-q]\n");
 		exit(-1);
 	}
 
-	strcpy(fn_list, "");
-	read_type = 0;
+	read_type = atoi(argv[5]);
+	
+	aux = NULL;
 	if (argc > 6) {
-		for (int i = 6; i < argc; i++) {
-			if (!strcmp(argv[i], "-t")) {
-				read_type = atoi(argv[i + 1]);
-			}
-			if (!strcmp(argv[i], "-l")) {
-				strcpy(fn_list, argv[i + 1]);
-			}
-			if (!strcmp(argv[i], "-tag")) {
-				SamParser::setReadTypeTag(argv[i + 1]);
-			}
-			if (!strcmp(argv[i], "-q")) { quiet = true; }
-		}
+	  for (int i = 6; i < argc; ++i) {
+	    if (!strcmp(argv[i], "-t")) aux = argv[i + 1];
+	    if (!strcmp(argv[i], "-tag")) SamParser::setReadTypeTag(argv[i + 1]);
+	    if (!strcmp(argv[i], "-q")) verbose = false;
+	  }
 	}
-
-	verbose = !quiet;
 
 	sprintf(groupF, "%s.grp", argv[1]);
 	gi.load(groupF);
@@ -200,7 +190,7 @@ int main(int argc, char* argv[]) {
 	sprintf(datF, "%s.dat", argv[2]);
 	sprintf(cntF, "%s.cnt", argv[3]);
 
-	init(argv[2], argv[4][0], argv[5]);
+	init(argv[2], argv[4]);
 
 	hit_out.open(datF);
 

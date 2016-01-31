@@ -23,7 +23,7 @@ const int RANGE = 201;
 const int OLEN = 25; // overlap length, number of bases must not be in poly(A) tails
 const int NBITS = 32; // use unsigned int, 32 bits per variable
 
-static bool verbose = true; // show detail intermediate outputs
+extern bool verbose; // show detail intermediate outputs
 
 inline bool isZero(double a) { return fabs(a) < 1e-8; }
 inline bool isLongZero(double a) { return fabs(a) < 1e-30; }

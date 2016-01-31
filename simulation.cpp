@@ -34,6 +34,8 @@
 
 using namespace std;
 
+bool verbose = true;
+
 bool alleleS;
 int OFFSITE;
 

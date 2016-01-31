@@ -24,6 +24,8 @@
 
 using namespace std;
 
+bool verbose = true;
+
 struct Params {
   int no, nsamples;
   FILE *fo;

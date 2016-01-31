@@ -1,24 +1,31 @@
 CC = g++
 CFLAGS = -Wall -c -I.
 COFLAGS = -Wall -O3 -ffast-math -c -I.
+LFLAGS = -Wall -O3 -I.
+
+SAMTOOLS = samtools-1.3
+HTSLIB = htslib-1.3
+SAMFLAGS = -I$(SAMTOOLS) -I$(SAMTOOLS)/$(HTSLIB)
+SAMLIBS = $(SAMTOOLS)/libbam.a $(SAMTOOLS)/$(HTSLIB)/libhts.a
 PROGRAMS = rsem-extract-reference-transcripts rsem-synthesis-reference-transcripts rsem-preref rsem-parse-alignments rsem-build-read-index rsem-run-em rsem-tbam2gbam rsem-run-gibbs rsem-calculate-credibility-intervals rsem-simulate-reads rsem-bam2wig rsem-get-unique rsem-bam2readdepth rsem-sam-validator rsem-scan-for-paired-end-reads
+
 
 .PHONY : all ebseq clean
 
 all : $(PROGRAMS)
 
-sam/libbam.a :
-	cd sam ; ${MAKE} all
+$(SAMLIBS) :
+	cd $(SAMTOOLS) ; ${MAKE} all
 
 Transcript.h : utils.h
 
 Transcripts.h : utils.h my_assert.h Transcript.h
 
 rsem-extract-reference-transcripts : utils.h my_assert.h GTFItem.h Transcript.h Transcripts.h extractRef.cpp
-	$(CC) -Wall -O3 extractRef.cpp -o rsem-extract-reference-transcripts
+	$(CC) $(LFLAGS) extractRef.cpp -o rsem-extract-reference-transcripts
 
 rsem-synthesis-reference-transcripts : utils.h my_assert.h Transcript.h Transcripts.h synthesisRef.cpp
-	$(CC) -Wall -O3 synthesisRef.cpp -o rsem-synthesis-reference-transcripts
+	$(CC) $(LFLAGS) synthesisRef.cpp -o rsem-synthesis-reference-transcripts
 
 BowtieRefSeqPolicy.h : RefSeqPolicy.h
 
@@ -47,19 +54,20 @@ PairedEndHit.h : SingleHit.h
 
 HitContainer.h : GroupInfo.h
 
+sam_utils.h : $(SAMTOOLS)/bam.h Transcript.h Transcripts.h
 
-SamParser.h : sam/sam.h sam/bam.h utils.h my_assert.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h Transcripts.h
+SamParser.h : $(SAMTOOLS)/sam.h $(SAMTOOLS)/bam.h sam_utils.h utils.h my_assert.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h Transcripts.h
 
 
-rsem-parse-alignments : parseIt.o sam/libbam.a
-	$(CC) -o rsem-parse-alignments parseIt.o sam/libbam.a -lz -lpthread 
+rsem-parse-alignments : parseIt.o $(SAMLIBS)
+	$(CC) -o rsem-parse-alignments parseIt.o $(SAMLIBS) -lz -lpthread 
 
-parseIt.o : utils.h GroupInfo.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h HitContainer.h SamParser.h Transcripts.h sam/sam.h sam/bam.h parseIt.cpp
-	$(CC) -Wall -O2 -c -I. parseIt.cpp
+parseIt.o : $(SAMTOOLS)/sam.h $(SAMTOOLS)/bam.h sam_utils.h utils.h my_assert.h GroupInfo.h Transcripts.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h HitContainer.h SamParser.h parseIt.cpp
+	$(CC) -Wall -O2 -c -I. $(SAMFLAGS) parseIt.cpp
 
 
 rsem-build-read-index : utils.h buildReadIndex.cpp
-	$(CC) -O3 buildReadIndex.cpp -o rsem-build-read-index
+	$(CC) $(LFLAGS) buildReadIndex.cpp -o rsem-build-read-index
 
 
 simul.h : boost/random.hpp
@@ -76,37 +84,36 @@ PairedEndQModel.h : utils.h my_assert.h Orientation.h LenDist.h RSPD.h QualDist.
 
 HitWrapper.h : HitContainer.h
 
-sam_rsem_aux.h : sam/bam.h
 
-sam_rsem_cvt.h : sam/bam.h Transcript.h Transcripts.h
 
-BamWriter.h : sam/sam.h sam/bam.h sam_rsem_aux.h sam_rsem_cvt.h SingleHit.h PairedEndHit.h HitWrapper.h Transcript.h Transcripts.h
+BamWriter.h : $(SAMTOOLS)/sam.h $(SAMTOOLS)/bam.h sam_utils.h SingleHit.h PairedEndHit.h HitWrapper.h Transcript.h Transcripts.h
 
 sampling.h : boost/random.hpp
 
 WriteResults.h : utils.h my_assert.h GroupInfo.h Transcript.h Transcripts.h RefSeq.h Refs.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h
 
-rsem-run-em : EM.o sam/libbam.a
-	$(CC) -o rsem-run-em EM.o sam/libbam.a -lz -lpthread
+rsem-run-em : EM.o $(SAMLIBS)
+	$(CC) -o rsem-run-em EM.o $(SAMLIBS) -lz -lpthread
 
-EM.o : utils.h my_assert.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h Refs.h GroupInfo.h HitContainer.h ReadIndex.h ReadReader.h Orientation.h LenDist.h RSPD.h QualDist.h QProfile.h NoiseQProfile.h ModelParams.h RefSeq.h RefSeqPolicy.h PolyARules.h Profile.h NoiseProfile.h Transcript.h Transcripts.h HitWrapper.h BamWriter.h sam/bam.h sam/sam.h simul.h sam_rsem_aux.h sampling.h boost/random.hpp WriteResults.h EM.cpp
-	$(CC) $(COFLAGS) EM.cpp
+EM.o : utils.h my_assert.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h Refs.h GroupInfo.h HitContainer.h ReadIndex.h ReadReader.h Orientation.h LenDist.h RSPD.h QualDist.h QProfile.h NoiseQProfile.h ModelParams.h RefSeq.h RefSeqPolicy.h PolyARules.h Profile.h NoiseProfile.h Transcript.h Transcripts.h HitWrapper.h BamWriter.h $(SAMTOOLS)/bam.h $(SAMTOOLS)/sam.h simul.h sam_utils.h sampling.h boost/random.hpp WriteResults.h EM.cpp
+	$(CC) $(COFLAGS) $(SAMFLAGS) EM.cpp
 
-bc_aux.h : sam/bam.h
+bc_aux.h : $(SAMTOOLS)/bam.h
 
-BamConverter.h : utils.h my_assert.h sam/sam.h sam/bam.h sam_rsem_aux.h sam_rsem_cvt.h bc_aux.h Transcript.h Transcripts.h
+BamConverter.h : $(SAMTOOLS)/bam.h $(SAMTOOLS)/sam.h sam_utils.h utils.h my_assert.h bc_aux.h Transcript.h Transcripts.h
 
-rsem-tbam2gbam : utils.h Transcripts.h Transcript.h bc_aux.h BamConverter.h sam/sam.h sam/bam.h sam/libbam.a sam_rsem_aux.h sam_rsem_cvt.h tbam2gbam.cpp sam/libbam.a
-	$(CC) -O3 -Wall tbam2gbam.cpp sam/libbam.a -lz -lpthread -o $@
+rsem-tbam2gbam : utils.h Transcripts.h Transcript.h BamConverter.h $(SAMTOOLS)/sam.h $(SAMTOOLS)/bam.h sam_utils.h my_assert.h bc_aux.h tbam2gbam.cpp $(SAMLIBS)
+	$(CC) $(LFLAGS) $(SAMFLAGS) tbam2gbam.cpp $(SAMLIBS) -lz -lpthread -o $@
 
-rsem-bam2wig : utils.h my_assert.h wiggle.h wiggle.o sam/libbam.a bam2wig.cpp
-	$(CC) -O3 -Wall bam2wig.cpp wiggle.o sam/libbam.a -lz -lpthread -o $@
+wiggle.o: $(SAMTOOLS)/bam.h $(SAMTOOLS)/sam.h sam_utils.h utils.h my_assert.h wiggle.h wiggle.cpp
+	$(CC) $(COFLAGS) $(SAMFLAGS) wiggle.cpp
 
-rsem-bam2readdepth : utils.h my_assert.h wiggle.h wiggle.o sam/libbam.a bam2readdepth.cpp
-	$(CC) -O3 -Wall bam2readdepth.cpp wiggle.o sam/libbam.a -lz -lpthread -o $@
+rsem-bam2wig : utils.h my_assert.h wiggle.h wiggle.o $(SAMLIBS) bam2wig.cpp
+	$(CC) $(LFLAGS) bam2wig.cpp wiggle.o $(SAMLIBS) -lz -lpthread -o $@
 
-wiggle.o: sam/bam.h sam/sam.h wiggle.cpp wiggle.h
-	$(CC) $(COFLAGS) wiggle.cpp
+rsem-bam2readdepth : utils.h my_assert.h wiggle.h wiggle.o $(SAMLIBS) bam2readdepth.cpp
+	$(CC) $(LFLAGS) bam2readdepth.cpp wiggle.o $(SAMLIBS) -lz -lpthread -o $@
+
 
 rsem-simulate-reads : simulation.o
 	$(CC) -o rsem-simulate-reads simulation.o
@@ -130,19 +137,19 @@ rsem-calculate-credibility-intervals : calcCI.o
 calcCI.o : utils.h my_assert.h boost/random.hpp sampling.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h RefSeq.h RefSeqPolicy.h PolyARules.h Refs.h GroupInfo.h WriteResults.h Buffer.h calcCI.cpp
 	$(CC) $(COFLAGS) calcCI.cpp
 
-rsem-get-unique : sam/bam.h sam/sam.h getUnique.cpp sam/libbam.a
-	$(CC) -O3 -Wall getUnique.cpp sam/libbam.a -lz -lpthread -o $@
+rsem-get-unique : $(SAMTOOLS)/bam.h $(SAMTOOLS)/sam.h sam_utils.h utils.h getUnique.cpp $(SAMLIBS)
+	$(CC) $(LFLAGS) $(SAMFLAGS) getUnique.cpp $(SAMLIBS) -lz -lpthread -o $@
 
-rsem-sam-validator : sam/bam.h sam/sam.h my_assert.h samValidator.cpp sam/libbam.a
-	$(CC) -O3 -Wall samValidator.cpp sam/libbam.a -lz -lpthread -o $@
+rsem-sam-validator : $(SAMTOOLS)/bam.h $(SAMTOOLS)/sam.h sam_utils.h utils.h my_assert.h samValidator.cpp $(SAMLIBS)
+	$(CC) $(LFLAGS) $(SAMFLAGS) samValidator.cpp $(SAMLIBS) -lz -lpthread -o $@
 
-rsem-scan-for-paired-end-reads : sam/bam.h sam/sam.h my_assert.h scanForPairedEndReads.cpp sam/libbam.a
-	$(CC) -O3 -Wall scanForPairedEndReads.cpp sam/libbam.a -lz -lpthread -o $@
+rsem-scan-for-paired-end-reads : $(SAMTOOLS)/bam.h $(SAMTOOLS)/sam.h sam_utils.h utils.h my_assert.h scanForPairedEndReads.cpp $(SAMLIBS)
+	$(CC) $(LFLAGS) $(SAMFLAGS) scanForPairedEndReads.cpp $(SAMLIBS) -lz -lpthread -o $@
 
 ebseq :
 	cd EBSeq ; ${MAKE} all
 
 clean :
 	rm -f *.o *~ $(PROGRAMS)
-	cd sam ; ${MAKE} clean
+	cd $(SAMTOOLS) ; ${MAKE} clean
 	cd EBSeq ; ${MAKE} clean

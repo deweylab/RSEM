@@ -48,6 +48,8 @@
 
 using namespace std;
 
+bool verbose = true;
+
 const double STOP_CRITERIA = 0.001;
 const int MAX_ROUND = 10000;
 const int MIN_ROUND = 20;
@@ -74,9 +76,7 @@ char refF[STRLEN], cntF[STRLEN], tiF[STRLEN];
 char mparamsF[STRLEN];
 char modelF[STRLEN], thetaF[STRLEN];
 
-char inpSamType;
-char *pt_fn_list;
-char inpSamF[STRLEN], outBamF[STRLEN], fn_list[STRLEN];
+char inpSamF[STRLEN], outBamF[STRLEN], *aux;
 
 char out_for_gibbs_F[STRLEN];
 
@@ -530,7 +530,7 @@ void EM() {
 			if (verbose) cout<< "Sampling is finished."<< endl;
 		}
 
-		BamWriter writer(inpSamType, inpSamF, pt_fn_list, outBamF, transcripts);
+		BamWriter writer(inpSamF, aux, outBamF, transcripts);
 		HitWrapper<HitType> wrapper(nThreads, hitvs);
 		writer.work(wrapper);
 	}
@@ -543,7 +543,7 @@ int main(int argc, char* argv[]) {
 	bool quiet = false;
 
 	if (argc < 6) {
-		printf("Usage : rsem-run-em refName read_type sampleName imdName statName [-p #Threads] [-b samInpType samInpF has_fn_list_? [fn_list]] [-q] [--gibbs-out] [--sampling] [--seed seed] [--append-names]\n\n");
+		printf("Usage : rsem-run-em refName read_type sampleName imdName statName [-p #Threads] [-b samInpF has_fai? [fai_file]] [-q] [--gibbs-out] [--sampling] [--seed seed] [--append-names]\n\n");
 		printf("  refName: reference name\n");
 		printf("  read_type: 0 single read without quality score; 1 single read with quality score; 2 paired-end read without quality score; 3 paired-end read with quality score.\n");
 		printf("  sampleName: sample's name, including the path\n");
@@ -572,7 +572,7 @@ int main(int argc, char* argv[]) {
 	genBamF = false;
 	bamSampling = false;
 	genGibbsOut = false;
-	pt_fn_list = NULL;
+	aux = NULL;
 	hasSeed = false;
 	appendNames = false;
 	
@@ -580,14 +580,10 @@ int main(int argc, char* argv[]) {
 		if (!strcmp(argv[i], "-p")) { nThreads = atoi(argv[i + 1]); }
 		if (!strcmp(argv[i], "-b")) {
 			genBamF = true;
-			inpSamType = argv[i + 1][0];
-			strcpy(inpSamF, argv[i + 2]);
-			if (atoi(argv[i + 3]) == 1) {
-				strcpy(fn_list, argv[i + 4]);
-				pt_fn_list = (char*)(&fn_list);
-			}
+			strcpy(inpSamF, argv[i + 1]);
+			if (atoi(argv[i + 2]) == 1) aux = argv[i + 3];
 		}
-		if (!strcmp(argv[i], "-q")) { quiet = true; }
+		if (!strcmp(argv[i], "-q")) { verbose = false; }
 		if (!strcmp(argv[i], "--gibbs-out")) { genGibbsOut = true; }
 		if (!strcmp(argv[i], "--sampling")) { bamSampling = true; }
 		if (!strcmp(argv[i], "--seed")) {
@@ -600,8 +596,6 @@ int main(int argc, char* argv[]) {
 	}
 
 	general_assert(nThreads > 0, "Number of threads should be bigger than 0!");
-
-	verbose = !quiet;
 
 	//basic info loading
 	sprintf(refF, "%s.seq", refName);

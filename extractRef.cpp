@@ -18,6 +18,8 @@
 
 using namespace std;
 
+bool verbose = true;
+
 struct ChrInfo {
 	string name;
 	size_t len;

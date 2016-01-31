@@ -14,6 +14,8 @@
 
 using namespace std;
 
+bool verbose = true;
+
 int M;
 
 map<string, string> name2seq;

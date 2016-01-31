@@ -26,6 +26,8 @@
 
 using namespace std;
 
+bool verbose = true;
+
 struct Params {
 	int no;
 	FILE *fi;

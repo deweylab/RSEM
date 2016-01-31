@@ -8,6 +8,8 @@
 #include "utils.h"
 using namespace std;
 
+bool verbose = true;
+
 int gap;
 bool hasQ;
 

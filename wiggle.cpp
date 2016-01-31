@@ -4,10 +4,12 @@
 #include <iostream>
 
 #include <stdint.h>
-#include "sam/bam.h"
-#include "sam/sam.h"
+#include "bam.h"
+#include "sam.h"
+#include "sam_utils.h"
 
 #include "utils.h"
+#include "my_assert.h"
 #include "wiggle.h"
 
 bool no_fractional_weight = false;
@@ -23,66 +25,60 @@ void add_bam_record_to_wiggle(const bam1_t *b, Wiggle& wiggle) {
     }
 
     int pos = b->core.pos;
-    uint32_t *p = bam1_cigar(b);
+    uint32_t *p = bam_get_cigar(b);
     
-    for (int i = 0; i < (int)b->core.n_cigar; i++, ++p) {
-        int op = *p & BAM_CIGAR_MASK;
-        int op_len = *p >> BAM_CIGAR_SHIFT;
-        
-        switch (op) {
-            //case BAM_CSOFT_CLIP : pos += op_len; break;
-        case BAM_CINS : pos += op_len; break;
-        case BAM_CMATCH :
-            for (int j = 0; j < op_len; j++, ++pos) {
-                wiggle.read_depth[pos] += w;
-            }
-            break;
-        case BAM_CREF_SKIP : pos += op_len; break;
-        default : assert(false);
-        }
+    for (int i = 0; i < (int)b->core.n_cigar; ++i, ++p) {
+      char op = bam_cigar_op(*p);
+      int op_len = bam_cigar_oplen(*p);
+
+      if (op == BAM_CMATCH)
+	for (int j = 0; j < op_len; ++j, ++pos) wiggle.read_depth[pos] += w;
+      else pos += ((bam_cigar_type(op) & 2) ? op_len : 0);
     }
 }
 
 void build_wiggles(const std::string& bam_filename,
                    WiggleProcessor& processor) {
-    samfile_t *bam_in = samopen(bam_filename.c_str(), "rb", NULL);
-	if (bam_in == 0) { fprintf(stderr, "Cannot open %s!\n", bam_filename.c_str()); exit(-1); }
+  
+    samfile_t *bam_in = samopen(bam_filename.c_str(), "r", NULL);
+    general_assert(bam_in != NULL, "Cannot open " + bam_filename + "!");
 
-	bam_header_t *header = bam_in->header;
-	bool *used = new bool[header->n_targets];
-	memset(used, 0, sizeof(bool) * header->n_targets);
+    bam_hdr_t *header = bam_in->header;
+    bool *used = new bool[header->n_targets];
+    memset(used, 0, sizeof(bool) * header->n_targets);
 
-	int cur_tid = -1; //current tid;
-	HIT_INT_TYPE cnt = 0;
-	bam1_t *b = bam_init1();
-	Wiggle wiggle;
-	while (samread(bam_in, b) >= 0) {
-		if (b->core.flag & 0x0004) continue;
-
-		if (b->core.tid != cur_tid) {
-			if (cur_tid >= 0) { used[cur_tid] = true; processor.process(wiggle); }
-			cur_tid = b->core.tid;
-			wiggle.name = header->target_name[cur_tid];
-			wiggle.length = header->target_len[cur_tid];
-			wiggle.read_depth.assign(wiggle.length, 0.0);
-		}
-		add_bam_record_to_wiggle(b, wiggle);
-		++cnt;
-		if (cnt % 1000000 == 0) std::cout<< cnt<< std::endl;
-	}
+    int cur_tid = -1; //current tid;
+    HIT_INT_TYPE cnt = 0;
+    bam1_t *b = bam_init1();
+    Wiggle wiggle;
+    while (samread(bam_in, b) >= 0) {
+      if (bam_is_unmapped(b)) continue;
+      
+      if (b->core.tid != cur_tid) {
 	if (cur_tid >= 0) { used[cur_tid] = true; processor.process(wiggle); }
+	cur_tid = b->core.tid;
+	wiggle.name = header->target_name[cur_tid];
+	wiggle.length = header->target_len[cur_tid];
+	wiggle.read_depth.assign(wiggle.length, 0.0);
+      }
+      add_bam_record_to_wiggle(b, wiggle);
+      ++cnt;
+      if (cnt % 1000000 == 0) std::cout<< cnt<< std::endl;
+    }
+    if (cur_tid >= 0) { used[cur_tid] = true; processor.process(wiggle); }
+    
+    for (int32_t i = 0; i < header->n_targets; i++)
+      if (!used[i]) {
+	wiggle.name = header->target_name[i];
+	wiggle.length = header->target_len[i];
+	wiggle.read_depth.clear();
+	processor.process(wiggle);
+      }
 
-	for (int32_t i = 0; i < header->n_targets; i++)
-		if (!used[i]) {
-			wiggle.name = header->target_name[i];
-			wiggle.length = header->target_len[i];
-			wiggle.read_depth.clear();
-			processor.process(wiggle);
-		}
+    bam_destroy1(b);
+    samclose(bam_in);
 
-	samclose(bam_in);
-	bam_destroy1(b);
-	delete[] used;
+    delete[] used;
 }
 
 UCSCWiggleTrackWriter::UCSCWiggleTrackWriter(const std::string& output_filename,

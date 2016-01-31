@@ -4,7 +4,7 @@
 #include<map>
 
 #include <stdint.h>
-#include "sam/bam.h"
+#include "bam.h"
 
 struct SingleEndT {
 	bam1_t *b;
@@ -21,11 +21,11 @@ struct SingleEndT {
 
 		if (b->core.tid != o.b->core.tid) return getSign(b->core.tid < o.b->core.tid);
 		if (b->core.pos != o.b->core.pos) return getSign(b->core.pos < o.b->core.pos);
-		strand1 = b->core.flag & 0x0010; strand2 = o.b->core.flag & 0x0010;
+		strand1 = bam_is_rev(b); strand2 = bam_is_rev(o.b);
 		if (strand1 != strand2) return getSign(strand1 < strand2);
 		if (b->core.n_cigar != o.b->core.n_cigar) return getSign(b->core.n_cigar < o.b->core.n_cigar);
-		p1 = bam1_cigar(b); p2 = bam1_cigar(o.b);
-		for (int i = 0; i < (int)b->core.n_cigar; i++) {
+		p1 = bam_get_cigar(b); p2 = bam_get_cigar(o.b);
+		for (int i = 0; i < (int)b->core.n_cigar; ++i) {
 			if (*p1 != *p2) return getSign(*p1 < *p2);
 			++p1; ++p2;
 		}

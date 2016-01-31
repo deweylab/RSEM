@@ -8,10 +8,9 @@
 #include<map>
 
 #include <stdint.h>
-#include "sam/bam.h"
-#include "sam/sam.h"
-#include "sam_rsem_aux.h"
-#include "sam_rsem_cvt.h"
+#include "bam.h"
+#include "sam.h"
+#include "sam_utils.h"
 
 #include "utils.h"
 #include "my_assert.h"
@@ -21,7 +20,7 @@
 
 class BamConverter {
 public:
-	BamConverter(const char*, const char*, const char*, Transcripts&);
+	BamConverter(const char* inpF, const char* outF, const char* chr_list, Transcripts& transcripts);
 	~BamConverter();
 
 	void process();
@@ -47,15 +46,15 @@ BamConverter::BamConverter(const char* inpF, const char* outF, const char* chr_l
 {
 	general_assert(transcripts.getType() == 0, "Genome information is not provided! RSEM cannot convert the transcript bam file!");
 
-	in = samopen(inpF, "rb", NULL);
+	in = samopen(inpF, "r", NULL);
 	assert(in != 0);
 
 	transcripts.buildMappings(in->header->n_targets, in->header->target_name);
 
-	bam_header_t *out_header = sam_header_read2(chr_list);
+	bam_hdr_t *out_header = sam_header_read2(chr_list);
 
 	refmap.clear();
-	for (int i = 0; i < out_header->n_targets; i++) {
+	for (int i = 0; i < out_header->n_targets; ++i) {
 		refmap[out_header->target_name[i]] = i;
 	}
 
@@ -86,7 +85,7 @@ BamConverter::BamConverter(const char* inpF, const char* outF, const char* chr_l
 	out = samopen(outF, "wb", out_header);
 	assert(out != 0);
 
-	bam_header_destroy(out_header);
+	bam_hdr_destroy(out_header);
 }
 
 BamConverter::~BamConverter() {
@@ -96,7 +95,7 @@ BamConverter::~BamConverter() {
 
 void BamConverter::process() {
 	bam1_t *b, *b2;
-	std::string cqname;
+	std::string cqname, qname;
 	bool isPaired = false;
 
 	HIT_INT_TYPE cnt = 0;
@@ -106,59 +105,51 @@ void BamConverter::process() {
 
 	while (samread(in, b) >= 0) {
 		++cnt;
-		isPaired = (b->core.flag & 0x0001) > 0;
+		isPaired = bam_is_paired(b);
 		if (isPaired) {
-			assert(samread(in, b2) >= 0 && (b2->core.flag & 0x0001));
-			assert((b->core.flag & 0x0001) && (b2->core.flag & 0x0001));
-			assert(((b->core.flag & 0x0040) && (b2->core.flag & 0x0080)) || ((b->core.flag & 0x0080) && (b2->core.flag & 0x0040)));
- 			++cnt;
+		  assert(samread(in, b2) >= 0 && bam_is_paired(b2));
+		  if (!bam_is_read1(b)) { bam1_t *tmp = b; b = b2; b2 = tmp; }
+		  assert(bam_is_read1(b) && bam_is_read2(b2));
+		  general_assert((bam_is_mapped(b) && bam_is_mapped(b2)) || (bam_is_unmapped(b) && bam_is_unmapped(b2)), \
+				 "Detected partial alignments for read " + bam_get_canonical_name(b) + ", which RSEM currently does not support!"); 
+		  ++cnt;
 		}
 
 		if (cnt % 1000000 == 0) { printf("."); fflush(stdout); }
 
-		// at least one segment is not properly mapped
-		bool notgood = (b->core.flag & 0x0004) || (isPaired && (b2->core.flag & 0x0004));
-		
-		if (isPaired && notgood) general_assert((b->core.flag & 0x0004) && (b2->core.flag & 0x0004), cstrtos(bam1_qname(b)) + "'s two mates are not all marked as unalignable!");
+		qname = bam_get_canonical_name(b);
+		if (bam_is_mapped(b)) {
+		  // for collapsing
+		  if (isPaired) general_assert(b->core.tid == b2->core.tid, qname + "'s two mates are aligned to two different transcripts!");
 
-		if (!notgood) {
-			// for collapsing
-			if (isPaired) {
-				assert(b->core.tid == b2->core.tid);
-				general_assert(b->core.tid == b2->core.tid, cstrtos(bam1_qname(b)) + "'s two mates are aligned to two different transcripts!");
-				if ((b->core.flag & 0x0080) && (b2->core.flag & 0x0040)) {
-					bam1_t *tmp = b; b = b2; b2 = tmp;
-				}
-			}
+		  const Transcript& transcript = transcripts.getTranscriptViaEid(b->core.tid + 1);
 
-			const Transcript& transcript = transcripts.getTranscriptViaEid(b->core.tid + 1);
+		  convert(b, transcript);
+		  if (isPaired) {
+		    convert(b2, transcript);
+		    b->core.mpos = b2->core.pos;
+		    b2->core.mpos = b->core.pos;
+		  }
 
-			convert(b, transcript);
-			if (isPaired) {
-				convert(b2, transcript);
-				b->core.mpos = b2->core.pos;
-				b2->core.mpos = b->core.pos;
-			}
-
-			if (cqname != bam1_qname(b)) {
-				writeCollapsedLines();
-				cqname = bam1_qname(b);
-				collapseMap.init(isPaired);
-			}
-
-			uint8_t *p = bam_aux_get(b, "ZW");
-			float prb = (p != NULL? bam_aux2f(p) : 1.0);
-			collapseMap.insert(b, b2, prb);
+		  if (cqname != qname) {
+		    writeCollapsedLines();
+		    cqname = qname;
+		    collapseMap.init(isPaired);
+		  }
+		  
+		  uint8_t *p = bam_aux_get(b, "ZW");
+		  float prb = (p != NULL? bam_aux2f(p) : 1.0);
+		  collapseMap.insert(b, b2, prb);
 		}
 		else {
-			assert(cqname != bam1_qname(b));
-
-			writeCollapsedLines();
-			cqname = bam1_qname(b);
-			collapseMap.init(isPaired);
-
-			samwrite(out, b);
-			if (isPaired) samwrite(out, b2);
+		  assert(cqname != qname);
+		  
+		  writeCollapsedLines();
+		  cqname = qname;
+		  collapseMap.init(isPaired);
+		  
+		  samwrite(out, b);
+		  if (isPaired) samwrite(out, b2);
 		}
 	}
 
@@ -179,17 +170,17 @@ void BamConverter::convert(bam1_t* b, const Transcript& transcript) {
 	iter = refmap.find(transcript.getSeqName());
 	assert(iter != refmap.end());
 	b->core.tid = iter->second;
-	if (b->core.flag & 0x0001) { b->core.mtid = b->core.tid; }
+	if (bam_is_paired(b)) { b->core.mtid = b->core.tid; }
 	b->core.qual = 255; // set to not available temporarily
 
 	if (transcript.getStrand() == '-') {
-		b->core.flag ^= 0x0010;
-		if (b->core.flag & 0x0001) {
-			b->core.flag ^= 0x0020;
+		b->core.flag ^= BAM_FREVERSE;
+		if (bam_is_paired(b)) {
+			b->core.flag ^= BAM_FMREVERSE;
 			b->core.isize = -b->core.isize;
 		}
-		flipSeq(bam1_seq(b), readlen);
-		flipQual(bam1_qual(b), readlen);
+		flipSeq(bam_get_seq(b), readlen);
+		flipQual(bam_get_qual(b), readlen);
 	}
 
 	std::vector<uint32_t> data;
@@ -204,7 +195,7 @@ void BamConverter::convert(bam1_t* b, const Transcript& transcript) {
 	expand_data_size(b);
 	uint8_t* pt = b->data + b->core.l_qname;
 	memmove(pt + core_n_cigar * 4, pt + b->core.n_cigar * 4, rest_len);
-	for (int i = 0; i < core_n_cigar; i++) { memmove(pt, &data[i], 4); pt += 4; }
+	for (int i = 0; i < core_n_cigar; ++i) { memmove(pt, &data[i], 4); pt += 4; }
 
 	b->core.pos = core_pos;
 	b->core.n_cigar = core_n_cigar;
@@ -224,7 +215,7 @@ inline void BamConverter::writeCollapsedLines() {
 			p = bam_aux_get(tmp_b, "ZW");
 			if (p != NULL) {
 				memcpy(bam_aux_get(tmp_b, "ZW") + 1, (uint8_t*)&(prb), bam_aux_type2size('f'));
-				tmp_b->core.qual = getMAPQ(prb);
+				tmp_b->core.qual = bam_prb_to_mapq(prb);
 			}
 			// otherwise, just use the MAPQ score of the orignal alignment
 
@@ -246,8 +237,8 @@ inline void BamConverter::flipSeq(uint8_t* s, int readlen) {
 
 	code = 0; base = 0;
 	seq.clear();
-	for (int i = 0; i < readlen; i++) {
-		switch (bam1_seqi(s, readlen - i - 1)) {
+	for (int i = 0; i < readlen; ++i) {
+		switch (bam_seqi(s, readlen - i - 1)) {
 		case 1: base = 8; break;
 		case 2: base = 4; break;
 		case 4: base = 2; break;
@@ -260,14 +251,14 @@ inline void BamConverter::flipSeq(uint8_t* s, int readlen) {
 	}
 	if (readlen % 2 == 1) { seq.push_back(code); }
 
-	for (int i = 0; i < (int)seq.size(); i++) s[i] = seq[i];
+	for (int i = 0; i < (int)seq.size(); ++i) s[i] = seq[i];
 }
 
 inline void BamConverter::flipQual(uint8_t* q, int readlen) {
 	int32_t mid = readlen / 2;
 	uint8_t tmp;
-	for (int i = 0; i < mid; i++) {
-		tmp = q[i]; q[i] = q[readlen - i - 1]; q[readlen -i -1] = tmp;
+	for (int i = 0; i < mid; ++i) {
+		tmp = q[i]; q[i] = q[readlen - i - 1]; q[readlen - i - 1] = tmp;
 	}
 }
 

@@ -6,8 +6,9 @@
 #include<vector>
 
 #include <stdint.h>
-#include "sam/bam.h"
-#include "sam/sam.h"
+#include "bam.h"
+#include "sam.h"
+#include "sam_utils.h"
 
 #include "utils.h"
 
@@ -21,9 +22,9 @@ bool unaligned;
 
 void output() {
 	if (unaligned || arr.size() == 0) return;
-	bool isPaired = (arr[0]->core.flag & 0x0001);
+	bool isPaired = bam_is_paired(arr[0]);
 	if ((isPaired && arr.size() != 2) || (!isPaired && arr.size() != 1)) return;
-	for (size_t i = 0; i < arr.size(); i++) samwrite(out, arr[i]);
+	for (size_t i = 0; i < arr.size(); ++i) samwrite(out, arr[i]);
 }
 
 int main(int argc, char* argv[]) {
@@ -32,7 +33,7 @@ int main(int argc, char* argv[]) {
 		exit(-1);
 	}
 
-	in = samopen(argv[1], "rb", NULL);
+	in = samopen(argv[1], "r", NULL);
 	assert(in != 0);
 	out = samopen(argv[2], "wb", in->header);
 	assert(out != 0);
@@ -45,15 +46,15 @@ int main(int argc, char* argv[]) {
 	unaligned = false;
 
 	while (samread(in, b) >= 0) {
-		if (cqname != bam1_qname(b)) {
+		if (cqname != bam_get_qname(b)) {
 			output();
-			cqname = bam1_qname(b);
-			for (size_t i = 0; i < arr.size(); i++) bam_destroy1(arr[i]);
+			cqname = bam_get_qname(b);
+			for (size_t i = 0; i < arr.size(); ++i) bam_destroy1(arr[i]);
 			arr.clear();
 			unaligned = false;
 		}
 
-		unaligned = unaligned || (b->core.flag & 0x0004);
+		unaligned = unaligned || bam_is_unmapped(b);
 		arr.push_back(bam_dup1(b));
 
 		++cnt;
