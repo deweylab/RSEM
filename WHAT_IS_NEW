@@ -1,3 +1,13 @@
+RSEM v1.2.27
+
+- Upgraded SAMtools to v1.3; RSEM now supports input alignments in SAM/BAM/CRAM format
+- '--sam/--bam' options of 'rsem-calculate-expression' are obsoleted; use '--alignments' instead; '--sam/--bam' can still be used for compatibility with previous versions
+- Some 'rsem-calculate-expression' options are renamed for better interpretability
+- Documents are updated to reflect the SAMtools upgrade
+- Fixed a bug for parsing GTF files
+
+--------------------------------------------------------------------------------------------
+
 RSEM v1.2.26
 
 - RSEM supports GFF3 annotation format now

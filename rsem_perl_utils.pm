@@ -7,9 +7,10 @@ use strict;
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(runCommand);
-our @EXPORT_OK = qw(runCommand collectResults showVersionInfo);
+our @EXPORT_OK = qw(runCommand collectResults showVersionInfo getSAMTOOLS);
 
-my $version = "RSEM v1.2.26";
+my $version = "RSEM v1.2.27"; # Update version info here
+my $samtools = "samtools-1.3"; # If update to another version of SAMtools, need to change this
 
 # command, {err_msg}
 sub runCommand {
@@ -88,10 +89,13 @@ sub collectResults {
     close(OUTPUT);
 }
 
-# 0, dir
 sub showVersionInfo {
     print "Current version: $version\n";
     exit(0);
+}
+
+sub getSAMTOOLS {
+    return $samtools
 }
 
 1;
