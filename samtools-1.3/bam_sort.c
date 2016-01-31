@@ -68,11 +68,16 @@ KLIST_INIT(hdrln, char*, hdrln_free_char)
 
 static int g_is_by_qname = 0;
 
+// Added for RSEM by Bo Li: Test if the query name should stop
+static bool ok(char c) { return c > 0 && !isspace(c); }
+
+// Modified for RSEM by Bo Li: Let the query name stops whenever encounters a space 
 static int strnum_cmp(const char *_a, const char *_b)
 {
     const unsigned char *a = (const unsigned char*)_a, *b = (const unsigned char*)_b;
     const unsigned char *pa = a, *pb = b;
-    while (*pa && *pb) {
+    //while (*pa && *pb) { // Modified for RSEM by Bo Li
+    while (ok(*pa) && ok(*pb)) {
         if (isdigit(*pa) && isdigit(*pb)) {
             while (*pa == '0') ++pa;
             while (*pb == '0') ++pb;
@@ -89,7 +94,8 @@ static int strnum_cmp(const char *_a, const char *_b)
             ++pa; ++pb;
         }
     }
-    return *pa? 1 : *pb? -1 : 0;
+    //return *pa ? 1 : *pb ? -1 : 0; // Modified for RSEM by Bo Li
+    return ok(*pa)? 1 : ok(*pb)? -1 : 0;
 }
 
 #define HEAP_EMPTY UINT64_MAX
@@ -103,13 +109,15 @@ typedef struct {
 #define __pos_cmp(a, b) ((a).pos > (b).pos || ((a).pos == (b).pos && ((a).i > (b).i || ((a).i == (b).i && (a).idx > (b).idx))))
 
 // Function to compare reads in the heap and determine which one is < the other
+// Note by Bo Li: It actually returns which one is > 
 static inline int heap_lt(const heap1_t a, const heap1_t b)
 {
     if (g_is_by_qname) {
         int t;
         if (a.b == NULL || b.b == NULL) return a.b == NULL? 1 : 0;
         t = strnum_cmp(bam_get_qname(a.b), bam_get_qname(b.b));
-        return (t > 0 || (t == 0 && (a.b->core.flag&0xc0) > (b.b->core.flag&0xc0)));
+        //return (t > 0 || (t == 0 && (a.b->core.flag&0xc0) > (b.b->core.flag&0xc0))); // Modified for RSEM by Bo Li
+	return t > 0; // In order to make sure the two mates of an alignment are adjacent to each other
     } else return __pos_cmp(a, b);
 }
 
@@ -1530,7 +1538,8 @@ static inline int bam1_lt(const bam1_p a, const bam1_p b)
 {
     if (g_is_by_qname) {
         int t = strnum_cmp(bam_get_qname(a), bam_get_qname(b));
-        return (t < 0 || (t == 0 && (a->core.flag&0xc0) < (b->core.flag&0xc0)));
+        //return (t < 0 || (t == 0 && (a->core.flag&0xc0) < (b->core.flag&0xc0))); // Modified for RSEM by Bo Li
+	return t < 0;
     } else return (((uint64_t)a->core.tid<<32|(a->core.pos+1)<<1|bam_is_rev(a)) < ((uint64_t)b->core.tid<<32|(b->core.pos+1)<<1|bam_is_rev(b)));
 }
 KSORT_INIT(sort, bam1_p, bam1_lt)

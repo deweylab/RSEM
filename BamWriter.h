@@ -37,7 +37,12 @@ private:
 	void set_alignment_weight(bam1_t *b, double prb) {
 	  b->core.qual = bam_prb_to_mapq(prb);
 	  float val = (float)prb;
-	  bam_aux_append(b, "ZW", 'f', bam_aux_type2size('f'), (uint8_t*)&val);
+          uint8_t *p = bam_aux_get(b, "ZW");
+          if (p != NULL) {
+            memcpy(p + 1, (uint8_t*)&(val), bam_aux_type2size('f'));
+          } else {
+            bam_aux_append(b, "ZW", 'f', bam_aux_type2size('f'), (uint8_t*)&val);
+          }
 	}
 };
 

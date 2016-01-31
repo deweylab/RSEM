@@ -540,7 +540,6 @@ void EM() {
 
 int main(int argc, char* argv[]) {
 	ifstream fin;
-	bool quiet = false;
 
 	if (argc < 6) {
 		printf("Usage : rsem-run-em refName read_type sampleName imdName statName [-p #Threads] [-b samInpF has_fai? [fai_file]] [-q] [--gibbs-out] [--sampling] [--seed seed] [--append-names]\n\n");

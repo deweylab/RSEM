@@ -176,7 +176,7 @@ else {
     pod2usage(-msg => "--bowtie-path, --bowtie-n, --bowtie-e, --bowtie-m cannot be set if bowtie2 aligner is used!", -exitval => 2, -verbose => 2) if ($bowtie2 && ($bowtie_path ne "" || $C != 2 || $E != 99999999 || $maxHits != 200));
     pod2usage(-msg => "Mismatch rate must be within [0, 1]!", -exitval => 2, -verbose => 2) if ($bowtie2 && ($bowtie2_mismatch_rate < 0.0 || $bowtie2_mismatch_rate > 1.0));
     pod2usage(-msg => "Sensitivity level must be one of \"very_fast\", \"fast\", \"sensitive\", and \"very_sensitive\"!", -exitval => 2, -verbose => 2) if ($bowtie2 && (($bowtie2_sensitivity_level ne "very_fast") && ($bowtie2_sensitivity_level ne "fast") && ($bowtie2_sensitivity_level ne "sensitive") && ($bowtie2_sensitivity_level ne "very_sensitive")));
-    print "Warning: There is no need to set --fai if you ask RSEM to align reads for you.\n"
+    if ($faiF ne "") { print "Warning: There is no need to set --fai if you ask RSEM to align reads for you.\n" }
 }
 
 pod2usage(-msg => "Forward probability should be in [0, 1]!", -exitval => 2, -verbose => 2) if ($probF < 0 || $probF > 1);

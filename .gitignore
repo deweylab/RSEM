@@ -17,4 +17,8 @@ rsem-tbam2gbam
 rsem-sam-validator
 rsem-scan-for-paired-end-reads
 EBSeq/rsem-for-ebseq-calculate-clustering-info
-sam/samtools
+samtools-*/samtools
+samtools-*/version.h
+samtools-*/test
+samtools-*/misc
+
