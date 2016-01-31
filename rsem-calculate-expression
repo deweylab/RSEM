@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 
-use Getopt::Long;
+use Getopt::Long qw(:config no_auto_abbrev);
 use Pod::Usage;
 use File::Basename;
 use FindBin;
