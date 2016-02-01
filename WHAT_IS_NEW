@@ -5,6 +5,7 @@ RSEM v1.2.27
 - Some 'rsem-calculate-expression' options are renamed for better interpretability
 - Documents are updated to reflect the SAMtools upgrade
 - Fixed a bug for parsing GTF files
+- Fixed a bug for generating transcript wiggle plots
 
 --------------------------------------------------------------------------------------------
 
