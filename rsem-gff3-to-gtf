@@ -7,7 +7,7 @@ import re
 
 class HelpOnErrorParser(argparse.ArgumentParser):
     def error(self, msg):
-        sys.stderr.write("{}: error: {}\n\n".format(os.path.basename(sys.argv[0]), msg))
+        sys.stderr.write("{0}: error: {1}\n\n".format(os.path.basename(sys.argv[0]), msg))
         self.print_help()
         sys.exit(-1)
 
@@ -60,31 +60,31 @@ for line in fin:
         continue
 
     arr = rgx.split(line)
-    my_assert(len(arr) == 9, "Line {} does not have 9 fields:\n{}".format(line_no, line))
+    my_assert(len(arr) == 9, "Line {0} does not have 9 fields:\n{1}".format(line_no, line))
 
     if arr[2] == "exon":
         parent = findTag("Parent", arr[8])
-        my_assert(parent != None, "Line {} does not have a Parent tag:\n{}".format(line_no, line))
+        my_assert(parent != None, "Line {0} does not have a Parent tag:\n{1}".format(line_no, line))
 
         tids = parent.split(",")
         for tid in tids:
             if tid not in trans2gene:
                 continue
             gid = trans2gene[tid]
-            fout.write("{}\tgene_id \"{}\"; transcript_id \"{}\";".format("\t".join(arr[:-1]), gid, tid))
+            fout.write("{0}\tgene_id \"{1}\"; transcript_id \"{2}\";".format("\t".join(arr[:-1]), gid, tid))
             name = gid2name.get(gid, None)
             if name != None:
-                fout.write(" gene_name \"{}\";".format(name))
+                fout.write(" gene_name \"{0}\";".format(name))
             name = tid2name.get(tid, None)
             if name != None:
-                fout.write(" transcript_name \"{}\";".format(name))
+                fout.write(" transcript_name \"{0}\";".format(name))
             fout.write("\n")
         
     elif arr[2] == "gene":
         gid = findTag("ID", arr[8])
         name = findTag("Name", arr[8])
 
-        my_assert(gid != None, "Line {} does not have a ID tag:\n{}".format(line_no, line))
+        my_assert(gid != None, "Line {0} does not have a ID tag:\n{1}".format(line_no, line))
         
         if name != None:
             gid2name[gid] = name
@@ -94,8 +94,8 @@ for line in fin:
         gid = findTag("Parent", arr[8])
         name = findTag("Name", arr[8])
 
-        my_assert(tid != None, "Line {} does not have a ID tag:\n{}".format(line_no, line))
-        my_assert(gid != None, "Line {} does not have a Parent tag:\n{}".format(line_no, line))
+        my_assert(tid != None, "Line {0} does not have a ID tag:\n{1}".format(line_no, line))
+        my_assert(gid != None, "Line {0} does not have a Parent tag:\n{1}".format(line_no, line))
                     
         trans2gene[tid] = gid
         if name != None:
