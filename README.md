@@ -567,14 +567,18 @@ be sent to <a href="mailto:nleng@wisc.edu">Ning Leng</a>.
 
 ## <a name="acknowledgements"></a> Acknowledgements
 
-RSEM uses the [Boost C++](http://www.boost.org) and
-[samtools](http://samtools.sourceforge.net) libraries. RSEM includes
+RSEM uses the [Boost C++](http://www.boost.org/) and
+[SAMtools](http://www.htslib.org/) libraries. RSEM includes
 [EBSeq](http://www.biostat.wisc.edu/~ningleng/EBSeq_Package/) for
 differential expression analysis.
 
 We thank earonesty and Dr. Samuel Arvidsson for contributing patches.
 
 We thank Han Lin, j.miller, Jo&euml;l Fillon, Dr. Samuel G. Younkin and Malcolm Cook for suggesting possible fixes. 
+
+**Note** that `bam_sort.c` of SAMtools is slightly modified so that
+  `samtools sort -n` will not move the two mates of paired-end
+  alignments apart.
 
 ## <a name="license"></a> License
 
