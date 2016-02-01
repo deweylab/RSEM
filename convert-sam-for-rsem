@@ -39,7 +39,7 @@ $command = "samtools sort -n -@ $p -m $mem -o $tmp_file $in_file";
 
 # Phase II, parse the temporary BAM file to make paired-end alignments' two mates adjacent to each other
 
-$command = "rsem-scan-for-paired-end-reads $tmp_file $out_file";
+$command = "rsem-scan-for-paired-end-reads $p $tmp_file $out_file";
 &runCommand($command);
 
 # delete temporary file
@@ -60,7 +60,7 @@ convert-sam-for-rsem
 
 =head1 SYNOPSIS
 
-convert-sam-for-rsem [options] <input.sam/input.bam/input.cram> output_file_name
+ convert-sam-for-rsem [options] <input.sam/input.bam/input.cram> output_file_name
 
 =head1 ARGUMENTS
 
@@ -82,11 +82,11 @@ The output name for the converted file. 'convert-sam-for-rsem' will output a BAM
 
 =item B<-p/--num-threads> <int>
 
-Set the number of threads for sorting the input file by read name. (Default: 1)
+Set the number of threads to be used for converting. (Default: 1)
 
 =item B<--memory-per-thread> <string>
 
-Set the maximum memory per thread for sorting. <string> represents the memory and accepts suffices 'K/M/G'. (Default: 1G)
+Set the maximum allowable memory per thread. <string> represents the memory and accepts suffices 'K/M/G'. (Default: 1G)
 
 =item B<-h/--help>
 

@@ -530,7 +530,7 @@ void EM() {
 			if (verbose) cout<< "Sampling is finished."<< endl;
 		}
 
-		BamWriter writer(inpSamF, aux, outBamF, transcripts);
+		BamWriter writer(inpSamF, aux, outBamF, transcripts, nThreads);
 		HitWrapper<HitType> wrapper(nThreads, hitvs);
 		writer.work(wrapper);
 	}

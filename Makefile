@@ -86,7 +86,7 @@ HitWrapper.h : HitContainer.h
 
 
 
-BamWriter.h : $(SAMTOOLS)/sam.h $(SAMTOOLS)/bam.h sam_utils.h SingleHit.h PairedEndHit.h HitWrapper.h Transcript.h Transcripts.h
+BamWriter.h : $(SAMTOOLS)/sam.h $(SAMTOOLS)/bam.h sam_utils.h utils.h my_assert.h SingleHit.h PairedEndHit.h HitWrapper.h Transcript.h Transcripts.h
 
 sampling.h : boost/random.hpp
 

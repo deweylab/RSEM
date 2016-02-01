@@ -16,6 +16,7 @@
 
 using namespace std;
 
+int nThreads;
 samfile_t *in, *out;
 bam1_t *b, *b2;
 vector<bam1_t*> arr_both, arr_partial_1, arr_partial_2, arr_partial_unknown;
@@ -50,15 +51,17 @@ bool less_than(bam1_t *a, bam1_t *b) {
 }
 
 int main(int argc, char* argv[]) {
-	if (argc != 3) {
-		printf("Usage: rsem-scan-for-paired-end-reads input.[sam/bam/cram] output.bam\n");
+	if (argc != 4) {
+		printf("Usage: rsem-scan-for-paired-end-reads number_of_threads input.[sam/bam/cram] output.bam\n");
 		exit(-1);
 	}
 
-	in = samopen(argv[1], "r", NULL);
-	general_assert(in != 0, "Cannot open " + cstrtos(argv[1]) + " !");
-	out = samopen(argv[2], "wb", in->header);
-	general_assert(out != 0, "Cannot open " + cstrtos(argv[2]) + " !");
+        nThreads = atoi(argv[1]);
+	in = samopen(argv[2], "r", NULL);
+	general_assert(in != 0, "Cannot open " + cstrtos(argv[2]) + " !");
+	out = samopen(argv[3], "wb", in->header);
+	general_assert(out != 0, "Cannot open " + cstrtos(argv[3]) + " !");
+        if (nThreads > 1) general_assert(samthreads(out, nThreads, 256) == 0, "Fail to create threads for writing the BAM file!");        
 
 	b = bam_init1(); b2 = bam_init1();
 

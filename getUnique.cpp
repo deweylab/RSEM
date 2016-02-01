@@ -11,9 +11,11 @@
 #include "sam_utils.h"
 
 #include "utils.h"
+#include "my_assert.h"
 
 using namespace std;
 
+int nThreads;
 string cqname;
 samfile_t *in, *out;
 bam1_t *b;
@@ -28,15 +30,17 @@ void output() {
 }
 
 int main(int argc, char* argv[]) {
-	if (argc != 3) {
-		printf("Usage: rsem-get-unique unsorted_transcript_bam_input bam_output\n");
+	if (argc != 4) {
+		printf("Usage: rsem-get-unique number_of_threads unsorted_transcript_bam_input bam_output\n");
 		exit(-1);
 	}
 
-	in = samopen(argv[1], "r", NULL);
+        nThreads = atoi(argv[1]);
+	in = samopen(argv[2], "r", NULL);
 	assert(in != 0);
-	out = samopen(argv[2], "wb", in->header);
+	out = samopen(argv[3], "wb", in->header);
 	assert(out != 0);
+        if (nThreads > 1) general_assert(samthreads(out, nThreads, 256) == 0, "Fail to create threads for writing the BAM file!");
 
 	HIT_INT_TYPE cnt = 0;
 

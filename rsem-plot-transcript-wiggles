@@ -5,10 +5,10 @@ use Pod::Usage;
 
 use FindBin;
 use lib $FindBin::RealBin;
-use rsem_perl_utils qw(runCommand getSAMtools);
+use rsem_perl_utils qw(runCommand getSAMTOOLS);
 
 use Env qw(@PATH);
-@PATH = ($FindBin::RealBin, "$FindBin::RealBin/" . getSAMtools(), @PATH);
+@PATH = ($FindBin::RealBin, "$FindBin::RealBin/" . getSAMTOOLS(), @PATH);
 
 use strict;
 
@@ -49,7 +49,7 @@ unless (-e "$ARGV[0].transcript.readdepth") {
 
 if ($show_unique) {
     unless (-e "$ARGV[0].uniq.transcript.bam") {
-	$command = "rsem-get-unique $ARGV[0].transcript.bam $ARGV[0].uniq.transcript.bam";
+	$command = "rsem-get-unique $p $ARGV[0].transcript.bam $ARGV[0].uniq.transcript.bam";
 	&runCommand($command);
     }
     unless (-e "$ARGV[0].uniq.transcript.sorted.bam") {
@@ -85,7 +85,7 @@ rsem-plot-transcript-wiggles
 
 =head1 SYNOPSIS
 
-rsem-plot-transcript-wiggles [options] sample_name input_list output_plot_file
+ rsem-plot-transcript-wiggles [options] sample_name input_list output_plot_file
 
 =head1 ARGUMENTS
 
@@ -123,11 +123,11 @@ Show the wiggle plots as stacked bar plots. See description section for details.
 
 =item B<-p/--num-threads> <int>
 
-Set the number of threads for SAMtools sort. (Default: 1)
+Set the number of threads we can use. (Default: 1)
 
 =item B<--memory-per-thread> <string>
 
-Set the maximum memory per thread for SAMtools sort. <string> represents the memory and accepts suffices 'K/M/G'. (Default: 1G)
+Set the maximum allowable memory per thread. <string> represents the memory and accepts suffices 'K/M/G'. (Default: 1G)
 
 =item B<-h/--help>
 

@@ -20,7 +20,7 @@
 
 class BamConverter {
 public:
-	BamConverter(const char* inpF, const char* outF, const char* chr_list, Transcripts& transcripts);
+	BamConverter(const char* inpF, const char* outF, const char* chr_list, Transcripts& transcripts, int nThreads);
 	~BamConverter();
 
 	void process();
@@ -41,7 +41,7 @@ private:
 	void modifyTags(bam1_t*, const Transcript&); // modify MD tag and XS tag if needed
 };
 
-BamConverter::BamConverter(const char* inpF, const char* outF, const char* chr_list, Transcripts& transcripts)
+BamConverter::BamConverter(const char* inpF, const char* outF, const char* chr_list, Transcripts& transcripts, int nThreads)
 	: transcripts(transcripts)
 {
 	general_assert(transcripts.getType() == 0, "Genome information is not provided! RSEM cannot convert the transcript bam file!");
@@ -86,6 +86,8 @@ BamConverter::BamConverter(const char* inpF, const char* outF, const char* chr_l
 	assert(out != 0);
 
 	bam_hdr_destroy(out_header);
+
+        if (nThreads > 1) general_assert(samthreads(out, nThreads, 256) == 0, "Fail to create threads for writing the BAM file!");
 }
 
 BamConverter::~BamConverter() {

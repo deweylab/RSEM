@@ -162,7 +162,7 @@ rsem-prepare-reference
 
 =head1 SYNOPSIS
 
-rsem-prepare-reference [options] reference_fasta_file(s) reference_name
+ rsem-prepare-reference [options] reference_fasta_file(s) reference_name
 
 =head1 ARGUMENTS
 

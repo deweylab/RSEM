@@ -15,6 +15,7 @@
 #include "sam_utils.h"
 
 #include "utils.h"
+#include "my_assert.h"
 
 #include "SingleHit.h"
 #include "PairedEndHit.h"
@@ -25,7 +26,7 @@
 
 class BamWriter {
 public:
-	BamWriter(const char* inpF, const char* aux, const char* outF, Transcripts& transcripts);
+	BamWriter(const char* inpF, const char* aux, const char* outF, Transcripts& transcripts, int nThreads);
 	~BamWriter();
 
 	void work(HitWrapper<SingleHit> wrapper);
@@ -46,8 +47,8 @@ private:
 	}
 };
 
-//fn_list can be NULL
-BamWriter::BamWriter(const char* inpF, const char* aux, const char* outF, Transcripts& transcripts) : transcripts(transcripts) {
+//aux can be NULL
+BamWriter::BamWriter(const char* inpF, const char* aux, const char* outF, Transcripts& transcripts, int nThreads) : transcripts(transcripts) {
   in = samopen(inpF, "r", aux);
   assert(in != 0);
 
@@ -64,8 +65,10 @@ BamWriter::BamWriter(const char* inpF, const char* aux, const char* outF, Transc
   
   out = samopen(outF, "wb", out_header); // If CRAM format is desired, use "wc"
   assert(out != 0);
-  
+    
   bam_hdr_destroy(out_header);
+
+  if (nThreads > 1) general_assert(samthreads(out, nThreads, 256) == 0, "Fail to create threads for writing the BAM file!");
 }
 
 BamWriter::~BamWriter() {
