@@ -99,7 +99,7 @@ if (is_composite) {
 }
 
 err_idx = poses < 1
-if (sum(err_id) > 0) {
+if (sum(err_idx) > 0) {
    cat("Warning: The following IDs are not in the RSEM indices and thus ignored: ")
    cat(ids[err_idx])
    cat("\n")
