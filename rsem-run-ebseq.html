@@ -89,6 +89,12 @@
 <p>If there are more than 2 different conditions among the samples, the output format is different. For differential expression analysis with more than 2 conditions, EBSeq will enumerate all possible expression patterns (on which conditions are equally expressed and which conditions are not). Suppose there are k different patterns, the first k columns of the output file give the posterior probability of each expression pattern is true. Patterns are defined in a separate file, &#39;output_file.pattern&#39;. The k+1 column gives the maximum a posteriori (MAP) expression pattern for each gene/transcript. The k+2 column gives the posterior probability that not all conditions are equally expressed (column name &quot;PPDE&quot;). The genes/transcripts are reported in descending order of their &quot;PPDE&quot; column values. For details on how EBSeq works for more than 2 conditions, please refer to EBSeq&#39;s manual.</p>
 
 </dd>
+<dt id="output_file.normalized_data_matrix"><b>output_file.normalized_data_matrix</b></dt>
+<dd>
+
+<p>This file contains the median normalized version of the input data matrix.</p>
+
+</dd>
 <dt id="output_file.pattern"><b>output_file.pattern</b></dt>
 <dd>
 
@@ -109,13 +115,13 @@
 
 <pre><code> rsem-run-ebseq --ngvector ngvector.ngvec IsoMat.txt 5,5 IsoMat.results</code></pre>
 
-<p>The results will be in &#39;IsoMat.results&#39;.</p>
+<p>The results will be in &#39;IsoMat.results&#39; and &#39;IsoMat.results.normalized_data_matrix&#39; contains the normalized data matrix.</p>
 
 <p>2) We&#39;re interested in gene-level analysis and there are 3 conditions. The first condition has 3 replicates and the other two has 4 replicates each. The data matrix is named as &#39;GeneMat.txt&#39;:</p>
 
 <pre><code> rsem-run-ebseq GeneMat.txt 3,4,4 GeneMat.results</code></pre>
 
-<p>Three files, &#39;GeneMat.results&#39;, &#39;GeneMat.results.pattern&#39;, and &#39;GeneMat.results.condmeans&#39;, will be generated.</p>
+<p>Four files, &#39;GeneMat.results&#39;, &#39;GeneMat.results.normalized_data_matrix&#39;, &#39;GeneMat.results.pattern&#39;, and &#39;GeneMat.results.condmeans&#39;, will be generated.</p>
 
 
 </body>

@@ -27,7 +27,7 @@
 
 <h1 id="SYNOPSIS">SYNOPSIS</h1>
 
-<p>rsem-plot-transcript-wiggles [options] sample_name input_list output_plot_file</p>
+<pre><code> rsem-plot-transcript-wiggles [options] sample_name input_list output_plot_file</code></pre>
 
 <h1 id="ARGUMENTS">ARGUMENTS</h1>
 
@@ -73,6 +73,18 @@
 <dd>
 
 <p>Show the wiggle plots as stacked bar plots. See description section for details. (Default: off)</p>
+
+</dd>
+<dt id="p---num-threads-int"><b>-p/--num-threads</b> &lt;int&gt;</dt>
+<dd>
+
+<p>Set the number of threads we can use. (Default: 1)</p>
+
+</dd>
+<dt id="memory-per-thread-string"><b>--memory-per-thread</b> &lt;string&gt;</dt>
+<dd>
+
+<p>Set the maximum allowable memory per thread. &lt;string&gt; represents the memory and accepts suffices &#39;K/M/G&#39;. (Default: 1G)</p>
 
 </dd>
 <dt id="h---help"><b>-h/--help</b></dt>
