@@ -90,7 +90,7 @@ assert(length(ids) > 0, "You should provide at least one ID.")
 poses = c()
 
 if (is_composite) {
-  poses = charmatch(ids, names(map), nomatch = -1)
+  poses = charmatch(ids, tmp_agg[,1], nomatch = -1)
 } else {
   poses = match(ids, expr_data[,1])
   idx = !is.na(poses)
