@@ -395,8 +395,8 @@ genes<code>transcript wiggle plots in</code>output.pdf<code>. The list is
 
 <p>The commands for this scenario are as follows:</p>
 
-<pre><code>rsem-prepare-reference --gtf mm9.gtf --mapping knownIsoforms.txt --bowtie --bowtie-path /sw/bowtie /data/mm9 /ref/mouse_0
-rsem-calculate-expression --bowtie-path /sw/bowtie --phred64-quals --fragment-length-mean 150.0 --fragment-length-sd 35.0 -p 8 --output-genome-bam --calc-ci --memory-allocate 1024 /data/mmliver.fq /ref/mouse_0 mmliver_single_quals
+<pre><code>rsem-prepare-reference --gtf mm9.gtf --transcript-to-gene-map knownIsoforms.txt --bowtie --bowtie-path /sw/bowtie /data/mm9 /ref/mouse_0
+rsem-calculate-expression --bowtie-path /sw/bowtie --phred64-quals --fragment-length-mean 150.0 --fragment-length-sd 35.0 -p 8 --output-genome-bam --calc-ci --ci-memory 1024 /data/mmliver.fq /ref/mouse_0 mmliver_single_quals
 rsem-bam2wig mmliver_single_quals.sorted.bam mmliver_single_quals.sorted.wig mmliver_single_quals
 rsem-plot-transcript-wiggles --gene-list --show-unique mmliver_single_quals gene_ids.txt output.pdf 
 rsem-plot-model mmliver_single_quals mmliver_single_quals.models.pdf
