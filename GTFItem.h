@@ -171,8 +171,8 @@ class GTFItem {
     return rpos < left_len;
   }
 
-  void gtf_assert(char value, const std::string& line, const std::string& msg) {
-    if (!value) {
+  void gtf_assert(bool expr, const std::string& line, const std::string& msg) {
+    if (!expr) {
       fprintf(stderr, "The GTF file might be corrupted!\n");
       fprintf(stderr, "Stop at line : %s\n", line.c_str());
       fprintf(stderr, "Error Message: %s\n", msg.c_str());
