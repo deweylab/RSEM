@@ -1,3 +1,9 @@
+RSEM v1.2.28
+
+- Fixed a bug in RSEM v1.2.27 that can lead to assertion errors for parsing GTF files
+
+--------------------------------------------------------------------------------------------
+
 RSEM v1.2.27
 
 - Upgraded SAMtools to v1.3; RSEM now supports input alignments in SAM/BAM/CRAM format
