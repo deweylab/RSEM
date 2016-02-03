@@ -14,7 +14,9 @@ PROGRAMS = rsem-extract-reference-transcripts rsem-synthesis-reference-transcrip
 
 all : $(PROGRAMS)
 
-$(SAMLIBS) :
+$(SAMTOOLS)/libbam.a : $(SAMTOOLS)/$(HTSLIB)/libhts.a
+
+$(SAMTOOLS)/$(HTSLIB)/libhts.a : 
 	cd $(SAMTOOLS) ; ${MAKE} all
 
 Transcript.h : utils.h
@@ -151,5 +153,6 @@ ebseq :
 
 clean :
 	rm -f *.o *~ $(PROGRAMS)
-	cd $(SAMTOOLS) ; ${MAKE} clean
+	cd $(SAMTOOLS) ; ${MAKE} clean 
+	rm -f $(SAMLIBS)
 	cd EBSeq ; ${MAKE} clean
