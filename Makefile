@@ -1,4 +1,4 @@
-CC = g++
+CC = g++ -std=gnu++98
 CFLAGS = -Wall -c -I.
 COFLAGS = -Wall -O3 -ffast-math -c -I.
 LFLAGS = -Wall -O3 -I.
