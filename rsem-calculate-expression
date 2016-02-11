@@ -697,7 +697,7 @@ Generate a BAM file, 'sample_name.genome.bam', with alignments mapped to genomic
 
 Sort RSEM generated transcript and genome BAM files by coordinates and build associated indices. (Default: off)  
 
-=item B<--sort-bam-memory> <string>
+=item B<--sort-bam-memory-per-thread> <string>
 
 Set the maximum memory per thread that can be used by 'samtools sort'. <string> represents the memory and accepts suffices 'K/M/G'. RSEM will pass <string> to the '-m' option of 'samtools sort'. Note that the default used here is different from the default used by samtools. (Default: 1G)
 
