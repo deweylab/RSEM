@@ -10,8 +10,7 @@
 #include<iostream>
 
 #include <stdint.h>
-#include "bam.h"
-#include "sam.h"
+#include "htslib/sam.h"
 #include "sam_utils.h"
 
 #include "utils.h"
@@ -32,7 +31,8 @@ public:
 	void work(HitWrapper<SingleHit> wrapper);
 	void work(HitWrapper<PairedEndHit> wrapper);
 private:
-	samfile_t *in, *out;
+	samFile *in, *out;
+	bam_hdr_t *in_header, *out_header;
 	Transcripts& transcripts;
 	
 	void set_alignment_weight(bam1_t *b, double prb) {
@@ -49,31 +49,34 @@ private:
 
 //aux can be NULL
 BamWriter::BamWriter(const char* inpF, const char* aux, const char* outF, Transcripts& transcripts, int nThreads) : transcripts(transcripts) {
-  in = samopen(inpF, "r", aux);
+  in = sam_open(inpF, "r");
   assert(in != 0);
+  in_header = sam_hdr_read(in);
+  assert(in_header != 0);
 
   //build mappings from external sid to internal sid
-  transcripts.buildMappings(in->header->n_targets, in->header->target_name);
+  transcripts.buildMappings(in_header->n_targets, in_header->target_name);
   
   //generate output's header
-  bam_hdr_t *out_header = bam_header_dwt(in->header);
+  bam_hdr_t *out_header = bam_header_dwt(in_header);
   
   std::ostringstream strout;
   strout<<"@HD\tVN:1.4\tSO:unknown\n@PG\tID:RSEM\n";
   std::string content = strout.str();
   append_header_text(out_header, content.c_str(), content.length());
   
-  out = samopen(outF, "wb", out_header); // If CRAM format is desired, use "wc"
+  out = sam_open(outF, "wb"); // If CRAM format is desired, use "wc"
   assert(out != 0);
+  sam_hdr_write(out, out_header);
     
-  bam_hdr_destroy(out_header);
-
-  if (nThreads > 1) general_assert(samthreads(out, nThreads, 256) == 0, "Fail to create threads for writing the BAM file!");
+  if (nThreads > 1) general_assert(hts_set_threads(out, nThreads) == 0, "Fail to create threads for writing the BAM file!");
 }
 
 BamWriter::~BamWriter() {
-	samclose(in);
-	samclose(out);
+	bam_hdr_destroy(in_header);
+	sam_close(in);
+	bam_hdr_destroy(out_header);
+	sam_close(out);
 }
 
 void BamWriter::work(HitWrapper<SingleHit> wrapper) {
@@ -84,7 +87,7 @@ void BamWriter::work(HitWrapper<SingleHit> wrapper) {
 
 	b = bam_init1();
 
-	while (samread(in, b) >= 0) {
+	while (sam_read1(in, in_header, b) >= 0) {
 		++cnt;
 		if (verbose && cnt % 1000000 == 0) { std::cout<< cnt<< " alignment lines are loaded!"<< std::endl; }
 
@@ -95,7 +98,7 @@ void BamWriter::work(HitWrapper<SingleHit> wrapper) {
 		  assert(transcripts.getInternalSid(b->core.tid + 1) == hit->getSid());
 		  set_alignment_weight(b, hit->getConPrb());
 		}
-		samwrite(out, b);
+		sam_write1(out, out_header, b);
 	}
 
 	assert(wrapper.getNextHit() == NULL);
@@ -113,7 +116,7 @@ void BamWriter::work(HitWrapper<PairedEndHit> wrapper) {
 	b = bam_init1();
 	b2 = bam_init1();
 
-	while (samread(in, b) >= 0 && samread(in, b2) >= 0) {
+	while (sam_read1(in, in_header, b) >= 0 && sam_read1(in, in_header, b2) >= 0) {
 		cnt += 2;
 		if (verbose && cnt % 1000000 == 0) { std::cout<< cnt<< " alignment lines are loaded!"<< std::endl; }
 
@@ -130,8 +133,8 @@ void BamWriter::work(HitWrapper<PairedEndHit> wrapper) {
 			set_alignment_weight(b2, hit->getConPrb());
 		}
 
-		samwrite(out, b);
-		samwrite(out, b2);
+		sam_write1(out, out_header, b);
+		sam_write1(out, out_header, b2);
 	}
 
 	assert(wrapper.getNextHit() == NULL);

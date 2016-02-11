@@ -4,8 +4,7 @@
 #include <iostream>
 
 #include <stdint.h>
-#include "bam.h"
-#include "sam.h"
+#include "htslib/sam.h"
 #include "sam_utils.h"
 
 #include "utils.h"
@@ -40,10 +39,10 @@ void add_bam_record_to_wiggle(const bam1_t *b, Wiggle& wiggle) {
 void build_wiggles(const std::string& bam_filename,
                    WiggleProcessor& processor) {
   
-    samfile_t *bam_in = samopen(bam_filename.c_str(), "r", NULL);
+    samFile *bam_in = sam_open(bam_filename.c_str(), "r");
     general_assert(bam_in != NULL, "Cannot open " + bam_filename + "!");
 
-    bam_hdr_t *header = bam_in->header;
+    bam_hdr_t *header = sam_hdr_read(bam_in);
     bool *used = new bool[header->n_targets];
     memset(used, 0, sizeof(bool) * header->n_targets);
 
@@ -51,7 +50,7 @@ void build_wiggles(const std::string& bam_filename,
     HIT_INT_TYPE cnt = 0;
     bam1_t *b = bam_init1();
     Wiggle wiggle;
-    while (samread(bam_in, b) >= 0) {
+    while (sam_read1(bam_in, header, b) >= 0) {
       if (bam_is_unmapped(b)) continue;
       
       if (b->core.tid != cur_tid) {
@@ -76,7 +75,8 @@ void build_wiggles(const std::string& bam_filename,
       }
 
     bam_destroy1(b);
-    samclose(bam_in);
+    bam_hdr_destroy(header);
+    sam_close(bam_in);
 
     delete[] used;
 }

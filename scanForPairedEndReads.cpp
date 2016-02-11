@@ -7,8 +7,7 @@
 #include<algorithm>
 
 #include <stdint.h>
-#include "bam.h"
-#include "sam.h"
+#include "htslib/sam.h"
 #include "sam_utils.h"
 
 #include "utils.h"
@@ -17,7 +16,8 @@
 using namespace std;
 
 int nThreads;
-samfile_t *in, *out;
+samFile *in, *out;
+bam_hdr_t *header;
 bam1_t *b, *b2;
 vector<bam1_t*> arr_both, arr_partial_1, arr_partial_2, arr_partial_unknown;
 
@@ -57,16 +57,18 @@ int main(int argc, char* argv[]) {
 	}
 
         nThreads = atoi(argv[1]);
-	in = samopen(argv[2], "r", NULL);
+	in = sam_open(argv[2], "r");
 	general_assert(in != 0, "Cannot open " + cstrtos(argv[2]) + " !");
-	out = samopen(argv[3], "wb", in->header);
+	header = sam_hdr_read(in);
+	out = sam_open(argv[3], "wb");
 	general_assert(out != 0, "Cannot open " + cstrtos(argv[3]) + " !");
-        if (nThreads > 1) general_assert(samthreads(out, nThreads, 256) == 0, "Fail to create threads for writing the BAM file!");        
+	sam_hdr_write(out, header);
+	if (nThreads > 1) general_assert(hts_set_threads(out, nThreads) == 0, "Fail to create threads for writing the BAM file!");
 
 	b = bam_init1(); b2 = bam_init1();
 
 	string qname;
-	bool go_on = (samread(in, b) >= 0);
+	bool go_on = (sam_read1(in, header, b) >= 0);
 	bool isPaired;
 	HIT_INT_TYPE cnt = 0;
 
@@ -78,7 +80,7 @@ int main(int argc, char* argv[]) {
 
 	  if (isPaired) {
 	    add_to_appropriate_arr(b);
-	    while ((go_on = (samread(in, b) >= 0)) && (qname == bam_get_canonical_name(b))) {
+	    while ((go_on = (sam_read1(in, header, b) >= 0)) && (qname == bam_get_canonical_name(b))) {
 	      general_assert_1(bam_is_paired(b), "Read " + qname + " is detected as both single-end and paired-end read!");
 	      add_to_appropriate_arr(b);
 	    }
@@ -88,33 +90,33 @@ int main(int argc, char* argv[]) {
 
 	    if (!arr_both.empty()) {
 	      sort(arr_both.begin(), arr_both.end(), less_than);
-	      for (size_t i = 0; i < arr_both.size(); i++) { samwrite(out, arr_both[i]); bam_destroy1(arr_both[i]); }
+	      for (size_t i = 0; i < arr_both.size(); i++) { sam_write1(out, header, arr_both[i]); bam_destroy1(arr_both[i]); }
 	      arr_both.clear();
 	    }
 	    
 	    while (!arr_partial_1.empty() || !arr_partial_2.empty()) {
 	      if (!arr_partial_1.empty() && !arr_partial_2.empty()) {
-		samwrite(out, arr_partial_1.back()); bam_destroy1(arr_partial_1.back()); arr_partial_1.pop_back();
-		samwrite(out, arr_partial_2.back()); bam_destroy1(arr_partial_2.back()); arr_partial_2.pop_back();
+		sam_write1(out, header, arr_partial_1.back()); bam_destroy1(arr_partial_1.back()); arr_partial_1.pop_back();
+		sam_write1(out, header, arr_partial_2.back()); bam_destroy1(arr_partial_2.back()); arr_partial_2.pop_back();
 	      }
 	      else if (!arr_partial_1.empty()) {
-		samwrite(out, arr_partial_1.back()); bam_destroy1(arr_partial_1.back()); arr_partial_1.pop_back();
-		samwrite(out, arr_partial_unknown.back()); bam_destroy1(arr_partial_unknown.back()); arr_partial_unknown.pop_back();
+		sam_write1(out, header, arr_partial_1.back()); bam_destroy1(arr_partial_1.back()); arr_partial_1.pop_back();
+		sam_write1(out, header, arr_partial_unknown.back()); bam_destroy1(arr_partial_unknown.back()); arr_partial_unknown.pop_back();
 	      }
 	      else {
-		samwrite(out, arr_partial_2.back()); bam_destroy1(arr_partial_2.back()); arr_partial_2.pop_back();
-		samwrite(out, arr_partial_unknown.back()); bam_destroy1(arr_partial_unknown.back()); arr_partial_unknown.pop_back();
+		sam_write1(out, header, arr_partial_2.back()); bam_destroy1(arr_partial_2.back()); arr_partial_2.pop_back();
+		sam_write1(out, header, arr_partial_unknown.back()); bam_destroy1(arr_partial_unknown.back()); arr_partial_unknown.pop_back();
 	      }
 	    }
 	    
 	    while (!arr_partial_unknown.empty()) {
-	      samwrite(out, arr_partial_unknown.back()); bam_destroy1(arr_partial_unknown.back()); arr_partial_unknown.pop_back();
+	      sam_write1(out, header, arr_partial_unknown.back()); bam_destroy1(arr_partial_unknown.back()); arr_partial_unknown.pop_back();
 	    }
 	  }
 	  else {
-	    samwrite(out, b);
-	    while ((go_on = (samread(in, b) >= 0)) && (qname == bam1_qname(b))) {
-	      samwrite(out, b);
+	    sam_write1(out, header, b);
+	    while ((go_on = (sam_read1(in, header, b) >= 0)) && (qname == bam_get_qname(b))) {
+	      sam_write1(out, header, b);
 	    }
 	  }
 	  
@@ -125,9 +127,10 @@ int main(int argc, char* argv[]) {
 	printf("\nFinished!\n");
 	
 	bam_destroy1(b); bam_destroy1(b2);
+	bam_hdr_destroy(header);
 	
-	samclose(in);
-	samclose(out);
+	sam_close(in);
+	sam_close(out);
 	
 	return 0;
 }

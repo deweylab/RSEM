@@ -7,7 +7,7 @@
 #include<string>
 #include<stdint.h>
 
-#include "bam.h"
+#include "htslib/sam.h"
 
 #include "Transcript.h"
 #include "Transcripts.h"
@@ -55,11 +55,27 @@ void append_header_text(bam_hdr_t *header, const char* text, int len)
 }
 
 inline void expand_data_size(bam1_t *b) {
-  if (b->m_data < b->data_len) {
+  if (b->m_data < b->l_data) {
     b->m_data = b->l_data;
     kroundup32(b->m_data);
     b->data = (uint8_t*)realloc(b->data, b->m_data);
   }
+}
+
+inline std::string fai_headers(const char *fname) {
+  FILE *fi = fopen(fname, "r");
+  if (fi == NULL) return "";
+
+  std::string s;
+  char line[2048];
+  while (fgets(line, sizeof line, fi)) {
+    const char *name = strtok(line, "\t");
+    const char *len = strtok(NULL, "\t");
+    s.append("@SQ\tSN:").append(name).append("\tLN:").append(len).append("\n");
+  }
+
+  fclose(fi);
+  return s;
 }
 
 /******************************************************/
