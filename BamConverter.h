@@ -8,8 +8,7 @@
 #include<map>
 
 #include <stdint.h>
-#include "bam.h"
-#include "sam.h"
+#include "htslib/sam.h"
 #include "sam_utils.h"
 
 #include "utils.h"
@@ -25,7 +24,8 @@ public:
 
 	void process();
 private:
-	samfile_t *in, *out;
+	samFile *in, *out;
+	bam_hdr_t *in_header, *out_header;
 	Transcripts& transcripts;
 
 	std::map<std::string, int> refmap;
@@ -46,10 +46,12 @@ BamConverter::BamConverter(const char* inpF, const char* outF, const char* chr_l
 {
 	general_assert(transcripts.getType() == 0, "Genome information is not provided! RSEM cannot convert the transcript bam file!");
 
-	in = samopen(inpF, "r", NULL);
+	in = sam_open(inpF, "r");
 	assert(in != 0);
+	bam_hdr_t *in_header = sam_hdr_read(in);
+	assert(in_header != 0);
 
-	transcripts.buildMappings(in->header->n_targets, in->header->target_name);
+	transcripts.buildMappings(in_header->n_targets, in_header->target_name);
 
 	std::string text = fai_headers(chr_list);
 	bam_hdr_t *out_header = sam_hdr_parse(text.length(), text.c_str());
@@ -59,13 +61,13 @@ BamConverter::BamConverter(const char* inpF, const char* outF, const char* chr_l
 		refmap[out_header->target_name[i]] = i;
 	}
 
-	if (in->header->l_text > 0) {
+	if (in_header->l_text > 0) {
 		char comment[] = "@CO\tThis BAM file is processed by rsem-tbam2gam to convert from transcript coordinates into genomic coordinates.\n";
 		int comment_len = strlen(comment);
 
 		//Filter @SQ fields if the BAM file is user provided
-		char *text = in->header->text;
-		int l_text = in->header->l_text;
+		char *text = in_header->text;
+		int l_text = in_header->l_text;
 		char *new_text = new char[l_text + comment_len];
 		int pos = 0, s = 0;
 		while (pos < l_text) {
@@ -83,17 +85,18 @@ BamConverter::BamConverter(const char* inpF, const char* outF, const char* chr_l
 		delete[] new_text;
 	}
 
-	out = samopen(outF, "wb", out_header);
+	out = sam_open(outF, "wb");
 	assert(out != 0);
+	sam_hdr_write(out, out_header);
 
-	bam_hdr_destroy(out_header);
-
-        if (nThreads > 1) general_assert(samthreads(out, nThreads, 256) == 0, "Fail to create threads for writing the BAM file!");
+	if (nThreads > 1) general_assert(hts_set_threads(out, nThreads) == 0, "Fail to create threads for writing the BAM file!");
 }
 
 BamConverter::~BamConverter() {
-	samclose(in);
-	samclose(out);
+	bam_hdr_destroy(in_header);
+	sam_close(in);
+	bam_hdr_destroy(out_header);
+	sam_close(out);
 }
 
 void BamConverter::process() {
@@ -106,11 +109,11 @@ void BamConverter::process() {
 	cqname = "";
 	b = bam_init1(); b2 = bam_init1();
 
-	while (samread(in, b) >= 0) {
+	while (sam_read1(in, in_header, b) >= 0) {
 		++cnt;
 		isPaired = bam_is_paired(b);
 		if (isPaired) {
-		  assert(samread(in, b2) >= 0 && bam_is_paired(b2));
+		  assert(sam_read1(in, in_header, b2) >= 0 && bam_is_paired(b2));
 		  if (!bam_is_read1(b)) { bam1_t *tmp = b; b = b2; b2 = tmp; }
 		  assert(bam_is_read1(b) && bam_is_read2(b2));
 		  general_assert((bam_is_mapped(b) && bam_is_mapped(b2)) || (bam_is_unmapped(b) && bam_is_unmapped(b2)), \
@@ -151,8 +154,8 @@ void BamConverter::process() {
 		  cqname = qname;
 		  collapseMap.init(isPaired);
 		  
-		  samwrite(out, b);
-		  if (isPaired) samwrite(out, b2);
+		  sam_write1(out, out_header, b);
+		  if (isPaired) sam_write1(out, out_header, b2);
 		}
 	}
 
@@ -193,8 +196,8 @@ void BamConverter::convert(bam1_t* b, const Transcript& transcript) {
 	tr2chr(transcript, pos + 1, pos + readlen, core_pos, core_n_cigar, data);
 	assert(core_pos >= 0);
 
-	int rest_len = b->data_len - b->core.l_qname - b->core.n_cigar * 4;
-	b->data_len = b->core.l_qname + core_n_cigar * 4 + rest_len;
+	int rest_len = b->l_data - b->core.l_qname - b->core.n_cigar * 4;
+	b->l_data = b->core.l_qname + core_n_cigar * 4 + rest_len;
 	expand_data_size(b);
 	uint8_t* pt = b->data + b->core.l_qname;
 	memmove(pt + core_n_cigar * 4, pt + b->core.n_cigar * 4, rest_len);
@@ -202,7 +205,7 @@ void BamConverter::convert(bam1_t* b, const Transcript& transcript) {
 
 	b->core.pos = core_pos;
 	b->core.n_cigar = core_n_cigar;
-	b->core.bin = bam_reg2bin(b->core.pos, bam_calend(&(b->core), bam1_cigar(b)));
+	b->core.bin = hts_reg2bin(b->core.pos, bam_endpos(b), 14, 5);
 
 	modifyTags(b, transcript); // check if need to add XS tag, if need, add it
 }
@@ -222,11 +225,11 @@ inline void BamConverter::writeCollapsedLines() {
 			}
 			// otherwise, just use the MAPQ score of the orignal alignment
 
-			samwrite(out, tmp_b);
+			sam_write1(out, out_header, tmp_b);
 			if (isPaired) {
 				if (p != NULL) memcpy(bam_aux_get(tmp_b2, "ZW") + 1, (uint8_t*)&(prb), bam_aux_type2size('f'));
 				tmp_b2->core.qual = tmp_b->core.qual;
-				samwrite(out, tmp_b2);
+				sam_write1(out, out_header, tmp_b2);
 			}
 			bam_destroy1(tmp_b);
 			if (isPaired) bam_destroy1(tmp_b2);
@@ -313,7 +316,7 @@ inline void BamConverter::modifyTags(bam1_t* b, const Transcript& transcript) {
 	s = bam_aux_get(b, "XS");
 	if (s != NULL) bam_aux_del(b, s);
 	bool hasN = false;
-	uint32_t* p = bam1_cigar(b);
+	uint32_t* p = bam_get_cigar(b);
 	for (int i = 0; i < (int)b->core.n_cigar; i++)
 		if ((*(p + i) & BAM_CIGAR_MASK) == BAM_CREF_SKIP) { hasN = true; break; }
 	if (hasN) bam_aux_append(b, "XS", 'A', 1, (uint8_t*)&strand);

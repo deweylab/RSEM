@@ -5,8 +5,8 @@ LFLAGS = -Wall -O3 -I.
 
 SAMTOOLS = samtools-1.3
 HTSLIB = htslib-1.3
-SAMFLAGS = -I$(SAMTOOLS) -I$(SAMTOOLS)/$(HTSLIB)
-SAMLIBS = $(SAMTOOLS)/libbam.a $(SAMTOOLS)/$(HTSLIB)/libhts.a
+SAMFLAGS = -I$(SAMTOOLS)/$(HTSLIB)
+SAMLIBS = $(SAMTOOLS)/$(HTSLIB)/libhts.a
 PROGRAMS = rsem-extract-reference-transcripts rsem-synthesis-reference-transcripts rsem-preref rsem-parse-alignments rsem-build-read-index rsem-run-em rsem-tbam2gbam rsem-run-gibbs rsem-calculate-credibility-intervals rsem-simulate-reads rsem-bam2wig rsem-get-unique rsem-bam2readdepth rsem-sam-validator rsem-scan-for-paired-end-reads
 
 

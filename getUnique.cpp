@@ -6,8 +6,7 @@
 #include<vector>
 
 #include <stdint.h>
-#include "bam.h"
-#include "sam.h"
+#include "htslib/sam.h"
 #include "sam_utils.h"
 
 #include "utils.h"
@@ -17,7 +16,8 @@ using namespace std;
 
 int nThreads;
 string cqname;
-samfile_t *in, *out;
+samFile *in, *out;
+bam_hdr_t *header;
 bam1_t *b;
 vector<bam1_t*> arr;
 bool unaligned;
@@ -26,7 +26,7 @@ void output() {
 	if (unaligned || arr.size() == 0) return;
 	bool isPaired = bam_is_paired(arr[0]);
 	if ((isPaired && arr.size() != 2) || (!isPaired && arr.size() != 1)) return;
-	for (size_t i = 0; i < arr.size(); ++i) samwrite(out, arr[i]);
+	for (size_t i = 0; i < arr.size(); ++i) sam_write1(out, header, arr[i]);
 }
 
 int main(int argc, char* argv[]) {
@@ -36,11 +36,14 @@ int main(int argc, char* argv[]) {
 	}
 
         nThreads = atoi(argv[1]);
-	in = samopen(argv[2], "r", NULL);
+	in = sam_open(argv[2], "r");
 	assert(in != 0);
-	out = samopen(argv[3], "wb", in->header);
+	header = sam_hdr_read(in);
+	assert(header != 0);
+	out = sam_open(argv[3], "wb");
 	assert(out != 0);
-        if (nThreads > 1) general_assert(samthreads(out, nThreads, 256) == 0, "Fail to create threads for writing the BAM file!");
+	sam_hdr_write(out, header);
+	if (nThreads > 1) general_assert(hts_set_threads(out, nThreads) == 0, "Fail to create threads for writing the BAM file!");
 
 	HIT_INT_TYPE cnt = 0;
 
@@ -49,7 +52,7 @@ int main(int argc, char* argv[]) {
 	b = bam_init1();
 	unaligned = false;
 
-	while (samread(in, b) >= 0) {
+	while (sam_read1(in, header, b) >= 0) {
 		if (cqname != bam_get_qname(b)) {
 			output();
 			cqname = bam_get_qname(b);
@@ -70,8 +73,9 @@ int main(int argc, char* argv[]) {
 	output();
 
 	bam_destroy1(b);
-	samclose(in);
-	samclose(out);
+	bam_hdr_destroy(header);
+	sam_close(in);
+	sam_close(out);
 
 	printf("done!\n");
 

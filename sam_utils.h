@@ -7,7 +7,7 @@
 #include<string>
 #include<stdint.h>
 
-#include "bam.h"
+#include "htslib/sam.h"
 
 #include "Transcript.h"
 #include "Transcripts.h"
@@ -55,7 +55,7 @@ void append_header_text(bam_hdr_t *header, const char* text, int len)
 }
 
 inline void expand_data_size(bam1_t *b) {
-  if (b->m_data < b->data_len) {
+  if (b->m_data < b->l_data) {
     b->m_data = b->l_data;
     kroundup32(b->m_data);
     b->data = (uint8_t*)realloc(b->data, b->m_data);

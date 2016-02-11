@@ -6,8 +6,7 @@
 #include<set>
 
 #include <stdint.h>
-#include "bam.h"
-#include "sam.h"
+#include "htslib/sam.h"
 #include "sam_utils.h"
 
 #include "utils.h"
@@ -15,7 +14,8 @@
 
 using namespace std;
 
-samfile_t *in;
+samFile *in;
+bam_hdr_t *header;
 bam1_t *b, *b2;
 
 set<string> used;
@@ -28,8 +28,9 @@ int main(int argc, char* argv[]) {
     exit(-1);
   }
   
-  in = samopen(argv[1], "r", NULL);
+  in = sam_open(argv[1], "r");
   general_assert(in != 0, "Cannot open input file!");
+  header = sam_hdr_read(in);
   
   used.clear();
   b = bam_init1(); b2 = bam_init1();
@@ -43,7 +44,7 @@ int main(int argc, char* argv[]) {
   
   printf("."); fflush(stdout);
   do {
-    if (samread(in, b) < 0) break;
+    if (sam_read1(in, header, b) < 0) break;
     assert(b->core.l_qseq > 0);
     
     qname = bam_get_canonical_name(b);
@@ -52,7 +53,7 @@ int main(int argc, char* argv[]) {
     ispaired = bam_is_paired(b);
     if (ispaired) {
       
-      isValid = (samread(in, b2) >= 0) && (qname == bam_get_canonical_name(b2)) && bam_is_paired(b2);
+      isValid = (sam_read1(in, header, b2) >= 0) && (qname == bam_get_canonical_name(b2)) && bam_is_paired(b2);
       if (!isValid) { printf("\nOnly find one mate for paired-end read %s!\n", qname.c_str()); continue; }
       assert(b2->core.l_qseq > 0);
       isValid = !(bam_is_read1(b) && bam_is_read2(b)) && !(bam_is_read1(b2) && bam_is_read2(b2));
@@ -94,7 +95,8 @@ int main(int argc, char* argv[]) {
   } while(isValid);
   
   bam_destroy1(b); bam_destroy1(b2);
-  samclose(in);
+  bam_hdr_destroy(header);
+  sam_close(in);
   
   if (isValid) printf("\nThe input file is valid!\n");
   else printf("The input file is not valid!\n");

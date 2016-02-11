@@ -4,7 +4,7 @@
 #include<map>
 
 #include <stdint.h>
-#include "bam.h"
+#include "htslib/sam.h"
 
 struct SingleEndT {
 	bam1_t *b;

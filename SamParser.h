@@ -9,8 +9,7 @@
 #include<string>
 
 #include <stdint.h>
-#include "bam.h"
-#include "sam.h"
+#include "htslib/sam.h"
 #include "sam_utils.h"
 
 #include "utils.h"
@@ -49,8 +48,8 @@ public:
 	}
 
 private:
-	samfile_t *sam_in;
-	bam_header_t *header;
+	samFile *sam_in;
+	bam_hdr_t *header;
 	bam1_t *b, *b2;
 
 	Transcripts& transcripts;
@@ -87,10 +86,10 @@ char SamParser::rtTag[STRLEN] = ""; // default : no tag, thus no Type 2 reads
 SamParser::SamParser(const char* inpF, const char* aux, Transcripts& transcripts, const char* imdName)
 	: transcripts(transcripts)
 {
-	sam_in = samopen(inpF, "r", aux);
+	sam_in = sam_open(inpF, "r");
 
 	general_assert(sam_in != 0, "Cannot open " + cstrtos(inpF) + "! It may not exist.");
-	header = sam_in->header;
+	header = sam_hdr_read(sam_in);
 	general_assert(header != 0, "Fail to parse sam header!");
 
 	transcripts.buildMappings(header->n_targets, header->target_name, imdName);
@@ -100,7 +99,8 @@ SamParser::SamParser(const char* inpF, const char* aux, Transcripts& transcripts
 }
 
 SamParser::~SamParser() {
-	samclose(sam_in);
+	bam_hdr_destroy(header);
+	sam_close(sam_in);
 	bam_destroy1(b);
 	bam_destroy1(b2);
 }
@@ -110,7 +110,7 @@ SamParser::~SamParser() {
 int SamParser::parseNext(SingleRead& read, SingleHit& hit) {
 	int val; // return value
 
-	if (samread(sam_in, b) < 0) return -1;
+	if (sam_read1(sam_in, header, b) < 0) return -1;
 
 	std::string name = bam_get_canonical_name(b);
 	
@@ -139,7 +139,7 @@ int SamParser::parseNext(SingleRead& read, SingleHit& hit) {
 int SamParser::parseNext(SingleReadQ& read, SingleHit& hit) {
 	int val;
 
-	if (samread(sam_in, b) < 0) return -1;
+	if (sam_read1(sam_in, header, b) < 0) return -1;
 
 	std::string name = bam_get_canonical_name(b);
 	
@@ -169,7 +169,7 @@ int SamParser::parseNext(SingleReadQ& read, SingleHit& hit) {
 int SamParser::parseNext(PairedEndRead& read, PairedEndHit& hit) {
 	int val;
 
-	if ((samread(sam_in, b) < 0) || (samread(sam_in, b2) < 0)) return -1;
+	if ((sam_read1(sam_in, header, b) < 0) || (sam_read1(sam_in, header, b2) < 0)) return -1;
 
 	if (!bam_is_read1(b)) { bam1_t * tmp = b; b = b2; b2 = tmp; }
 	std::string name = bam_get_canonical_name(b);
@@ -208,7 +208,7 @@ int SamParser::parseNext(PairedEndRead& read, PairedEndHit& hit) {
 int SamParser::parseNext(PairedEndReadQ& read, PairedEndHit& hit) {
 	int val;
 	
-	if ((samread(sam_in, b) < 0) || (samread(sam_in, b2) < 0)) return -1;
+	if ((sam_read1(sam_in, header, b) < 0) || (sam_read1(sam_in, header, b2) < 0)) return -1;
 
 	if (!bam_is_read1(b)) { bam1_t *tmp = b; b = b2; b2 = tmp; } // swap if the first read is not read 1
 	std::string name = bam_get_canonical_name(b);
