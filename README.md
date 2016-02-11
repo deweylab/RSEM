@@ -574,7 +574,7 @@ differential expression analysis.
 
 We thank earonesty and Dr. Samuel Arvidsson for contributing patches.
 
-We thank Han Lin, j.miller, Jo&euml;l Fillon, Dr. Samuel G. Younkin and Malcolm Cook for suggesting possible fixes. 
+We thank Han Lin, j.miller, Jo&euml;l Fillon, Dr. Samuel G. Younkin, Malcolm Cook, Christina Wells and Uro&#353; &#352;ipeti&#263; for suggesting possible fixes. 
 
 **Note** that `bam_sort.c` of SAMtools is slightly modified so that
   `samtools sort -n` will not move the two mates of paired-end
