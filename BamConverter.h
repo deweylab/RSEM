@@ -51,7 +51,8 @@ BamConverter::BamConverter(const char* inpF, const char* outF, const char* chr_l
 
 	transcripts.buildMappings(in->header->n_targets, in->header->target_name);
 
-	bam_hdr_t *out_header = sam_header_read2(chr_list);
+	std::string text = fai_headers(chr_list);
+	bam_hdr_t *out_header = sam_hdr_parse(text.length(), text.c_str());
 
 	refmap.clear();
 	for (int i = 0; i < out_header->n_targets; ++i) {

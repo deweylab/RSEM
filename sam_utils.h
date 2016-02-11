@@ -62,6 +62,22 @@ inline void expand_data_size(bam1_t *b) {
   }
 }
 
+inline std::string fai_headers(const char *fname) {
+  FILE *fi = fopen(fname, "r");
+  if (fi == NULL) return "";
+
+  std::string s;
+  char line[2048];
+  while (fgets(line, sizeof line, fi)) {
+    const char *name = strtok(line, "\t");
+    const char *len = strtok(NULL, "\t");
+    s.append("@SQ\tSN:").append(name).append("\tLN:").append(len).append("\n");
+  }
+
+  fclose(fi);
+  return s;
+}
+
 /******************************************************/
 
 // These functions are specially designed for RSEM
