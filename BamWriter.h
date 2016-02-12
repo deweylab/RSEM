@@ -51,14 +51,19 @@ private:
 BamWriter::BamWriter(const char* inpF, const char* aux, const char* outF, Transcripts& transcripts, int nThreads) : transcripts(transcripts) {
   in = sam_open(inpF, "r");
   assert(in != 0);
-  in_header = sam_hdr_read(in);
+
+  if (aux == NULL) in_header = sam_hdr_read(in);
+  else {
+    std::string SQs = fai_headers(aux);
+    in_header = sam_hdr_parse(SQs.length(), SQs.c_str());
+  }
   assert(in_header != 0);
 
   //build mappings from external sid to internal sid
   transcripts.buildMappings(in_header->n_targets, in_header->target_name);
   
   //generate output's header
-  bam_hdr_t *out_header = bam_header_dwt(in_header);
+  out_header = bam_header_dwt(in_header);
   
   std::ostringstream strout;
   strout<<"@HD\tVN:1.4\tSO:unknown\n@PG\tID:RSEM\n";

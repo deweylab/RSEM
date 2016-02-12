@@ -48,14 +48,15 @@ BamConverter::BamConverter(const char* inpF, const char* outF, const char* chr_l
 
 	in = sam_open(inpF, "r");
 	assert(in != 0);
-	bam_hdr_t *in_header = sam_hdr_read(in);
+	in_header = sam_hdr_read(in);
 	assert(in_header != 0);
 
 	transcripts.buildMappings(in_header->n_targets, in_header->target_name);
 
-	std::string text = fai_headers(chr_list);
-	bam_hdr_t *out_header = sam_hdr_parse(text.length(), text.c_str());
-
+	std::string SQs = fai_headers(chr_list);
+	out_header = sam_hdr_parse(SQs.length(), SQs.c_str());
+	assert(out_header != 0);
+	
 	refmap.clear();
 	for (int i = 0; i < out_header->n_targets; ++i) {
 		refmap[out_header->target_name[i]] = i;

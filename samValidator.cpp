@@ -31,7 +31,7 @@ int main(int argc, char* argv[]) {
   in = sam_open(argv[1], "r");
   general_assert(in != 0, "Cannot open input file!");
   header = sam_hdr_read(in);
-  
+  general_assert(header != 0, "Cannot load SAM header!");
   used.clear();
   b = bam_init1(); b2 = bam_init1();
   

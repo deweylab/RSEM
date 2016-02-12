@@ -60,6 +60,7 @@ int main(int argc, char* argv[]) {
 	in = sam_open(argv[2], "r");
 	general_assert(in != 0, "Cannot open " + cstrtos(argv[2]) + " !");
 	header = sam_hdr_read(in);
+	general_assert(header != 0, "Cannot load SAM header!");
 	out = sam_open(argv[3], "wb");
 	general_assert(out != 0, "Cannot open " + cstrtos(argv[3]) + " !");
 	sam_hdr_write(out, header);

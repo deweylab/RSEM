@@ -87,9 +87,13 @@ SamParser::SamParser(const char* inpF, const char* aux, Transcripts& transcripts
 	: transcripts(transcripts)
 {
 	sam_in = sam_open(inpF, "r");
-
 	general_assert(sam_in != 0, "Cannot open " + cstrtos(inpF) + "! It may not exist.");
-	header = sam_hdr_read(sam_in);
+
+	if (aux == NULL) header = sam_hdr_read(sam_in);
+	else {
+	  std::string SQs = fai_headers(aux);
+	  header = sam_hdr_parse(SQs.length(), SQs.c_str());
+	}
 	general_assert(header != 0, "Fail to parse sam header!");
 
 	transcripts.buildMappings(header->n_targets, header->target_name, imdName);

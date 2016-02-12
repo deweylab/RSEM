@@ -43,6 +43,7 @@ void build_wiggles(const std::string& bam_filename,
     general_assert(bam_in != NULL, "Cannot open " + bam_filename + "!");
 
     bam_hdr_t *header = sam_hdr_read(bam_in);
+    general_assert(header != 0, "Cannot load SAM header!");
     bool *used = new bool[header->n_targets];
     memset(used, 0, sizeof(bool) * header->n_targets);
 
