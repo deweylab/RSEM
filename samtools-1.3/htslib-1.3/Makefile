@@ -22,13 +22,13 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-CC     = gcc
+CC     ?= gcc
 AR     = ar
 RANLIB = ranlib
 
 CPPFLAGS =
 # TODO: probably update cram code to make it compile cleanly with -Wc++-compat
-CFLAGS   = -g -Wall -O2
+CFLAGS   ?= -g -Wall -O2
 EXTRA_CFLAGS_PIC = -fpic
 LDFLAGS  =
 LIBS     =

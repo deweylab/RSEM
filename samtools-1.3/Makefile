@@ -21,9 +21,9 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-CC       = gcc
+CC       ?= gcc
 CPPFLAGS =
-CFLAGS   = -g -Wall -O2
+CFLAGS   ?= -g -Wall -O2
 LDFLAGS  =
 LIBS     =
 
