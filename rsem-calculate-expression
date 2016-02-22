@@ -645,7 +645,7 @@ If gene_name/transcript_name is available, append it to the end of gene_id/trans
 
 =item B<--seed> <uint32>
 
-Set the seed for the random number generators used in calculating posterior mean estimates and credibility intervals. The seed must be a non-negative 32 bit interger. (Default: off)
+Set the seed for the random number generators used in calculating posterior mean estimates and credibility intervals. The seed must be a non-negative 32 bit integer. (Default: off)
 
 =item B<--single-cell-prior>
 
@@ -679,7 +679,7 @@ Show version information.
 
 =item B<--sort-bam-by-read-name>
 
-Sort BAM file aligned under transcript coordidate by read name. Setting this option on will produce determinstic maximum likelihood estimations from independent runs. Note that sorting will take long time and lots of memory. (Default: off)
+Sort BAM file aligned under transcript coordidate by read name. Setting this option on will produce deterministic maximum likelihood estimations from independent runs. Note that sorting will take long time and lots of memory. (Default: off)
 
 =item B<--no-bam-output>
 
@@ -687,7 +687,7 @@ Do not output any BAM file. (Default: off)
 
 =item B<--sampling-for-bam>
 
-When RSEM generates a BAM file, instead of outputing all alignments a read has with their posterior probabilities, one alignment is sampled according to the posterior probabilities. The sampling procedure includes the alignment to the "noise" transcript, which does not appear in the BAM file. Only the sampled alignment has a weight of 1. All other alignments have weight 0. If the "noise" transcript is sampled, all alignments appeared in the BAM file should have weight 0. (Default: off)
+When RSEM generates a BAM file, instead of outputting all alignments a read has with their posterior probabilities, one alignment is sampled according to the posterior probabilities. The sampling procedure includes the alignment to the "noise" transcript, which does not appear in the BAM file. Only the sampled alignment has a weight of 1. All other alignments have weight 0. If the "noise" transcript is sampled, all alignments appeared in the BAM file should have weight 0. (Default: off)
 
 =item B<--output-genome-bam>
 
