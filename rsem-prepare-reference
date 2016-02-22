@@ -158,7 +158,7 @@ __END__
 
 =head1 NAME
 
-rsem-prepare-reference
+rsem-prepare-reference - required preprocessor of transcripts for RSEM
 
 =head1 SYNOPSIS
 
