@@ -8,6 +8,7 @@ HTSLIB = htslib-1.3
 SAMHEADERS = $(SAMTOOLS)/$(HTSLIB)/htslib/sam.h
 SAMFLAGS = -I$(SAMTOOLS)/$(HTSLIB)
 SAMLIBS = $(SAMTOOLS)/$(HTSLIB)/libhts.a
+BOOST = boost # overriderable, defaulting to local copy
 
 PROGRAMS = rsem-extract-reference-transcripts rsem-synthesis-reference-transcripts rsem-preref rsem-parse-alignments rsem-build-read-index rsem-run-em rsem-tbam2gbam rsem-run-gibbs rsem-calculate-credibility-intervals rsem-simulate-reads rsem-bam2wig rsem-get-unique rsem-bam2readdepth rsem-sam-validator rsem-scan-for-paired-end-reads
 
@@ -71,8 +72,7 @@ parseIt.o : $(SAMHEADERS) sam_utils.h utils.h my_assert.h GroupInfo.h Transcript
 rsem-build-read-index : utils.h buildReadIndex.cpp
 	$(CC) $(LFLAGS) buildReadIndex.cpp -o rsem-build-read-index
 
-
-simul.h : boost/random.hpp
+simul.h : $(BOOST)/random.hpp
 
 ReadReader.h : SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h ReadIndex.h
 
@@ -90,14 +90,14 @@ HitWrapper.h : HitContainer.h
 
 BamWriter.h : $(SAMHEADERS) sam_utils.h utils.h my_assert.h SingleHit.h PairedEndHit.h HitWrapper.h Transcript.h Transcripts.h
 
-sampling.h : boost/random.hpp
+sampling.h : $(BOOST)/random.hpp
 
 WriteResults.h : utils.h my_assert.h GroupInfo.h Transcript.h Transcripts.h RefSeq.h Refs.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h
 
 rsem-run-em : EM.o $(SAMLIBS)
 	$(CC) -o rsem-run-em EM.o $(SAMLIBS) -lz -lpthread
 
-EM.o : $(SAMHEADERS) utils.h my_assert.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h Refs.h GroupInfo.h HitContainer.h ReadIndex.h ReadReader.h Orientation.h LenDist.h RSPD.h QualDist.h QProfile.h NoiseQProfile.h ModelParams.h RefSeq.h RefSeqPolicy.h PolyARules.h Profile.h NoiseProfile.h Transcript.h Transcripts.h HitWrapper.h BamWriter.h simul.h sam_utils.h sampling.h boost/random.hpp WriteResults.h EM.cpp
+EM.o : $(SAMHEADERS) utils.h my_assert.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h Refs.h GroupInfo.h HitContainer.h ReadIndex.h ReadReader.h Orientation.h LenDist.h RSPD.h QualDist.h QProfile.h NoiseQProfile.h ModelParams.h RefSeq.h RefSeqPolicy.h PolyARules.h Profile.h NoiseProfile.h Transcript.h Transcripts.h HitWrapper.h BamWriter.h simul.h sam_utils.h sampling.h $(BOOST)/random.hpp WriteResults.h EM.cpp
 	$(CC) $(COFLAGS) $(SAMFLAGS) EM.cpp
 
 bc_aux.h : $(SAMHEADERS)
@@ -120,14 +120,14 @@ rsem-bam2readdepth : utils.h my_assert.h wiggle.h wiggle.o $(SAMLIBS) bam2readde
 rsem-simulate-reads : simulation.o
 	$(CC) -o rsem-simulate-reads simulation.o
 
-simulation.o : utils.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h Refs.h RefSeq.h GroupInfo.h Transcript.h Transcripts.h Orientation.h LenDist.h RSPD.h QualDist.h QProfile.h NoiseQProfile.h Profile.h NoiseProfile.h simul.h boost/random.hpp WriteResults.h simulation.cpp
+simulation.o : utils.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h Refs.h RefSeq.h GroupInfo.h Transcript.h Transcripts.h Orientation.h LenDist.h RSPD.h QualDist.h QProfile.h NoiseQProfile.h Profile.h NoiseProfile.h simul.h $(BOOST)/random.hpp WriteResults.h simulation.cpp
 	$(CC) $(COFLAGS) simulation.cpp
 
 rsem-run-gibbs : Gibbs.o
 	$(CC) -o rsem-run-gibbs Gibbs.o -lpthread
 
 #some header files are omitted
-Gibbs.o : utils.h my_assert.h boost/random.hpp sampling.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h RefSeq.h RefSeqPolicy.h PolyARules.h Refs.h GroupInfo.h WriteResults.h Gibbs.cpp 
+Gibbs.o : utils.h my_assert.h $(BOOST)/random.hpp sampling.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h RefSeq.h RefSeqPolicy.h PolyARules.h Refs.h GroupInfo.h WriteResults.h Gibbs.cpp
 	$(CC) $(COFLAGS) Gibbs.cpp
 
 Buffer.h : my_assert.h
@@ -136,7 +136,7 @@ rsem-calculate-credibility-intervals : calcCI.o
 	$(CC) -o rsem-calculate-credibility-intervals calcCI.o -lpthread
 
 #some header files are omitted
-calcCI.o : utils.h my_assert.h boost/random.hpp sampling.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h RefSeq.h RefSeqPolicy.h PolyARules.h Refs.h GroupInfo.h WriteResults.h Buffer.h calcCI.cpp
+calcCI.o : utils.h my_assert.h $(BOOST)/random.hpp sampling.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h RefSeq.h RefSeqPolicy.h PolyARules.h Refs.h GroupInfo.h WriteResults.h Buffer.h calcCI.cpp
 	$(CC) $(COFLAGS) calcCI.cpp
 
 rsem-get-unique : $(SAMHEADERS) sam_utils.h utils.h getUnique.cpp $(SAMLIBS)
