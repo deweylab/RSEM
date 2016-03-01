@@ -8,6 +8,7 @@ main <- function() {
   name2func <- list(
     'selTrainingTr'               = selTrainingTr,
     'prepTSSPeakFeatures'         = prepTSSPeakFeatures,
+    'calcTSSPeakPrtPVal'          = calcTSSPeakPrtPVal,
     'prepPeakSignalGCLenFeatures' = prepPeakSignalGCLenFeatures,
     'genPriorByTSSPeak'           = genPriorByTSSPeak,
     'genPriorByPeakSignalGCLen'   = genPriorByPeakSignalGCLen
@@ -290,6 +291,27 @@ genPriorByTSSPeak <- function(argv=NA){
 }
 
 
+calcTSSPeakPrtPVal <- function(argv=NA) {
+  libloc           <- argv[1]
+  fall_tr_features <- argv[2]
+
+# libloc           <- '/ua/pliu/dev/RSEM/pRSEM/RLib/'
+# fall_tr_features <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/example.temp/example_prsem.all_tr_features' 
+
+  .libPaths(c(libloc, .libPaths()))
+  suppressMessages(library(data.table))
+
+  indt <- fread(fall_tr_features, header=T, sep="\t", 
+                select=c('pme_count', 'tss_pk', 'is_training'))
+  wpk_cnt  <- subset(indt, is_training == 1 & tss_pk == 1)[, pme_count]
+  nopk_cnt <- subset(indt, is_training == 1 & tss_pk == 0)[, pme_count]
+  wrs <- suppressWarnings(wilcox.test(wpk_cnt, nopk_cnt, alternative='greater', 
+                                      paired=F, exact=T))
+  pval <- wrs$p.value
+  cat(pval)
+}
+
+
 prepTSSPeakFeatures <- function(argv=NA) {
   libloc            <- argv[1]
   fall_tr_crd       <- argv[2]
@@ -300,12 +322,12 @@ prepTSSPeakFeatures <- function(argv=NA) {
   fchipseq_peaks    <- argv[7]
 
 # libloc            <- '/ua/pliu/dev/RSEM/pRSEM/RLib/'
-# fall_tr_crd       <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.all_tr_crd'
-# ftraining_tr_crd  <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.training_tr_crd'
-# fout              <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.all_tr_features' 
-# fisoforms_results <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.isoforms.results' 
+# fall_tr_crd       <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/example.temp/example_prsem.all_tr_crd'
+# ftraining_tr_crd  <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/example.temp/example_prsem.training_tr_crd'
+# fout              <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/example.temp/example_prsem.all_tr_features' 
+# fisoforms_results <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/example.isoforms.results' 
 # flanking_width <- 500 
-# fchipseq_peaks <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/idr_target_vs_control.regionPeak.gz'
+# fchipseq_peaks <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/example.temp/idr_target_vs_control.regionPeak.gz'
 
   .libPaths(c(libloc, .libPaths()))
   suppressMessages(library(data.table)) 
@@ -321,7 +343,6 @@ prepTSSPeakFeatures <- function(argv=NA) {
   tssdt <- trdt[, list(chrom, tss, trid)]
   tssdt[, `:=`( start = tss - flanking_width,
                 end   = tss + flanking_width)]
-
 
   pkdt <- tryCatch({
     data.table(read.table(gzfile(fchipseq_peaks), header=F, sep="\t", 
@@ -790,3 +811,4 @@ main()
 #genPriorByTSSPeak()
 #prepPeakSignalGCLenFeatures()
 #genPriorByPeakSignalGCLen()
+#calcTSSPeakPrtPVal()

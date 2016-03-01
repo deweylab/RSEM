@@ -13,6 +13,8 @@ class Param:
   TRAINING_GENE_MIN_LEN   = 1003
   TRAINING_MIN_MAPPABILITY = 0.8
   FLANKING_WIDTH = 500  ## in nt, flanking region around TSS and TES
+  INFORMATIVE_DATA_MAX_P_VALUE = 0.01 ## external data set is informative if
+                                      ## p-value is not more than this value
 
   def __init__(self):
     self.argdict = None
