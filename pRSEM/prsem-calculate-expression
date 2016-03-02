@@ -21,8 +21,11 @@ def main():
   param = Param.initFromCommandLineArguments(argdict)
 
   if param.chipseq_peak_file is None:
-    ## IDR peaks will be saved in file param.fidr_chipseq_peaks
-    genChIPSeqPeakFileBySPPIDR(param)
+    if param.partition_model == 'cmb_lgt':
+      genChIPSeqSignalFiles(param)
+    else:
+      ## IDR peaks will be saved in file param.fidr_chipseq_peaks
+      genChIPSeqPeakFileBySPPIDR(param)
 
   param.transcripts = Transcript.quicklyReadRSEMTI(param.fti)
   param.genes = Gene.constructGenesFromTranscripts(param.transcripts)
@@ -32,6 +35,8 @@ def main():
   if param.partition_model == 'pk':
     ## no need to calculate signals or body/tes peaks here
     genPriorByTSSPeak(param)
+  elif param.partition_model == 'cmb_lgt':
+    genPriorByCombinedTSSSignals(param)
   else:
     genPriorByPeakSignalGCLen(param)
 
@@ -45,10 +50,9 @@ def getCommandLineArguments():
   parser.add_argument('--num-threads', type=int)
   parser.add_argument('--chipseq-target-read-files')
   parser.add_argument('--chipseq-control-read-files')
- #parser.add_argument('--bowtie-bin-for-chipseq')
+  parser.add_argument('--chipseq-read-files-multi-targets')
   parser.add_argument('--bowtie-path')
   parser.add_argument('--chipseq-peak-file')
-  parser.add_argument('--gzipped-chipseq-peak-file', action='store_true')
   parser.add_argument('--mappability-bigwig-file')
   parser.add_argument('--partition-model', )
   parser.add_argument('--gibbs-burnin', type=int)
@@ -64,6 +68,19 @@ def getCommandLineArguments():
   argdict = vars(parser.parse_args())
 
   return argdict
+
+
+def genChIPSeqSignalFiles(param):
+  import ChIPSeqExperiment
+  cse_target = ChIPSeqExperiment.initFromParam(param, 'multi-targets')
+  cse_target.getFastqEncoding()
+  cse_target.alignReadByBowtie()
+
+  param.chipseqexperiment_target = cse_target
+  for rep in cse_target.reps:
+    ta = rep.tagalign
+    param.targetid2fchipseq_alignment[ta.basename] = ta.fullname
+
 
 
 def genChIPSeqPeakFileBySPPIDR(param):
@@ -150,11 +167,52 @@ def calTSSBodyTESMappability(trs, prm, out_q):
   out_q.put(outdict)
 
 
+def genPriorByCombinedTSSSignals(prm):
+  """
+  calculate TSS signals for all external data sets
+  compute informative p-value, LL for individual data set and combined one
+  learn prior from training set partitioned by combined TSS signals
+  derive priors for all isoforms
+  """
+  f_fout = open(prm.finfo_multi_targets, 'w')
+  f_fout.write("targetid\tfaln\tfftrs\n")
+  for (tgtid, faln) in prm.targetid2fchipseq_alignment.items():
+    fftrs = prm.stat_name + '_prsem.' + tgtid + '.all_tr_features'
+    f_fout.write("%s\t%s\t%s\n" % (tgtid, faln, fftrs))
+  f_fout.close()
+
+  Util.runCommand('/bin/env', 'Rscript', prm.rnaseq_rscript,
+                  'prepMultiTargetsFeatures', prm.prsem_rlib_dir,
+                  prm.fall_tr_crd, prm.ftraining_tr_crd,
+                  prm.fisoforms_results, prm.FLANKING_WIDTH,
+                  prm.finfo_multi_targets, prm.num_threads, quiet=False)
+
+  ## learn prior from partitioning by combined external data set
+  Util.runCommand('/bin/env', 'Rscript', prm.rnaseq_rscript,
+                  'genPriorByCombinedTSSSignals', prm.prsem_rlib_dir,
+                  prm.finfo_multi_targets, prm.flgt_model_multi_targets,
+                  prm.fall_tr_features, prm.fpvalLL, prm.fall_tr_prior,
+                  quiet=False)
+
+  pval = float(Util.readFile(prm.fpvalLL)[1].split("\t")[0])
+
+  if pval > prm.INFORMATIVE_DATA_MAX_P_VALUE:
+    sys.exit(
+      "\nExternal data is NOT informative for RNA-seq quantification:\n"+
+      "p-value %.3e > %.3e\n" % (pval, prm.INFORMATIVE_DATA_MAX_P_VALUE) +
+      "pRSEM STOPs here\n"
+    )
+
+  if not os.path.exists(prm.fall_tr_prior):
+    sys.exit("Failed to generate file: %s\n" % prm.fall_tr_prior)
+
+
+
 def genPriorByPeakSignalGCLen(prm):
   """
   calculate peaks/signals for the TSS, body, and TES regions
   calculate GC contenct and effective length
-  learn priors from training set and derived priors for all isoforms
+  learn prior from training set and derived priors for all isoforms
   """
   ## calculate GC contect for isoforms
   trid2seq = Util.getFastaID2Seq(prm.ffasta)
@@ -163,7 +221,7 @@ def genPriorByPeakSignalGCLen(prm):
     for tr in prm.transcripts:
       gc_frac = Util.getGCFraction(trid2seq[tr.transcript_id])
       f_fall_tr_gc.write("%s\t%.2f\n" % (tr.transcript_id, gc_frac) )
-  
+
   with open(prm.fsppout_target, 'r') as f_fsppout_target:
     words = f_fsppout_target.read().split("\t")
     prm.chipseq_target_fraglen = int(words[2])

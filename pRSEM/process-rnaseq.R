@@ -6,16 +6,85 @@
 
 main <- function() {
   name2func <- list(
-    'selTrainingTr'               = selTrainingTr,
-    'prepTSSPeakFeatures'         = prepTSSPeakFeatures,
-    'calcTSSPeakPrtPVal'          = calcTSSPeakPrtPVal,
-    'prepPeakSignalGCLenFeatures' = prepPeakSignalGCLenFeatures,
-    'genPriorByTSSPeak'           = genPriorByTSSPeak,
-    'genPriorByPeakSignalGCLen'   = genPriorByPeakSignalGCLen
+    'selTrainingTr'                = selTrainingTr,
+    'calcTSSPeakPrtPVal'           = calcTSSPeakPrtPVal,
+    'prepTSSPeakFeatures'          = prepTSSPeakFeatures,
+    'prepPeakSignalGCLenFeatures'  = prepPeakSignalGCLenFeatures,
+    'prepMultiTargetsFeatures'     = prepMultiTargetsFeatures,
+    'genPriorByTSSPeak'            = genPriorByTSSPeak,
+    'genPriorByPeakSignalGCLen'    = genPriorByPeakSignalGCLen,
+    'genPriorByCombinedTSSSignals' = genPriorByCombinedTSSSignals
   )
 
   argv <- commandArgs(trailingOnly=T)
   name2func[[argv[1]]](argv[2:length(argv)])
+}
+
+
+genPriorByCombinedTSSSignals <- function(argv=NA){
+  libloc <- argv[1]
+  finfo  <- argv[2]
+  fout_glmmdl <- argv[3]
+  fout_ftrs   <- argv[4]
+  fout_pvalLL <- argv[5]
+  fout_prior  <- argv[6]
+
+# libloc <- '/ua/pliu/dev/RSEM/pRSEM/RLib/'
+# finfo  <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/example.temp/multi_targets.info'
+# fout_glmmdl <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/example.stat/example_prsem.lgt_mdl.RData'
+# fout_ftrs   <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/example.stat/example_prsem.all_tr_features'
+# fout_pvalLL <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/example.stat/example_prsem.pval_LL'
+# fout_prior  <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/example.stat/example_prsem.all_tr_prior'
+
+  .libPaths(c(libloc, .libPaths()))
+  suppressMessages(library(data.table)) 
+
+  infodt <- fread(finfo, header=T, sep="\t")
+  tgtids <- infodt[, targetid]
+  ftrsdt <- rbindlist(lapply(tgtids, 
+              function(tgtid) {
+                fin <- subset(infodt, targetid==tgtid)[, fftrs]
+                dt <- fread(fin, header=T, sep="\t")
+                dt[, `:=`( log10_tss_sig = ifelse(tss_sig > 0, log10(tss_sig), 
+                                                  -4),
+                           targetid      = tgtid )]
+                dt[, `:=`(tss_sig = NULL, nrd = NULL) ]
+                return(dt)
+              }))
+
+  alldt <- dcast(ftrsdt, ... ~ targetid, value.var = 'log10_tss_sig')
+  trndt <- subset(alldt, is_training == 1)
+  frm <- paste0('is_expr ~ ', paste(tgtids, collapse=' + '))
+
+  glmmdl <- glm(frm, family='binomial', data=trndt)
+  save(glmmdl, file=fout_glmmdl)
+
+  alldt[, prd_expr_prob := predict(glmmdl, alldt, type='response')]
+  alldt[, partition := factor(ifelse(prd_expr_prob > 0.5, 1, 0))]
+
+  trn_prtdt <- subset(alldt, is_training == 1)
+  fit <- getFitByMLDM(trn_prtdt[, pme_count], trn_prtdt[, partition])
+  alldt[, prior:= fit$par[partition]]
+
+  orig_ordered_trids <- subset(ftrsdt, targetid == tgtids[1])[, trid]
+  setkey(alldt, trid)
+
+  write.table(alldt[orig_ordered_trids], fout_ftrs, quote=F, sep='\t', 
+              col.names=T, row.names=F)
+
+  not_expr_cnt <- subset(trn_prtdt, partition == 0)[, pme_count]
+  expr_cnt     <- subset(trn_prtdt, partition == 1)[, pme_count]
+  wrs <- suppressWarnings(wilcox.test(expr_cnt, not_expr_cnt, 
+                                      alternative='greater', paired=F, exact=T))
+  pval <- wrs$p.value
+  loglikelihood <- fit$value
+  pvalLLdt <- data.table(pvalue = pval, loglikelihood = loglikelihood)
+  write.table(pvalLLdt, fout_pvalLL, quote=F, sep="\t", col.names=T, 
+              row.names=F)
+
+  out_priordt <- alldt[orig_ordered_trids, list(prior, trid)]
+  write.table(out_priordt, fout_prior, quote=F, sep=' # ', col.names=F, 
+              row.names=F)
 }
 
 
@@ -81,6 +150,81 @@ genPriorByPeakSignalGCLen <- function(argv=NA) {
   outdt <- func(training_trdt, all_trdt)
   write.table(outdt[, list(prior, trid)], fout, quote=F, sep=' # ', col.names=F,
               row.names=F)
+}
+
+
+prepMultiTargetsFeatures <- function(argv=NA){
+  libloc            <- argv[1]
+  fall_tr_crd       <- argv[2]
+  ftraining_tr_crd  <- argv[3]
+  fisoforms_results <- argv[4]
+  flanking_width    <- as.numeric(argv[5])
+  finfo             <- argv[6]
+  nthr              <- argv[7]
+
+# libloc            <- '/ua/pliu/dev/RSEM/pRSEM/RLib/'
+# fall_tr_crd       <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/example.temp/example_prsem.all_tr_crd'
+# ftraining_tr_crd  <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/example.temp/example_prsem.training_tr_crd'
+# fisoforms_results <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/example.isoforms.results'
+# flanking_width    <- 500
+# fout              <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/example.temp/example_prsem.H3K27Ac.all_tr_features'
+
+  .libPaths(c(libloc, .libPaths()))
+  suppressMessages(library(data.table)) 
+  suppressMessages(library(GenomicRanges))
+
+  all_trdt <- fread(fall_tr_crd, header=T, sep="\t")
+  training_trdt <- fread(ftraining_tr_crd, header=T, sep="\t", select='trid')
+
+  rsemdt <- fread(fisoforms_results, header=T, sep="\t", select=c(
+                  'transcript_id', 'posterior_mean_count', 'pme_TPM')) 
+  setnames(rsemdt, 1:2, c('trid', 'pme_count'))
+
+  trdt <- merge(all_trdt, rsemdt, by='trid', all.x=T)
+  trdt[, `:=`( tss         = ifelse(strand == '+', start, end),
+               is_training = ifelse(trid %in% training_trdt[, trid], 1, 0) )]
+
+  tssdt  <- trdt[, list(chrom, tss, trid)]
+  tssdt[,  `:=`( start = tss - flanking_width,
+                 end   = tss + flanking_width ) ]
+
+  infodt <- fread(finfo, header=T, sep="\t")
+  dum <- mclapply(infodt[, targetid], prepTSSSignalsFeatures, tssdt, 
+                  infodt, trdt, all_trdt, flanking_width, 
+                  mc.cores=nthr)
+}
+
+
+prepTSSSignalsFeatures <- function(tgtid, tssdt, infodt, trdt, all_trdt, 
+                                   flanking_width) {
+  faln <- subset(infodt, targetid == tgtid)[, faln]
+  fout <- subset(infodt, targetid == tgtid)[, fftrs]
+  rddt <- data.table(read.table(gzfile(faln), header=F, sep="\t", 
+                                colClasses=c('character', 'numeric', 'numeric',
+                                             rep('NULL', 3))))
+  setnames(rddt, 1:3, c('chrom', 'start', 'end'))
+  
+  ## since no peak is called here, just use the average read length as fraglen
+  ## count # of reads as signals rather than # of overlapping nucleotide
+  ## normalize by TSS interval length and read depth to RPKM
+  tssgrs <- makeGRangesFromDataFrame(tssdt, keep.extra.columns=T)
+  rdgrs  <- makeGRangesFromDataFrame(rddt,  keep.extra.columns=T)
+
+  ol <- findOverlaps(rdgrs, tssgrs, type='within', ignore.strand=T)
+  oldt <- data.table(query=queryHits(ol), subject=subjectHits(ol))
+  oldt[, trid := tssdt[, trid][subject]]
+  nrddt <- oldt[, list(nrd = .N), by=trid]
+
+  trdt <- merge(trdt, nrddt, by='trid', all.x=T)
+
+  n_tot_rds <- length(rdgrs)
+  trdt[, `:=`( tss_sig = ifelse(is.na(nrd), 0, 
+                                nrd*1e+9/(flanking_width*2+1)/n_tot_rds),
+               is_expr = ifelse(pme_count >= 1 & pme_TPM >= 1, T, F) )]
+
+  setkey(trdt, trid)
+  trdt <- trdt[all_trdt[, trid]] ## keep the order of original trids
+  write.table(trdt, fout, quote=F, sep="\t", col.names=T, row.names=F)
 }
 
 
@@ -812,3 +956,5 @@ main()
 #prepPeakSignalGCLenFeatures()
 #genPriorByPeakSignalGCLen()
 #calcTSSPeakPrtPVal()
+#prepTSSSignalFeatures()
+#genPriorByCombinedTSSSignals()

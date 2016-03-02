@@ -16,7 +16,7 @@ import Util
 class ChIPSeqExperiment:
   def __init__(self):
     self.param           = None ## reference to input parameters
-    self.reps            = []   ## list of ChIPSeqReplciate object
+    self.reps            = []   ## list of ChIPSeqReplcate object
     self.is_control      = None ## if is control
     self.pooled_tagalign = None ## File obj of pooled tagAlign
     self.peaks           = None ## File obj of targetRep0_VS_controlRep0 peaks
@@ -244,5 +244,8 @@ def initFromParam(param, typ):
   elif typ.lower() in [ 'control', 'input' ]:
     is_ctrl = True
     param_attr = 'chipseq_control_read_files'
+  elif typ.lower() == 'multi-targets':
+    is_ctrl = False
+    param_attr = 'chipseq_read_files_multi_targets'
 
   return ChIPSeqExperiment.initFromParam(param, is_ctrl, param_attr)

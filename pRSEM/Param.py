@@ -23,10 +23,9 @@ class Param:
     self.num_threads                = None
     self.chipseq_target_read_files  = None
     self.chipseq_control_read_files = None
-   #self.bowtie_bin_for_chipseq     = None
+    self.chipseq_read_files_multi_targets = None
     self.bowtie_path                = None
     self.chipseq_peak_file          = None
-   #self.gzipped_chipseq_peak_file  = None
     self.mappability_bigwig_file    = None
     self.partition_model            = None
     self.gibbs_burnin               = None
@@ -78,12 +77,19 @@ class Param:
     self.fall_tr_features   = None ## file for all isoforms' features
     self.fall_tr_prior      = None ## file for all isoforms' priors
     self.fisoforms_results  = None ## file for RSEM .isoforms.results
+    self.fpvalLL            = None ## file for p-value on if informative
+                                   ## and for log-likelihood
+
+    ## for multiple external data sets
+    self.targetid2fchipseq_alignment = {}
+    self.finfo_multi_targets = None
+    self.flgt_model_multi_targets = None
 
 
   def __str__(self):
-    ss = [ "%-28s %s\n" % (key, val) for (key, val) in self.argdict.items()] + \
-         [ "%-28s %s\n" % ('RSEM_temp_dir', self.temp_dir ) ] + \
-         [ "%-28s %s\n" % ('pRSEM_scr_dir', self.prsem_scr_dir) ]
+    ss = [ "%-33s %s\n" % (key, val) for (key, val) in self.argdict.items()] + \
+         [ "%-33s %s\n" % ('RSEM_temp_dir', self.temp_dir ) ] + \
+         [ "%-33s %s\n" % ('pRSEM_scr_dir', self.prsem_scr_dir) ]
     return ''.join(ss)
 
 
@@ -137,6 +143,11 @@ class Param:
     prm.fall_tr_features  = prm.stat_name + '_prsem.all_tr_features'
     prm.fall_tr_prior     = prm.stat_name + '_prsem.all_tr_prior'
     prm.fisoforms_results = prm.sample_name + '.isoforms.results'
+    prm.fpvalLL           = prm.stat_name + '_prsem.pval_LL'
+
+    ## for multiple external data sets
+    prm.finfo_multi_targets      = prm.temp_dir + 'multi_targets.info'
+    prm.flgt_model_multi_targets = prm.stat_name + '_prsem.lgt_mdl.RData'
 
     return prm
 
