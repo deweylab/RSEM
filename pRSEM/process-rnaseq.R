@@ -7,7 +7,6 @@
 main <- function() {
   name2func <- list(
     'selTrainingTr'                = selTrainingTr,
-    'calcTSSPeakPrtPVal'           = calcTSSPeakPrtPVal,
     'prepTSSPeakFeatures'          = prepTSSPeakFeatures,
     'prepPeakSignalGCLenFeatures'  = prepPeakSignalGCLenFeatures,
     'prepMultiTargetsFeatures'     = prepMultiTargetsFeatures,
@@ -417,42 +416,36 @@ countRegionSignalByChrom <- function(chrom, regiondtl, readdtl, fraglen,
 genPriorByTSSPeak <- function(argv=NA){
   libloc           <- argv[1]
   fall_tr_features <- argv[2]
-  fall_tr_prior    <- argv[3]
+  fpval_LL         <- argv[3]
+  fall_tr_prior    <- argv[4]
 
- #libloc           <- '/ua/pliu/dev/RSEM/pRSEM/RLib/' 
- #fall_tr_features <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.all_tr_features'
- #fall_tr_prior    <- '/tier2/deweylab/scratch/pliu/dev/rsem_expr/test.temp/test_prsem.all_tr_prior'
-
-  .libPaths(c(libloc, .libPaths()))
-  suppressMessages(library(data.table))
-
-  selcols <- c('trid', 'tss_pk', 'pme_count', 'is_training')
-  all_trdt <- fread(fall_tr_features, header=T, sep="\t", select=selcols)
-  training_trdt <- subset(all_trdt, is_training == 1)
-  outdt <- getSampleAndPriorByTSSPeak(training_trdt, all_trdt)
-  write.table(outdt[, list(prior, trid)], fall_tr_prior, quote=F, sep="  # ",
-              col.names=F, row.names=F) 
-}
-
-
-calcTSSPeakPrtPVal <- function(argv=NA) {
-  libloc           <- argv[1]
-  fall_tr_features <- argv[2]
-
-# libloc           <- '/ua/pliu/dev/RSEM/pRSEM/RLib/'
-# fall_tr_features <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/example.temp/example_prsem.all_tr_features' 
+# libloc           <- '/ua/pliu/dev/RSEM/pRSEM/RLib/' 
+# fall_tr_features <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/example.stat/example_prsem.all_tr_features'
+# fpval_LL         <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/example.stat/example_prsem.pval_LL'
+# fall_tr_prior    <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/example.stat/example_prsem.all_tr_prior'
 
   .libPaths(c(libloc, .libPaths()))
   suppressMessages(library(data.table))
 
-  indt <- fread(fall_tr_features, header=T, sep="\t", 
-                select=c('pme_count', 'tss_pk', 'is_training'))
-  wpk_cnt  <- subset(indt, is_training == 1 & tss_pk == 1)[, pme_count]
-  nopk_cnt <- subset(indt, is_training == 1 & tss_pk == 0)[, pme_count]
+  alldt <- fread(fall_tr_features, header=T, sep="\t")
+  alldt[, partition := tss_pk]
+
+  trndt <- subset(alldt, is_training == 1)
+  outdt <- getSampleAndPriorByTSSPeak(trndt, alldt)
+
+  wpk_cnt  <- subset(trndt, tss_pk == 1)[, pme_count]
+  nopk_cnt <- subset(trndt, tss_pk == 0)[, pme_count]
   wrs <- suppressWarnings(wilcox.test(wpk_cnt, nopk_cnt, alternative='greater', 
                                       paired=F, exact=T))
   pval <- wrs$p.value
-  cat(pval)
+  loglikelihood <- unique(outdt[, loglikelihood])
+  pval_LLdt <- data.table(pvalue=pval, loglikelihood=loglikelihood)
+
+  write.table(alldt, fall_tr_features, quote=F, sep="\t", col.names=T,
+              row.names=F)
+  write.table(pval_LLdt, fpval_LL, quote=F, sep="\t", col.names=T, row.names=F)
+  write.table(outdt[, list(prior, trid)], fall_tr_prior, quote=F, sep="  # ",
+              col.names=F, row.names=F) 
 }
 
 
@@ -736,7 +729,8 @@ getSampleAndPriorByTSSPeak <- function(trndt, tstdt) {
   outdt <- tstdt[, list(trid, pme_count)]
   outdt[, `:=`(partition = tst_partition,
                sample    = getSampleByDM(fit$par, pme_count, tst_partition),
-               prior     = prior)]
+               prior     = prior,
+               loglikelihood = fit$value )]
 
   cat("training set's partition:")
   print(table(trn_partition))
@@ -955,6 +949,5 @@ main()
 #genPriorByTSSPeak()
 #prepPeakSignalGCLenFeatures()
 #genPriorByPeakSignalGCLen()
-#calcTSSPeakPrtPVal()
 #prepTSSSignalFeatures()
 #genPriorByCombinedTSSSignals()

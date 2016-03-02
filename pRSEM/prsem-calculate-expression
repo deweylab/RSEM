@@ -197,11 +197,11 @@ def genPriorByCombinedTSSSignals(prm):
   pval = float(Util.readFile(prm.fpvalLL)[1].split("\t")[0])
 
   if pval > prm.INFORMATIVE_DATA_MAX_P_VALUE:
-    sys.exit(
-      "\nExternal data is NOT informative for RNA-seq quantification:\n"+
-      "p-value %.3e > %.3e\n" % (pval, prm.INFORMATIVE_DATA_MAX_P_VALUE) +
-      "pRSEM STOPs here\n"
-    )
+    err_msg = "\nError: current external data is NOT informative for RNA-seq quantification\n" + \
+      "\tp-value %.10e > %.3f\n" % (pval, prm.INFORMATIVE_DATA_MAX_P_VALUE) + \
+      "pRSEM STOPs here. Please use other external data set(s)\n\n"
+    sys.stderr.write(err_msg)
+    sys.exit(0)
 
   if not os.path.exists(prm.fall_tr_prior):
     sys.exit("Failed to generate file: %s\n" % prm.fall_tr_prior)
@@ -264,35 +264,29 @@ def genPriorByTSSPeak(prm):
                   'prepTSSPeakFeatures', prm.prsem_rlib_dir,
                   prm.fall_tr_crd, prm.ftraining_tr_crd, prm.fall_tr_features,
                   prm.fisoforms_results, prm.FLANKING_WIDTH,
-                  prm.fchipseq_peaks,
-                 #prm.gzipped_chipseq_peak_file,
-                  quiet=False)
+                  prm.fchipseq_peaks, quiet=False)
 
   if not os.path.exists(prm.fall_tr_features):
     sys.exit("Failed to generate file: %s\n" % prm.fall_tr_features)
 
-  pval = Util.runCommandAndGetOutput('/bin/env', 'Rscript', prm.rnaseq_rscript,
-                                     'calcTSSPeakPrtPVal', prm.prsem_rlib_dir,
-                                     prm.fall_tr_features)
-  pval = float(pval)
+  Util.runCommand('/bin/env', 'Rscript', prm.rnaseq_rscript,
+                  'genPriorByTSSPeak', prm.prsem_rlib_dir,
+                  prm.fall_tr_features,  prm.fpvalLL, prm.fall_tr_prior,
+                  quiet=False)
 
-  if pval <= prm.INFORMATIVE_DATA_MAX_P_VALUE:
-    print "\nExternal data is informative for RNA-seq quantification:";
-    print "p-value %.3e <= %.3e\n" % (pval, prm.INFORMATIVE_DATA_MAX_P_VALUE);
+  pval = float(Util.readFile(prm.fpvalLL)[1].split("\t")[0])
 
-    ## learn and generate prior for all transcripts
-    Util.runCommand('/bin/env', 'Rscript', prm.rnaseq_rscript,
-                    'genPriorByTSSPeak', prm.prsem_rlib_dir,
-                    prm.fall_tr_features,  prm.fall_tr_prior, quiet=False)
+  pval = 0.0100001
 
-    if not os.path.exists(prm.fall_tr_prior):
-      sys.exit("Failed to generate file: %s\n" % prm.fall_tr_prior)
-  else:
-    sys.exit(
-      "\nExternal data is NOT informative for RNA-seq quantification:\n"+
-      "p-value %.3e > %.3e\n" % (pval, prm.INFORMATIVE_DATA_MAX_P_VALUE) +
-      "pRSEM STOPs here\n"
-    )
+  if pval > prm.INFORMATIVE_DATA_MAX_P_VALUE:
+    err_msg = "\nError: current external data is NOT informative for RNA-seq quantification\n" + \
+      "\tp-value %.10e > %.3f\n" % (pval, prm.INFORMATIVE_DATA_MAX_P_VALUE) + \
+      "pRSEM STOPs here. Please use other external data set(s)\n\n"
+    sys.stderr.write(err_msg)
+    sys.exit(0)
+
+  if not os.path.exists(prm.fall_tr_prior):
+    sys.exit("Failed to generate file: %s\n" % prm.fall_tr_prior)
 
 
 def runGibbsSampling(prm):
