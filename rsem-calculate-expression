@@ -241,11 +241,15 @@ if ( $run_prsem ) {
     }
 
     if ( exists $prtmdl2one{$partition_model} ) {
-      if ( ( $partition_model ne 'pk' ) && 
-           ( $chipseq_read_files_multi_targets ne '' ) && 
-           ( ( $chipseq_target_read_files eq ''  ) || 
-             ( $chipseq_control_read_files eq '' ) || 
-             ( $bowtie_path eq '' ) ) ){
+      if ( ( $partition_model eq 'cmb_lgt' ) && 
+           ( $chipseq_read_files_multi_targets eq '' ) ) {
+        $msg = '--chipseq-read-files-multi-targets <files> needs to be ' .
+               "defined for pRSEM's partition model: '$partition_model'";
+      } elsif ( ( $partition_model ne 'pk' ) && 
+                ( $partition_model ne 'cmb_lgt' ) &&
+                ( ( $chipseq_target_read_files eq ''  ) || 
+                  ( $chipseq_control_read_files eq '' ) || 
+                  ( $bowtie_path eq '' ) ) ){
         $msg = '--chipseq-target-read-files <file> and ' .
                '--chipseq-control-read-files <file> and ' .
                '--bowtie-path <path> need to be defined for ' .
