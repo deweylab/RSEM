@@ -380,7 +380,7 @@ if (!$is_sam && !$is_bam) {
 	  if ( $gzipped_read_file ) {
 	    $command .= ' --readFilesCommand zcat ';
 	  } elsif ( $bzipped_read_file ) {
-	    $command .= ' --readFilesCommand bzip2 -c ';
+	    $command .= ' --readFilesCommand bzcat ';
 	  }
 	
 	  if ( $read_type == 0 || $read_type == 1 ) {
