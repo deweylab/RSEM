@@ -53,7 +53,7 @@ genPriorByCombinedTSSSignals <- function(argv=NA){
 
   alldt <- dcast(ftrsdt, ... ~ targetid, value.var = 'log10_tss_sig')
   trndt <- subset(alldt, is_training == 1)
-  frm <- paste0('is_expr ~ ', paste(tgtids, collapse=' + '))
+  frm <- paste0('is_expr ~ ', paste(sort(tgtids), collapse=' + '))
 
   glmmdl <- glm(frm, family='binomial', data=trndt)
   save(glmmdl, file=fout_glmmdl)
@@ -227,7 +227,7 @@ prepTSSSignalsFeatures <- function(tgtid, tssdt, infodt, trdt, all_trdt,
   n_tot_rds <- length(rdgrs)
   trdt[, `:=`( tss_sig = ifelse(is.na(nrd), 0,
                                 nrd*1e+9/(flanking_width*2+1)/n_tot_rds),
-               is_expr = ifelse(pme_count >= 1 & pme_TPM >= 1, T, F) )]
+               is_expr = ifelse(pme_count >= 1 & pme_TPM >= 1, 1, 0) )]
 
   setkey(trdt, trid)
   trdt <- trdt[all_trdt[, trid]] ## keep the order of original trids

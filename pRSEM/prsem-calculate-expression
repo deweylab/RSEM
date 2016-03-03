@@ -177,7 +177,7 @@ def genPriorByCombinedTSSSignals(prm):
   f_fout = open(prm.finfo_multi_targets, 'w')
   f_fout.write("targetid\tfaln\tfftrs\n")
   for (tgtid, faln) in prm.targetid2fchipseq_alignment.items():
-    fftrs = prm.stat_name + '_prsem.' + tgtid + '.all_tr_features'
+    fftrs = prm.imd_name + '_prsem.' + tgtid + '.all_tr_features'
     f_fout.write("%s\t%s\t%s\n" % (tgtid, faln, fftrs))
   f_fout.close()
 
