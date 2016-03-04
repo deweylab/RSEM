@@ -201,9 +201,11 @@ prepTSSSignalsFeatures <- function(tgtid, tssdt, infodt, trdt, all_trdt,
                                    flanking_width) {
   faln <- subset(infodt, targetid == tgtid)[, faln]
   fout <- subset(infodt, targetid == tgtid)[, fftrs]
-  allrddt <- data.table(read.table(gzfile(faln), header=F, sep="\t",
-                                colClasses=c('character', 'numeric', 'numeric',
-                                             rep('NULL', 3))))
+ #allrddt <- data.table(read.table(gzfile(faln), header=F, sep="\t",
+ #                              colClasses=c('character', 'numeric', 'numeric',
+ #                                           rep('NULL', 3))))
+  allrddt <- fread(paste0('zcat ',faln), header=F, sep="\t",
+                   select=c('V1', 'V2', 'V3'))
   setnames(allrddt, 1:3, c('chrom', 'start', 'end'))
 
   ## keep at most 5 reads per interval

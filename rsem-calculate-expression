@@ -104,6 +104,8 @@ my $mappability_bigwig_file    = '';
 my $partition_model            = 'pk';
 my $chipseq_read_files_multi_targets = ''; ## read files for multiple targets
                                            ## delimited by comma
+my $chipseq_bed_files_multi_targets = '';  ## BED files for multiple targets
+                                           ## delimited by comma
 
 GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "temporary-folder=s" => \$temp_dir,
@@ -162,7 +164,9 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   'chipseq-control-read-files=s' => \$chipseq_control_read_files, 
 	                                      ## delimited by comma if more than one
      'chipseq-read-files-multi-targets=s' => \$chipseq_read_files_multi_targets,
-                                        ## delimited by comma
+                                          ## delimited by comma
+     'chipseq-bed-files-multi-targets=s' => \$chipseq_bed_files_multi_targets,
+                                         ## delimited by comma
 	   'chipseq-peak-file=s' => \$chipseq_peak_file,
 	   'mappability-bigwig-file=s'  => \$mappability_bigwig_file,
 	   'partition-model=s' => \$partition_model,
@@ -216,6 +220,8 @@ if ( $run_prsem ) {
            ( $chipseq_control_read_files eq '' ) || 
            ( $bowtie_path eq '' ) ) && 
          ( ( $chipseq_read_files_multi_targets eq '' ) ||
+           ( $bowtie_path eq '' ) ) &&
+         ( ( $chipseq_bed_files_multi_targets eq '' ) ||
            ( $bowtie_path eq '' ) )
        ) {
       $msg = "please define one set of the following options to run pRSEM:\n" .
@@ -224,6 +230,8 @@ if ( $run_prsem ) {
              "   --chipseq-control-read-files <file> and\n" .
              "   --bowtie-path <path>\n" .
              "3. --chipseq-read-files-multi-targets <files> and\n" .
+             "   --bowtie-path <path>\n" .
+             "4. --chipseq-bed-files-multi-targets <files> and\n" .
              "   --bowtie-path <path>\n";
     }
 
@@ -242,8 +250,10 @@ if ( $run_prsem ) {
 
     if ( exists $prtmdl2one{$partition_model} ) {
       if ( ( $partition_model eq 'cmb_lgt' ) && 
-           ( $chipseq_read_files_multi_targets eq '' ) ) {
-        $msg = '--chipseq-read-files-multi-targets <files> needs to be ' .
+           ( ( $chipseq_read_files_multi_targets eq '' ) &&
+             ( $chipseq_bed_files_multi_targets  eq '' ) ) ){
+        $msg = 'either --chipseq-read-files-multi-targets <files> or ' .
+               '--chipseq-bed-files-multi-targets <files> needs to be ' .
                "defined for pRSEM's partition model: '$partition_model'";
       } elsif ( ( $partition_model ne 'pk' ) && 
                 ( $partition_model ne 'cmb_lgt' ) &&
@@ -265,7 +275,9 @@ if ( $run_prsem ) {
     pod2usage(-msg => "$msg\n", -exitval => 2, -verbose => 2);
   }
 
-  if ( $chipseq_read_files_multi_targets ne '' ) {
+  if ( ( $partition_model ne 'cmb_lgt' ) && 
+       ( ( $chipseq_read_files_multi_targets ne '' ) || 
+         ( $chipseq_bed_files_multi_targets  ne '' ) ) ) {
     print "\nCombining signals from multiple sources, partition model is set to 'cmb_lgt'\n\n";
     $partition_model = 'cmb_lgt';
   }
@@ -654,9 +666,16 @@ if ( $run_prsem ) {
   if ( $chipseq_peak_file ne '') { ## only for partition model pk
                                    ## need to add sanity check!!
     $command .= " --chipseq-peak-file $chipseq_peak_file";
-  } elsif ( $chipseq_read_files_multi_targets ne '' ) { ## multi-sources
-    $command .= " --chipseq-read-files-multi-targets $chipseq_read_files_multi_targets" .
-                " --bowtie-path $bowtie_path" ;
+  } elsif ( $partition_model eq 'cmb_lgt' ) {  ## multi-sources
+    if ( $chipseq_bed_files_multi_targets ne '' ) { ## use bed over read
+      $command .= ' --chipseq-bed-files-multi-targets ' . 
+                    $chipseq_bed_files_multi_targets .
+                  " --bowtie-path $bowtie_path" ;
+    } elsif ( $chipseq_read_files_multi_targets ne '' ) { 
+      $command .= ' --chipseq-read-files-multi-targets ' .
+                    $chipseq_read_files_multi_targets .
+                  " --bowtie-path $bowtie_path" ;
+    }
   } else { ## ChIP-seq reads files from single source
     $command .= " --chipseq-target-read-files $chipseq_target_read_files " .
                 " --bowtie-path $bowtie_path" ;

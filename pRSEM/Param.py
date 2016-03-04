@@ -24,6 +24,7 @@ class Param:
     self.chipseq_target_read_files  = None
     self.chipseq_control_read_files = None
     self.chipseq_read_files_multi_targets = None
+    self.chipseq_bed_files_multi_targets  = None
     self.bowtie_path                = None
     self.chipseq_peak_file          = None
     self.mappability_bigwig_file    = None

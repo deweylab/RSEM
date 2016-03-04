@@ -18,11 +18,9 @@ class ChIPSeqReplicate:
     self.param      = None  ## reference to parameters
     self.chipseqexp = None  ## reference to ChIPSeqExperiment object
 
-
-  def __str__(self):
-    return "%s %s %d %s" % (self.fastq.fullname, self.name, self.index,
-                            self.encoding)
-
+ #def __str__(self):
+ #  return "%s %s %d %s" % (self.fastq.fullname, self.name, self.index,
+ #                          self.encoding)
 
   @classmethod
   def initFromFastqFile(cls, ffq):
@@ -31,6 +29,15 @@ class ChIPSeqReplicate:
     csr.name = csr.fastq.basename
     return csr
 
+  @classmethod
+  def initFromBedFile(cls, fbed):
+    csr = cls()
+    csr.tagalign = File.initFromFullFileName(fbed)
+    csr.name = csr.tagalign.basename
+    return csr
 
 def initFromFastqFile(ffq):
   return ChIPSeqReplicate.initFromFastqFile(ffq)
+
+def initFromBedFile(fbed):
+  return ChIPSeqReplicate.initFromBedFile(fbed)

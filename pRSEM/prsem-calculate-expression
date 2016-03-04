@@ -22,7 +22,10 @@ def main():
 
   if param.chipseq_peak_file is None:
     if param.partition_model == 'cmb_lgt':
-      genChIPSeqSignalFiles(param)
+      if param.chipseq_bed_files_multi_targets is not None:
+        genChIPSeqSignalFilesFromBed(param)
+      elif param.chipseq_read_files_multi_targets is not None:
+        genChIPSeqSignalFilesFromReads(param)
     else:
       ## IDR peaks will be saved in file param.fidr_chipseq_peaks
       genChIPSeqPeakFileBySPPIDR(param)
@@ -51,6 +54,7 @@ def getCommandLineArguments():
   parser.add_argument('--chipseq-target-read-files')
   parser.add_argument('--chipseq-control-read-files')
   parser.add_argument('--chipseq-read-files-multi-targets')
+  parser.add_argument('--chipseq-bed-files-multi-targets')
   parser.add_argument('--bowtie-path')
   parser.add_argument('--chipseq-peak-file')
   parser.add_argument('--mappability-bigwig-file')
@@ -70,7 +74,16 @@ def getCommandLineArguments():
   return argdict
 
 
-def genChIPSeqSignalFiles(param):
+def genChIPSeqSignalFilesFromBed(param):
+  import ChIPSeqReplicate
+  fbeds = param.chipseq_bed_files_multi_targets.split(',')
+  for fbed in fbeds:
+    csr = ChIPSeqReplicate.initFromBedFile(fbed)
+    ta = csr.tagalign
+    param.targetid2fchipseq_alignment[ta.basename] = ta.fullname
+
+
+def genChIPSeqSignalFilesFromReads(param):
   import ChIPSeqExperiment
   cse_target = ChIPSeqExperiment.initFromParam(param, 'multi-targets')
   cse_target.getFastqEncoding()
