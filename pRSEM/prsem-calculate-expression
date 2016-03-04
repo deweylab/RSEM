@@ -55,6 +55,8 @@ def getCommandLineArguments():
   parser.add_argument('--chipseq-control-read-files')
   parser.add_argument('--chipseq-read-files-multi-targets')
   parser.add_argument('--chipseq-bed-files-multi-targets')
+  parser.add_argument('--cap-stacked-chipseq-reads', action='store_true')
+  parser.add_argument('--n-max-stacked-chipseq-reads', type=int)
   parser.add_argument('--bowtie-path')
   parser.add_argument('--chipseq-peak-file')
   parser.add_argument('--mappability-bigwig-file')
@@ -198,6 +200,8 @@ def genPriorByCombinedTSSSignals(prm):
                   'prepMultiTargetsFeatures', prm.prsem_rlib_dir,
                   prm.fall_tr_crd, prm.ftraining_tr_crd,
                   prm.fisoforms_results, prm.FLANKING_WIDTH,
+                  prm.cap_stacked_chipseq_reads,
+                  prm.n_max_stacked_chipseq_reads,
                   prm.finfo_multi_targets, prm.num_threads, quiet=False)
 
   ## learn prior from partitioning by combined external data set

@@ -106,6 +106,9 @@ my $chipseq_read_files_multi_targets = ''; ## read files for multiple targets
                                            ## delimited by comma
 my $chipseq_bed_files_multi_targets = '';  ## BED files for multiple targets
                                            ## delimited by comma
+my $cap_stacked_chipseq_reads = 0; ## for multiple targets, remove redundant 
+                                   ## reads aligned to the same position
+my $n_max_stacked_chipseq_reads = 5; ## as above
 
 GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "temporary-folder=s" => \$temp_dir,
@@ -167,6 +170,8 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
                                           ## delimited by comma
      'chipseq-bed-files-multi-targets=s' => \$chipseq_bed_files_multi_targets,
                                          ## delimited by comma
+     'cap-stacked-chipseq-reads' => \$cap_stacked_chipseq_reads,
+     'n-max-stacked-chipseq-reads=i' => \$n_max_stacked_chipseq_reads,
 	   'chipseq-peak-file=s' => \$chipseq_peak_file,
 	   'mappability-bigwig-file=s'  => \$mappability_bigwig_file,
 	   'partition-model=s' => \$partition_model,
@@ -648,7 +653,7 @@ if ($mTime) { $time_end = time(); $time_ci = $time_end - $time_start; }
 
 if ($mTime) { $time_start = time(); }
 
-## only run gibbs sampling once, either for pRSEM or uniform prior 1
+## To-do: only run gibbs sampling once, either for pRSEM or uniform prior 1
 if ( $run_prsem ) {
   ## I can make pRSEM save a pre-built training set for human and mouse
   ## therefore mappability bigwig file won't be required when user analyze
@@ -675,6 +680,10 @@ if ( $run_prsem ) {
       $command .= ' --chipseq-read-files-multi-targets ' .
                     $chipseq_read_files_multi_targets .
                   " --bowtie-path $bowtie_path" ;
+    }
+    if ( $cap_stacked_chipseq_reads ) {
+      $command .= ' --cap-stacked-chipseq-reads ' .
+                  " --n-max-stacked-chipseq-reads $n_max_stacked_chipseq_reads";
     }
   } else { ## ChIP-seq reads files from single source
     $command .= " --chipseq-target-read-files $chipseq_target_read_files " .

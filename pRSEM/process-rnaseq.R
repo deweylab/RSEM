@@ -158,15 +158,30 @@ prepMultiTargetsFeatures <- function(argv=NA){
   ftraining_tr_crd  <- argv[3]
   fisoforms_results <- argv[4]
   flanking_width    <- as.numeric(argv[5])
-  finfo             <- argv[6]
-  nthr              <- argv[7]
+  cap_stacked_chipseq_reads   <- argv[6]
+  n_max_stacked_chipseq_reads <- argv[7]
+  finfo             <- argv[8]
+  nthr              <- argv[9]
 
 # libloc            <- '/ua/pliu/dev/RSEM/pRSEM/RLib/'
 # fall_tr_crd       <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/example.temp/example_prsem.all_tr_crd'
 # ftraining_tr_crd  <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/example.temp/example_prsem.training_tr_crd'
 # fisoforms_results <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/example.isoforms.results'
 # flanking_width    <- 500
+# cap_stacked_chipseq_reads   <- 'True'
+# n_max_stacked_chipseq_reads <- 5
 # finfo             <- '/tier2/deweylab/scratch/pliu/dev/pRSEM/rsem_expr/example.temp/multi_targets.info'
+# nthr              <- 16
+
+# tmpdir <- '/tier2/deweylab/scratch/pliu/test/pRSEM/histone/03_rsem_expr/LTHSCRep1/LTHSCRep1.temp/'
+# libloc            <- '/ua/pliu/dev/RSEM/pRSEM/RLib/'
+# fall_tr_crd       <- paste0(tmpdir, 'LTHSCRep1_prsem.all_tr_crd')
+# ftraining_tr_crd  <- paste0(tmpdir, 'LTHSCRep1_prsem.training_tr_crd')
+# fisoforms_results <- paste0(tmpdir, '../LTHSCRep1.isoforms.results')
+# flanking_width    <- 500
+# cap_stacked_chipseq_reads   <- 'False'
+# n_max_stacked_chipseq_reads <- 5
+# finfo             <- paste0(tmpdir, 'multi_targets.info')
 # nthr              <- 16
 
   .libPaths(c(libloc, .libPaths()))
@@ -191,27 +206,30 @@ prepMultiTargetsFeatures <- function(argv=NA){
   infodt <- fread(finfo, header=T, sep="\t")
   dum <- mclapply(infodt[, targetid], prepTSSSignalsFeatures, tssdt,
                   infodt, trdt, all_trdt, flanking_width,
+                  cap_stacked_chipseq_reads, n_max_stacked_chipseq_reads,
                   mc.cores=nthr)
  #dum <- lapply(infodt[, targetid], prepTSSSignalsFeatures, tssdt,
- #              infodt, trdt, all_trdt, flanking_width )
+ #              infodt, trdt, all_trdt, flanking_width,
+ #              cap_stacked_chipseq_reads, n_max_stacked_chipseq_reads)
 }
 
 
 prepTSSSignalsFeatures <- function(tgtid, tssdt, infodt, trdt, all_trdt,
-                                   flanking_width) {
+                                   flanking_width, is_cap, n_max_cap) {
   faln <- subset(infodt, targetid == tgtid)[, faln]
   fout <- subset(infodt, targetid == tgtid)[, fftrs]
- #allrddt <- data.table(read.table(gzfile(faln), header=F, sep="\t",
- #                              colClasses=c('character', 'numeric', 'numeric',
- #                                           rep('NULL', 3))))
   allrddt <- fread(paste0('zcat ',faln), header=F, sep="\t",
-                   select=c('V1', 'V2', 'V3'))
-  setnames(allrddt, 1:3, c('chrom', 'start', 'end'))
+                   select=c('V1', 'V2', 'V3', 'V6'))
+  setnames(allrddt, 1:4, c('chrom', 'start', 'end', 'strand'))
 
-  ## keep at most 5 reads per interval
-  allrddt[, dupi := seq_len(.N), by=list(chrom, start, end)]
-  rddt <- subset(allrddt, dupi <= 5)
-  rddt[, dupi := NULL]
+  if ( is_cap == 'True' ) {
+    ## keep at most 5 reads per strand-specific interval
+    allrddt[, dupi := seq_len(.N), by=list(chrom, start, end, strand)]
+    rddt <- subset(allrddt, dupi <= n_max_cap)
+    rddt[, dupi := NULL]
+  } else {
+    rddt <- allrddt
+  }
 
   ## since no peak is called here, just use the average read length as fraglen
   ## count # of reads as signals rather than # of overlapping nucleotide
