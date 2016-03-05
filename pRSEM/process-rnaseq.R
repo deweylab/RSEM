@@ -247,7 +247,7 @@ prepTSSSignalsFeatures <- function(tgtid, tssdt, infodt, trdt, all_trdt,
   n_tot_rds <- length(rdgrs)
   trdt[, `:=`( tss_sig = ifelse(is.na(nrd), 0,
                                 nrd*1e+9/(flanking_width*2+1)/n_tot_rds),
-               is_expr = ifelse(pme_count >= 1 & pme_TPM >= 1, 1, 0) )]
+               is_expr = ifelse(pme_count > 0 & pme_TPM >= 1, 1, 0) )]
 
   setkey(trdt, trid)
   trdt <- trdt[all_trdt[, trid]] ## keep the order of original trids
