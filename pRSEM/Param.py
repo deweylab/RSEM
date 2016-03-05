@@ -72,21 +72,25 @@ class Param:
     self.transcripts = None ## reference to all transcripts to be quantified
     self.genes       = None ## reference to all genes to be quantified
 
-    self.rnaseq_rscript     = None ## fullname of R script for dealing RNA-seq
-    self.fti                = None ## RSEM's reference .ti file
-    self.bigwigsummary_bin  = None ## bigWigSummary binary
-    self.fall_tr_crd        = None ## tr info + mappability
-    self.ftraining_tr_crd   = None ## training set tr
-    self.fall_tr_features   = None ## file for all isoforms' features
-    self.fall_tr_prior      = None ## file for all isoforms' priors
-    self.fisoforms_results  = None ## file for RSEM .isoforms.results
-    self.fpvalLL            = None ## file for p-value on if informative
-                                   ## and for log-likelihood
+    self.rnaseq_rscript    = None ## fullname of R script for dealing RNA-seq
+    self.fti               = None ## RSEM's reference .ti file
+    self.bigwigsummary_bin = None ## bigWigSummary binary
+    self.fall_tr_crd       = None ## tr info + mappability
+    self.ftraining_tr_crd  = None ## training set tr
+    self.fall_tr_features  = None ## file for all isoforms' features
+    self.fall_tr_prior     = None ## file for all isoforms' priors
+    self.fisoforms_results = None ## file for RSEM .isoforms.results
+    self.fpvalLL           = None ## file for p-value on if informative
+                                  ## and for log-likelihood
+    self.fall_pvalLL = None ## file to store all the p-val and log-likelihood
 
     ## for multiple external data sets
     self.targetid2fchipseq_alignment = {}
     self.finfo_multi_targets = None
     self.flgt_model_multi_targets = None
+
+    ## for consistency-test
+    self.targetids = []
 
 
   def __str__(self):
@@ -145,8 +149,10 @@ class Param:
     prm.ftraining_tr_crd  = prm.imd_name  + '_prsem.training_tr_crd'
     prm.fall_tr_features  = prm.stat_name + '_prsem.all_tr_features'
     prm.fall_tr_prior     = prm.stat_name + '_prsem.all_tr_prior'
-    prm.fisoforms_results = prm.sample_name + '.isoforms.results'
     prm.fpvalLL           = prm.stat_name + '_prsem.pval_LL'
+
+    prm.fisoforms_results = prm.sample_name + '.isoforms.results'
+    prm.fall_pvalLL       = prm.sample_name + '.all.pval_LL'
 
     ## for multiple external data sets
     prm.finfo_multi_targets      = prm.temp_dir + 'multi_targets.info'

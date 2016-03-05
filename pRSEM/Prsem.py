@@ -229,8 +229,6 @@ def genPriorByTSSPeak(prm):
 
   pval = float(Util.readFile(prm.fpvalLL)[1].split("\t")[0])
 
-  pval = 0.0100001
-
   if pval > prm.INFORMATIVE_DATA_MAX_P_VALUE:
     err_msg = "\nError: current external data is NOT informative for RNA-seq quantification\n" + \
       "\tp-value %.10e > %.3f\n" % (pval, prm.INFORMATIVE_DATA_MAX_P_VALUE) + \
