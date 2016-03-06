@@ -56,7 +56,7 @@ __END__
 
 =head1 NAME
 
-convert-sam-for-rsem
+convert-sam-for-rsem - make a RSEM compatible BAM file
 
 =head1 SYNOPSIS
 
