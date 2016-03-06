@@ -494,7 +494,7 @@ detection. However, for de novo assembled transcriptome, it is hard to
 obtain an accurate gene-isoform relationship. Instead, RSEM provides a
 script `rsem-generate-ngvector`, which clusters transcripts based on
 measures directly relating to read mappaing ambiguity. First, it
-calcualtes the 'unmappability' of each transcript. The 'unmappability'
+calculates the 'unmappability' of each transcript. The 'unmappability'
 of a transcript is the ratio between the number of k mers with at
 least one perfect match to other transcripts and the total number of k
 mers of this transcript, where k is a parameter. Then, Ng vector is
