@@ -1,18 +1,18 @@
 #
-#  pliu 20150619
+#  pliu 20160306
 #
 #  install Bioconductor and pRSEM-required libraries to this directory
 #
-#  require R-3.2.0, 
+#  require R-3.2.0,
 #
 #  CRAN: data.table, caTools
 #  Local: spp
-#  BioC v3.1: ShortRead, GenomicRanges
+#  BioC v3.2: ShortRead, GenomicRanges
 #
 #  install devtools first and use its' install_version to install packages in
 #  particular version.
 #
-#  packages repos are obtained from 
+#  packages repos are obtained from
 #  source("http://bioconductor.org/biocLite.R")
 #  biocinstallRepos()
 #
@@ -21,26 +21,26 @@ main <- function() {
   param <- list(
     lib_loc = './',
     repos = list(
-      BioCsoft  = "http://bioconductor.org/packages/3.1/bioc/", 
-      BioCann   = "http://bioconductor.org/packages/3.1/data/annotation/",
-      BioCexp   = "http://bioconductor.org/packages/3.1/data/experiment/",
-      BioCextra = "http://bioconductor.org/packages/3.1/extra/",
-      CRAN      = "http://cran.us.r-project.org" 
+      BioCsoft  = "http://bioconductor.org/packages/3.2/bioc/",
+      BioCann   = "http://bioconductor.org/packages/3.2/data/annotation/",
+      BioCexp   = "http://bioconductor.org/packages/3.2/data/experiment/",
+      BioCextra = "http://bioconductor.org/packages/3.2/extra/",
+      CRAN      = "http://cran.us.r-project.org"
     ),
 
     pkg_spp  = '../phantompeakqualtools/spp_1.10.1.tar.gz',
 
-    pkg2ver = list( 
+    pkg2ver = list(
       ## name          version
       caTools       = '1.17.1',  ## for spp
-      data.table    = '1.9.4',
-      GenomicRanges = '1.20.5',
-      ShortRead     = '1.26.0'
+      data.table    = '1.9.6',
+      GenomicRanges = '1.22.4',
+      ShortRead     = '1.28.0'
     )
   )
 
   options(repos=structure(c(CRAN=param$repos$CRAN)))
-  installRLib(param) 
+  installRLib(param)
 }
 
 
@@ -52,7 +52,7 @@ installRLib <- function(param) {
   }
 
   .libPaths(c(param$lib_loc, .libPaths()))
-  library(devtools) 
+  library(devtools)
 
   for ( pkg_name in names(param$pkg2ver) ) {
     pkg_version <- param$pkg2ver[[pkg_name]]
@@ -63,7 +63,7 @@ installRLib <- function(param) {
   }
 
   if ( ! 'spp' %in% prsem_installed_pkgs ) {
-    install.packages(param$pkg_spp, lib=param$lib_loc, repos=NULL, 
+    install.packages(param$pkg_spp, lib=param$lib_loc, repos=NULL,
                      type='source')
   }
 }
