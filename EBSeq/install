@@ -7,7 +7,7 @@ result <- suppressWarnings(tryCatch({
        }, error = function(err) {
             tryCatch({
 		source("http://www.bioconductor.org/biocLite.R")
-                biocLite("BiocUpgrade")
+                try(biocLite("BiocUpgrade"))
     		biocLite("EBSeq", lib = ".")
     		library("EBSeq")
 		cat("EBSeq v", as.character(packageVersion("EBSeq")), " is successfully installed from Bioconductor.\n", sep = "")
