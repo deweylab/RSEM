@@ -14,10 +14,11 @@ result <- suppressWarnings(tryCatch({
 		}, error = function(err) {
 		     tryCatch({
 		         cat("Failed to install EBSeq from Bioconductor! Try to install EBSeq v1.2.0 locally instead.\n")
-      			 install.packages(c("blockmodeling_0.1.8.tar.gz", "gplots_2.17.0.tar.gz", "EBSeq_1.2.0.tar.gz"), lib = ".", repos = NULL, type = "source")
+      			 install.packages(c("blockmodeling_0.1.8.tar.gz", "gtools_3.5.0.tar.gz", "gdata_2.17.0.tar.gz", "bitops_1.0-6.tar.gz",
+			                    "caTools_1.17.1.tar.gz", "KernSmooth_2.23-15.tar.gz", "gplots_2.17.0.tar.gz", "EBSeq_1.2.0.tar.gz"),
+					  lib = ".", repos = NULL, type = "source")
       			 library("EBSeq") 
 			 cat("EBSeq v1.2.0 is successfully installed locally.\n")
 			 }, error = function(err) { cat("Failed to install EBSeq v1.2.0 locally!\n") })
 		    })
 	}))
-
