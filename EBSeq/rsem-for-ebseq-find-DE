@@ -15,7 +15,7 @@ norm_out_file <- paste0(output_file, ".normalized_data_matrix")
 nc <- length(argv) - 4;
 num_reps <- as.numeric(argv[5:(5+nc-1)])
 
-.libPaths(c(path, .libPaths()))
+.libPaths(c(.libPaths(), path))
 library(EBSeq)
 
 DataMat <- data.matrix(read.table(data_matrix_file))
