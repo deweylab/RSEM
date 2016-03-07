@@ -1,10 +1,11 @@
 SAMTOOLS = samtools-1.3
 HTSLIB = htslib-1.3
 
-ifneq ($cygwin, true)
+ifneq ($(cygwin), true)
   SAMTOOLS_MAKEFILE = Makefile
 else
   SAMTOOLS_MAKEFILE = Makefile.cygwin
+endif
 
 # overridable, defaulting to local copy
 BOOST = .
@@ -56,7 +57,7 @@ SCRIPTS = rsem-prepare-reference rsem-calculate-expression rsem-refseq-extract-p
 all : $(PROGRAMS) $(SAMTOOLS)/samtools
 
 $(SAMTOOLS)/samtools :
-	cd $(SAMTOOLS) && $(CONFIGURE) --without-curses && ${MAKE} -f ${SAMTOOLS_MAKEFILE} samtools
+	cd $(SAMTOOLS) && $(CONFIGURE) --without-curses && $(MAKE) -f $(SAMTOOLS_MAKEFILE) samtools
 
 $(SAMLIBS) : $(SAMTOOLS)/samtools
 
@@ -153,19 +154,19 @@ Buffer.h : my_assert.h
 
 # Compile EBSeq
 ebseq :
-	cd EBSeq && ${MAKE} all
+	cd EBSeq && $(MAKE) all
 
 # Install RSEM
-install : ${PROGRAMS} ${SCRIPTS} ${SAMTOOLS}/samtools rsem_perl_utils.pm
-	${INSTALL_DIR} ${DESTDIR}${bindir} ${DESTDIR}${bindir}/${SAMTOOLS}
-	$(foreach prog,${PROGRAMS},${INSTALL_PROGRAM} ${prog} ${DESTDIR}${bindir}/${prog} ; ${STRIP} ${DESTDIR}${bindir}/${prog} ;)
-	${INSTALL_PROGRAM} ${SAMTOOLS}/samtools ${DESTDIR}${bindir}/${SAMTOOLS}/samtools
-	${STRIP} ${DESTDIR}${bindir}/${SAMTOOLS}/samtools
-	$(foreach script,${SCRIPTS},${INSTALL_PROGRAM} ${script} ${DESTDIR}${bindir}/${script} ;)
-	${INSTALL_DATA} rsem_perl_utils.pm ${DESTDIR}${bindir}/rsem_perl_utils.pm
+install : $(PROGRAMS) $(SCRIPTS) $(SAMTOOLS)/samtools rsem_perl_utils.pm
+	$(INSTALL_DIR) $(DESTDIR)$(bindir) $(DESTDIR)$(bindir)/$(SAMTOOLS)
+	$(foreach prog,$(PROGRAMS),$(INSTALL_PROGRAM) $(prog) $(DESTDIR)$(bindir)/$(prog) ; $(STRIP) $(DESTDIR)$(bindir)/$(prog) ;)
+	$(INSTALL_PROGRAM) $(SAMTOOLS)/samtools $(DESTDIR)$(bindir)/$(SAMTOOLS)/samtools
+	$(STRIP) $(DESTDIR)$(bindir)/$(SAMTOOLS)/samtools
+	$(foreach script,$(SCRIPTS),$(INSTALL_PROGRAM) $(script) $(DESTDIR)$(bindir)/$(script) ;)
+	$(INSTALL_DATA) rsem_perl_utils.pm $(DESTDIR)$(bindir)/rsem_perl_utils.pm
 
 # Clean
 clean :
 	rm -f *.o *~ $(PROGRAMS)
-	cd $(SAMTOOLS) && ${MAKE} clean-all
-	cd EBSeq && ${MAKE} clean
+	cd $(SAMTOOLS) && $(MAKE) clean-all
+	cd EBSeq && $(MAKE) clean

@@ -585,13 +585,18 @@ RSEM uses the [Boost C++](http://www.boost.org/) and
 [EBSeq](http://www.biostat.wisc.edu/~ningleng/EBSeq_Package/) for
 differential expression analysis.
 
-We thank earonesty and Dr. Samuel Arvidsson for contributing patches.
+We thank earonesty, Dr. Samuel Arvidsson, John Marshall, and Michael
+R. Crusoe for contributing patches.
 
-We thank Han Lin, j.miller, Jo&euml;l Fillon, Dr. Samuel G. Younkin, Malcolm Cook, Christina Wells and Uro&#353; &#352;ipeti&#263; for suggesting possible fixes. 
+We thank Han Lin, j.miller, Jo&euml;l Fillon, Dr. Samuel G. Younkin,
+Malcolm Cook, Christina Wells, Uro&#353; &#352;ipeti&#263;,
+outpaddling, and rekado for suggesting possible fixes.
 
 **Note** that `bam_sort.c` of SAMtools is slightly modified so that
   `samtools sort -n` will not move the two mates of paired-end
-  alignments apart.
+  alignments apart. In addition, we turn on the `--without-curses`
+  option when configuring SAMtools and thus SAMtools' curses-based
+  `tview` subcommand is not built.
 
 ## <a name="license"></a> License
 

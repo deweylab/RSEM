@@ -207,13 +207,6 @@ void parse_gtf_file(char* gtfF) {
 	if (verbose) { printf("Parsing gtf File is done!\n"); }
 }
 
-inline char check(char c, string& seqname, int pos) {
-	general_assert(isalpha(c), "Sequence " + seqname + " contains an unknown letter (ASCII code " + itos(c) + ") at 0-based position " + itos(pos) + "!");
-	if (isupper(c) && c != 'A' && c != 'C' && c != 'G' && c != 'T') c = 'N';
-	if (islower(c) && c != 'a' && c != 'c' && c != 'g' && c != 't') c = 'n';
-	return c;
-}
-
 void shrink() {
   int curp = 0;
 
@@ -283,6 +276,19 @@ void writeResults(char* refName) {
 	if (verbose) { printf("Extracted Sequences File is generated!\n"); }
 }
 
+struct CursorPos {
+  char *filename;
+  int line_no, pos;
+} cursor;
+
+inline char check(char c) {
+  general_assert(isalpha(c), "FASTA file " + cstrtos(cursor.filename) + " contains an unknown character, " + \
+		 ctos(c) + " (ASCII code " + itos(c) + "), at line " + itos(cursor.line_no) + ", position " + itos(cursor.pos + 1) + "!");
+  if (isupper(c) && c != 'A' && c != 'C' && c != 'G' && c != 'T') c = 'N';
+  if (islower(c) && c != 'a' && c != 'c' && c != 'g' && c != 't') c = 'n';
+  return c;
+}
+
 int main(int argc, char* argv[]) {
   if (argc < 7 || ((hasMappingFile = atoi(argv[5])) && argc < 8)) {
 		printf("Usage: rsem-extract-reference-transcripts refName quiet gtfF sources hasMappingFile [mappingFile] chromosome_file_1 [chromosome_file_2 ...]\n");
@@ -301,7 +307,9 @@ int main(int argc, char* argv[]) {
 	
 	ifstream fin;
 	string line, gseq, seqname;
-
+	int len;
+	size_t seqlen;
+	
 	chrvec.clear();
 
 	seqs.clear();
@@ -310,24 +318,28 @@ int main(int argc, char* argv[]) {
 	for (int i = start; i < argc; i++) {
 		fin.open(argv[i]);
 		general_assert(fin.is_open(), "Cannot open " + cstrtos(argv[i]) + "! It may not exist.");
+		cursor.filename = argv[i]; cursor.line_no = cursor.pos = 0;
+		
 		getline(fin, line);
 		while ((fin) && (line[0] == '>')) {
 			istringstream strin(line.substr(1));
 			strin>>seqname;
-
-			gseq = "";
+			++cursor.line_no;
+			
+			gseq = ""; seqlen = 0;
 			while((getline(fin, line)) && (line[0] != '>')) {
+			  ++cursor.line_no;
+			  len = line.length();
+			  for (cursor.pos = 0; cursor.pos < len; ++cursor.pos) line[cursor.pos] = check(line[cursor.pos]);
+			  seqlen += len;
 			  gseq += line;
 			}
-
-			size_t len = gseq.length();
-			assert(len > 0);
-			for (size_t j = 0; j < len; j++) gseq[j] = check(gseq[j], seqname, j);
+			assert(seqlen > 0);
 			
 			iter = sn2tr.find(seqname);
 			if (iter == sn2tr.end()) continue;
 			
-			chrvec.push_back(ChrInfo(seqname, len));
+			chrvec.push_back(ChrInfo(seqname, seqlen));
 			
 			vector<int>& vec = iter->second;
 			int s = vec.size();
