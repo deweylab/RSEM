@@ -1,6 +1,11 @@
 SAMTOOLS = samtools-1.3
 HTSLIB = htslib-1.3
 
+ifneq ($cygwin, true)
+  SAMTOOLS_MAKEFILE = Makefile
+else
+  SAMTOOLS_MAKEFILE = Makefile.cygwin
+
 # overridable, defaulting to local copy
 BOOST = .
 
@@ -51,7 +56,7 @@ SCRIPTS = rsem-prepare-reference rsem-calculate-expression rsem-refseq-extract-p
 all : $(PROGRAMS) $(SAMTOOLS)/samtools
 
 $(SAMTOOLS)/samtools :
-	cd $(SAMTOOLS) && $(CONFIGURE) --without-curses && ${MAKE} samtools
+	cd $(SAMTOOLS) && $(CONFIGURE) --without-curses && ${MAKE} -f ${SAMTOOLS_MAKEFILE} samtools
 
 $(SAMLIBS) : $(SAMTOOLS)/samtools
 

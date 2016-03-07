@@ -47,20 +47,28 @@ To compile RSEM, simply run
    
     make
 
-For cygwin users, please uncomment the 3rd and 7th line in
-`sam/Makefile` before you run `make`.
+For Cygwin users, run
+
+    make cygwin=true
 
 To compile EBSeq, which is included in the RSEM package, run
 
     make ebseq
 
-To install, simply put the rsem directory in your environment's PATH
-variable.
+To install RSEM, simply put the RSEM directory in your environment's PATH
+variable. Alternatively, run
 
-If you prefer to put all RSEM executables to a bin directory, please
-also remember to put `rsem_perl_utils.pm` to the same bin
-directory. `rsem_perl_utils.pm` is required for most RSEM's perl
-scripts.
+    make install
+
+By default, RSEM executables are installed to `/usr/local/bin`. You
+can change the installation location by setting `DESTDIR` and/or
+`prefix` variables. The RSEM executables will be installed to
+`${DESTDIR}${prefix}/bin`. The default values of `DESTDIR` and
+`prefix` are `DESTDIR=` and `prefix=/usr/local`. For example,
+
+    make install DESTDIR=/home/my_name prefix=/software
+
+will install RSEM executables to `/home/my_name/software/bin`.
 
 ### Prerequisites
 
