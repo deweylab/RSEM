@@ -4,7 +4,7 @@ HTSLIB = htslib-1.3
 # overridable, defaulting to local copy
 BOOST = .
 
-
+# Compilation variables
 CXX = g++
 CXXFLAGS = -std=gnu++98 -Wall -I. -I$(BOOST) -I$(SAMTOOLS)/$(HTSLIB)
 CPPFLAGS =
@@ -12,7 +12,18 @@ CPPFLAGS =
 LDFLAGS =
 LDLIBS =
 
+# Installation variables
+INSTALL = install
+INSTALL_PROGRAM = $(INSTALL) -p
+INSTALL_DATA = $(INSTALL) -p -m 644
+INSTALL_DIR = $(INSTALL) -d
+STRIP ?=strip
 
+prefix ?= /usr/local
+exec_prefix = $(prefix)
+bindir = $(exec_prefix)/bin
+
+# Auxiliary variables for compilation
 SAMHEADERS = $(SAMTOOLS)/$(HTSLIB)/htslib/sam.h
 SAMLIBS = $(SAMTOOLS)/$(HTSLIB)/libhts.a
 CONFIGURE = ./configure
@@ -27,13 +38,22 @@ PROGS3 = rsem-run-gibbs rsem-calculate-credibility-intervals
 
 PROGRAMS = $(PROGS1) $(PROGS2) $(PROGS3)
 
+# Auxiliary variables for installation
+SCRIPTS = rsem-prepare-reference rsem-calculate-expression rsem-refseq-extract-primary-assembly rsem-gff3-to-gtf rsem-plot-model \
+	  rsem-plot-transcript-wiggles rsem-gen-transcript-plots rsem-generate-data-matrix \
+	  extract-transcript-to-gene-map-from-trinity convert-sam-for-rsem    
 
-.PHONY : all ebseq clean test
 
-all : $(PROGRAMS)
 
-$(SAMTOOLS)/$(HTSLIB)/libhts.a : 
+
+.PHONY : all ebseq clean
+
+all : $(PROGRAMS) $(SAMTOOLS)/samtools
+
+$(SAMTOOLS)/samtools :
 	cd $(SAMTOOLS) && $(CONFIGURE) --without-curses && ${MAKE} samtools
+
+$(SAMLIBS) : $(SAMTOOLS)/samtools
 
 
 # Compile objects
@@ -130,9 +150,17 @@ Buffer.h : my_assert.h
 ebseq :
 	cd EBSeq && ${MAKE} all
 
+# Install RSEM
+install : ${PROGRAMS} ${SCRIPTS} ${SAMTOOLS}/samtools rsem_perl_utils.pm
+	${INSTALL_DIR} ${DESTDIR}${bindir} ${DESTDIR}${bindir}/${SAMTOOLS}
+	$(foreach prog,${PROGRAMS},${INSTALL_PROGRAM} ${prog} ${DESTDIR}${bindir}/${prog} ; ${STRIP} ${DESTDIR}${bindir}/${prog} ;)
+	${INSTALL_PROGRAM} ${SAMTOOLS}/samtools ${DESTDIR}${bindir}/${SAMTOOLS}/samtools
+	${STRIP} ${DESTDIR}${bindir}/${SAMTOOLS}/samtools
+	$(foreach script,${SCRIPTS},${INSTALL_PROGRAM} ${script} ${DESTDIR}${bindir}/${script} ;)
+	${INSTALL_DATA} rsem_perl_utils.pm ${DESTDIR}${bindir}/rsem_perl_utils.pm
+
 # Clean
 clean :
 	rm -f *.o *~ $(PROGRAMS)
-	cd $(SAMTOOLS) && ${MAKE} clean
-	rm -f $(SAMLIBS)
+	cd $(SAMTOOLS) && ${MAKE} clean-all
 	cd EBSeq && ${MAKE} clean
