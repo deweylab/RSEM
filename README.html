@@ -51,21 +51,37 @@ also be visualized. Last but not least, RSEM contains a simulator.</p>
 <pre><code>make
 </code></pre>
 
-<p>For cygwin users, please uncomment the 3rd and 7th line in
-<code>sam/Makefile</code> before you run <code>make</code>.</p>
+<p>For Cygwin users, run</p>
+
+<pre><code>make cygwin=true
+</code></pre>
 
 <p>To compile EBSeq, which is included in the RSEM package, run</p>
 
 <pre><code>make ebseq
 </code></pre>
 
-<p>To install, simply put the rsem directory in your environment&#8217;s PATH
-variable.</p>
+<p>To install RSEM, simply put the RSEM directory in your environment&#8217;s PATH
+variable. Alternatively, run</p>
 
-<p>If you prefer to put all RSEM executables to a bin directory, please
-also remember to put <code>rsem_perl_utils.pm</code> to the same bin
-directory. <code>rsem_perl_utils.pm</code> is required for most RSEM&#8217;s perl
-scripts.</p>
+<pre><code>make install
+</code></pre>
+
+<p>By default, RSEM executables are installed to <code>/usr/local/bin</code>. You
+can change the installation location by setting <code>DESTDIR</code> and/or
+<code>prefix</code> variables. The RSEM executables will be installed to
+<code>${DESTDIR}${prefix}/bin</code>. The default values of <code>DESTDIR</code> and
+<code>prefix</code> are <code>DESTDIR=</code> and <code>prefix=/usr/local</code>. For example,</p>
+
+<pre><code>make install DESTDIR=/home/my_name prefix=/software
+</code></pre>
+
+<p>will install RSEM executables to <code>/home/my_name/software/bin</code>.</p>
+
+<p>Note that <code>make install</code> does not install <code>EBSeq</code> related scripts,
+such as <code>rsem-generate-ngvector</code>, <code>rsem-run-ebseq</code>, and
+<code>rsem-control-fdr</code>. But <code>rsem-generate-data-matrix</code>, which generates
+count matrix for differential expression analysis, is installed.</p>
 
 <h3 id="prerequisites">Prerequisites</h3>
 
@@ -506,7 +522,7 @@ detection. However, for de novo assembled transcriptome, it is hard to
 obtain an accurate gene-isoform relationship. Instead, RSEM provides a
 script <code>rsem-generate-ngvector</code>, which clusters transcripts based on
 measures directly relating to read mappaing ambiguity. First, it
-calcualtes the &#8216;unmappability&#8217; of each transcript. The &#8216;unmappability&#8217;
+calculates the &#8216;unmappability&#8217; of each transcript. The &#8216;unmappability&#8217;
 of a transcript is the ratio between the number of k mers with at
 least one perfect match to other transcripts and the total number of k
 mers of this transcript, where k is a parameter. Then, Ng vector is
@@ -589,13 +605,18 @@ be sent to <a href="mailto:nleng@wisc.edu">Ning Leng</a>.</p>
 <a href="http://www.biostat.wisc.edu/~ningleng/EBSeq_Package/">EBSeq</a> for
 differential expression analysis.</p>
 
-<p>We thank earonesty and Dr. Samuel Arvidsson for contributing patches.</p>
+<p>We thank earonesty, Dr. Samuel Arvidsson, John Marshall, and Michael
+R. Crusoe for contributing patches.</p>
 
-<p>We thank Han Lin, j.miller, Jo&euml;l Fillon, Dr. Samuel G. Younkin and Malcolm Cook for suggesting possible fixes. </p>
+<p>We thank Han Lin, j.miller, Jo&euml;l Fillon, Dr. Samuel G. Younkin,
+Malcolm Cook, Christina Wells, Uro&#353; &#352;ipeti&#263;,
+outpaddling, rekado, and Josh Richer for suggesting possible fixes.</p>
 
 <p><strong>Note</strong> that <code>bam_sort.c</code> of SAMtools is slightly modified so that
  <code>samtools sort -n</code> will not move the two mates of paired-end
- alignments apart.</p>
+ alignments apart. In addition, we turn on the <code>--without-curses</code>
+ option when configuring SAMtools and thus SAMtools&#8217; curses-based
+ <code>tview</code> subcommand is not built.</p>
 
 <h2 id="anamelicensealicense"><a name="license"></a> License</h2>
 

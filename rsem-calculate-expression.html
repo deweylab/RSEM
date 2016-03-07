@@ -13,6 +13,7 @@
 
 <ul id="index">
   <li><a href="#NAME">NAME</a></li>
+  <li><a href="#PURPOSE">PURPOSE</a></li>
   <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
   <li><a href="#ARGUMENTS">ARGUMENTS</a></li>
   <li><a href="#BASIC-OPTIONS">BASIC OPTIONS</a></li>
@@ -28,6 +29,10 @@
 <h1 id="NAME">NAME</h1>
 
 <p>rsem-calculate-expression</p>
+
+<h1 id="PURPOSE">PURPOSE</h1>
+
+<p>Estimate gene and isoform expression from RNA-Seq data.</p>
 
 <h1 id="SYNOPSIS">SYNOPSIS</h1>
 
@@ -132,7 +137,7 @@
 <dt id="seed-uint32"><b>--seed</b> &lt;uint32&gt;</dt>
 <dd>
 
-<p>Set the seed for the random number generators used in calculating posterior mean estimates and credibility intervals. The seed must be a non-negative 32 bit interger. (Default: off)</p>
+<p>Set the seed for the random number generators used in calculating posterior mean estimates and credibility intervals. The seed must be a non-negative 32 bit integer. (Default: off)</p>
 
 </dd>
 <dt id="single-cell-prior"><b>--single-cell-prior</b></dt>
@@ -180,7 +185,7 @@
 <dt id="sort-bam-by-read-name"><b>--sort-bam-by-read-name</b></dt>
 <dd>
 
-<p>Sort BAM file aligned under transcript coordidate by read name. Setting this option on will produce determinstic maximum likelihood estimations from independent runs. Note that sorting will take long time and lots of memory. (Default: off)</p>
+<p>Sort BAM file aligned under transcript coordidate by read name. Setting this option on will produce deterministic maximum likelihood estimations from independent runs. Note that sorting will take long time and lots of memory. (Default: off)</p>
 
 </dd>
 <dt id="no-bam-output"><b>--no-bam-output</b></dt>
@@ -192,7 +197,7 @@
 <dt id="sampling-for-bam"><b>--sampling-for-bam</b></dt>
 <dd>
 
-<p>When RSEM generates a BAM file, instead of outputing all alignments a read has with their posterior probabilities, one alignment is sampled according to the posterior probabilities. The sampling procedure includes the alignment to the &quot;noise&quot; transcript, which does not appear in the BAM file. Only the sampled alignment has a weight of 1. All other alignments have weight 0. If the &quot;noise&quot; transcript is sampled, all alignments appeared in the BAM file should have weight 0. (Default: off)</p>
+<p>When RSEM generates a BAM file, instead of outputting all alignments a read has with their posterior probabilities, one alignment is sampled according to the posterior probabilities. The sampling procedure includes the alignment to the &quot;noise&quot; transcript, which does not appear in the BAM file. Only the sampled alignment has a weight of 1. All other alignments have weight 0. If the &quot;noise&quot; transcript is sampled, all alignments appeared in the BAM file should have weight 0. (Default: off)</p>
 
 </dd>
 <dt id="output-genome-bam"><b>--output-genome-bam</b></dt>
@@ -207,7 +212,7 @@
 <p>Sort RSEM generated transcript and genome BAM files by coordinates and build associated indices. (Default: off)</p>
 
 </dd>
-<dt id="sort-bam-memory-string"><b>--sort-bam-memory</b> &lt;string&gt;</dt>
+<dt id="sort-bam-memory-per-thread-string"><b>--sort-bam-memory-per-thread</b> &lt;string&gt;</dt>
 <dd>
 
 <p>Set the maximum memory per thread that can be used by &#39;samtools sort&#39;. &lt;string&gt; represents the memory and accepts suffices &#39;K/M/G&#39;. RSEM will pass &lt;string&gt; to the &#39;-m&#39; option of &#39;samtools sort&#39;. Note that the default used here is different from the default used by samtools. (Default: 1G)</p>
