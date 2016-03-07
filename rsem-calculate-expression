@@ -226,8 +226,7 @@ if ( $run_prsem ) {
            ( $bowtie_path eq '' ) ) && 
          ( ( $chipseq_read_files_multi_targets eq '' ) ||
            ( $bowtie_path eq '' ) ) &&
-         ( ( $chipseq_bed_files_multi_targets eq '' ) ||
-           ( $bowtie_path eq '' ) )
+         ( $chipseq_bed_files_multi_targets eq '' )
        ) {
       $msg = "please define one set of the following options to run pRSEM:\n" .
              "1. --chipseq-peak-file <string>\n" .
@@ -236,8 +235,7 @@ if ( $run_prsem ) {
              "   --bowtie-path <path>\n" .
              "3. --chipseq-read-files-multi-targets <string> and\n" .
              "   --bowtie-path <path>\n" .
-             "4. --chipseq-bed-files-multi-targets <string> and\n" .
-             "   --bowtie-path <path>\n";
+             "4. --chipseq-bed-files-multi-targets <string>\n";
     }
 
     my @prsem_partition_models = ( 
@@ -674,8 +672,7 @@ if ( $run_prsem ) {
   } elsif ( $partition_model eq 'cmb_lgt' ) {  ## multi-sources
     if ( $chipseq_bed_files_multi_targets ne '' ) { ## use bed over read
       $command .= ' --chipseq-bed-files-multi-targets ' . 
-                    $chipseq_bed_files_multi_targets .
-                  " --bowtie-path $bowtie_path" ;
+                    $chipseq_bed_files_multi_targets;
     } elsif ( $chipseq_read_files_multi_targets ne '' ) { 
       $command .= ' --chipseq-read-files-multi-targets ' .
                     $chipseq_read_files_multi_targets .
