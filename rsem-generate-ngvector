@@ -33,7 +33,11 @@ __END__
 
 =head1 NAME
 
-rsem-generate-ngvector - create Ng vector for EBSeq for de-novo transcriptomes
+rsem-generate-ngvector
+
+=head1 PURPOSE
+
+Create Ng vector for EBSeq based only on transcript sequences.
 
 =head1 SYNOPSIS
 

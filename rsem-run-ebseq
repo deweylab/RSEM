@@ -38,7 +38,11 @@ __END__
 
 =head1 NAME
 
-rsem-run-ebseq - wrapper for EBSeq to perform differential expression analysis
+rsem-run-ebseq
+
+=head1 PURPOSE
+
+Wrapper for EBSeq to perform differential expression analysis.
 
 =head1 SYNOPSIS
 

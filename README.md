@@ -70,6 +70,11 @@ can change the installation location by setting `DESTDIR` and/or
 
 will install RSEM executables to `/home/my_name/software/bin`.
 
+Note that `make install` does not install `EBSeq` related scripts,
+such as `rsem-generate-ngvector`, `rsem-run-ebseq`, and
+`rsem-control-fdr`. But `rsem-generate-data-matrix`, which generates
+count matrix for differential expression analysis, is installed.
+
 ### Prerequisites
 
 C++, Perl and R are required to be installed. 

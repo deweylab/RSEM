@@ -158,7 +158,11 @@ __END__
 
 =head1 NAME
 
-rsem-prepare-reference - prepares transcript references for RSEM, needs to be run before rsem-calculate-expression
+rsem-prepare-reference
+
+=head1 PURPOSE
+
+Prepare transcript references for RSEM and optionally build BOWTIE/BOWTIE2/STAR indices.
 
 =head1 SYNOPSIS
 

@@ -569,7 +569,11 @@ __END__
 
 =head1 NAME
 
-rsem-calculate-expression - estimates gene and isoform expression from RNA-Seq data
+rsem-calculate-expression
+
+=head1 PURPOSE
+
+Estimate gene and isoform expression from RNA-Seq data.
 
 =head1 SYNOPSIS
 

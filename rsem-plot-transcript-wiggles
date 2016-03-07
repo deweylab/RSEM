@@ -81,7 +81,11 @@ __END__
 
 =head1 NAME
 
-rsem-plot-transcript-wiggles - PDF wiggle plots from transcript or gene ids
+rsem-plot-transcript-wiggles
+
+=head1 PURPOSE
+
+Generate PDF wiggle plots from transcript or gene ids
 
 =head1 SYNOPSIS
 
