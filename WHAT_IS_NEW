@@ -1,3 +1,12 @@
+RSEM v1.2.29
+
+- Reformatted Makefile to be more professional, and `make install` is ready to use
+- Enabled `./configure --without-curses` for configuring SAMtools to avoid potential compilation problems due to curses library
+- Fixed bugs for installing EBSeq
+- Improved the readability of RSEM documentation
+
+--------------------------------------------------------------------------------------------
+
 RSEM v1.2.28
 
 - Fixed a bug in RSEM v1.2.27 that can lead to assertion errors for parsing GTF files

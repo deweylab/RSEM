@@ -590,7 +590,7 @@ R. Crusoe for contributing patches.
 
 We thank Han Lin, j.miller, Jo&euml;l Fillon, Dr. Samuel G. Younkin,
 Malcolm Cook, Christina Wells, Uro&#353; &#352;ipeti&#263;,
-outpaddling, and rekado for suggesting possible fixes.
+outpaddling, rekado, and Josh Richer for suggesting possible fixes.
 
 **Note** that `bam_sort.c` of SAMtools is slightly modified so that
   `samtools sort -n` will not move the two mates of paired-end
