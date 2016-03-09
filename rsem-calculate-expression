@@ -100,7 +100,6 @@ my $run_prsem = 0;
 my $chipseq_target_read_files  = '';
 my $chipseq_control_read_files = '';
 my $chipseq_peak_file          = '';
-my $mappability_bigwig_file    = '';
 my $partition_model            = 'pk';
 my $chipseq_read_files_multi_targets = ''; ## read files for multiple targets
                                            ## delimited by comma
@@ -173,7 +172,6 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
      'cap-stacked-chipseq-reads' => \$cap_stacked_chipseq_reads,
      'n-max-stacked-chipseq-reads=i' => \$n_max_stacked_chipseq_reads,
 	   'chipseq-peak-file=s' => \$chipseq_peak_file,
-	   'mappability-bigwig-file=s'  => \$mappability_bigwig_file,
 	   'partition-model=s' => \$partition_model,
 	   "time" => \$mTime,
 	   "version" => \$version,
@@ -216,62 +214,57 @@ pod2usage(-msg => "Bzipped read files can only be used for aligner STAR\n", -exi
 
 if ( $run_prsem ) {
   my $msg = '';
-  if ( $mappability_bigwig_file eq '' ) {
-    $msg = '--mappability-bigwig-file <string> is needed for calculating' .
-           ' mappabilities in pRSEM';
+  if ( ( $chipseq_peak_file eq '' ) && 
+       ( ( $chipseq_target_read_files eq ''  ) || 
+         ( $chipseq_control_read_files eq '' ) || 
+         ( $bowtie_path eq '' ) ) && 
+       ( ( $chipseq_read_files_multi_targets eq '' ) ||
+         ( $bowtie_path eq '' ) ) &&
+       ( $chipseq_bed_files_multi_targets eq '' )
+     ) {
+    $msg = "please define one set of the following options to run pRSEM:\n" .
+           "1. --chipseq-peak-file <string>\n" .
+           "2. --chipseq-target-read-files <string> and\n" .
+           "   --chipseq-control-read-files <string> and\n" .
+           "   --bowtie-path <path>\n" .
+           "3. --chipseq-read-files-multi-targets <string> and\n" .
+           "   --bowtie-path <path>\n" .
+           "4. --chipseq-bed-files-multi-targets <string>\n";
+  }
+
+  my @prsem_partition_models = ( 
+     'pk', 'pk_lgtnopk', 
+     'lm3', 'lm4', 'lm5', 'lm6',
+     'nopk_lm2pk', 'nopk_lm3pk', 'nopk_lm4pk', 'nopk_lm5pk',
+     'pk_lm2nopk', 'pk_lm3nopk', 'pk_lm4nopk', 'pk_lm5nopk',
+     'cmb_lgt'
+  );
+
+  my %prtmdl2one = ();
+  foreach my $prtmdl (@prsem_partition_models) {
+    $prtmdl2one{$prtmdl} = 1;
+  }
+
+  if ( exists $prtmdl2one{$partition_model} ) {
+    if ( ( $partition_model eq 'cmb_lgt' ) && 
+         ( ( $chipseq_read_files_multi_targets eq '' ) &&
+           ( $chipseq_bed_files_multi_targets  eq '' ) ) ){
+      $msg = 'either --chipseq-read-files-multi-targets <string> or ' .
+             '--chipseq-bed-files-multi-targets <string> needs to be ' .
+             "defined for pRSEM's partition model: '$partition_model'";
+    } elsif ( ( $partition_model ne 'pk' ) && 
+              ( $partition_model ne 'cmb_lgt' ) &&
+              ( ( $chipseq_target_read_files eq ''  ) || 
+                ( $chipseq_control_read_files eq '' ) || 
+                ( $bowtie_path eq '' ) ) ){
+      $msg = '--chipseq-target-read-files <string> and ' .
+             '--chipseq-control-read-files <string> and ' .
+             '--bowtie-path <path> need to be defined for ' .
+             "pRSEM's partition model: '$partition_model'";
+    }
   } else {
-    if ( ( $chipseq_peak_file eq '' ) && 
-         ( ( $chipseq_target_read_files eq ''  ) || 
-           ( $chipseq_control_read_files eq '' ) || 
-           ( $bowtie_path eq '' ) ) && 
-         ( ( $chipseq_read_files_multi_targets eq '' ) ||
-           ( $bowtie_path eq '' ) ) &&
-         ( $chipseq_bed_files_multi_targets eq '' )
-       ) {
-      $msg = "please define one set of the following options to run pRSEM:\n" .
-             "1. --chipseq-peak-file <string>\n" .
-             "2. --chipseq-target-read-files <string> and\n" .
-             "   --chipseq-control-read-files <string> and\n" .
-             "   --bowtie-path <path>\n" .
-             "3. --chipseq-read-files-multi-targets <string> and\n" .
-             "   --bowtie-path <path>\n" .
-             "4. --chipseq-bed-files-multi-targets <string>\n";
-    }
-
-    my @prsem_partition_models = ( 
-       'pk', 'pk_lgtnopk', 
-       'lm3', 'lm4', 'lm5', 'lm6',
-       'nopk_lm2pk', 'nopk_lm3pk', 'nopk_lm4pk', 'nopk_lm5pk',
-       'pk_lm2nopk', 'pk_lm3nopk', 'pk_lm4nopk', 'pk_lm5nopk',
-       'cmb_lgt'
-    );
-
-    my %prtmdl2one = ();
-    foreach my $prtmdl (@prsem_partition_models) {
-      $prtmdl2one{$prtmdl} = 1;
-    }
-
-    if ( exists $prtmdl2one{$partition_model} ) {
-      if ( ( $partition_model eq 'cmb_lgt' ) && 
-           ( ( $chipseq_read_files_multi_targets eq '' ) &&
-             ( $chipseq_bed_files_multi_targets  eq '' ) ) ){
-        $msg = 'either --chipseq-read-files-multi-targets <string> or ' .
-               '--chipseq-bed-files-multi-targets <string> needs to be ' .
-               "defined for pRSEM's partition model: '$partition_model'";
-      } elsif ( ( $partition_model ne 'pk' ) && 
-                ( $partition_model ne 'cmb_lgt' ) &&
-                ( ( $chipseq_target_read_files eq ''  ) || 
-                  ( $chipseq_control_read_files eq '' ) || 
-                  ( $bowtie_path eq '' ) ) ){
-        $msg = '--chipseq-target-read-files <string> and ' .
-               '--chipseq-control-read-files <string> and ' .
-               '--bowtie-path <path> need to be defined for ' .
-               "pRSEM's partition model: '$partition_model'";
-      }
-    } else {
-      $msg = '--partition-model <string> must be one of [' .
-             join(', ', @prsem_partition_models) . "]";
-    }
+    $msg = '--partition-model <string> must be one of [' .
+           join(', ', @prsem_partition_models) . "]";
   }
 
   if ( $msg ne '' ) {
@@ -653,12 +646,8 @@ if ($mTime) { $time_start = time(); }
 
 ## To-do: only run gibbs sampling once, either for pRSEM or uniform prior 1
 if ( $run_prsem ) {
-  ## I can make pRSEM save a pre-built training set for human and mouse
-  ## therefore mappability bigwig file won't be required when user analyze
-  ## the whole transcriptome
   $command = "$FindBin::RealBin/pRSEM/prsem-calculate-expression " .
              " --num-threads $nThreads " .
-             " --mappability-bigwig-file $mappability_bigwig_file " .
              " --partition-model $partition_model " .
              " --gibbs-burnin $BURNIN " .
              " --gibbs-number-of-samples $NCV " .
@@ -1019,11 +1008,7 @@ Output time consumed by each step of RSEM to 'sample_name.time'. (Default: off)
 
 =item B<--run-pRSEM>
 
-Running prior-enhanced RSEM (pRSEM). Prior parameters, i.e. isoform's initial pseudo-count for RSEM's Gibbs sampling, will be learned from input RNA-seq data and an external data set. When this option is on, a whole-genome mappability bigWig file is required (with the '--mappability-bigwig-file <string>' option). Also, when pRSEM needs and only needs ChIP-seq peak information to partition isoforms (e.g. in pRSEM's default partition model), either ChIP-seq peak file (with the '--chipseq-peak-file' option) or ChIP-seq FASTQ files for target and input and the path for Bowtie executables are required (with the '--chipseq-target-read-files <string>', '--chipseq-control-read-files <string>', and '--bowtie-path <path> options), otherwise, ChIP-seq FASTQ files for target and control and the path to Bowtie executables are required. (Default: off)
-
-=item B<--mappability-bigwig-file> <string>
-
-Full path to a whole-genome mappability file in bigWig format. This file is required when running prior-enhanced RSEM. It is used for selecting a training set of isoforms for prior-learning. This file can be either downloaded from UCSC Genome Browser or generated by GEM (Derrien et al., 2012, PLoS One). (Default: "")
+Running prior-enhanced RSEM (pRSEM). Prior parameters, i.e. isoform's initial pseudo-count for RSEM's Gibbs sampling, will be learned from input RNA-seq data and an external data set. When pRSEM needs and only needs ChIP-seq peak information to partition isoforms (e.g. in pRSEM's default partition model), either ChIP-seq peak file (with the '--chipseq-peak-file' option) or ChIP-seq FASTQ files for target and input and the path for Bowtie executables are required (with the '--chipseq-target-read-files <string>', '--chipseq-control-read-files <string>', and '--bowtie-path <path> options), otherwise, ChIP-seq FASTQ files for target and control and the path to Bowtie executables are required. (Default: off)
 
 =item B<--chipseq-peak-file> <string>
 
@@ -1447,7 +1432,7 @@ Assume the path to the bowtie executables is in the user's PATH environment vari
                            mmliver_paired_end_quals
 
 
-7) In the above example, suppose we want to run prior-enhanced RSEM instead. Assuming we want to learn priors from a ChIP-seq peak file '/data/mmlive.narrowPeak.gz' and the mappability file for mouse genome is '/data/mouse.bigWig':
+7) In the above example, suppose we want to run prior-enhanced RSEM instead. Assuming we want to learn priors from a ChIP-seq peak file '/data/mmlive.narrowPeak.gz':
 
  rsem-calculate-expression --star \
                            --star-path /sw/STAR \
@@ -1455,7 +1440,6 @@ Assume the path to the bowtie executables is in the user's PATH environment vari
                            --paired-end \
                            --calc-pme \
                            --run-pRSEM \
-                           --mappability-bigwig-file /data/mouse.bigWig \
                            --chipseq-peak-file /data/mmliver.narrowPeak.gz \
                            -p 8 \
                            /data/mmliver_1.fq.gz \
@@ -1471,7 +1455,6 @@ Assume the path to the bowtie executables is in the user's PATH environment vari
                            --paired-end \
                            --calc-pme \
                            --run-pRSEM \
-                           --mappability-bigwig-file /data/mouse.bigWig \
                            --chipseq-target-read-files /data/mmliver_PolIIRep1.fq.gz,/data/mmliver_PolIIRep2.fq.gz \
                            --chipseq-control-read-files /data/mmliver_ChIPseqCtrl.fq.gz \
                            --partition-model pk_lm2nopk \
@@ -1490,7 +1473,6 @@ Assume the path to the bowtie executables is in the user's PATH environment vari
                            --paired-end \
                            --calc-pme \
                            --run-pRSEM \
-                           --mappability-bigwig-file /data/mouse.bigWig \
                            --partition-model cmb_lgt \
                            --chipseq-read-files-multi-targets /data/H3K27Ac.fastq.gz,/data/H3K4me1.fastq.gz,/data/H3K4me2.fastq.gz,/data/H3K4me3.fastq.gz \
                            --bowtie-path /sw/bowtie \

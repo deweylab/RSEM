@@ -1,88 +1,67 @@
-#!/usr/bin/env perl
+#!/bin/env python
 
-use strict;
-use warnings;
+__doc__="""
 
-use Getopt::Long;
-use FindBin;
-use lib $FindBin::RealBin;
-use lib "$FindBin::RealBin/../";
-use rsem_perl_utils;
+  pliu 20160309
 
-use Env qw(@PATH);
-@PATH = ($FindBin::RealBin, @PATH);
+  run pRSEM to prepare reference genome and select training set isoforms
+"""
+
+import os
+import sys
+import Util
+import Prsem
 
 
-sub main {
-  my ($bowtie_path, $bowtie2_path, $quiet) = ('')x3;
+def main():
+  import Gene
+  import Param
+  import Transcript
 
-  GetOptions( "bowtie-path=s"  => \$bowtie_path,
-              "bowtie2-path=s" => \$bowtie2_path,
-              "quiet"          => \$quiet );
+  argdict = getCommandLineArguments()
 
-  my $command = '';
+  prm = Param.initFromCommandLineArguments(argdict)
 
-  my ($bw_path, $bw_build, $bw_inspect) = getBowtieBins($bowtie_path, 
-                                                        $bowtie2_path);
+  prepBowtieRef(prm)
 
-  ## run bowtie-build/bowtie2-build for index whole genome for ChIP-seq
+  prm.transcripts = Transcript.quicklyReadRSEMTI(prm.fti)
+  prm.genes = Gene.constructGenesFromTranscripts(prm.transcripts)
+
+  Prsem.buildTrainingSet(prm)
+
+
+def getCommandLineArguments():
+  import argparse
+
+  parser = argparse.ArgumentParser()
+  parser.add_argument('--num-threads', type=int)
+  parser.add_argument('--bowtie-path')
+  parser.add_argument('--mappability-bigwig-file')
+  parser.add_argument('--quiet', action='store_true')
+
+  ## need to be in the same order as fed in argument
+  parser.add_argument('ref_fasta')
+  parser.add_argument('ref_name')
+
+  argdict = vars(parser.parse_args())
+
+  return argdict
+
+
+def prepBowtieRef(prm):
+  bowtie_quiet = '-q' if prm.quiet else ''
+  bowtie_build = prm.bowtie_path + '/bowtie-build'
+ #bowtie_inspect = prm.bowtie_path + '/bowtie-inspect'
+  prsem_ref = prm.ref_name + '_prsem'
+
+  ## run bowtie-build for index whole genome for ChIP-seq
   ## use --offrate=3, which is 2 less than the default value 5
   ## will trade ~1.5 time memory for 1/4 alignment time for human genome
-  $command = "$bw_path/$bw_build -o 3 ";
- #$command = "$bw_path/$bw_build -o 5 ";
-  if ( $quiet ) { 
-    $command .= ' -q ';
-  }
-  $command .= $ARGV[0] . " $ARGV[1]_prsem";
-  &runCommand($command);
+  Util.runCommand(bowtie_build, '-o', 3, bowtie_quiet, prm.ref_fasta,
+                  prsem_ref, quiet=prm.quiet)
+
+ #Util.runCommandnAndGetOutput(bowtie_inspect, '-s', prsem_ref, quiet=False)
 
 
-  ## run bowtie-inspect/bowtie2-inspect to prepare a .ref for peak calling
-  $command = "$bw_path/$bw_inspect -s $ARGV[1]_prsem";
-  my $fout_bowtie_ref = "$ARGV[1]_prsem.ref";
-  getBowtieRef($command, $fout_bowtie_ref);
-}
-
-
-sub getBowtieBins {
-  my ( $bowtie_path, $bowtie2_path ) = @_;
-  my ( $bw_path, $bw_build, $bw_inspect ) = ('') x 3;
-  if ( $bowtie_path ne '' ) {
-    $bw_path    = $bowtie_path;
-    $bw_build   = 'bowtie-build';
-    $bw_inspect = 'bowtie-inspect';
-  } elsif ( $bowtie2_path ne '') {
-    $bw_path    = $bowtie2_path;
-    $bw_build   = 'bowtie2-build';
-    $bw_inspect = 'bowtie2-inspect';
-  }
-  return ($bw_path, $bw_build, $bw_inspect);
-}
-
-
-sub getBowtieRef {
-  my ($command, $fout_bowtie_ref) = @_;
-  my $size = 0;
-  my @lengths = ();
-  my @chroms = ();
-
-  print "\n$command\n\n";
-  my $output = `$command`;
-
-  my @lines = split("\n", $output);
-  
-  foreach my $line (@lines) {
-    if ($line =~ /^Sequence\-/) {
-      $size++;
-      my @words  = split("\t", $line);
-      push @chroms, $words[1];
-      push @lengths, $words[2];
-    }
-  }
-  
-  open(OUTPUT, ">$fout_bowtie_ref") or die "can't open file: $!\n";
-  print OUTPUT "$size\n@lengths\n@chroms\n";
-  close OUTPUT or die "can't close file: $!\n";
-}
-
-main();
+if __name__=='__main__':
+  main()

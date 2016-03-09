@@ -13,9 +13,7 @@ import Util
 import Prsem
 
 def main():
-  import Gene
   import Param
-  import Transcript
 
   argdict = getCommandLineArguments()
 
@@ -31,10 +29,6 @@ def main():
       ## IDR peaks will be saved in file param.fidr_chipseq_peaks
       Prsem.genChIPSeqPeakFileBySPPIDR(param)
 
-  param.transcripts = Transcript.quicklyReadRSEMTI(param.fti)
-  param.genes = Gene.constructGenesFromTranscripts(param.transcripts)
-
-  Prsem.buildTrainingSet(param)
 
   if param.partition_model == 'pk':
     ## no need to calculate signals or body/tes peaks here
@@ -60,7 +54,6 @@ def getCommandLineArguments():
   parser.add_argument('--n-max-stacked-chipseq-reads', type=int)
   parser.add_argument('--bowtie-path')
   parser.add_argument('--chipseq-peak-file')
-  parser.add_argument('--mappability-bigwig-file')
   parser.add_argument('--partition-model', )
   parser.add_argument('--gibbs-burnin', type=int)
   parser.add_argument('--gibbs-number-of-samples', type=int)

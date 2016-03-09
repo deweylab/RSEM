@@ -37,6 +37,7 @@ class Param:
     self.quiet                      = None
 
     ## arguments
+    self.ref_fasta   = None
     self.ref_name    = None
     self.sample_name = None
     self.stat_name   = None
@@ -46,6 +47,11 @@ class Param:
     self.temp_dir       = None ## dir to save RSEM/pRSEM intermediate files
     self.prsem_scr_dir  = None ## pRSEM scripts dir
     self.prsem_rlib_dir = None ## place to install pRSEM required R libraries
+
+    ## genome reference: training set isoforms
+    self.fall_exon_crd     = None
+    self.fall_tr_crd       = None ## tr info + mappability
+    self.ftraining_tr_crd  = None ## training set tr
 
     ## ChIP-seq
     self.chipseqexperiment_target  = None ## reference to ChIP-seq experiment
@@ -75,8 +81,6 @@ class Param:
     self.rnaseq_rscript    = None ## fullname of R script for dealing RNA-seq
     self.fti               = None ## RSEM's reference .ti file
     self.bigwigsummary_bin = None ## bigWigSummary binary
-    self.fall_tr_crd       = None ## tr info + mappability
-    self.ftraining_tr_crd  = None ## training set tr
     self.fall_tr_features  = None ## file for all isoforms' features
     self.fall_tr_prior     = None ## file for all isoforms' priors
     self.fisoforms_results = None ## file for RSEM .isoforms.results
@@ -108,11 +112,17 @@ class Param:
     for (key, val) in argdict.items():
       setattr(prm, key, val)
 
-    prm.temp_dir = os.path.split(prm.imd_name)[0] + '/'
+    if prm.imd_name is not None:
+      prm.temp_dir = os.path.split(prm.imd_name)[0] + '/'
     prm.prsem_scr_dir = os.path.dirname(os.path.realpath(__file__)) + '/'
     prm.prsem_rlib_dir = prm.prsem_scr_dir + 'RLib/'
     if not os.path.exists(prm.prsem_rlib_dir):
       os.mkdir(prm.prsem_rlib_dir)
+
+    ## genome reference: pRSEM training set isoforms
+    prm.fall_exon_crd    = prm.ref_name + '_prsem.all_exon_crd'
+    prm.fall_tr_crd      = prm.ref_name + '_prsem.all_tr_crd'
+    prm.ftraining_tr_crd = prm.ref_name + '_prsem.training_tr_crd'
 
     ## ChIP-seq
     prm.chipseq_rscript = prm.prsem_scr_dir + 'process-chipseq.R'
@@ -122,11 +132,16 @@ class Param:
     prm.idr_scr_dir   = prm.prsem_scr_dir + 'idrCode/'
     prm.idr_script    = prm.idr_scr_dir + 'batch-consistency-analysis.r'
     prm.fgenome_table = prm.ref_name + '.chrlist'
-    prm.fidr_chipseq_peaks = "%s/%s" % (prm.temp_dir,
-                                        'idr_target_vs_control.regionPeak.gz')
-    ## have to name it this way due to run_spp.R's wired naming convention
-    ## this names depens on the next two names
-    prm.fall_chipseq_peaks = "%s/%s" % (prm.temp_dir,
+
+    if prm.temp_dir is not None:
+      prm.fsppout_target           = prm.temp_dir + 'target_phantom.tab'
+      prm.fchipseq_target_signals  = prm.temp_dir + 'target.tagAlign.gz'
+      prm.fchipseq_control_signals = prm.temp_dir + 'control.tagAlign.gz'
+      prm.fidr_chipseq_peaks = "%s/%s" % (prm.temp_dir,
+                                          'idr_target_vs_control.regionPeak.gz')
+      ## have to name it this way due to run_spp.R's wired naming convention
+      ## this names depens on the next two names
+      prm.fall_chipseq_peaks = "%s/%s" % (prm.temp_dir,
                             'target.tagAlign_VS_control.tagAlign.regionPeak.gz')
 
     if prm.chipseq_peak_file is not None:
@@ -134,29 +149,27 @@ class Param:
     else:
       prm.fchipseq_peaks = prm.fidr_chipseq_peaks
 
-    prm.fsppout_target           = prm.temp_dir + 'target_phantom.tab'
-    prm.fchipseq_target_signals  = prm.temp_dir + 'target.tagAlign.gz'
-    prm.fchipseq_control_signals = prm.temp_dir + 'control.tagAlign.gz'
 
     ## transcripts and RNA-seq
     prm.rnaseq_rscript = prm.prsem_scr_dir + 'process-rnaseq.R'
     prm.fti            = prm.ref_name + '.ti'
     prm.ffasta         = prm.ref_name + '.transcripts.fa'
     prm.bigwigsummary_bin = prm.prsem_scr_dir + 'bigWigSummary'
-    prm.fall_exon_crd     = prm.imd_name  + '_prsem.all_exon_crd'
-    prm.fall_tr_crd       = prm.imd_name  + '_prsem.all_tr_crd'
-    prm.fall_tr_gc        = prm.imd_name  + '_prsem.all_tr_gc'
-    prm.ftraining_tr_crd  = prm.imd_name  + '_prsem.training_tr_crd'
-    prm.fall_tr_features  = prm.stat_name + '_prsem.all_tr_features'
-    prm.fall_tr_prior     = prm.stat_name + '_prsem.all_tr_prior'
-    prm.fpvalLL           = prm.stat_name + '_prsem.pval_LL'
+   #prm.fall_exon_crd     = prm.imd_name  + '_prsem.all_exon_crd'
+   #prm.fall_tr_crd       = prm.imd_name  + '_prsem.all_tr_crd'
+   #prm.ftraining_tr_crd  = prm.imd_name  + '_prsem.training_tr_crd'
+    if prm.sample_name is not None: ## for calc-expr
+      prm.fall_tr_gc        = prm.imd_name  + '_prsem.all_tr_gc'
+      prm.fall_tr_features  = prm.stat_name + '_prsem.all_tr_features'
+      prm.fall_tr_prior     = prm.stat_name + '_prsem.all_tr_prior'
+      prm.fpvalLL           = prm.stat_name + '_prsem.pval_LL'
 
-    prm.fisoforms_results = prm.sample_name + '.isoforms.results'
-    prm.fall_pvalLL       = prm.sample_name + '.all.pval_LL'
+      prm.fisoforms_results = prm.sample_name + '.isoforms.results'
+      prm.fall_pvalLL       = prm.sample_name + '.all.pval_LL'
 
-    ## for multiple external data sets
-    prm.finfo_multi_targets      = prm.temp_dir + 'multi_targets.info'
-    prm.flgt_model_multi_targets = prm.stat_name + '_prsem.lgt_mdl.RData'
+      ## for multiple external data sets
+      prm.finfo_multi_targets      = prm.temp_dir + 'multi_targets.info'
+      prm.flgt_model_multi_targets = prm.stat_name + '_prsem.lgt_mdl.RData'
 
     return prm
 
