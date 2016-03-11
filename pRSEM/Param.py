@@ -34,7 +34,7 @@ class Param:
     self.gibbs_burnin               = None
     self.gibbs_number_of_samples    = None
     self.gibbs_sampling_gap         = None
-    self.quiet                      = None
+    self.quiet                      = False
 
     ## arguments
     self.ref_fasta   = None

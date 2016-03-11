@@ -49,7 +49,6 @@ def getCommandLineArguments():
 
 
 def prepBowtieRef(prm):
-  bowtie_quiet = '-q' if prm.quiet else ''
   bowtie_build = prm.bowtie_path + '/bowtie-build'
  #bowtie_inspect = prm.bowtie_path + '/bowtie-inspect'
   prsem_ref = prm.ref_name + '_prsem'
@@ -57,8 +56,12 @@ def prepBowtieRef(prm):
   ## run bowtie-build for index whole genome for ChIP-seq
   ## use --offrate=3, which is 2 less than the default value 5
   ## will trade ~1.5 time memory for 1/4 alignment time for human genome
-  Util.runCommand(bowtie_build, '-o', 3, bowtie_quiet, prm.ref_fasta,
-                  prsem_ref, quiet=prm.quiet)
+  if prm.quiet:
+    Util.runCommand(bowtie_build, '-o', 3, '--quiet', prm.ref_fasta,
+                    prsem_ref, quiet=prm.quiet)
+  else:
+    Util.runCommand(bowtie_build, '-o', 3, prm.ref_fasta,
+                    prsem_ref, quiet=prm.quiet)
 
  #Util.runCommandnAndGetOutput(bowtie_inspect, '-s', prsem_ref, quiet=False)
 

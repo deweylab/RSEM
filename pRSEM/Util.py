@@ -7,27 +7,44 @@ __doc__="""
 """
 
 def runCommand(*args, **kwargs):
+  import os
   import subprocess
   import sys
 
-  str_args = [ str(arg) for arg in args ]
+  is_quiet = False
   if 'quiet' in kwargs:
-    if not kwargs['quiet']:
-      sys.stdout.write("\n%s\n" % (' '.join(str_args)))
+    if kwargs['quiet']:
+      is_quiet = True
+
+  str_args = [ str(arg) for arg in args ]
+  if is_quiet:
+    pass
   else:
     sys.stdout.write("\n%s\n" % (' '.join(str_args)))
 
+  f_null = open(os.devnull, 'w')
+
   try:
     if len(str_args) == 1:
-      retcode = subprocess.call(str_args[0], shell=True)
+      if is_quiet:
+        retcode = subprocess.call(str_args[0], stdout=f_null, shell=True)
+      else:
+        retcode = subprocess.call(str_args[0], shell=True)
     else:
-      retcode = subprocess.call(str_args)
+      if is_quiet:
+       #print '##', is_quiet, '##';
+        retcode = subprocess.call(str_args, stdout=f_null)
+      else:
+       #print '##', is_quiet, '##';
+        retcode = subprocess.call(str_args)
     if retcode < 0:
       sys.exit("\nTerminated by singal %d\n" % -retcode)
     elif retcode > 0:
       sys.exit("\nFailed with return code %d\n" % retcode)
   except OSError as e:
     sys.exit("\nExecution failed: %s\n" % e)
+
+  f_null.close()
 
 
 def runCommandAndGetOutput(*args, **kwargs):

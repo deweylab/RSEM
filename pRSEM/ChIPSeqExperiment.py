@@ -62,7 +62,7 @@ class ChIPSeqExperiment:
 
     Util.runCommand('/bin/env', 'Rscript', self.param.chipseq_rscript,
                     'guessFqEncoding', nthr, fin, fenc,
-                    self.param.prsem_rlib_dir, quiet=False )
+                    self.param.prsem_rlib_dir, quiet=self.param.quiet )
 
     if not os.path.exists(fenc):
       sys.exit("Failed to generate file: %s\n" % fenc)
@@ -89,18 +89,24 @@ class ChIPSeqExperiment:
       if not os.path.exists(rep.fastq.fullname):
         sys.exit("File not found: %s\n" % rep.fastq.fullname)
 
+      s_quiet = None
+      if self.param.quiet:
+        s_quiet = ' --quiet '
+      else:
+        s_quiet = ''
+
       ## many pipes, have to use os.system
       cmds = [ "%s %s |" % (cmd_cat, rep.fastq.fullname) ] + \
              [ "%s/bowtie " % self.param.bowtie_path ]  + \
-             [ " -q -v 2 -a --best --strata -m 1 %s -S -p %d %s - | " % (
-               rep.encoding, nthr_bowtie, bowtie_ref_name ) ] + \
+             [ "%s -q -v 2 -a --best --strata -m 1 %s -S -p %d %s - | " % (
+               s_quiet, rep.encoding, nthr_bowtie, bowtie_ref_name ) ] + \
              [ "%s - | " % self.param.filterSam2Bed ] + \
              [ "gzip -c > %s " % rep.tagalign.fullname ]
 
       cmd = ' '.join(cmds)
 
       ## use all threads to align ChIP-seq reads sequentially
-      Util.runCommand(cmd, quiet=False)
+      Util.runCommand(cmd, quiet=self.param.quiet)
 
       if not os.path.exists(rep.tagalign.fullname):
         sys.exit("failed to generate file: %s\n" % rep.tagalign.fullname)
@@ -117,7 +123,7 @@ class ChIPSeqExperiment:
         sys.exit("File not found: %s\n" % rep.tagalign.fullname)
 
       cmd = "%s %s | gzip -c >> %s" % (cat_cmd, rep.tagalign.fullname, frep0)
-      Util.runCommand(cmd, quiet=False)
+      Util.runCommand(cmd, quiet=self.param.quiet)
 
       if not os.path.exists(frep0):
         sys.exit("Failed to generate file: %s\n" % frep0)
@@ -202,7 +208,7 @@ class ChIPSeqExperiment:
 def getNPeaksByIDR(fpeaka, fpeakb, idr_prefix, prm, out_q):
   Util.runCommand('/bin/env', 'Rscript', prm.idr_script, fpeaka, fpeakb,
                   '-1', idr_prefix, '0', 'F', 'signal.value', prm.idr_scr_dir,
-                  prm.fgenome_table, quiet=False)
+                  prm.fgenome_table, quiet=prm.quiet)
   fidr = idr_prefix + '-overlapped-peaks.txt'
   outdict = {}
   with open(fidr, 'r') as f_fidr:
@@ -230,8 +236,8 @@ def runSPP(tgt_tagalign, fctrl_tagalign, prm, nthr):
                   "-p=%d"      % nthr,
                   "-tmpdir=%s" % spp_tmpdir,
                   "-out=%s"    % fout,
-                  quiet=False)
-  Util.runCommand('rm', '-fr', spp_tmpdir, quiet=False)
+                  quiet=prm.quiet)
+  Util.runCommand('rm', '-fr', spp_tmpdir, quiet=prm.quiet)
 
   if not os.path.exists(fout):
     sys.exit("Failed to generate file: %s\n" % fout)

@@ -96,7 +96,7 @@ def buildTrainingSet(prm):
   Util.runCommand('/bin/env', 'Rscript', prm.rnaseq_rscript, 'selTrainingTr',
                   prm.prsem_rlib_dir, prm.fall_tr_crd, prm.fall_exon_crd,
                   prm.TRAINING_MIN_MAPPABILITY, prm.FLANKING_WIDTH,
-                  prm.ftraining_tr_crd, quiet=False)
+                  prm.ftraining_tr_crd, quiet=prm.quiet)
 
   if not os.path.exists(prm.ftraining_tr_crd):
     sys.exit("Failed to generate file: %s\n" % prm.ftraining_tr_crd)
@@ -138,14 +138,14 @@ def genPriorByCombinedTSSSignals(prm):
                   prm.fisoforms_results, prm.FLANKING_WIDTH,
                   prm.cap_stacked_chipseq_reads,
                   prm.n_max_stacked_chipseq_reads,
-                  prm.finfo_multi_targets, prm.num_threads, quiet=False)
+                  prm.finfo_multi_targets, prm.num_threads, quiet=prm.quiet)
 
   ## learn prior from partitioning by combined external data set
   Util.runCommand('/bin/env', 'Rscript', prm.rnaseq_rscript,
                   'genPriorByCombinedTSSSignals', prm.prsem_rlib_dir,
                   prm.finfo_multi_targets, prm.flgt_model_multi_targets,
                   prm.fall_tr_features, prm.fpvalLL, prm.fall_tr_prior,
-                  quiet=False)
+                  quiet=prm.quiet)
 
   pval = float(Util.readFile(prm.fpvalLL)[1].split("\t")[0])
 
@@ -189,7 +189,7 @@ def genPriorByPeakSignalGCLen(prm):
                   prm.fisoforms_results, prm.FLANKING_WIDTH,
                   prm.partition_model, prm.fchipseq_peaks,
                   prm.fchipseq_target_signals, prm.fall_tr_gc, prm.num_threads,
-                  prm.chipseq_target_fraglen, quiet=False)
+                  prm.chipseq_target_fraglen, quiet=prm.quiet)
 
   if not os.path.exists(prm.fall_tr_gc):
     sys.exit("Failed to generate file: %s\n" % prm.fall_tr_gc)
@@ -198,7 +198,7 @@ def genPriorByPeakSignalGCLen(prm):
   Util.runCommand('/bin/env', 'Rscript', prm.rnaseq_rscript,
                   'genPriorByPeakSignalGCLen', prm.prsem_rlib_dir,
                   prm.fall_tr_features, prm.partition_model, prm.fall_tr_prior,
-                  quiet=False)
+                  quiet=prm.quiet)
 
   if not os.path.exists(prm.fall_tr_prior):
     sys.exit("Failed to generate file: %s\n" % prm.fall_tr_prior)
@@ -217,7 +217,7 @@ def genPriorByTSSPeak(prm):
                   'prepTSSPeakFeatures', prm.prsem_rlib_dir,
                   prm.fall_tr_crd, prm.ftraining_tr_crd, prm.fall_tr_features,
                   prm.fisoforms_results, prm.FLANKING_WIDTH,
-                  prm.fchipseq_peaks, quiet=False)
+                  prm.fchipseq_peaks, quiet=prm.quiet)
 
   if not os.path.exists(prm.fall_tr_features):
     sys.exit("Failed to generate file: %s\n" % prm.fall_tr_features)
@@ -225,7 +225,7 @@ def genPriorByTSSPeak(prm):
   Util.runCommand('/bin/env', 'Rscript', prm.rnaseq_rscript,
                   'genPriorByTSSPeak', prm.prsem_rlib_dir,
                   prm.fall_tr_features,  prm.fpvalLL, prm.fall_tr_prior,
-                  quiet=False)
+                  quiet=prm.quiet)
 
   pval = float(Util.readFile(prm.fpvalLL)[1].split("\t")[0])
 
@@ -250,4 +250,4 @@ def runGibbsSampling(prm):
                   prm.gibbs_number_of_samples, prm.gibbs_sampling_gap,
                   '-p', prm.num_threads, run_gibbs_quiet,
                   '--prior', prm.fall_tr_prior,
-                  quiet=False)
+                  quiet=prm.quiet)
