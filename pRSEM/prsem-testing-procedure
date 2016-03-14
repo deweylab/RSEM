@@ -4,7 +4,7 @@ __doc__="""
 
   pliu 20150304
 
-  run pRSEM's consistency test to calculate:
+  run pRSEM's testing procedure to calculate:
   1. a p-value on whether external data is informative
   2. a log-likelihood on read counts of partitioned isoforms' fit to DM model
 """
@@ -97,7 +97,7 @@ def writePvalLL(prm):
                                  pvalLL_lines[1]))
   f_fout.close()
 
-  sys.stdout.write("\npRSEM consistency test result is saved in %s\n" %
+  sys.stdout.write("\npRSEM testing procedure result is saved in %s\n" %
                    prm.fall_pvalLL)
 
 if __name__=='__main__':

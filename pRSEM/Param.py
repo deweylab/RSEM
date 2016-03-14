@@ -93,7 +93,7 @@ class Param:
     self.finfo_multi_targets = None
     self.flgt_model_multi_targets = None
 
-    ## for consistency-test
+    ## for testing procedure
     self.targetids = []
 
 
