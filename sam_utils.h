@@ -17,7 +17,7 @@
 
 // These functions are adopted/modified from samtools source codes because the original codes are not visible from sam.h/bam.h
 
-inline int bam_aux_type2size(int x) {
+inline int bam_aux_type2size(char x) {
   if (x == 'C' || x == 'c' || x == 'A') return 1;
   else if (x == 'S' || x == 's') return 2;
   else if (x == 'I' || x == 'i' || x == 'f' || x == 'F') return 4;
