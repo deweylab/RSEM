@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
 	transcripts.readFrom(tiF);
 
 	printf("Start converting:\n");
-	BamConverter bc(argv[2], argv[3], chr_list, transcripts, nThreads);
+	BamConverter bc(argv[2], argv[3], chr_list, transcripts, nThreads, assemble_command(argc, argv));
 	bc.process();
 	printf("Genome bam file is generated!\n");
 

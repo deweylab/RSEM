@@ -36,10 +36,12 @@ public:
 
   void replaceSQ(const char* faiF);
 
-  void insertPG(const std::string& pid) {
+  void insertPG(const std::string& pid, const std::string& command = "") {
     if (pids.find(pid) == pids.end()) {
       pids.insert(pid);
-      PGstr += "@PG\tID:" + pid + "\n";
+      PGstr += "@PG\tID:" + pid;
+      if (command != "") PGstr += "\tCL:" + command;
+      PGstr += "\n";
     }
   }
 

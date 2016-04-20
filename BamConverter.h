@@ -20,7 +20,7 @@
 
 class BamConverter {
 public:
-	BamConverter(const char* inpF, const char* outF, const char* chr_list, Transcripts& transcripts, int nThreads);
+  BamConverter(const char* inpF, const char* outF, const char* chr_list, Transcripts& transcripts, int nThreads, const std::string& command);
 	~BamConverter();
 
 	void process();
@@ -42,7 +42,7 @@ private:
 	void modifyTags(bam1_t*, const Transcript&); // modify MD tag and XS tag if needed
 };
 
-BamConverter::BamConverter(const char* inpF, const char* outF, const char* chr_list, Transcripts& transcripts, int nThreads)
+BamConverter::BamConverter(const char* inpF, const char* outF, const char* chr_list, Transcripts& transcripts, int nThreads, const std::string& command)
 	: transcripts(transcripts)
 {
 	general_assert(transcripts.getType() == 0, "Genome information is not provided! RSEM cannot convert the transcript bam file!");
@@ -56,7 +56,8 @@ BamConverter::BamConverter(const char* inpF, const char* outF, const char* chr_l
 
 	SamHeader hdr(in_header->text);
 	hdr.replaceSQ(chr_list);
-	hdr.addComment("This BAM file is processed by rsem-tbam2gam to convert from transcript coordinates into genomic coordinates.");
+	hdr.insertPG("rsem-tbam2gbam", command);
+	//	hdr.addComment("This BAM file is processed by rsem-tbam2gam to convert from transcript coordinates into genomic coordinates.");
 	out_header = hdr.create_header();
 	
 	refmap.clear();

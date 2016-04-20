@@ -156,4 +156,11 @@ inline void printTimeUsed(const time_t& a, const time_t& b, const char* program_
 	printf("Time Used for %s : %d h %02d m %02d s\n", program_name, hh, mm, ss);
 }
 
+inline std::string assemble_command(int argc, char* argv[]) {
+  std::string command = argv[0];
+  for (int i = 1; i < argc; ++i)
+    command += " " + std::string(argv[i]);
+  return command;
+}
+
 #endif
