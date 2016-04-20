@@ -239,10 +239,12 @@ private:
 };
 
 void PairedEndQModel::estimateFromReads(const char* readFN) {
-  int s;
-  char readFs[2][STRLEN];
-  PairedEndReadQ read;
+    int s;
+    char readFs[2][STRLEN];
+    PairedEndReadQ read;
 
+    int n_warns = 0;
+  
     mld->init();
     for (int i = 0; i < 3; i++)
     	if (N[i] > 0) {
@@ -267,7 +269,8 @@ void PairedEndQModel::estimateFromReads(const char* readFN) {
     				}
     			}
     			else if (mate1.getReadLength() < seedLen || mate2.getReadLength() < seedLen)
-			  fprintf(stderr, "Warning: Read %s is ignored due to at least one of the mates' length < seed length (= %d)!\n", read.getName().c_str(), seedLen);
+			  if (n_warns <= MAX_WARNS)
+			    fprintf(stderr, "Warning: Read %s is ignored due to at least one of the mates' length < seed length (= %d)!\n", read.getName().c_str(), seedLen);
 
     			++cnt;
     			if (verbose && cnt % 1000000 == 0) { std::cout<< cnt<< " READS PROCESSED"<< std::endl; }
@@ -276,6 +279,8 @@ void PairedEndQModel::estimateFromReads(const char* readFN) {
     		if (verbose) { std::cout<<"estimateFromReads, N"<< i<<" finished."<< std::endl; }
     	}
 
+    if (n_warns > 0) fprintf(stderr, "Warning: There are %d reads ignored in total.\n", n_warns);
+    
     mld->finish();
     qd->finish();
     nqpro->calcInitParams();
