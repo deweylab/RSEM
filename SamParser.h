@@ -102,7 +102,7 @@ SamParser::SamParser(const char* inpF, const char* aux, Transcripts& transcripts
 }
 
 SamParser::~SamParser() {
-	if (n_warns > 0) fprintf(stderr, "Warning: Detected %d read pairs whose two mates have different names.\n");
+	if (n_warns > 0) fprintf(stderr, "Warning: Detected %d read pairs whose two mates have different names.\n", n_warns);
 	
   	bam_hdr_destroy(header);
 	sam_close(sam_in);
