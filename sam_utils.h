@@ -3,12 +3,17 @@
 
 #include<cstdio>
 #include<cstring>
+#include<cstdlib>
+#include<cassert>
 #include<vector>
 #include<string>
+#include<fstream>
+
 #include<stdint.h>
 
 #include "htslib/sam.h"
 
+#include "my_assert.h"
 #include "Transcript.h"
 #include "Transcripts.h"
 
@@ -25,58 +30,12 @@ inline int bam_aux_type2size(char x) {
   else return 0;
 }
 
-// dwt: duplicate without text
-bam_hdr_t *bam_header_dwt(const bam_hdr_t *ori_h) {
-  bam_hdr_t *h;
-  
-  h = bam_hdr_init();
-  h->n_targets = ori_h->n_targets;
-  h->target_len = (uint32_t*)calloc(h->n_targets, sizeof(uint32_t));
-  h->target_name = (char**)calloc(h->n_targets, sizeof(char*));
-  for (int i = 0; i < h->n_targets; ++i) {
-    h->target_len[i] = ori_h->target_len[i];
-    h->target_name[i] = strdup(ori_h->target_name[i]);
-  }
-  
-  return h;
-}
-
-void append_header_text(bam_hdr_t *header, const char* text, int len)
-{
-  if (text == 0) return;
-  
-  int x = header->l_text + 1;
-  int y = header->l_text + len + 1; // 1 byte null
-  kroundup32(x);
-  kroundup32(y);
-  if (x < y) header->text = (char*)realloc(header->text, y);
-  strncpy(header->text + header->l_text, text, len); // we cannot use strcpy() here.
-  header->l_text += len;
-  header->text[header->l_text] = 0;
-}
-
 inline void expand_data_size(bam1_t *b) {
   if (b->m_data < b->l_data) {
     b->m_data = b->l_data;
     kroundup32(b->m_data);
     b->data = (uint8_t*)realloc(b->data, b->m_data);
   }
-}
-
-inline std::string fai_headers(const char *fname) {
-  FILE *fi = fopen(fname, "r");
-  if (fi == NULL) return "";
-
-  std::string s;
-  char line[2048];
-  while (fgets(line, sizeof line, fi)) {
-    const char *name = strtok(line, "\t");
-    const char *len = strtok(NULL, "\t");
-    s.append("@SQ\tSN:").append(name).append("\tLN:").append(len).append("\n");
-  }
-
-  fclose(fi);
-  return s;
 }
 
 /******************************************************/

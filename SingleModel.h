@@ -287,10 +287,9 @@ void SingleModel::estimateFromReads(const char* readFN) {
 					mld != NULL ? mld->update(read.getReadLength(), 1.0) : gld->update(read.getReadLength(), 1.0);
 					if (i == 0) { npro->updateC(read.getReadSeq()); }
 				}
-				else if (verbose && read.getReadLength() < seedLen) {
-					std::cout<< "Warning: Read "<< read.getName()<< " is ignored due to read length "<< read.getReadLength()<< " < seed length "<< seedLen<< "!"<< std::endl;
-				}
-				
+				else if (read.getReadLength() < seedLen)
+				  fprintf(stderr, "Warning: Read %s is ignored due to read length (= %d) < seed length (= %d)!\n", read.getName().c_str(), read.getReadLength(), seedLen);
+								
 				++cnt;
 				if (verbose && cnt % 1000000 == 0) { std::cout<< cnt<< " READS PROCESSED"<< std::endl; }
 			}
@@ -334,7 +333,8 @@ void SingleModel::collect(const SingleModel& o) {
 void SingleModel::read(const char* inpF) {
 	int val;
 	FILE *fi = fopen(inpF, "r");
-	if (fi == NULL) { fprintf(stderr, "Cannot open %s! It may not exist.\n", inpF); exit(-1); }
+
+	general_assert(fi != NULL, "Cannot open " + cstrtos(inpF) + "! It may not exist.");
 
 	assert(fscanf(fi, "%d", &val) == 1);
 	assert(val == model_type);

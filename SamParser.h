@@ -54,6 +54,8 @@ private:
 
 	Transcripts& transcripts;
 
+	int n_warns; // Number of warnings
+	
 	//tag used by aligner
 	static char rtTag[STRLEN];
 
@@ -84,16 +86,13 @@ char SamParser::rtTag[STRLEN] = ""; // default : no tag, thus no Type 2 reads
 
 // aux, if not 0, points to the file name of fn_list
 SamParser::SamParser(const char* inpF, const char* aux, Transcripts& transcripts, const char* imdName)
-	: transcripts(transcripts)
+	: transcripts(transcripts), n_warns(0)
 {
 	sam_in = sam_open(inpF, "r");
 	general_assert(sam_in != 0, "Cannot open " + cstrtos(inpF) + "! It may not exist.");
 
-	if (aux == NULL) header = sam_hdr_read(sam_in);
-	else {
-	  std::string SQs = fai_headers(aux);
-	  header = sam_hdr_parse(SQs.length(), SQs.c_str());
-	}
+	if (aux != NULL) hts_set_fai_filename(sam_in, aux);
+	header = sam_hdr_read(sam_in);
 	general_assert(header != 0, "Fail to parse sam header!");
 
 	transcripts.buildMappings(header->n_targets, header->target_name, imdName);
@@ -103,7 +102,9 @@ SamParser::SamParser(const char* inpF, const char* aux, Transcripts& transcripts
 }
 
 SamParser::~SamParser() {
-	bam_hdr_destroy(header);
+	if (n_warns > 0) fprintf(stderr, "Warning: Detected %d read pairs whose two mates have different names.\n");
+	
+  	bam_hdr_destroy(header);
 	sam_close(sam_in);
 	bam_destroy1(b);
 	bam_destroy1(b2);
@@ -183,7 +184,9 @@ int SamParser::parseNext(PairedEndRead& read, PairedEndHit& hit) {
 	general_assert((bam_is_mapped(b) && bam_is_mapped(b2)) || (!bam_is_mapped(b) && !bam_is_mapped(b2)), "Read " + name + ": RSEM currently does not support partial alignments!");
 	
 	std::string name2 = bam_get_canonical_name(b2);	
-	if (name != name2) printf("Warning: Detected a read pair whose two mates have different names--%s and %s!\n", name.c_str(), name2.c_str());
+	if (name != name2) 
+	  if (++n_warns <= MAX_WARNS) 
+	    fprintf(stderr, "Warning: Detected a read pair whose two mates have different names--%s and %s!\n", name.c_str(), name2.c_str());
 
 	int readType = getReadType(b, b2);
 
@@ -222,7 +225,9 @@ int SamParser::parseNext(PairedEndReadQ& read, PairedEndHit& hit) {
 	general_assert((bam_is_mapped(b) && bam_is_mapped(b2)) || (!bam_is_mapped(b) && !bam_is_mapped(b2)), "Read " + name + ": RSEM currently does not support partial alignments!");
 	
 	std::string name2 = bam_get_canonical_name(b2);	
-	if (name != name2) printf("Warning: Detected a read pair whose two mates have different names--%s and %s!\n", name.c_str(), name2.c_str());
+	if (name != name2)
+	  if (++n_warns <= MAX_WARNS)
+	    fprintf(stderr, "Warning: Detected a read pair whose two mates have different names--%s and %s!\n", name.c_str(), name2.c_str());
 
 	int readType = getReadType(b, b2);
 

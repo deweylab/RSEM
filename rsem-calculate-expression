@@ -633,7 +633,7 @@ Input file contains alignments in SAM/BAM/CRAM format. The exact file format wil
 
 =item B<--fai> <file>
 
-RSEM reads header information from input by default. If this option is on, header information is read from the specified file. For the format of the file, please see SAM official website. (Default: off)
+If the header section of input alignment file does not contain reference sequence information, this option should be turned on. <file> is a FAI format file containing each reference sequence's name and length. Please refer to the SAM official website for the details of FAI format. (Default: off)
 
 =item B<--bowtie2>
 

@@ -138,18 +138,24 @@ void parse_gtf_file(char* gtfF) {
 
 	int cnt = 0;
 
+	int n_warns = 0;
+	
 	items.clear();
  	while (getline(fin, line)) {
  		if (line[0] == '#') continue; // if this line is comment, jump it
  		item.parse(line);
   		if (item.getFeature() == "exon" && isTrusted(item.getSource())) {
  			if (item.getStart() > item.getEnd()) {
-				printf("Warning: exon's start position is larger than its end position! This exon is discarded.\n");
- 				printf("\t%s\n\n", line.c_str());
+			  if (++n_warns <= MAX_WARNS) {
+			    fprintf(stderr, "Warning: exon's start position is larger than its end position! This exon is discarded.\n");
+			    fprintf(stderr, "\t%s\n\n", line.c_str());
+			  }
  			}
  			else if (item.getStart() < 1) {
-				printf("Warning: exon's start position is less than 1! This exon is discarded.\n");
- 				printf("\t%s\n\n", line.c_str());
+			  if (++n_warns <= MAX_WARNS) {
+			    fprintf(stderr, "Warning: exon's start position is less than 1! This exon is discarded.\n");
+			    fprintf(stderr, "\t%s\n\n", line.c_str());
+			  }
  			}
  			else {
  				item.parseAttributes(line);
@@ -168,6 +174,8 @@ void parse_gtf_file(char* gtfF) {
  		if (verbose && cnt % 200000 == 0) { printf("Parsed %d lines\n", cnt); }
 	}
 	fin.close();
+
+	if (n_warns > 0) fprintf(stderr, "Warning: In total, %d exons are discarded.", n_warns);
 	
 	sort(items.begin(), items.end());
 
@@ -210,10 +218,14 @@ void parse_gtf_file(char* gtfF) {
 void shrink() {
   int curp = 0;
 
+  int n_warns = 0;
+  
   for (int i = 1; i <= M; i++) 
     if (seqs[i] == "") {
-      const Transcript& transcript = transcripts.getTranscriptAt(i);
-      printf("Warning: Cannot extract transcript %s's sequence since the chromosome it locates, %s, is absent!\n", transcript.getTranscriptID().c_str(), transcript.getSeqName().c_str());
+      if (++n_warns <= MAX_WARNS) {
+	const Transcript& transcript = transcripts.getTranscriptAt(i);
+	fprintf(stderr, "Warning: Cannot extract transcript %s's sequence since the chromosome it locates, %s, is absent!\n", transcript.getTranscriptID().c_str(), transcript.getSeqName().c_str());
+      }
     }
     else {
       ++curp;
@@ -221,7 +233,8 @@ void shrink() {
       if (i > curp) seqs[curp] = seqs[i];
     }
 
-  printf("%d transcripts are extracted and %d transcripts are omitted.\n", curp, M - curp);
+  if (n_warns > 0) fprintf(stderr, "Warning: %d transcripts are failed to extract because their chromosome sequences are absent.\n", n_warns);
+  if (verbose) printf("%d transcripts are extracted.\n", curp);
 
   transcripts.setM(curp);
   M = transcripts.getM();

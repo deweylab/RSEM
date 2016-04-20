@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include "htslib/sam.h"
 #include "sam_utils.h"
+#include "SamHeader.hpp"
 
 #include "utils.h"
 #include "my_assert.h"
@@ -53,37 +54,14 @@ BamConverter::BamConverter(const char* inpF, const char* outF, const char* chr_l
 
 	transcripts.buildMappings(in_header->n_targets, in_header->target_name);
 
-	std::string SQs = fai_headers(chr_list);
-	out_header = sam_hdr_parse(SQs.length(), SQs.c_str());
-	assert(out_header != 0);
+	SamHeader hdr(in_header->text);
+	hdr.replaceSQ(chr_list);
+	hdr.addComment("This BAM file is processed by rsem-tbam2gam to convert from transcript coordinates into genomic coordinates.");
+	out_header = hdr.create_header();
 	
 	refmap.clear();
 	for (int i = 0; i < out_header->n_targets; ++i) {
 		refmap[out_header->target_name[i]] = i;
-	}
-
-	if (in_header->l_text > 0) {
-		char comment[] = "@CO\tThis BAM file is processed by rsem-tbam2gam to convert from transcript coordinates into genomic coordinates.\n";
-		int comment_len = strlen(comment);
-
-		//Filter @SQ fields if the BAM file is user provided
-		char *text = in_header->text;
-		int l_text = in_header->l_text;
-		char *new_text = new char[l_text + comment_len];
-		int pos = 0, s = 0;
-		while (pos < l_text) {
-			if ((pos + 2 < l_text) && (text[pos] == '@') && (text[pos + 1] == 'S') && (text[pos + 2] == 'Q')) {
-				pos += 3;
-				while (pos < l_text && text[pos] != '\n') ++pos;
-			}
-			else new_text[s++] = text[pos];
-			++pos;
-		}
-		strncpy(new_text + s, comment, comment_len);
-		s += comment_len;
-
-		append_header_text(out_header, new_text, s);
-		delete[] new_text;
 	}
 
 	out = sam_open(outF, "wb");

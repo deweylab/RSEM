@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include "htslib/sam.h"
 #include "sam_utils.h"
+#include "SamHeader.hpp"
 
 #include "utils.h"
 #include "my_assert.h"
@@ -52,23 +53,17 @@ BamWriter::BamWriter(const char* inpF, const char* aux, const char* outF, Transc
   in = sam_open(inpF, "r");
   assert(in != 0);
 
-  if (aux == NULL) in_header = sam_hdr_read(in);
-  else {
-    std::string SQs = fai_headers(aux);
-    in_header = sam_hdr_parse(SQs.length(), SQs.c_str());
-  }
+  if (aux == NULL) hts_set_fai_filename(in, aux);
+  in_header = sam_hdr_read(in);
   assert(in_header != 0);
 
   //build mappings from external sid to internal sid
   transcripts.buildMappings(in_header->n_targets, in_header->target_name);
   
   //generate output's header
-  out_header = bam_header_dwt(in_header);
-  
-  std::ostringstream strout;
-  strout<<"@HD\tVN:1.4\tSO:unknown\n@PG\tID:RSEM\n";
-  std::string content = strout.str();
-  append_header_text(out_header, content.c_str(), content.length());
+  SamHeader hdr(in_header->text);
+  hdr.insertPG("RSEM");
+  out_header = hdr.create_header();
   
   out = sam_open(outF, "wb"); // If CRAM format is desired, use "wc"
   assert(out != 0);

@@ -410,7 +410,7 @@ int main(int argc, char* argv[]) {
 
 	if (nThreads > NSAMPLES) {
 		nThreads = NSAMPLES;
-		printf("Warning: Number of samples is less than number of threads! Change the number of threads to %d!\n", nThreads);
+		fprintf(stderr, "Warning: Number of samples is less than number of threads! Change the number of threads to %d!\n", nThreads);
 	}
 
 	load_data(refName, statName, imdName);

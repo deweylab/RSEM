@@ -416,7 +416,7 @@ void EM() {
 	} while (ROUND < MIN_ROUND || (totNum > 0 && ROUND < MAX_ROUND));
 //	} while (ROUND < 1);
 
-	if (totNum > 0) { cout<< "Warning: RSEM reaches "<< MAX_ROUND<< " iterations before meeting the convergence criteria."<< endl; }
+	if (totNum > 0) fprintf(stderr, "Warning: RSEM reaches %d iterations before meeting the convergence criteria.\n", MAX_ROUND);
 
 	//generate output file used by Gibbs sampler
 	if (genGibbsOut) {
