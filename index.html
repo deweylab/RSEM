@@ -20,13 +20,13 @@
 <h2>RSEM (RNA-Seq by Expectation-Maximization)</h2>
 <hr>
 <p><strong>Updates</strong></p>
+<p>Apr 20, 2016 &nbsp; RSEM v1.2.30 is online now. Fixed a bug that can cause SAMtools sort to fail. Improved the appearance of warning messages: for the same type of warning messages, only show the first 50 messages and then provide the total number of such warnings.</p>
 <p>Mar 6, 2016 &nbsp; RSEM v1.2.29 is online now. Reformatted Makefile to be more professional, and `make install` is ready to use. Enabled `./configure --without-curses` for configuring SAMtools to avoid potential compilation problems due to curses library. Fixed bugs for installing EBSeq. Improved the readability of RSEM documentation.</p>
 <p>Feb 2, 2016 &nbsp; RSEM v1.2.28 is online now. Fixed a bug in RSEM v1.2.27 that can lead to assertion errors for parsing GTF files. Fixed a bug in Makefile.</p>
-<p>Feb 1, 2016 &nbsp; RSEM v1.2.27 is online now. Upgraded SAMtools to v1.3; RSEM now supports input alignments in SAM/BAM/CRAM format. '--sam/--bam' options of 'rsem-calculate-expression' are obsoleted; use '--alignments' instead; '--sam/--bam' can still be used for compatibility with previous versions. Some 'rsem-calculate-expression' options are renamed for better interpretability. Documents are updated to reflect the SAMtools upgrade. Fixed a bug for parsing GTF files. Fixed a bug for generating transcript wiggle plots.</p>
 <p>Click <a href="updates.html">here</a> for full update information. </p>
 <p><strong>Source Code</strong></p>
 <ul>
-<li><a href="https://github.com/deweylab/RSEM/archive/v1.2.29.tar.gz" onclick="ga('send', 'event', { eventCategory: 'download', eventAction: 'click', eventLabel: 'latest source codes', nonIteraction: true });">Latest version</a>
+<li><a href="https://github.com/deweylab/RSEM/archive/v1.2.30.tar.gz" onclick="ga('send', 'event', { eventCategory: 'download', eventAction: 'click', eventLabel: 'latest source codes', nonIteraction: true });">Latest version</a>
 <li><a href="https://github.com/deweylab/RSEM/archive/v1.1.17.tar.gz">Version used by RSEM Galaxy Wrapper (RSEM v1.1.17)</a>
 <li><a href="https://github.com/deweylab/RSEM/releases">Archive of older versions</a>
 <li><a href="https://github.com/deweylab/RSEM">RSEM GitHub
@@ -89,6 +89,6 @@ Only mature RNAs. In addition, 125bp Poly(A) tails are added at the end of each 
 </td></tr>
 </table>
 <hr>
-<p>(last modified on Mar 6, 2016)</p>
+<p>(last modified on Apr 20, 2016)</p>
 </body>
 </html>
