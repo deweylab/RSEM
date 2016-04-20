@@ -1,3 +1,10 @@
+RSEM v1.2.30
+
+- Fixed a bug that can cause SAMtools sort to fail
+- Improved the appearance of warning messages: for the same type of warning messages, only show the first 50 messages and then provide the total number of such warnings
+
+--------------------------------------------------------------------------------------------
+
 RSEM v1.2.29
 
 - Reformatted Makefile to be more professional, and `make install` is ready to use
