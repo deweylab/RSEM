@@ -142,6 +142,8 @@ if ($bowtie2) {
 }
 
 if ($star) {
+    pod2usage(-msg => "Sorry, if you want RSEM run STAR for you, you must provide the genome sequence and associated GTF annotation.", -exitval => 2, -verbose => 2) if ($gtfF eq "");
+    
     my $out_star_genome_path = dirname($ARGV[1]);
     $command = $star_path . "STAR " .
                         " --runThreadN $star_nthreads " .
