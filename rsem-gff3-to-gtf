@@ -9,11 +9,11 @@ type_gene = ["gene", "snRNA_gene", "transposable_element_gene", "ncRNA_gene", "t
 	"rRNA_gene", "tRNA_gene", "snoRNA_gene", "mt_gene", "miRNA_gene", "lincRNA_gene", "RNA", "VD_gene_segment"]
 type_transcript = ["transcript", "primary_transcript", "mRNA", "ncRNA", "tRNA", "rRNA", "snRNA", "snoRNA", 
 	"pseudogenic_transcript", "lincRNA", "NMD_transcript_variant", "miRNA", "aberrant_processed_transcript",
-	"processed_transcript", "nc_primary_transcript", "processed_pseudogene"]
+	"nc_primary_transcript", "processed_pseudogene"]
 type_exon = ["exon", "CDS", "five_prime_UTR", "three_prime_UTR", "UTR", "noncoding_exon"]
 
 # can be either gene or transcript, need special treatment
-type_gene_or_transcript = ["pseudogene", "V_gene_segment", "C_gene_segment", "J_gene_segment"] 
+type_gene_or_transcript = ["pseudogene", "V_gene_segment", "C_gene_segment", "J_gene_segment", "processed_transcript"] 
 
 
 class HelpOnErrorParser(argparse.ArgumentParser):
@@ -97,7 +97,8 @@ class Transcript:
 		self.setT = False # if a transcript feature has been set
 
 		self.seqid = feature.seqid
-		self.source = feature.source
+		# self.source = feature.source
+		self.source = None
 		self.strand = feature.strand
 
 		self.intervals = []
@@ -111,6 +112,7 @@ class Transcript:
 		self.gid = parents[0]
 		self.tname = feature.getAttribute("Name")
 		self.ttype = feature.original_type
+		self.source = feature.source
 
 	def addExon(self, feature):
 		self.intervals.append((feature.start, feature.end))
@@ -152,8 +154,8 @@ def getTranscript(tid, feature):
 		my_assert(pos >= 0, 
 			"Line {0} describes an already processed Transcript {1}:\n{2}".format(feature.line_no, tid, feature.line))
 		transcript = transcripts[pos]
-		my_assert(transcript.seqid == feature.seqid and transcript.source == feature.source and transcript.strand == feature.strand, 
-				"Line {0}'s seqid/source/strand is not consistent with other records of transcript {1}:\n{2}".format(
+		my_assert(transcript.seqid == feature.seqid and transcript.strand == feature.strand, 
+				"Line {0}'s seqid/strand is not consistent with other records of transcript {1}:\n{2}".format(
 					feature.line_no, tid, feature.line))
 
 	return transcript
