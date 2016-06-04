@@ -7,10 +7,10 @@ from operator import itemgetter
 
 type_gene = ["gene", "snRNA_gene", "transposable_element_gene", "ncRNA_gene", "telomerase_RNA_gene", 
 	"rRNA_gene", "tRNA_gene", "snoRNA_gene", "mt_gene", "miRNA_gene", "lincRNA_gene", "RNA", "VD_gene_segment"]
-type_transcript = ["transcript", "primary_transcript", "mRNA", "ncRNA", "tRNA", "rRNA", "snRNA", "snoRNA", 
-	"pseudogenic_transcript", "lincRNA", "NMD_transcript_variant", "miRNA", "aberrant_processed_transcript",
-	"nc_primary_transcript", "processed_pseudogene"]
-type_exon = ["exon", "CDS", "five_prime_UTR", "three_prime_UTR", "UTR", "noncoding_exon"]
+type_transcript = ["transcript", "primary_transcript", "mRNA", "ncRNA", "tRNA", "rRNA", "snRNA", "snoRNA", "miRNA",
+	"pseudogenic_transcript", "lincRNA", "NMD_transcript_variant", "aberrant_processed_transcript",
+	"nc_primary_transcript", "processed_pseudogene", "mRNA_TE_gene"]
+type_exon = ["exon", "CDS", "five_prime_UTR", "three_prime_UTR", "UTR", "noncoding_exon", "pseudogenic_exon"]
 
 # can be either gene or transcript, need special treatment
 type_gene_or_transcript = ["pseudogene", "V_gene_segment", "C_gene_segment", "J_gene_segment", "processed_transcript"] 
