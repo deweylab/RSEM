@@ -5,7 +5,7 @@ use Pod::Usage;
 use File::Basename;
 use FindBin;
 use lib $FindBin::RealBin;
-use rsem_perl_utils qw(runCommand collectResults showVersionInfo getSAMTOOLS);
+use rsem_perl_utils qw(runCommand collectResults showVersionInfo getSAMTOOLS hasPolyA);
 
 use Env qw(@PATH);
 
@@ -167,7 +167,7 @@ pod2usage(-verbose => 2) if ($help == 1);
 
 if ($is_alignment) {
     pod2usage(-msg => "Invalid number of arguments!", -exitval => 2, -verbose => 2) if (scalar(@ARGV) != 3);
-    pod2usage(-msg => "--bowtie-path, --bowtie-n, --bowtie-e, --bowtie-m, --phred33-quals, --phred64-quals, --solexa-quals, --bowtie2, --bowtie2-path, --bowtie2-mismatch-rate, --bowtie2-k and --bowtie2-sensitivity-level cannot be set if input is SAM/BAM/CRAM format!", -exitval => 2, -verbose => 2) if ($bowtie_path ne "" || $C != 2 || $E != 99999999 || $maxHits != 200 || $phred33 || $phred64 || $solexa || $bowtie2 || $bowtie2_path ne "" || $bowtie2_mismatch_rate != 0.1 || $bowtie2_k != 200 || $bowtie2_sensitivity_level ne "sensitive");
+    pod2usage(-msg => "--bowtie-path, --bowtie-n, --bowtie-e, --bowtie-m, --phred33-quals, --phred64-quals, --solexa-quals, --bowtie2, --bowtie2-path, --bowtie2-mismatch-rate, --bowtie2-k, --bowtie2-sensitivity-level, --star, --star-path, and --star-output-genome-bam cannot be set if input is SAM/BAM/CRAM format!", -exitval => 2, -verbose => 2) if ($bowtie_path ne "" || $C != 2 || $E != 99999999 || $maxHits != 200 || $phred33 || $phred64 || $solexa || $bowtie2 || $bowtie2_path ne "" || $bowtie2_mismatch_rate != 0.1 || $bowtie2_k != 200 || $bowtie2_sensitivity_level ne "sensitive" || $star || $star_path ne "" || $star_output_genome_bam);
 }
 else {
     pod2usage(-msg => "Invalid number of arguments!", -exitval => 2, -verbose => 2) if (!$paired_end && scalar(@ARGV) != 3 || $paired_end && scalar(@ARGV) != 4);    
@@ -225,6 +225,8 @@ if (((-e "$refName.ta") && !(-e "$refName.gt")) || (!(-e "$refName.ta") && (-e "
 }
 
 $alleleS = (-e "$refName.ta") && (-e "$refName.gt");
+
+pod2usage(-msg => "Reference cannot contain poly(A) tails if STAR aligner is chosen!", -exitval => 2, -verbose => 2) if ($star && (&hasPolyA("$refName.seq")));
 
 if ($genGenomeBamF) {
     open(INPUT, "$refName.ti");

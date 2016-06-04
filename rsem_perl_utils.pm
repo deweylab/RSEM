@@ -7,7 +7,7 @@ use strict;
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(runCommand);
-our @EXPORT_OK = qw(runCommand collectResults showVersionInfo getSAMTOOLS);
+our @EXPORT_OK = qw(runCommand collectResults showVersionInfo getSAMTOOLS hasPolyA);
 
 my $version = "RSEM v1.2.30"; # Update version info here
 my $samtools = "samtools-1.3"; # If update to another version of SAMtools, need to change this
@@ -95,7 +95,15 @@ sub showVersionInfo {
 }
 
 sub getSAMTOOLS {
-    return $samtools
+    return $samtools;
+}
+
+sub hasPolyA {
+    open(INPUT, $_[0]);
+    my line = <INPUT>; chomp($line)
+    close(INPUT)
+    my ($fullLen, $totLen) = split(/ /, line)
+    return $fullLen < $totLen;
 }
 
 1;

@@ -63,9 +63,11 @@ pod2usage(-msg => "--transcript-to-gene-map and --allele-to-gene-map are mutuall
 pod2usage(-msg => "--gtf and --gff3 are mutually exclusive!", -exitval => 2, -verbose => 2) if (($gtfF ne "") && ($gff3F ne ""));
 pod2usage(-msg => "--gtf/--gff3 and --allele-to-gene-map are mutually exclusive!", -exitval => 2, -verbose => 2) if ((($gtfF ne "") || ($gff3F ne "")) && ($alleleMappingF ne ""));
 pod2usage(-msg => "Invalid number of arguments!", -exitval => 2, -verbose => 2) if (scalar(@ARGV) != 2);
+pod2usage(-msg => "No poly(A) tail should be added if --star is set!", -exitval => 2, -verbose => 2) if ($star && $polyA);
 
 if (!$bowtie && ($bowtie_path ne "")) { print "Warning: If Bowtie is not used, no need to set --bowtie-path option!\n"; }
 if (!$bowtie2 && ($bowtie2_path ne "")) { print "Warning: If Bowtie 2 is not used, no need to set --bowtie2-path option!\n"; }
+if (!$star && ($star_path ne "")) { print "Warning: If STAR is not used, no need to set --star-path option!\n"; }
 
 my @list = split(/,/, $ARGV[0]);
 my $size = scalar(@list);
