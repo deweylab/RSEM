@@ -70,13 +70,13 @@ class Feature:
 		self.start = int(fields[3])
 		self.end = int(fields[4])
 		self.strand = fields[6]
-		self.attributes = fields[8]
+		self.attributes = fields[8][:-1] if len(fields[8]) > 0 and fields[8][-1] == ';' else fields[8]
 
 	def parseAttributes(self):
 		self.attribute_dict = {}
 		for attribute in self.attributes.split(';'):
 			fields = attribute.split('=')
-			my_assert(len(fields) == 2, "Fail to parse attribute {0} of line {1}:\n{2}.".format(attribute, self.line_no, self.line))
+			my_assert(len(fields) == 2, "Fail to parse attribute {0} of line {1}:\n{2}".format(attribute, self.line_no, self.line))
 			tag, value = fields
 			if tag == "Parent":
 				self.attribute_dict[tag] = value.split(',')
