@@ -226,7 +226,7 @@ if (((-e "$refName.ta") && !(-e "$refName.gt")) || (!(-e "$refName.ta") && (-e "
 
 $alleleS = (-e "$refName.ta") && (-e "$refName.gt");
 
-pod2usage(-msg => "Reference cannot contain poly(A) tails if STAR aligner is chosen!", -exitval => 2, -verbose => 2) if ($star && (&hasPolyA("$refName.seq")));
+pod2usage(-msg => "RSEM reference cannot contain poly(A) tails if you want to use STAR aligner!", -exitval => 2, -verbose => 2) if ($star && (&hasPolyA("$refName.seq")));
 
 if ($genGenomeBamF) {
     open(INPUT, "$refName.ti");
