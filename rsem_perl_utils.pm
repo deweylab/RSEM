@@ -100,9 +100,9 @@ sub getSAMTOOLS {
 
 sub hasPolyA {
     open(INPUT, $_[0]);
-    my line = <INPUT>; chomp($line)
-    close(INPUT)
-    my ($fullLen, $totLen) = split(/ /, line)
+    my $line = <INPUT>; chomp($line);
+    close(INPUT);
+    my ($fullLen, $totLen) = split(/ /, $line);
     return $fullLen < $totLen;
 }
 
