@@ -126,7 +126,10 @@ int SamParser::parseNext(SingleRead& read, SingleHit& hit) {
 		val = readType;
 		read = SingleRead(name, bam_get_read_seq(b));
 	}
-	else val = 5;
+	else {
+		general_assert(read.getReadLength() == b->core.l_qseq, "Read " + name + " has alignments with inconsistent read lengths!");
+		val = 5;
+	}
 
 	if (readType == 1) {
 	  general_assert(bam_check_cigar(b), "Read " + name + ": RSEM currently does not support gapped alignments, sorry!\n");
@@ -155,7 +158,10 @@ int SamParser::parseNext(SingleReadQ& read, SingleHit& hit) {
 		val = readType;
 		read = SingleReadQ(name, bam_get_read_seq(b), bam_get_qscore(b));
 	}
-	else val = 5;
+	else {
+		general_assert(read.getReadLength() == b->core.l_qseq, "Read " + name + " has alignments with inconsistent read lengths!");
+		val = 5;
+	}
 
 	if (readType == 1) {
 	  general_assert(bam_check_cigar(b), "Read " + name + ": RSEM currently does not support gapped alignments, sorry!\n");
@@ -196,7 +202,10 @@ int SamParser::parseNext(PairedEndRead& read, PairedEndHit& hit) {
 		SingleRead mate2(name2, bam_get_read_seq(b2));
 		read = PairedEndRead(mate1, mate2);
 	}
-	else val = 5;
+	else {
+		general_assert(read.getMate1().getReadLength() == b->core.l_qseq && read.getMate2().getReadLength() == b2->core.l_qseq, "Paired-end read " + name + " has alignments with inconsistent mate lengths!");
+		val = 5;
+	}
 
 	if (readType == 1) {
 	  general_assert(bam_check_cigar(b) && bam_check_cigar(b2), "Read " + name + ": RSEM currently does not support gapped alignments, sorry!");
@@ -237,7 +246,10 @@ int SamParser::parseNext(PairedEndReadQ& read, PairedEndHit& hit) {
 		SingleReadQ mate2(name2, bam_get_read_seq(b2), bam_get_qscore(b2));
 		read = PairedEndReadQ(mate1, mate2);
 	}
-	else val = 5;
+	else {
+		general_assert(read.getMate1().getReadLength() == b->core.l_qseq && read.getMate2().getReadLength() == b2->core.l_qseq, "Paired-end read " + name + " has alignments with inconsistent mate lengths!");
+		val = 5;
+	}
 
 	if (readType == 1) {
 	  general_assert(bam_check_cigar(b) && bam_check_cigar(b2), "Read " + name + ": RSEM currently does not support gapped alignments, sorry!");
