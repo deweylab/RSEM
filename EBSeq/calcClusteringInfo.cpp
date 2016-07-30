@@ -10,8 +10,6 @@
 #include<algorithm>
 using namespace std;
 
-const int STRLEN = 1005;
-
 int M;
 int k; // k-mer size
 vector<string> names;

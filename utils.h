@@ -23,7 +23,9 @@ const int RANGE = 201;
 const int OLEN = 25; // overlap length, number of bases must not be in poly(A) tails
 const int NBITS = 32; // use unsigned int, 32 bits per variable
 
-static bool verbose = true; // show detail intermediate outputs
+const int MAX_WARNS = 50; // Display at most 50 warnings of the sample type
+
+extern bool verbose; // show detail intermediate outputs
 
 inline bool isZero(double a) { return fabs(a) < 1e-8; }
 inline bool isLongZero(double a) { return fabs(a) < 1e-30; }
@@ -152,6 +154,13 @@ inline void printTimeUsed(const time_t& a, const time_t& b, const char* program_
 	int ss = (b - a) % 60;
 
 	printf("Time Used for %s : %d h %02d m %02d s\n", program_name, hh, mm, ss);
+}
+
+inline std::string assemble_command(int argc, char* argv[]) {
+  std::string command = argv[0];
+  for (int i = 1; i < argc; ++i)
+    command += " " + std::string(argv[i]);
+  return command;
 }
 
 #endif

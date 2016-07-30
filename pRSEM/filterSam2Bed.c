@@ -8,7 +8,8 @@
 */
 
 #include <stdio.h>
-#include "../sam/sam.h"
+#include "sam.h"
+//#include "../samtools-1.3/htslib-1.3/htslib/sam.h"
 
 static int fetch_func(const bam1_t *b, void *data) {
 	samfile_t *fp = (samfile_t*)data;

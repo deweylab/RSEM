@@ -14,6 +14,8 @@
 
 using namespace std;
 
+bool verbose = true;
+
 int M;
 
 map<string, string> name2seq;
@@ -65,14 +67,6 @@ void loadMappingInfo(int file_type, char* mappingF) {
   }
 
   fin.close();
-}
-
-char check(char c) {
-	if (!isalpha(c)) { fprintf(stderr, "Sequence contains unknown letter '%c'!\n", c); exit(-1); }
-	//assert(isalpha(c));
-	if (isupper(c) && c != 'A' && c != 'C' && c != 'G' && c != 'T') c = 'N';
-	if (islower(c) && c != 'a' && c != 'c' && c != 'g' && c != 't') c = 'n';
-	return c;
 }
 
 void writeResults(int option, char* refName) {
@@ -135,6 +129,19 @@ void writeResults(int option, char* refName) {
 	}
 }
 
+struct CursorPos {
+  char *filename;
+  int line_no, pos;
+} cursor;
+
+inline char check(char c) {
+  general_assert(isalpha(c), "FASTA file " + cstrtos(cursor.filename) + " contains an unknown character, " + \
+		 ctos(c) + " (ASCII code " + itos(c) + "), at line " + itos(cursor.line_no) + ", position " + itos(cursor.pos + 1) + "!");
+  if (isupper(c) && c != 'A' && c != 'C' && c != 'G' && c != 'T') c = 'N';
+  if (islower(c) && c != 'a' && c != 'c' && c != 'g' && c != 't') c = 'n';
+  return c;
+}
+
 int main(int argc, char* argv[]) {
   if (argc < 5 || ((hasMappingFile = atoi(argv[3])) && argc < 6)) {
 		printf("Usage: synthesisRef refName quiet hasMappingFile<0,no;1,yes;2,allele-specific> [mappingFile] reference_file_1 [reference_file_2 ...]\n");
@@ -153,28 +160,33 @@ int main(int argc, char* argv[]) {
 	ifstream fin;
 	string line, gseq;
 	string seqname, gene_id, transcript_id;
-
+	int seqlen, len;
+	
 	vector<Interval> vec;
 
 	M = 0;
 	name2seq.clear();
 	for (int i = start; i < argc; i++) {
 		fin.open(argv[i]);
-		general_assert(fin.is_open(), "Cannot open " + cstrtos(argv[i]) + "! It may not exist."); 
+		general_assert(fin.is_open(), "Cannot open " + cstrtos(argv[i]) + "! It may not exist.");
+
+		cursor.filename = argv[i]; cursor.line_no = cursor.pos = 0;
+		
 		getline(fin, line);
 		while ((fin) && (line[0] == '>')) {
 			istringstream strin(line.substr(1));
 			strin>>seqname;
-
-			gseq = "";
+			++cursor.line_no;
+			
+			gseq = ""; seqlen = 0;
 			while((getline(fin, line)) && (line[0] != '>')) {
-			    gseq += line;
+			  ++cursor.line_no;
+			  len = line.length();
+			  for (cursor.pos = 0; cursor.pos < len; ++cursor.pos) line[cursor.pos] = check(line[cursor.pos]);
+			  seqlen += len;
+			  gseq += line;
 			}
-
-			int len = gseq.length();
-			assert(len > 0);
-			for (int j = 0; j < len; j++) gseq[j] = check(gseq[j]);
-
+			assert(seqlen > 0);
 			name2seq[seqname] = gseq;
 
 			transcript_id = seqname;
@@ -192,7 +204,7 @@ int main(int argc, char* argv[]) {
 			}
 			
 			vec.clear();
-			vec.push_back(Interval(1, len));
+			vec.push_back(Interval(1, seqlen));
 			transcripts.add(Transcript(transcript_id, gene_id, seqname, '+', vec, ""));
 			++M;
 

@@ -12,7 +12,6 @@ token <- strvec[length(strvec)]
 stat.dir <- paste(argv[1], ".stat", sep = "")
 if (!file.exists(stat.dir)) {
   cat("Error: directory does not exist: ", stat.dir, "\n", sep = "")
-  cat(strwrap("This version of rsem-plot-model only works with the output of RSEM versions >= 1.1.8"), sep="\n")
   q(status = 1)
 }
 modelF <- paste(stat.dir, "/", token, ".model", sep = "")
@@ -31,13 +30,15 @@ vec <- as.numeric(strsplit(strvec[1], split = " ")[[1]])
 maxL <- vec[2] # maxL used for Profile
 x <- (vec[1] + 1) : vec[2]
 y <- as.numeric(strsplit(strvec[2], split = " ")[[1]])
+mode_len = which(y == max(y)) + vec[1]
 mean <- weighted.mean(x, y)
 std <- sqrt(weighted.mean((x - mean)^2, y))
 plot(x, y, type = "h",
      main = "Fragment Length Distribution",
-     sub = paste("Mean = ", round(mean, 1), ", Std = ", round(std, 1)),
+     sub = sprintf("Mode = %d, Mean = %.1f, and Std = %.1f", mode_len, mean, std),
      xlab = "Fragment Length",
      ylab = "Probability")
+abline(v = mode_len, col = "red", lty = "dashed")
 
 # mate length distribution
 if (model_type == 0 || model_type == 1) bval <- as.numeric(readLines(con, n = 1)[1]) else bval <- 1
@@ -48,11 +49,12 @@ if (bval == 1) {
   maxL <- vec[2]
   x <- (vec[1] + 1) : vec[2]
   y <- as.numeric(list[[2]])
+  mode_len = which(y == max(y)) + vec[1]
   mean <- weighted.mean(x, y)
   std <- sqrt(weighted.mean((x - mean)^2, y))
   plot(x, y, type = "h",
        main = "Read Length Distribution",
-       sub=paste("Mean = ", round(mean, 1), ", Std = ", round(std, 1)),
+       sub = sprintf("Mode = %d, Mean = %.1f, and Std = %.1f", mode_len, mean, std),
        xlab = "Read Length",
        ylab = "Probability")
 }
@@ -140,10 +142,28 @@ if (model_type == 1 || model_type == 3) {
 
 close(con)
 
+# Alignment statistics
 pair <- read.table(file = cntF, skip = 3, sep = "\t")
-barplot(pair[,2], names.arg = pair[,1],
-        xlab = "Alignments per fragment",
-        ylab = "Number of fragments",
-        main = "Histogram of Alignments per Fragment")
+
+stat_len = dim(pair)[1]
+upper_bound = pair[stat_len - 1, 1]
+my_labels = append(0:upper_bound, pair[stat_len, 1])
+my_heights = rep(0, upper_bound + 2)
+dummy = sapply(1:(stat_len - 1), function(id) { my_heights[pair[id, 1] + 1] <<- pair[id, 2] })
+my_heights[upper_bound + 2] = pair[stat_len, 2]
+my_colors = c("green", "blue", rep("dimgrey", upper_bound - 1), "red")
+
+barplot(my_heights, names.arg = my_labels,
+        col = my_colors, border = NA,
+        xlab = "Number of alignments per read",
+        ylab = "Number of reads",
+        main = "Alignment statistics")
+
+pie_values = c(my_heights[1], my_heights[2], sum(my_heights[3:(upper_bound  + 1)]), my_heights[upper_bound + 2])
+pie_names = c("Unalignable", "Unique", "Multi", "Filtered")
+pie_labels = sprintf("%s %.0f%%", pie_names, pie_values * 100.0 / sum(pie_values))
+par(fig = c(0.4, 1, 0.35, 0.95), new = T)
+pie(pie_values, labels = pie_labels, col = c("green", "blue", "dimgrey", "red"), clockwise = T, init.angle = 270, cex = 0.8)
+par(fig = c(0, 1, 0, 1))
 
 dev.off.output <- dev.off()

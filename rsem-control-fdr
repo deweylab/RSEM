@@ -64,6 +64,10 @@ __END__
 
 rsem-control-fdr
 
+=head1 PURPOSE
+
+Filter EBSeq output for statistical significance.
+
 =head1 SYNOPSIS
 
 rsem-control-fdr [options] input_file fdr_rate output_file

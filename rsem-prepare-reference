@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 
-use Getopt::Long;
+use Getopt::Long qw(:config no_auto_abbrev);
 use Pod::Usage;	
 use File::Basename;
 use FindBin;
@@ -16,6 +16,9 @@ use warnings;
 my $status;
 
 my $gtfF = "";
+my $gff3F = "";
+my $gff3_RNA_patterns = "";
+my $gtf_sources = "None";
 my $mappingF = "";
 my $polyAChoice = 1; # 0, --polyA, add polyA tails for all isoforms; 1, default, no polyA tails; 2, --no-polyA-subset
 my $polyA = 0; # for option --polyA, default off 
@@ -38,6 +41,9 @@ my $star_nthreads = 1;
 my $star_sjdboverhang = 100;
 
 GetOptions("gtf=s" => \$gtfF,
+	   "gff3=s" => \$gff3F,
+	   "gff3-RNA-patterns=s" => \$gff3_RNA_patterns,
+	   "trusted-sources=s" => \$gtf_sources,
 	   "transcript-to-gene-map=s" => \$mappingF,
 	   "allele-to-gene-map=s" => \$alleleMappingF,
 	   "polyA" => \$polyA, 
@@ -58,8 +64,10 @@ GetOptions("gtf=s" => \$gtfF,
 
 pod2usage(-verbose => 2) if ($help == 1);
 pod2usage(-msg => "--transcript-to-gene-map and --allele-to-gene-map are mutually exclusive!", -exitval => 2, -verbose => 2) if (($mappingF ne "") && ($alleleMappingF ne ""));
-pod2usage(-msg => "--gtf and --allele-to-gene-map are mutually exclusive!", -exitval => 2, -verbose => 2) if (($gtfF ne "") && ($alleleMappingF ne ""));
+pod2usage(-msg => "--gtf and --gff3 are mutually exclusive!", -exitval => 2, -verbose => 2) if (($gtfF ne "") && ($gff3F ne ""));
+pod2usage(-msg => "--gtf/--gff3 and --allele-to-gene-map are mutually exclusive!", -exitval => 2, -verbose => 2) if ((($gtfF ne "") || ($gff3F ne "")) && ($alleleMappingF ne ""));
 pod2usage(-msg => "Invalid number of arguments!", -exitval => 2, -verbose => 2) if (scalar(@ARGV) != 2);
+pod2usage(-msg => "No poly(A) tail should be added if --star is set!", -exitval => 2, -verbose => 2) if ($star && $polyA);
 
 if ( $prep_prsem ) {
   my $msg = '';
@@ -76,11 +84,9 @@ if ( $prep_prsem ) {
   }
 }
 
- 
-my $type;
-
-if ($gtfF ne "") { $type = 0; }
-else { $type = 1; }
+if (!$bowtie && ($bowtie_path ne "")) { print "Warning: If Bowtie is not used, no need to set --bowtie-path option!\n"; }
+if (!$bowtie2 && ($bowtie2_path ne "")) { print "Warning: If Bowtie 2 is not used, no need to set --bowtie2-path option!\n"; }
+if (!$star && ($star_path ne "")) { print "Warning: If STAR is not used, no need to set --star-path option!\n"; }
 
 my @list = split(/,/, $ARGV[0]);
 my $size = scalar(@list);
@@ -99,13 +105,25 @@ if ($polyA) {
 
 if ($bowtie_path ne "") { $bowtie_path .= "/"; }
 if ($bowtie2_path ne "") { $bowtie2_path .= "/"; }
-if ($star_path ne '') { $star_path .= '/'; }
+if ($star_path ne "") { $star_path .= "/"; }
 
 my $command = "";
 
-if ($type == 0) {
+if ($gff3F ne "") {
+    $gtfF = "$ARGV[1].gtf";
+    pod2usage(-msg => "A file with the name $gtfF alreay exists! GFF3-to-GTF conversion failed!", -exitval => 2, -verbose => 2) if (-e $gtfF);
+    $command = "rsem-gff3-to-gtf";
+    if ($gff3_RNA_patterns ne "") {
+	$command .= " --RNA-patterns $gff3_RNA_patterns";
+    }
+    $command .= " $gff3F $gtfF";
+    &runCommand($command)
+}
+
+if ($gtfF ne "") {
     $"=" ";
-    $command = "rsem-extract-reference-transcripts $ARGV[1] $quiet $gtfF";
+    $gtf_sources =~ s/ /\\ /g;
+    $command = "rsem-extract-reference-transcripts $ARGV[1] $quiet $gtfF $gtf_sources";
     if ($mappingF ne "") { $command .= " 1 $mappingF"; }
     else { $command .= " 0"; }
     $command .= " @list";
@@ -121,7 +139,8 @@ else {
     &runCommand($command);
 }
 
-$command = "rsem-preref $ARGV[1].transcripts.fa $polyAChoice $ARGV[1] -l $polyALen";
+$command = "rsem-preref $ARGV[1].transcripts.fa $polyAChoice $ARGV[1]";
+if ($polyAChoice != 1) { $command .= " -l $polyALen"; }
 if ($polyAChoice == 2) { $command .= " -f $subsetFile"; }
 if ($quiet) { $command .= " -q"; }
 
@@ -144,10 +163,12 @@ if ($bowtie2) {
 }
 
 if ($star) {
+    pod2usage(-msg => "Sorry, if you want RSEM run STAR for you, you must provide the genome sequence and associated GTF annotation.", -exitval => 2, -verbose => 2) if ($gtfF eq "");
+    
     my $out_star_genome_path = dirname($ARGV[1]);
-    $command = "$star_path/STAR " .
+    $command = $star_path . "STAR " .
                         " --runThreadN $star_nthreads " .
-                        ' --runMode genomeGenerate ' .
+                        " --runMode genomeGenerate " .
                         " --genomeDir $out_star_genome_path " .
                         " --genomeFastaFiles @list " .
                         " --sjdbGTFfile $gtfF " .
@@ -168,7 +189,7 @@ if ( $prep_prsem ) {
  
     ## prepare reference only for chromosomes listed in GTF file, rather than 
     ## all chromosomes in the genome directory, because that's where we want to 
-    ## callpeaks and derive priors. This is different from RNA-seq, because 
+    ## call peaks and derive priors. This is different from RNA-seq, because 
     ## where peaks called totally depends on reference, there's no option to
     ## control it later.
     #my $ref_fas = join(',', @list);
@@ -200,9 +221,13 @@ __END__
 
 rsem-prepare-reference
 
+=head1 PURPOSE
+
+Prepare transcript references for RSEM and optionally build BOWTIE/BOWTIE2/STAR indices.
+
 =head1 SYNOPSIS
 
-rsem-prepare-reference [options] reference_fasta_file(s) reference_name
+ rsem-prepare-reference [options] reference_fasta_file(s) reference_name
 
 =head1 ARGUMENTS
 
@@ -210,11 +235,11 @@ rsem-prepare-reference [options] reference_fasta_file(s) reference_name
 
 =item B<reference_fasta_file(s)>
 
-Either a comma-separated list of Multi-FASTA formatted files OR a directory name. If a directory name is specified, RSEM will read all files with suffix ".fa" or ".fasta" in this directory.  The files should contain either the sequences of transcripts or an entire genome, depending on whether the --gtf option is used.
+Either a comma-separated list of Multi-FASTA formatted files OR a directory name. If a directory name is specified, RSEM will read all files with suffix ".fa" or ".fasta" in this directory.  The files should contain either the sequences of transcripts or an entire genome, depending on whether the '--gtf' option is used.
 
 =item B<reference name>
 
-The name of the reference used. RSEM will generate several reference-related files that are prefixed by this name. This name can contain path information (e.g. /ref/mm9).
+The name of the reference used. RSEM will generate several reference-related files that are prefixed by this name. This name can contain path information (e.g. '/ref/mm9').
 
 =back
 
@@ -226,9 +251,21 @@ The name of the reference used. RSEM will generate several reference-related fil
 
 If this option is on, RSEM assumes that 'reference_fasta_file(s)' contains the sequence of a genome, and will extract transcript reference sequences using the gene annotations specified in <file>, which should be in GTF format.
 
-If this option is off, RSEM will assume 'reference_fasta_file(s)' contains the reference transcripts. In this case, RSEM assumes that name of each sequence in the Multi-FASTA files is its transcript_id. 
+If this and '--gff3' options are off, RSEM will assume 'reference_fasta_file(s)' contains the reference transcripts. In this case, RSEM assumes that name of each sequence in the Multi-FASTA files is its transcript_id. 
 
 (Default: off)
+
+=item B<--gff3> <file>
+
+The annotation file is in GFF3 format instead of GTF format. RSEM will first convert it to GTF format with the file name 'reference_name.gtf'. Please make sure that 'reference_name.gtf' does not exist. (Default: off)
+
+=item B<--gff3-RNA-patterns> <pattern>
+
+<pattern> is a comma-separated list of transcript categories, e.g. "mRNA,rRNA". Only transcripts that match the <pattern> will be extracted. (Default: "mRNA")
+
+=item B<--trusted-sources> <sources>
+
+<sources> is a comma-separated list of trusted sources, e.g. "ENSEMBL,HAVANA". Only transcripts coming from these sources will be extracted. If this option is off, all sources are accepted. (Default: off)
 
 =item B<--transcript-to-gene-map> <file>
 
@@ -241,7 +278,7 @@ with the two fields separated by a tab character.
 
 If you are using a GTF file for the "UCSC Genes" gene set from the UCSC Genome Browser, then the "knownIsoforms.txt" file (obtained from the "Downloads" section of the UCSC Genome Browser site) is of this format.
 
-If this option is off, then the mapping of isoforms to genes depends on whether the --gtf option is specified.  If --gtf is specified, then RSEM uses the "gene_id" and "transcript_id" attributes in the GTF file.  Otherwise, RSEM assumes that each sequence in the reference sequence files is a separate gene.
+If this option is off, then the mapping of isoforms to genes depends on whether the '--gtf' option is specified.  If '--gtf' is specified, then RSEM uses the "gene_id" and "transcript_id" attributes in the GTF file.  Otherwise, RSEM assumes that each sequence in the reference sequence files is a separate gene.
 
 (Default: off)
 

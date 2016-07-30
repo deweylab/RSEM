@@ -1,5 +1,6 @@
-CC = g++
+CXX = g++
 PROGRAMS = EBSeq rsem-for-ebseq-calculate-clustering-info
+DEPENDENCIES = blockmodeling gplots gtools gdata caTools bitops KernSmooth
 
 .PHONY : all EBSeq clean
 
@@ -9,7 +10,7 @@ EBSeq :
 	./install
 
 rsem-for-ebseq-calculate-clustering-info : calcClusteringInfo.cpp
-	$(CC) -O3 -Wall calcClusteringInfo.cpp -o $@
+	$(CXX) -O3 -Wall calcClusteringInfo.cpp -o $@
 
 clean : 
-	rm -rf blockmodeling $(PROGRAMS) *~ BiocInstaller
+	rm -rf $(PROGRAMS) $(DEPENDENCIES) BiocInstaller *~

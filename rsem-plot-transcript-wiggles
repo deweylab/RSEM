@@ -5,10 +5,10 @@ use Pod::Usage;
 
 use FindBin;
 use lib $FindBin::RealBin;
-use rsem_perl_utils;
+use rsem_perl_utils qw(runCommand getSAMTOOLS);
 
 use Env qw(@PATH);
-@PATH = ($FindBin::RealBin, "$FindBin::RealBin/sam", @PATH);
+@PATH = ($FindBin::RealBin, "$FindBin::RealBin/" . getSAMTOOLS(), @PATH);
 
 use strict;
 
@@ -16,11 +16,15 @@ use strict;
 my $gene_list = 0; # default is 0, means input is not a gene list
 my $transcript_list = 0; # default is 0, this option can only be turned on if allele-specific expression is calculated
 my $show_unique = 0; # 0, default value, means do not show unique transcript wiggles; 1 means show unique transcript wiggles
+my $p = 1;
+my $mem = "1G";
 my $help = 0;
 
 GetOptions("gene-list" => \$gene_list,
 	   "transcript-list" => \$transcript_list,
 	   "show-unique" => \$show_unique,
+	   "p|num-threads=i" => \$p,
+	   "memory-per-thread=s" => \$mem,
 	   "h|help" => \$help) or pod2usage(-exitval => 2, -verbose => 2);
 
 pod2usage(-verbose => 2) if ($help == 1);
@@ -35,7 +39,7 @@ pod2usage(-msg => "--gene-list and --transcript-list cannot be set at the same t
 my $command = "";
 
 unless (-e "$ARGV[0].transcript.sorted.bam") {
-    $command = "samtools sort $ARGV[0].transcript.bam $ARGV[0].transcript.sorted";
+    $command = "samtools sort -@ $p -m $mem -o $ARGV[0].transcript.sorted.bam $ARGV[0].transcript.bam";
     &runCommand($command);
 }
 unless (-e "$ARGV[0].transcript.readdepth") {
@@ -45,11 +49,11 @@ unless (-e "$ARGV[0].transcript.readdepth") {
 
 if ($show_unique) {
     unless (-e "$ARGV[0].uniq.transcript.bam") {
-	$command = "rsem-get-unique $ARGV[0].transcript.bam $ARGV[0].uniq.transcript.bam";
+	$command = "rsem-get-unique $p $ARGV[0].transcript.bam $ARGV[0].uniq.transcript.bam";
 	&runCommand($command);
     }
     unless (-e "$ARGV[0].uniq.transcript.sorted.bam") {
-	$command = "samtools sort $ARGV[0].uniq.transcript.bam $ARGV[0].uniq.transcript.sorted";
+	$command = "samtools sort -@ $p -m $mem -o $ARGV[0].uniq.transcript.sorted.bam $ARGV[0].uniq.transcript.bam";
 	&runCommand($command);
     }
     unless (-e "$ARGV[0].uniq.transcript.readdepth") {
@@ -79,9 +83,13 @@ __END__
 
 rsem-plot-transcript-wiggles
 
+=head1 PURPOSE
+
+Generate PDF wiggle plots from transcript or gene ids
+
 =head1 SYNOPSIS
 
-rsem-plot-transcript-wiggles [options] sample_name input_list output_plot_file
+ rsem-plot-transcript-wiggles [options] sample_name input_list output_plot_file
 
 =head1 ARGUMENTS
 
@@ -116,6 +124,14 @@ The input-list is a list of transcript ids. This option can only be turned on if
 =item B<--show-unique>
 
 Show the wiggle plots as stacked bar plots. See description section for details. (Default: off)
+
+=item B<-p/--num-threads> <int>
+
+Set the number of threads we can use. (Default: 1)
+
+=item B<--memory-per-thread> <string>
+
+Set the maximum allowable memory per thread. <string> represents the memory and accepts suffices 'K/M/G'. (Default: 1G)
 
 =item B<-h/--help>
 

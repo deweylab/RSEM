@@ -101,7 +101,7 @@ void Refs::makeRefs(char *inpF, RefSeqPolicy& policy, PolyARules& rules) {
       rawseq += line;
     }
     if (rawseq.size() <= 0) {
-      printf("Warning: Fasta entry %s has an empty sequence! It is omitted!\n", tag.c_str()); 
+      fprintf(stderr, "Warning: Fasta entry %s has an empty sequence! It is omitted!\n", tag.c_str()); 
       continue;
     }
     ++M;

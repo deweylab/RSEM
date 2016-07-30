@@ -285,7 +285,10 @@ void SingleQModel::estimateFromReads(const char* readFN) {
 	char readFs[2][STRLEN];
 	SingleReadQ read;
 
+	int n_warns = 0;
+	
 	mld != NULL ? mld->init() : gld->init();
+	
 	for (int i = 0; i < 3; i++)
 		if (N[i] > 0) {
 			genReadFileNames(readFN, i, read_type, s, readFs);
@@ -298,10 +301,10 @@ void SingleQModel::estimateFromReads(const char* readFN) {
 					qd->update(read.getQScore());
 					if (i == 0) { nqpro->updateC(read.getReadSeq(), read.getQScore()); }
 				}
-				else if (verbose && read.getReadLength() < seedLen) {
-					std::cout<< "Warning: Read "<< read.getName()<< " is ignored due to read length "<< read.getReadLength()<< " < seed length "<< seedLen<< "!"<< std::endl;
-				}
-
+				else if (read.getReadLength() < seedLen)
+				  if (++n_warns <= MAX_WARNS)
+				    fprintf(stderr, "Warning: Read %s is ignored due to read length (= %d) < seed length (= %d)!\n", read.getName().c_str(), read.getReadLength(), seedLen);
+				
 				++cnt;
 				if (verbose && cnt % 1000000 == 0) { std::cout<< cnt<< " READS PROCESSED"<< std::endl; }
 			}
@@ -309,10 +312,10 @@ void SingleQModel::estimateFromReads(const char* readFN) {
 			if (verbose) { std::cout<< "estimateFromReads, N"<< i<< " finished."<< std::endl; }
 		}
 
+	if (n_warns > 0) fprintf(stderr, "Warning: There are %d reads ignored in total.\n", n_warns);
+	
 	mld != NULL ? mld->finish() : gld->finish();
-
-	//mean should be > 0
-	if (mean >= EPSILON) { 
+	if (mean >= EPSILON) { 	//mean should be > 0
 	  assert(mld->getMaxL() <= gld->getMaxL());
 	  gld->setAsNormal(mean, sd, std::max(mld->getMinL(), gld->getMinL()), gld->getMaxL());
 	}
@@ -347,7 +350,8 @@ void SingleQModel::collect(const SingleQModel& o) {
 void SingleQModel::read(const char* inpF) {
 	int val;
 	FILE *fi = fopen(inpF, "r");
-	if (fi == NULL) { fprintf(stderr, "Cannot open %s! It may not exist.\n", inpF); exit(-1); }
+
+	general_assert(fi != NULL, "Cannot open " + cstrtos(inpF) + "! It may not exist.");
 
 	assert(fscanf(fi, "%d", &val) == 1);
 	assert(val == model_type);

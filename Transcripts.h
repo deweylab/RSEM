@@ -109,7 +109,7 @@ void Transcripts::buildMappings(int n_targets, char** target_name, const char* i
 
 	general_assert(n_targets > 0, "The SAM/BAM file declares less than one reference sequence!");
 	general_assert(n_targets <=  M, "The SAM/BAM file declares more reference sequences (" + itos(n_targets) + ") than RSEM knows (" + itos(M) + ")!");
-	if (n_targets < M) printf("Warning: The SAM/BAM file declares less reference sequences (%d) than RSEM knows (%d)!\n", n_targets, M);
+	if (n_targets < M) fprintf(stderr, "Warning: The SAM/BAM file declares less reference sequences (%d) than RSEM knows (%d)!\n", n_targets, M);
 
 	dict.clear();
 	for (int i = 1; i <= M; i++) {

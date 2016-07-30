@@ -233,10 +233,12 @@ private:
 };
 
 void PairedEndModel::estimateFromReads(const char* readFN) {
-	int s;
-	char readFs[2][STRLEN];
+    int s;
+    char readFs[2][STRLEN];
     PairedEndRead read;
 
+    int n_warns = 0;
+    
     mld->init();
     for (int i = 0; i < 3; i++)
     	if (N[i] > 0) {
@@ -257,9 +259,9 @@ void PairedEndModel::estimateFromReads(const char* readFN) {
     					npro->updateC(mate2.getReadSeq());
     				}
     			}
-    			else if (verbose && (mate1.getReadLength() < seedLen || mate2.getReadLength() < seedLen)) {
-				std::cout<< "Warning: Read "<< read.getName()<< " is ignored due to at least one of the mates' length < seed length "<< seedLen<< "!"<< std::endl;
-    			}
+    			else if (mate1.getReadLength() < seedLen || mate2.getReadLength() < seedLen)
+			  if (++n_warns <= MAX_WARNS)
+			    fprintf(stderr, "Warning: Read %s is ignored due to at least one of the mates' length < seed length (= %d)!\n", read.getName().c_str(), seedLen);
 
     			++cnt;
     			if (verbose && cnt % 1000000 == 0) { std::cout<< cnt<< " READS PROCESSED"<< std::endl; }
@@ -268,6 +270,8 @@ void PairedEndModel::estimateFromReads(const char* readFN) {
     		if (verbose) { std::cout<< "estimateFromReads, N"<< i<< " finished."<< std::endl; }
     	}
 
+    if (n_warns > 0) fprintf(stderr, "Warning: There are %d reads ignored in total.\n", n_warns);
+    
     mld->finish();
     npro->calcInitParams();
 
@@ -302,7 +306,8 @@ void PairedEndModel::collect(const PairedEndModel& o) {
 void PairedEndModel::read(const char* inpF) {
 	int val;
 	FILE *fi = fopen(inpF, "r");
-	if (fi == NULL) { fprintf(stderr, "Cannot open %s! It may not exist.\n", inpF); exit(-1); }
+
+	general_assert(fi != NULL, "Cannot open " + cstrtos(inpF) + "! It may not exist.");
 
 	assert(fscanf(fi, "%d", &val) == 1);
 	assert(val == model_type);

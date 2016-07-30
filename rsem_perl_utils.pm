@@ -7,7 +7,10 @@ use strict;
 require Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(runCommand);
-our @EXPORT_OK = qw(runCommand collectResults showVersionInfo);
+our @EXPORT_OK = qw(runCommand collectResults showVersionInfo getSAMTOOLS hasPolyA);
+
+my $version = "RSEM v1.2.31"; # Update version info here
+my $samtools = "samtools-1.3"; # If update to another version of SAMtools, need to change this
 
 # command, {err_msg}
 sub runCommand {
@@ -31,11 +34,11 @@ sub runCommand {
     print "\n";
 }
 
-my @allele_title = ("allele_id", "transcript_id", "gene_id", "length", "effective_length", "expected_count", "TPM", "FPKM", "AlleleIsoPct", "AlleleGenePct", "posterior_mean_count", "posterior_standard_deviation_of_count", "pme_TPM", "pme_FPKM", "AlleleIsoPct_from_pme_TPM", "AlleleGenePct_from_pme_TPM", "TPM_ci_lower_bound", "TPM_ci_upper_bound", "FPKM_ci_lower_bound", "FPKM_ci_upper_bound");
+my @allele_title = ("allele_id", "transcript_id", "gene_id", "length", "effective_length", "expected_count", "TPM", "FPKM", "AlleleIsoPct", "AlleleGenePct", "posterior_mean_count", "posterior_standard_deviation_of_count", "pme_TPM", "pme_FPKM", "AlleleIsoPct_from_pme_TPM", "AlleleGenePct_from_pme_TPM", "TPM_ci_lower_bound", "TPM_ci_upper_bound", "TPM_coefficient_of_quartile_variation", "FPKM_ci_lower_bound", "FPKM_ci_upper_bound", "FPKM_coefficient_of_quartile_variation");
 
-my @transcript_title = ("transcript_id", "gene_id", "length", "effective_length", "expected_count", "TPM", "FPKM", "IsoPct", "posterior_mean_count", "posterior_standard_deviation_of_count", "pme_TPM", "pme_FPKM", "IsoPct_from_pme_TPM", "TPM_ci_lower_bound", "TPM_ci_upper_bound", "FPKM_ci_lower_bound", "FPKM_ci_upper_bound");
+my @transcript_title = ("transcript_id", "gene_id", "length", "effective_length", "expected_count", "TPM", "FPKM", "IsoPct", "posterior_mean_count", "posterior_standard_deviation_of_count", "pme_TPM", "pme_FPKM", "IsoPct_from_pme_TPM", "TPM_ci_lower_bound", "TPM_ci_upper_bound", "TPM_coefficient_of_quartile_variation", "FPKM_ci_lower_bound", "FPKM_ci_upper_bound", "FPKM_coefficient_of_quartile_variation");
 
-my @gene_title = ("gene_id", "transcript_id(s)", "length", "effective_length", "expected_count", "TPM", "FPKM", "posterior_mean_count", "posterior_standard_deviation_of_count", "pme_TPM", "pme_FPKM", "TPM_ci_lower_bound", "TPM_ci_upper_bound", "FPKM_ci_lower_bound", "FPKM_ci_upper_bound");
+my @gene_title = ("gene_id", "transcript_id(s)", "length", "effective_length", "expected_count", "TPM", "FPKM", "posterior_mean_count", "posterior_standard_deviation_of_count", "pme_TPM", "pme_FPKM", "TPM_ci_lower_bound", "TPM_ci_upper_bound", "TPM_coefficient_of_quartile_variation", "FPKM_ci_lower_bound", "FPKM_ci_upper_bound", "FPKM_coefficient_of_quartile_variation");
 
 # type, inpF, outF
 sub collectResults {
@@ -86,14 +89,21 @@ sub collectResults {
     close(OUTPUT);
 }
 
-# 0, dir
 sub showVersionInfo {
-    open(INPUT, "$_[0]/WHAT_IS_NEW");
-    my $line = <INPUT>;
-    chomp($line);
-    close(INPUT);
-    print "Current version is $line\n";
+    print "Current version: $version\n";
     exit(0);
+}
+
+sub getSAMTOOLS {
+    return $samtools;
+}
+
+sub hasPolyA {
+    open(INPUT, $_[0]);
+    my $line = <INPUT>; chomp($line);
+    close(INPUT);
+    my ($fullLen, $totLen) = split(/ /, $line);
+    return $fullLen < $totLen;
 }
 
 1;

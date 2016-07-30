@@ -153,11 +153,16 @@ void NoiseQProfile::write(FILE *fo) {
 void NoiseQProfile::startSimulation() {
 	pc = new double[SIZE][NCODES];
 
-	for (int i = 0; i < SIZE; i++)
+	for (int i = 0; i < SIZE; i++) {
 		for (int j = 0; j < NCODES; j++) {
 			pc[i][j] = p[i][j];
 			if (j > 0) pc[i][j] += pc[i][j - 1];
 		}
+		if (isZero(pc[i][NCODES - 1])) {
+		  assert(NCODES == 5);
+		  pc[i][0] = 0.25; pc[i][1] = 0.5; pc[i][2] = 0.75; pc[i][3] = 1.0; pc[i][4] = 1.0;
+		}
+	}
 }
 
 std::string NoiseQProfile::simulate(simul* sampler, int len, const std::string& qual) {

@@ -48,6 +48,8 @@
 
 using namespace std;
 
+bool verbose = true;
+
 const double STOP_CRITERIA = 0.001;
 const int MAX_ROUND = 10000;
 const int MIN_ROUND = 20;
@@ -74,9 +76,7 @@ char refF[STRLEN], cntF[STRLEN], tiF[STRLEN];
 char mparamsF[STRLEN];
 char modelF[STRLEN], thetaF[STRLEN];
 
-char inpSamType;
-char *pt_fn_list;
-char inpSamF[STRLEN], outBamF[STRLEN], fn_list[STRLEN];
+char inpSamF[STRLEN], outBamF[STRLEN], *aux;
 
 char out_for_gibbs_F[STRLEN];
 
@@ -91,6 +91,8 @@ ModelParams mparams;
 
 bool hasSeed;
 seedType seed;
+
+bool appendNames;
 
 template<class ReadType, class HitType, class ModelType>
 void init(ReadReader<ReadType> **&readers, HitContainer<HitType> **&hitvs, double **&ncpvs, ModelType **&mhps) {
@@ -145,7 +147,7 @@ void init(ReadReader<ReadType> **&readers, HitContainer<HitType> **&hitvs, doubl
 			general_assert(hitvs[i]->read(fin), "Cannot read alignments from .dat file!");
 
 			--nrLeft;
-			if (verbose && nrLeft % 1000000 == 0) { cout<< "DAT "<< nrLeft << " reads left"<< endl; }
+			if (verbose && nrLeft > 0 && nrLeft % 1000000 == 0) { cout<< "DAT "<< nrLeft << " reads left"<< endl; }
 		}
 		ncpvs[i] = new double[hitvs[i]->getN()];
 		memset(ncpvs[i], 0, sizeof(double) * hitvs[i]->getN());
@@ -279,7 +281,7 @@ template<class ModelType>
 void writeResults(ModelType& model, double* counts) {
   sprintf(modelF, "%s.model", statName);
   model.write(modelF);
-  writeResultsEM(M, refName, imdName, transcripts, theta, eel, countvs[0]);
+  writeResultsEM(M, refName, imdName, transcripts, theta, eel, countvs[0], appendNames);
 }
 
 template<class ReadType, class HitType, class ModelType>
@@ -414,7 +416,7 @@ void EM() {
 	} while (ROUND < MIN_ROUND || (totNum > 0 && ROUND < MAX_ROUND));
 //	} while (ROUND < 1);
 
-	if (totNum > 0) { cout<< "Warning: RSEM reaches "<< MAX_ROUND<< " iterations before meeting the convergence criteria."<< endl; }
+	if (totNum > 0) fprintf(stderr, "Warning: RSEM reaches %d iterations before meeting the convergence criteria.\n", MAX_ROUND);
 
 	//generate output file used by Gibbs sampler
 	if (genGibbsOut) {
@@ -528,7 +530,7 @@ void EM() {
 			if (verbose) cout<< "Sampling is finished."<< endl;
 		}
 
-		BamWriter writer(inpSamType, inpSamF, pt_fn_list, outBamF, transcripts);
+		BamWriter writer(inpSamF, aux, outBamF, transcripts, nThreads);
 		HitWrapper<HitType> wrapper(nThreads, hitvs);
 		writer.work(wrapper);
 	}
@@ -538,10 +540,9 @@ void EM() {
 
 int main(int argc, char* argv[]) {
 	ifstream fin;
-	bool quiet = false;
 
 	if (argc < 6) {
-		printf("Usage : rsem-run-em refName read_type sampleName imdName statName [-p #Threads] [-b samInpType samInpF has_fn_list_? [fn_list]] [-q] [--gibbs-out] [--sampling] [--seed seed]\n\n");
+		printf("Usage : rsem-run-em refName read_type sampleName imdName statName [-p #Threads] [-b samInpF has_fai? [fai_file]] [-q] [--gibbs-out] [--sampling] [--seed seed] [--append-names]\n\n");
 		printf("  refName: reference name\n");
 		printf("  read_type: 0 single read without quality score; 1 single read with quality score; 2 paired-end read without quality score; 3 paired-end read with quality score.\n");
 		printf("  sampleName: sample's name, including the path\n");
@@ -550,8 +551,9 @@ int main(int argc, char* argv[]) {
 		printf("  -b: produce bam format output file. (default: off)\n");
 		printf("  -q: set it quiet\n");
 		printf("  --gibbs-out: generate output file used by Gibbs sampler. (default: off)\n");
-		printf("  --sampling: sample each read from its posterior distribution when bam file is generated. (default: off)\n");
+		printf("  --sampling: sample each read from its posterior distribution when BAM file is generated. (default: off)\n");
 		printf("  --seed uint32: the seed used for the BAM sampling. (default: off)\n");
+		printf("  --append-names: append transcript_name/gene_name when available. (default: off)\n");
 		printf("// model parameters should be in imdName.mparams.\n");
 		exit(-1);
 	}
@@ -569,21 +571,18 @@ int main(int argc, char* argv[]) {
 	genBamF = false;
 	bamSampling = false;
 	genGibbsOut = false;
-	pt_fn_list = NULL;
+	aux = NULL;
 	hasSeed = false;
-
+	appendNames = false;
+	
 	for (int i = 6; i < argc; i++) {
 		if (!strcmp(argv[i], "-p")) { nThreads = atoi(argv[i + 1]); }
 		if (!strcmp(argv[i], "-b")) {
 			genBamF = true;
-			inpSamType = argv[i + 1][0];
-			strcpy(inpSamF, argv[i + 2]);
-			if (atoi(argv[i + 3]) == 1) {
-				strcpy(fn_list, argv[i + 4]);
-				pt_fn_list = (char*)(&fn_list);
-			}
+			strcpy(inpSamF, argv[i + 1]);
+			if (atoi(argv[i + 2]) == 1) aux = argv[i + 3];
 		}
-		if (!strcmp(argv[i], "-q")) { quiet = true; }
+		if (!strcmp(argv[i], "-q")) { verbose = false; }
 		if (!strcmp(argv[i], "--gibbs-out")) { genGibbsOut = true; }
 		if (!strcmp(argv[i], "--sampling")) { bamSampling = true; }
 		if (!strcmp(argv[i], "--seed")) {
@@ -592,11 +591,10 @@ int main(int argc, char* argv[]) {
 		  seed = 0;
 		  for (int k = 0; k < len; k++) seed = seed * 10 + (argv[i + 1][k] - '0');
 		}
+		if (!strcmp(argv[i], "--append-names")) appendNames = true;
 	}
 
 	general_assert(nThreads > 0, "Number of threads should be bigger than 0!");
-
-	verbose = !quiet;
 
 	//basic info loading
 	sprintf(refF, "%s.seq", refName);

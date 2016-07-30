@@ -7,6 +7,7 @@
 #include<string>
 #include<vector>
 #include<fstream>
+#include<sstream>
 
 #include "utils.h"
 
@@ -30,17 +31,14 @@ public:
 		structure.clear();
 		strand = 0;
 		seqname = gene_id = transcript_id = "";
+		gene_name = transcript_name = "";
 		left = "";
 	}
 
 	Transcript(const std::string& transcript_id, const std::string& gene_id, const std::string& seqname,
-			const char& strand, const std::vector<Interval>& structure, const std::string& left) {
-		this->structure = structure;
-		this->strand = strand;
-		this->seqname = seqname;
-		this->gene_id = gene_id;
-		this->transcript_id = transcript_id;
-
+		   const char& strand, const std::vector<Interval>& structure, const std::string& left,
+		   const std::string& transcript_name = "", const std::string& gene_name = "") : structure(structure), strand(strand),
+	  seqname(seqname), gene_id(gene_id), transcript_id(transcript_id), gene_name(gene_name), transcript_name(transcript_name) {
 		//eliminate prefix spaces in string variable "left"
 		int pos = 0;
 		int len = left.length();
@@ -58,8 +56,12 @@ public:
 
 	const std::string& getTranscriptID() const { return transcript_id; }
 
+	const std::string& getTranscriptName() const { return transcript_name; }
+	
 	const std::string& getGeneID() const { return gene_id; }
 
+	const std::string& getGeneName() const { return gene_name; }
+	
 	const std::string& getSeqName() const { return seqname; }
 
 	char getStrand() const { return strand; }
@@ -80,6 +82,7 @@ private:
 	std::vector<Interval> structure; // transcript structure , coordinate starts from 1
 	char strand;
 	std::string seqname, gene_id, transcript_id; // follow GTF definition
+	std::string gene_name, transcript_name;
 	std::string left;
 };
 
@@ -116,10 +119,20 @@ void Transcript::extractSeq(const std::string& gseq, std::string& seq) const {
 void Transcript::read(std::ifstream& fin) {
 	int s;
 	std::string tmp;
+	std::istringstream strin;
 
-	getline(fin, transcript_id);
-	getline(fin, gene_id);
+	getline(fin, tmp);
+	strin.str(tmp);
+	getline(strin, transcript_id, '\t');
+	getline(strin, transcript_name);
+	
+	getline(fin, tmp);
+	strin.clear(); strin.str(tmp);
+	getline(strin, gene_id, '\t');
+	getline(strin, gene_name);
+	
 	getline(fin, seqname);
+	
 	fin>>tmp>>length;
 	assert(tmp.length() == 1 && (tmp[0] == '+' || tmp[0] == '-'));
 	strand = tmp[0];
@@ -137,8 +150,14 @@ void Transcript::read(std::ifstream& fin) {
 void Transcript::write(std::ofstream& fout) {
 	int s = structure.size();
 
-	fout<<transcript_id<<std::endl;
-	fout<<gene_id<<std::endl;
+	fout<< transcript_id;
+	if (transcript_name != "") fout<< '\t'<< transcript_name;
+	fout<< std::endl;
+	
+	fout<< gene_id;
+	if (gene_name != "") fout<< '\t'<< gene_name;
+	fout<< std::endl;
+	
 	fout<<seqname<<std::endl;
 	fout<<strand<<" "<<length<<std::endl;
 	fout<<s;

@@ -40,6 +40,10 @@ __END__
 
 rsem-run-ebseq
 
+=head1 PURPOSE
+
+Wrapper for EBSeq to perform differential expression analysis.
+
 =head1 SYNOPSIS
 
 rsem-run-ebseq [options] data_matrix_file conditions output_file
@@ -92,6 +96,10 @@ If there are only 2 different conditions among the samples, four statistics (col
 
 If there are more than 2 different conditions among the samples, the output format is different. For differential expression analysis with more than 2 conditions, EBSeq will enumerate all possible expression patterns (on which conditions are equally expressed and which conditions are not). Suppose there are k different patterns, the first k columns of the output file give the posterior probability of each expression pattern is true. Patterns are defined in a separate file, 'output_file.pattern'. The k+1 column gives the maximum a posteriori (MAP) expression pattern for each gene/transcript. The k+2 column gives the posterior probability that not all conditions are equally expressed (column name "PPDE"). The genes/transcripts are reported in descending order of their "PPDE" column values. For details on how EBSeq works for more than 2 conditions, please refer to EBSeq's manual.
 
+=item B<output_file.normalized_data_matrix>
+
+This file contains the median normalized version of the input data matrix.
+
 =item B<output_file.pattern>
 
 This file is only generated when there are more than 2 conditions. It defines all possible expression patterns over the conditions using a matrix with names. Each row of the matrix refers to a different expression pattern and each column gives the expression status of a different condition. Two conditions are equally expressed if and only if their statuses are the same.
@@ -104,17 +112,17 @@ This file is only generated when there are more than 2 conditions. It gives the 
 
 =head1 EXAMPLES
 
-1) We're interested in isoform-level differential expression analysis and there are two conditions. Each condition has 5 replicates. We have already collected the data matrix as 'IsoMat' and generated ngvector as 'ngvector.ngvec':
+1) We're interested in isoform-level differential expression analysis and there are two conditions. Each condition has 5 replicates. We have already collected the data matrix as 'IsoMat.txt' and generated ngvector as 'ngvector.ngvec':
 
- rsem-run-ebseq --ngvector ngvector.ngvec IsoMat 5,5 IsoMat.results
+ rsem-run-ebseq --ngvector ngvector.ngvec IsoMat.txt 5,5 IsoMat.results
 
-The results will be in 'IsoMat.results'.
+The results will be in 'IsoMat.results' and 'IsoMat.results.normalized_data_matrix' contains the normalized data matrix.
 
-2) We're interested in gene-level analysis and there are 3 conditions. The first condition has 3 replicates and the other two has 4 replicates each. The data matrix is named as 'GeneMat':
+2) We're interested in gene-level analysis and there are 3 conditions. The first condition has 3 replicates and the other two has 4 replicates each. The data matrix is named as 'GeneMat.txt':
 
- rsem-run-ebseq GeneMat 3,4,4 GeneMat.results
+ rsem-run-ebseq GeneMat.txt 3,4,4 GeneMat.results
 
-Three files, 'GeneMat.results', 'GeneMat.results.pattern', and 'GeneMat.results.condmeans', will be generated. 
+Four files, 'GeneMat.results', 'GeneMat.results.normalized_data_matrix', 'GeneMat.results.pattern', and 'GeneMat.results.condmeans', will be generated. 
 
 =cut
 
