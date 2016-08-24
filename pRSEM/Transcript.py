@@ -68,8 +68,8 @@ class Transcript:
     quickly construct Transcript from the 6 lines from RSEM .TI file, the last
     line won't be parsed.
     """
-    self.transcript_id = ti_lines[0];
-    self.gene_id = ti_lines[1];
+    self.transcript_id = ti_lines[0].split("\t")[0]
+    self.gene_id = ti_lines[1].split("\t")[0]
     self.chrom = ti_lines[2];
     (self.strand, self.length) = ti_lines[3].split();
     self.length = int(self.length);
