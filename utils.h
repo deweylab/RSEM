@@ -23,7 +23,7 @@ const int RANGE = 201;
 const int OLEN = 25; // overlap length, number of bases must not be in poly(A) tails
 const int NBITS = 32; // use unsigned int, 32 bits per variable
 
-const int MAX_WARNS = 50; // Display at most 50 warnings of the sample type
+const int MAX_WARNS = 50; // Display at most 50 warnings of the same type
 
 extern bool verbose; // show detail intermediate outputs
 
