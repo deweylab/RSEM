@@ -16,6 +16,7 @@ Table of Contents
 * [Simulation](#simulation)
 * [Generate Transcript-to-Gene-Map from Trinity Output](#gen_trinity)
 * [Differential Expression Analysis](#de)
+* [Prior-Enhanced RSEM](#pRSEM)
 * [Authors](#authors)
 * [Acknowledgements](#acknowledgements)
 * [License](#license)
@@ -573,6 +574,14 @@ manual](http://www.bioconductor.org/packages/devel/bioc/vignettes/EBSeq/inst/doc
 
 Questions related to EBSeq should
 be sent to <a href="mailto:nleng@wisc.edu">Ning Leng</a>.
+
+## <a name="pRSEM"></a> Prior-Enhanced RSEM
+
+Prior-enhanced RSEM (pRSEM) uses ChIP-seq information for RNA-seq fragment allocation. We include pRSEM as in the subfolder `pRSEM`. To compile `pRSEM`, type
+
+    make pRSEM
+
+Note that you need to first compile `RSEM` before compiling `pRSEM`. You can see this [demo](https://github.com/pliu55/pRSEM_demo) for how to use `pRSEM`.
 
 ## <a name="authors"></a> Authors
 
