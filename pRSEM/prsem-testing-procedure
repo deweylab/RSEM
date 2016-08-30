@@ -1,0 +1,104 @@
+#!/bin/env python
+
+__doc__="""
+
+  pliu 20150304
+
+  run pRSEM's testing procedure to calculate:
+  1. a p-value on whether external data is informative
+  2. a log-likelihood on read counts of partitioned isoforms' fit to DM model
+"""
+
+import os
+import sys
+import Util
+import Prsem
+
+def main():
+  import File
+  import Param
+
+  argdict = getCommandLineArguments()
+
+  param = Param.initFromCommandLineArguments(argdict)
+
+  if param.chipseq_peak_file is None:
+    if param.partition_model == 'cmb_lgt':
+      if param.chipseq_bed_files_multi_targets is not None:
+        Prsem.genChIPSeqSignalFilesFromBed(param)
+      elif param.chipseq_read_files_multi_targets is not None:
+        Prsem.genChIPSeqSignalFilesFromReads(param)
+      param.targetids = sorted(param.targetid2fchipseq_alignment.keys())
+    else:
+      ## IDR peaks will be saved in file param.fidr_chipseq_peaks
+      Prsem.genChIPSeqPeakFileBySPPIDR(param)
+      cse_target  = param.chipseqexperiment_target
+      cse_control = param.chipseqexperiment_control
+      param.targetids = sorted([rep.name for rep in cse_target.reps])
+      if cse_control is not None:
+        param.targetids += sorted([rep.name for rep in cse_control.reps])
+  else:
+    file_pk = File.initFromFullFileName(param.chipseq_peak_file)
+    param.targetids = [file_pk.basename]
+
+
+  if param.partition_model == 'pk':
+    ## no need to calculate signals or body/tes peaks here
+    Prsem.genPriorByTSSPeak(param)
+  elif param.partition_model == 'cmb_lgt':
+    Prsem.genPriorByCombinedTSSSignals(param)
+  else:
+    Prsem.genPriorByPeakSignalGCLen(param)
+
+  writePvalLL(param)
+
+def getCommandLineArguments():
+  import argparse
+
+  parser = argparse.ArgumentParser()
+  parser.add_argument('--num-threads', type=int)
+  parser.add_argument('--chipseq-target-read-files')
+  parser.add_argument('--chipseq-control-read-files')
+  parser.add_argument('--chipseq-read-files-multi-targets')
+  parser.add_argument('--chipseq-bed-files-multi-targets')
+  parser.add_argument('--cap-stacked-chipseq-reads', action='store_true')
+  parser.add_argument('--n-max-stacked-chipseq-reads', type=int)
+  parser.add_argument('--bowtie-path')
+  parser.add_argument('--chipseq-peak-file')
+  parser.add_argument('--partition-model', )
+  parser.add_argument('--quiet', action='store_true')
+
+  ## need to be in the same order as fed in argument
+  parser.add_argument('ref_name')
+  parser.add_argument('sample_name')
+  parser.add_argument('stat_name')
+  parser.add_argument('imd_name')
+  argdict = vars(parser.parse_args())
+
+  return argdict
+
+
+def writePvalLL(prm):
+  """
+  add p-value and log-likelihood to a file under RSEM's calculate expression dir
+  """
+  existing_lines = []
+  if os.path.exists(prm.fall_pvalLL):
+    existing_lines = Util.readFile(prm.fall_pvalLL)
+  pvalLL_lines = Util.readFile(prm.fpvalLL)
+
+  s_target = ','.join(prm.targetids)
+
+  f_fout = open(prm.fall_pvalLL, 'a')
+  if len(existing_lines) == 0:
+    f_fout.write("partition_model\texternal_data\tp_value\tlog_likelihood\n")
+
+  f_fout.write("%s\t%s\t%s\n" % (prm.partition_model, s_target,
+                                 pvalLL_lines[1]))
+  f_fout.close()
+
+  sys.stdout.write("\npRSEM testing procedure result is saved in %s\n" %
+                   prm.fall_pvalLL)
+
+if __name__=='__main__':
+  main()

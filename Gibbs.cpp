@@ -68,6 +68,7 @@ double *mw;
 
 vector<int> init_counts;
 double pseudoC;
+
 vector<double> pme_c, pve_c; //global posterior mean and variance vectors on counts
 vector<double> pme_tpm, pme_fpkm;
 
@@ -89,6 +90,13 @@ bool alleleS;
 int m_trans;
 GroupInfo gt, ta;
 vector<double> pve_c_genes, pve_c_trans;
+
+// pliu
+// if has prior file; file's name; and a vector to save prior parameters
+bool has_prior;
+char fprior[STRLEN];
+vector<double> pseudo_counts;
+//////
 
 void load_data(char* refName, char* statName, char* imdName) {
 	ifstream fin;
@@ -158,6 +166,34 @@ void load_omit_info(const char* imdName) {
   totc = totc * pseudoC + N0 + N1;
 }
 
+// pliu
+// load isoform's prior information and re-calculate totc
+void load_prior_info(const char* fprior){
+	pseudo_counts.assign(M+1, 0.0);
+  ifstream fin;
+  string line;
+  fin.open(fprior);
+  for(int i=1; i<=M; ++i){
+    double prior;
+    getline(fin, line);
+    sscanf(line.c_str(), "%lf%*s", &prior);
+    if ( init_counts[i] == 0 ){ // not to-be-omitted
+      pseudo_counts[i] = prior;
+    } 
+  }
+  fin.close();
+
+	// re-calculate 'totc' by considering prior parameters
+	totc = 1;
+	for ( int i=1; i<=M; ++i ) {
+		if ( init_counts[i] == 0 ) { // not to-be-omitted
+			totc += pseudo_counts[i];
+		}
+	}
+	totc += N0 + N1;
+}
+//////
+
 template<class ModelType>
 void init_model_related(char* modelF) {
 	ModelType model;
@@ -217,12 +253,14 @@ void init() {
 	if (verbose) { printf("Initialization finished!\n"); }
 }
 
+
 void writeCountVector(FILE* fo, vector<int>& counts) {
-	for (int i = 0; i < M; i++) {
-		fprintf(fo, "%d ", counts[i]);
-	}
-	fprintf(fo, "%d\n", counts[M]);
+  for (int i = 0; i < M; i++) {
+    fprintf(fo, "%d ", counts[i]);
+  }
+  fprintf(fo, "%d\n", counts[M]);
 }
+
 
 void* Gibbs(void* arg) {
 	int CHAINLEN;
@@ -261,7 +299,11 @@ void* Gibbs(void* arg) {
 			fr = s[i]; to = s[i + 1]; len = to - fr;
 			arr.assign(len, 0);
 			for (HIT_INT_TYPE j = fr; j < to; j++) {
-			  arr[j - fr] = (counts[hits[j].sid] + pseudoC) * hits[j].conprb;
+				if ( has_prior ) {
+			  	arr[j - fr] = (counts[hits[j].sid] + pseudo_counts[hits[j].sid]) * hits[j].conprb;
+				} else {
+			  	arr[j - fr] = (counts[hits[j].sid] + pseudoC) * hits[j].conprb;
+				}
 			  if (j > fr) arr[j - fr] += arr[j - fr - 1]; //cumulative
 			}
 			z[i] = hits[fr + sample(rg, arr, len)].sid;
@@ -271,7 +313,13 @@ void* Gibbs(void* arg) {
 		if (ROUND > BURNIN) {
 			if ((ROUND - BURNIN - 1) % GAP == 0) {
 				writeCountVector(params->fo, counts);
-				for (int i = 0; i <= M; i++) theta[i] = (counts[i] < 0 ? 0.0 : (counts[i] + pseudoC) / totc);
+				for (int i = 0; i <= M; i++) {
+					if ( has_prior ) {
+						theta[i] = (counts[i] < 0 ? 0.0 : (counts[i] + pseudo_counts[i]) / totc);
+					} else {
+						theta[i] = (counts[i] < 0 ? 0.0 : (counts[i] + pseudoC) / totc);
+					}
+				}
 				polishTheta(M, theta, eel, mw);
 				calcExpressionValues(M, theta, eel, tpm, fpkm);
 				for (int i = 0; i <= M; i++) {
@@ -376,7 +424,15 @@ void release() {
 
 int main(int argc, char* argv[]) {
 	if (argc < 7) {
-		printf("Usage: rsem-run-gibbs reference_name imdName statName BURNIN NSAMPLES GAP [-p #Threads] [--seed seed] [--pseudo-count pseudo_count] [-q]\n");
+		// pliu
+		// add an option --prior to take priors
+		printf("Usage: rsem-run-gibbs reference_name imdName statName BURNIN NSAMPLES GAP [-p #Threads] [--seed seed] [--pseudo-count pseudo_count] [--prior file] [-q]\n");
+    printf("\n");
+    printf("Format of the prior file:\n");
+    printf("- One isoform's prior per line\n");
+    printf("- Priors must be in the same order as in the .ti file\n");
+    printf("- Priors for those to-be-omitted isoforms must be included as well\n");
+    printf("- Comments can be added after prior seperated by space(s)\n");
 		exit(-1);
 	}
 
@@ -393,6 +449,10 @@ int main(int argc, char* argv[]) {
 	pseudoC = 1.0;
 	quiet = false;
 
+	// pliu
+	has_prior = false;
+	//////
+
 	for (int i = 7; i < argc; i++) {
 		if (!strcmp(argv[i], "-p")) nThreads = atoi(argv[i + 1]);
 		if (!strcmp(argv[i], "--seed")) {
@@ -403,6 +463,13 @@ int main(int argc, char* argv[]) {
 		}
 		if (!strcmp(argv[i], "--pseudo-count")) pseudoC = atof(argv[i + 1]);
 		if (!strcmp(argv[i], "-q")) quiet = true;
+
+		// pliu
+		if ( ! strcmp(argv[i], "--prior") ) {
+			has_prior = true;
+			strcpy(fprior, argv[i+1]);
+		}
+		//////
 	}
 	verbose = !quiet;
 
@@ -416,6 +483,14 @@ int main(int argc, char* argv[]) {
 	load_data(refName, statName, imdName);
 	load_group_info(refName);
 	load_omit_info(imdName);
+
+	// pliu
+	// have to do it after load_data() in order to use 'M'
+	// the variable 'totc' will be re-calculated by including the prior info
+	if ( has_prior ) {
+		load_prior_info(fprior);
+	}
+	//////
 
 	sprintf(modelF, "%s.model", statName);
 	FILE *fi = fopen(modelF, "r");

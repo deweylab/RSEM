@@ -1,0 +1,324 @@
+#!/usr/bin/env perl
+
+use Getopt::Long;
+use Pod::Usage;
+use File::Basename;
+use FindBin;
+use lib $FindBin::RealBin;
+use rsem_perl_utils qw(runCommand collectResults showVersionInfo);
+
+use Env qw(@PATH);
+@PATH = ($FindBin::RealBin, "$FindBin::RealBin/sam", @PATH);
+
+use strict;
+use warnings;
+
+#const
+my $status = 0;
+my $bowtie_path = "";
+my $nThreads = 1;
+my $quiet = 0;
+my $help = 0;
+my $keep_intermediate_files = 0;
+my $version = 0;
+
+my ($refName, $sampleName, $sampleToken, $temp_dir, $stat_dir, $imdName, $statName) = ('') x 7;
+
+my $chipseq_target_read_files  = '';
+my $chipseq_control_read_files = '';
+my $chipseq_peak_file          = '';
+my $partition_model            = 'pk';
+my $chipseq_read_files_multi_targets = ''; ## read files for multiple targets
+                                           ## delimited by comma
+my $chipseq_bed_files_multi_targets = '';  ## BED files for multiple targets
+                                           ## delimited by comma
+
+GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
+	   "temporary-folder=s" => \$temp_dir,
+	   "bowtie-path=s" => \$bowtie_path,
+	   "p|num-threads=i" => \$nThreads,
+	   'chipseq-target-read-files=s' => \$chipseq_target_read_files, 
+	                                      ## delimited by comma if more than one
+	   'chipseq-control-read-files=s' => \$chipseq_control_read_files, 
+	                                      ## delimited by comma if more than one
+     'chipseq-read-files-multi-targets=s' => \$chipseq_read_files_multi_targets,
+                                          ## delimited by comma
+     'chipseq-bed-files-multi-targets=s' => \$chipseq_bed_files_multi_targets,
+                                         ## delimited by comma
+	   'chipseq-peak-file=s' => \$chipseq_peak_file,
+	   'partition-model=s' => \$partition_model,
+	   "version" => \$version,
+	   "q|quiet" => \$quiet,
+	   "h|help" => \$help) or pod2usage(-exitval => 2, -verbose => 2);
+
+pod2usage(-verbose => 2) if ($help == 1);
+&showVersionInfo($FindBin::RealBin) if ($version == 1);
+
+#check parameters and options
+{
+  my $msg = '';
+
+  if ( ( $chipseq_peak_file eq '' ) && 
+       ( ( $chipseq_target_read_files eq ''  ) || 
+         ( $chipseq_control_read_files eq '' ) || 
+         ( $bowtie_path eq '' ) ) && 
+       ( ( $chipseq_read_files_multi_targets eq '' ) ||
+         ( $bowtie_path eq '' ) ) &&
+       ( $chipseq_bed_files_multi_targets eq '' )
+     ) {
+    $msg = "please define one set of the following options to run pRSEM's testing procedure:\n" .
+           "1. --chipseq-peak-file <file>\n" .
+           "2. --chipseq-target-read-files <file> and\n" .
+           "   --chipseq-control-read-files <file> and\n" .
+           "   --bowtie-path <path>\n" .
+           "3. --chipseq-read-files-multi-targets <files> and\n" .
+           "   --bowtie-path <path>\n" .
+           "4. --chipseq-bed-files-multi-targets <files>\n";
+  }
+
+  my @prsem_partition_models = ( 'pk', 'cmb_lgt' );
+
+  my %prtmdl2one = ();
+  foreach my $prtmdl (@prsem_partition_models) {
+    $prtmdl2one{$prtmdl} = 1;
+  }
+
+  if ( exists $prtmdl2one{$partition_model} ) {
+    if ( ( $partition_model eq 'cmb_lgt' ) && 
+         ( ( $chipseq_read_files_multi_targets eq '' ) &&
+           ( $chipseq_bed_files_multi_targets  eq '' ) ) ){
+      $msg = 'either --chipseq-read-files-multi-targets <files> or ' .
+             '--chipseq-bed-files-multi-targets <files> needs to be ' .
+             "defined for pRSEM's partition model: '$partition_model'";
+    } elsif ( ( $partition_model ne 'pk' ) && 
+              ( $partition_model ne 'cmb_lgt' ) &&
+              ( ( $chipseq_target_read_files eq ''  ) || 
+                ( $chipseq_control_read_files eq '' ) || 
+                ( $bowtie_path eq '' ) ) ){
+      $msg = '--chipseq-target-read-files <file> and ' .
+             '--chipseq-control-read-files <file> and ' .
+             '--bowtie-path <path> need to be defined for ' .
+             "pRSEM's partition model: '$partition_model'";
+    }
+  } else {
+    my $s_prt_mdls = join(', ', @prsem_partition_models);
+    $msg = "\n--partition-model <string> must be one of [$s_prt_mdls]\n" .
+           "pRSEM's testing procedure only supports the above partition models";
+  }
+
+  if ( $msg ne '' ) {
+    pod2usage(-msg => "$msg\n", -exitval => 2, -verbose => 2);
+  }
+
+  if ( ( $partition_model ne 'cmb_lgt' ) && 
+       ( ( $chipseq_read_files_multi_targets ne '' ) || 
+         ( $chipseq_bed_files_multi_targets  ne '' ) ) ) {
+    print "\nCombining signals from multiple sources, partition model is set to 'cmb_lgt'\n\n";
+    $partition_model = 'cmb_lgt';
+  }
+}
+
+
+$refName = $ARGV[0];
+$sampleName = $ARGV[1];
+
+my $pos = rindex($sampleName, '/');
+if ($pos < 0) { $sampleToken = $sampleName; }
+else { $sampleToken = substr($sampleName, $pos + 1); }
+
+if ($temp_dir eq "") { $temp_dir = "$sampleName.temp"; }
+$stat_dir = "$sampleName.stat";
+
+if (!(-d $temp_dir) && !mkdir($temp_dir)) { print "Fail to create folder $temp_dir.\n"; exit(-1); }
+if (!(-d $stat_dir) && !mkdir($stat_dir)) { print "Fail to create folder $stat_dir.\n"; exit(-1); }
+
+$imdName = "$temp_dir/$sampleToken";
+$statName = "$stat_dir/$sampleToken";
+
+
+if ($bowtie_path ne "") { $bowtie_path .= "/"; }
+
+my $command = "";
+
+{
+  $command = "$FindBin::RealBin/pRSEM/prsem-testing-procedure " .
+             " --num-threads $nThreads " .
+             " --partition-model $partition_model ";
+
+  ##  ChIP-seq peak file from single source
+  if ( $chipseq_peak_file ne '') { ## only for partition model pk
+                                   ## need to add sanity check!!
+    $command .= " --chipseq-peak-file $chipseq_peak_file";
+  } elsif ( $partition_model eq 'cmb_lgt' ) {  ## multi-sources
+    if ( $chipseq_bed_files_multi_targets ne '' ) { ## use bed over read
+      $command .= ' --chipseq-bed-files-multi-targets ' . 
+                    $chipseq_bed_files_multi_targets;
+    } elsif ( $chipseq_read_files_multi_targets ne '' ) { 
+      $command .= ' --chipseq-read-files-multi-targets ' .
+                    $chipseq_read_files_multi_targets .
+                  " --bowtie-path $bowtie_path" ;
+    }
+  } else { ## ChIP-seq reads files from single source
+    $command .= " --chipseq-target-read-files $chipseq_target_read_files " .
+                " --bowtie-path $bowtie_path" ;
+    if ( $chipseq_control_read_files ne '' ) {
+     $command .= " --chipseq-control-read-files $chipseq_control_read_files";
+    }
+  }
+
+  if ( $quiet ) {
+      $command .= ' --quiet ';
+  }
+
+  $command .= " $refName $sampleName $statName $imdName";
+  &runCommand($command);
+}
+
+
+if (!$keep_intermediate_files) {
+    &runCommand("rm -rf $temp_dir", "Fail to delete the temporary folder!");
+}
+
+__END__
+
+=head1 NAME
+
+rsem-run-prsem-testing-procedure
+
+=head1 SYNOPSIS
+
+rsem-run-prsem-testing-procedure [options] reference_name sample_name
+
+=head1 ARGUMENGS
+
+=over
+
+=item B<reference_name>
+
+The name of the reference used. Users must run 'rsem-prepare-reference' with this reference_name and with '--prep-pRSEM' specified before running this program.
+
+=item B<sample_name>
+
+The name of the sample analyzed. Users must run 'rsem-calculate-expression' with this sample_name and with RSEM's default Gibbs sampling performed before running this program.
+
+=back
+
+=head1 BASIC OPTIONS
+
+=over
+
+=item B<--bowtie-path> <string>
+
+The path to the Bowtie executables. (Default: the path to the Bowtie executables is assumed to be in the user's PATH environment variable)
+
+=item B<--chipseq-target-read-files> <string> 
+
+Comma-separated full path of FASTQ read file(s) for ChIP-seq target. This option provides information to calculate ChIP-seq peaks and signals. The file(s) can be either ungzipped or gzipped with a suffix '.gz' or '.gzip'. The options '--bowtie-path <path>' and '--chipseq-control-read-files <string>' must be defined when this option is specified. (Default: "")
+
+=item B<--chipseq-control-read-files> <string>
+
+Comma-separated full path of FASTQ read file(s) for ChIP-seq conrol. This option provides information to call ChIP-seq peaks. The file(s) can be either ungzipped or gzipped with a suffix '.gz' or '.gzip'. The options '--bowtie-path <path>' and '--chipseq-target-read-files <string>' must be defined when this option is specified. (Default: "")
+
+
+=item B<--chipseq-read-files-multi-targets> <string>
+
+Comma-separated full path of FASTQ read files for multiple ChIP-seq targets. This option is used when prior is learned from multiple complementary data sets. It provides information to calculate ChIP-seq signals. All files can be either ungzipped or gzipped with a suffix '.gz' or '.gzip'. When this option is specified, the option '--bowtie-path <path>' must be defined and the option '--partition-model <string>' will be set to 'cmb_lgt' automatically. (Default: "")
+
+=item B<--chipseq-bed-files-multi-targets> <string>
+
+Comma-separated full path of BED files for multiple ChIP-seq targets. This option is used when prior is learned from multiple complementary data sets. It provides information of ChIP-seq signals and must have at least the first six BED columns. All files can be either ungzipped or gzipped with a suffix '.gz' or '.gzip'. When this option is specified, the option '--partition-model <string>' will be set to 'cmb_lgt' automatically. (Default: "")
+
+=item B<--chipseq-peak-file> <string>
+
+Full path to a ChIP-seq peak file in ENCODE's narrowPeak, i.e. BED6+4 format. This file is used in prior-enhanced RSEM's default two-partition model. It partitions isoforms by whether they have ChIP-seq overlapping with their transcription start site region or not. Each partition will have its own prior parameter learned from a training set. This file can be either gzipped or ungzipped. (Default: "")
+
+=item B<--partition-model> <string>
+
+A keyword to specify the partition model. It must be either 'pk' or 'cmb_lgt'. For details, please see the help document of 'rsem-calculate-expression'.
+
+=item B<-p|--num-threads> <int> 
+
+Number of threads to use. (Default: 1)
+
+=item B<--version>
+
+Show version information.
+
+=item B<-q|--quiet>
+
+Suppress the output of logging information. (Default: off)
+
+=item B<-h|--help>
+
+Show help information.
+
+=back
+
+=head1 ADVANCED OPTIONS
+
+=over
+
+=item B<--keep-intermediate-files>
+
+Keep temporary files generated by RSEM and this testing procedure. RSEM creates a temporary directory, 'sample_name.temp', into which it puts all intermediate output files. By default, after this test is finished, the temporary directory is deleted.  Set this option to prevent the deletion of this directory and the intermediate files inside of it. (Default: off)
+
+=item B<--temporary-folder> <string>
+
+Set where to put the temporary files generated by RSEM. If the folder specified does not exist, RSEM will try to create it. (Default: sample_name.temp)
+
+=back
+
+=head1 DESCRIPTION
+
+This program provides users a p-value and a log-likelihood to determine whether external data set(s) is informative and how informative it is for RNA-seq quantification. It is used in conjunction with prior-enhanced RSEM to let user select the most effective external data set(s). 
+
+Users can run this program repetitively with different external data. All p-values and log-likelihoods will be saved in an output file 'sample_name.pval_LL'. 
+
+=head1 NOTES
+
+Users must run 'rsem-prepare-reference' with the appropriate referece and with the option '--prep-pRSEM' before using this program
+
+Users must run 'rsem-calculate-expression' with the option '--calc-pme' before using this program
+
+The temporary directory and all intermediate files will be removed when RSEM finishes unless '--keep-intermediate-files' is specified.
+
+=head1 OUTPUT
+
+=over 
+
+=item B<sample_name.pval_LL>
+
+This file contains partition model's name, basename(s) of external data set file(s), p-value, and log-likelihood delimited by tab. When this program is ran repetiively, output will be concatenated to the end of this file without removing previous results.
+
+=back
+
+The following output files are the same as the ones generated by 'rsem-calculate-expression' with prior-enhanced RSEM. Please refer to the help document of 'rsem-calculate-expression' for details
+
+=over 2
+
+=item B<sample_name.stat/sample_name.all_tr_features>
+   
+=item B<sample_name.stat/sample_name.all_tr_prior>
+
+=item B<sample_name.stat/sample_name.lgt_mdl.RData>
+
+=item B<sample_name.stat/sample_name.pval_LL>
+
+=item B<sample_name.stat/sample_name_uniform_prior_1.isoforms.results>
+
+=item B<sample_name.stat/sample_name_uniform_prior_1.genes.results>
+
+=back
+
+=head1 EXAMPLE
+
+Assuming RSEM reference files are under '/ref' with name 'mouse_125' and expression files are under '/expr' with name 'mouse_125'. Suppose we want to derive prior from four histone modification ChIP-seq read data sets: '/data/H3K27Ac.fastq.gz', '/data/H3K4me1.fastq.gz', '/data/H3K4me2.fastq.gz', and '/data/H3K4me3.fastq.gz'. Also, assuming Bowtie's executables are under '/sw/bowtie/' and we want to use 16 cores:
+
+ rsem-run-prsem-testing-procedure --partition-model cmb_lgt \
+                                  --chipseq-read-files-multi-targets /data/H3K27Ac.fastq.gz,/data/H3K4me1.fastq.gz,/data/H3K4me2.fastq.gz,/data/H3K4me3.fastq.gz \
+                                  --bowtie-path /sw/bowtie \ 
+                                  --num-threads 16 \
+                                  /ref/mouse_125 \
+                                  /expr/mouse_125
+
+=cut

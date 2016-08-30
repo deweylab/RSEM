@@ -1,0 +1,74 @@
+#!/bin/env python
+
+__doc__="""
+
+  pliu 20150510
+
+  run pRSEM to calculate priors and use them for abundance estimation
+"""
+
+import os
+import sys
+import Util
+import Prsem
+
+def main():
+  import Param
+
+  argdict = getCommandLineArguments()
+
+  param = Param.initFromCommandLineArguments(argdict)
+
+  if param.chipseq_peak_file is None:
+    if param.partition_model == 'cmb_lgt':
+      if param.chipseq_bed_files_multi_targets is not None:
+        Prsem.genChIPSeqSignalFilesFromBed(param)
+      elif param.chipseq_read_files_multi_targets is not None:
+        Prsem.genChIPSeqSignalFilesFromReads(param)
+    else:
+      ## IDR peaks will be saved in file param.fidr_chipseq_peaks
+      Prsem.genChIPSeqPeakFileBySPPIDR(param)
+
+
+  if param.partition_model == 'pk':
+    ## no need to calculate signals or body/tes peaks here
+    Prsem.genPriorByTSSPeak(param)
+  elif param.partition_model == 'cmb_lgt':
+    Prsem.genPriorByCombinedTSSSignals(param)
+  else:
+    genPriorByPeakSignalGCLen(param)
+
+  Prsem.runGibbsSampling(param)
+
+
+def getCommandLineArguments():
+  import argparse
+
+  parser = argparse.ArgumentParser()
+  parser.add_argument('--num-threads', type=int)
+  parser.add_argument('--chipseq-target-read-files')
+  parser.add_argument('--chipseq-control-read-files')
+  parser.add_argument('--chipseq-read-files-multi-targets')
+  parser.add_argument('--chipseq-bed-files-multi-targets')
+  parser.add_argument('--cap-stacked-chipseq-reads', action='store_true')
+  parser.add_argument('--n-max-stacked-chipseq-reads', type=int)
+  parser.add_argument('--bowtie-path')
+  parser.add_argument('--chipseq-peak-file')
+  parser.add_argument('--partition-model', )
+  parser.add_argument('--gibbs-burnin', type=int)
+  parser.add_argument('--gibbs-number-of-samples', type=int)
+  parser.add_argument('--gibbs-sampling-gap', type=int)
+  parser.add_argument('--quiet', action='store_true')
+
+  ## need to be in the same order as fed in argument
+  parser.add_argument('ref_name')
+  parser.add_argument('sample_name')
+  parser.add_argument('stat_name')
+  parser.add_argument('imd_name')
+  argdict = vars(parser.parse_args())
+
+  return argdict
+
+
+if __name__=='__main__':
+  main()

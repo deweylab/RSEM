@@ -1,0 +1,11 @@
+IDR Peak calling Pipeline:
+Feb 9 2012
+Anshul Kundaje
+akundaje _at_ stanford _dot_ edu
+
+==================
+Mailing list
+==================
+Please join the IDR mailing list https://groups.google.com/group/idr-discuss for FAQs, discussions and updates on software.
+
+See https://sites.google.com/site/anshulkundaje/projects/idr for the latest pipeline.

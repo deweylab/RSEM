@@ -41,8 +41,9 @@ OBJS3 = EM.o Gibbs.o calcCI.o simulation.o
 PROGS1 = rsem-extract-reference-transcripts rsem-synthesis-reference-transcripts rsem-preref rsem-build-read-index rsem-simulate-reads
 PROGS2 = rsem-parse-alignments rsem-run-em rsem-tbam2gbam rsem-bam2wig rsem-bam2readdepth rsem-get-unique rsem-sam-validator rsem-scan-for-paired-end-reads
 PROGS3 = rsem-run-gibbs rsem-calculate-credibility-intervals
+PROGS4 = pRSEM/bigWigSummary pRSEM/RLib pRSEM/filterSam2Bed
 
-PROGRAMS = $(PROGS1) $(PROGS2) $(PROGS3)
+PROGRAMS = $(PROGS1) $(PROGS2) $(PROGS3) $(PROGS4)
 
 # Auxiliary variables for installation
 SCRIPTS = rsem-prepare-reference rsem-calculate-expression rsem-refseq-extract-primary-assembly rsem-gff3-to-gtf rsem-plot-model \
@@ -157,6 +158,32 @@ SamHeader.hpp : $(SAMHEADERS)
 ebseq :
 	cd EBSeq && $(MAKE) all
 
+
+# Compile pRSEM
+OS := $(shell uname)
+ifeq ($(OS), Darwin)
+  UCSCEXEDIR = http://hgdownload.cse.ucsc.edu/admin/exe/macOSX.x86_64
+endif
+ifeq ($(OS), Linux)
+	  UCSCEXEDIR = http://hgdownload.cse.ucsc.edu/admin/exe/linux.x86_64.v287
+endif
+
+pRSEM/bigWigSummary : 
+	if [ ! -e "pRSEM/bigWigSummary" ]; then cd pRSEM/; \
+  curl -O $(UCSCEXEDIR)/bigWigSummary; \
+  chmod +x bigWigSummary; \
+  fi
+
+pRSEM/RLib : pRSEM/installRLib.R
+	if [ ! -d "pRSEM/RLib" ]; then mkdir pRSEM/RLib/; fi; \
+  cd pRSEM/RLib/; Rscript ../installRLib.R 
+
+pRSEM/filterSam2Bed : pRSEM/filterSam2Bed.c $(SAMTOOLS)/libbam.a $(SAMLIBS)
+	$(CXX) $@.c $(SAMTOOLS)/libbam.a $(SAMLIBS) -lz -lpthread -I$(SAMTOOLS) -I$(SAMTOOLS)/$(HTSLIB) -o $@
+
+#pRSEM : pRSEM/bigWigSummary pRSEM/RLib pRSEM/filterSam2Bed
+
+
 # Install RSEM
 install : $(PROGRAMS) $(SCRIPTS) $(SAMTOOLS)/samtools rsem_perl_utils.pm
 	$(INSTALL_DIR) $(DESTDIR)$(bindir) $(DESTDIR)$(bindir)/$(SAMTOOLS)
@@ -168,6 +195,7 @@ install : $(PROGRAMS) $(SCRIPTS) $(SAMTOOLS)/samtools rsem_perl_utils.pm
 
 # Clean
 clean :
-	rm -f *.o *~ $(PROGRAMS)
+	rm -fr *.o *~ $(PROGRAMS)
 	cd $(SAMTOOLS) && $(MAKE) clean-all
 	cd EBSeq && $(MAKE) clean
+	cd pRSEM ; rm -fr *.pyc 

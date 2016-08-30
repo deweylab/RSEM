@@ -1,0 +1,70 @@
+#!/bin/env python
+
+__doc__="""
+
+  pliu 20160309
+
+  run pRSEM to prepare reference genome and select training set isoforms
+"""
+
+import os
+import sys
+import Util
+import Prsem
+
+
+def main():
+  import Gene
+  import Param
+  import Transcript
+
+  argdict = getCommandLineArguments()
+
+  prm = Param.initFromCommandLineArguments(argdict)
+
+  prepBowtieRef(prm)
+
+  prm.transcripts = Transcript.quicklyReadRSEMTI(prm.fti)
+  prm.genes = Gene.constructGenesFromTranscripts(prm.transcripts)
+
+  Prsem.buildTrainingSet(prm)
+
+
+def getCommandLineArguments():
+  import argparse
+
+  parser = argparse.ArgumentParser()
+  parser.add_argument('--num-threads', type=int)
+  parser.add_argument('--bowtie-path')
+  parser.add_argument('--mappability-bigwig-file')
+  parser.add_argument('--quiet', action='store_true')
+
+  ## need to be in the same order as fed in argument
+  parser.add_argument('ref_fasta')
+  parser.add_argument('ref_name')
+
+  argdict = vars(parser.parse_args())
+
+  return argdict
+
+
+def prepBowtieRef(prm):
+  bowtie_build = prm.bowtie_path + '/bowtie-build'
+ #bowtie_inspect = prm.bowtie_path + '/bowtie-inspect'
+  prsem_ref = prm.ref_name + '_prsem'
+
+  ## run bowtie-build for index whole genome for ChIP-seq
+  ## use --offrate=3, which is 2 less than the default value 5
+  ## will trade ~1.5 time memory for 1/4 alignment time for human genome
+  if prm.quiet:
+    Util.runCommand(bowtie_build, '-o', 3, '--quiet', prm.ref_fasta,
+                    prsem_ref, quiet=prm.quiet)
+  else:
+    Util.runCommand(bowtie_build, '-o', 3, prm.ref_fasta,
+                    prsem_ref, quiet=prm.quiet)
+
+ #Util.runCommandnAndGetOutput(bowtie_inspect, '-s', prsem_ref, quiet=False)
+
+
+if __name__=='__main__':
+  main()
