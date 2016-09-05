@@ -244,7 +244,7 @@ with open(args.input_GFF3_file) as fin:
 		line = line.strip()
 		line_no += 1
 		if line_no % 100000 == 0:
-			print("Loaded {} lines".format(line_no))
+			print("Loaded {0} lines".format(line_no))
 
 		if line.startswith("##FASTA"):
 			reachFASTA = True
