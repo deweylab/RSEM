@@ -416,6 +416,7 @@ OR
 3) Suppose we want to build STAR indices in the above example and save index files under '/ref' with name 'mouse_0'. Assuming STAR executable is '/sw/STAR', the command will be:
 
  rsem-prepare-reference --gtf mm9.gtf \
+                        --transcript-to-gene-map knownIsoforms.txt \
                         --star \
                         --star-path /sw/STAR \
                         -p 8 \
@@ -425,6 +426,7 @@ OR
 OR
 
  rsem-prepare-reference --gtf mm9.gtf \
+                        --transcript-to-gene-map knownIsoforms.txt \
                         --star \
                         --star-path /sw/STAR \
                         -p 8 \
@@ -436,6 +438,7 @@ STAR genome index files will be saved under '/ref/'.
 4) Suppose we want to prepare references for prior-enhanced RSEM in the above example. In this scenario, both STAR and Bowtie are required to build genomic indices - STAR for RNA-seq reads and Bowtie for ChIP-seq reads. Assuming their executables are under '/sw/STAR' and '/sw/Bowtie', respectively. Also, assuming the mappability file for mouse genome is '/data/mm9.bigWig'. The command will be:
 
  rsem-prepare-reference --gtf mm9.gtf \
+                        --transcript-to-gene-map knownIsoforms.txt \
                         --star \
                         --star-path /sw/STAR \
                         -p 8 \
@@ -448,6 +451,7 @@ STAR genome index files will be saved under '/ref/'.
 OR
 
  rsem-prepare-reference --gtf mm9.gtf \
+                        --transcript-to-gene-map knownIsoforms.txt \
                         --star \
                         --star-path /sw/STAR \
                         -p 8 \
