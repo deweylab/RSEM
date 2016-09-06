@@ -575,17 +575,53 @@ manual](http://www.bioconductor.org/packages/devel/bioc/vignettes/EBSeq/inst/doc
 Questions related to EBSeq should
 be sent to <a href="mailto:nleng@wisc.edu">Ning Leng</a>.
 
-## <a name="pRSEM"></a> Prior-Enhanced RSEM
+## <a name="pRSEM"></a> Prior-Enhanced RSEM (pRSEM)
 
-Prior-enhanced RSEM (pRSEM) uses ChIP-seq information for RNA-seq fragment allocation. We include pRSEM as in the subfolder `pRSEM`. To compile `pRSEM`, type
+### I. Overview
+
+[Prior-enhanced RSEM (pRSEM)](https://deweylab.github.io/pRSEM/) uses complementary information (e.g. ChIP-seq data) to allocate RNA-seq multi-mapping fragments. We included pRSEM in the subfolder `pRSEM` as well as in RSEM's scripts `rsem-prepare-reference` and `rsem-calculate-expression`. 
+
+### II. Demo
+
+To get a quick idea on how to use pRSEM, you can try this [demo](https://github.com/pliu55/pRSEM_demo). It provides a single script, named `run_pRSEM_demo.sh`, allowing you to run all pRSEM's functions. It also contains detailed descriptions of pRSEM's input and output files, workflow, and system requirements.
+
+### III. Installation
+
+To compile `pRSEM`, type
 
     make pRSEM
 
-Note that you need to first compile `RSEM` before compiling `pRSEM`. You can see this [demo](https://github.com/pliu55/pRSEM_demo) for how to use `pRSEM`.
+Note that you need to first compile `RSEM` before compiling `pRSEM`. Currently, pRSEM has been tested on Linux only.
+
+### IV. Usage
+
+pRSEM is called through two of RSEM's scripts: `rsem-prepare-reference` and `rsem-calculate-expression`. You can use commands:
+
+  rsem-prepare-reference --help
+
+and 
+
+  rsem-calculate-expression --help
+
+to look up pRSEM options and examples. 
+
+#### 1. Preparing Reference Sequences 
+
+pRSEM needs a mappability file in bigWig format in order to build a training set of isoforms to learn prior. 
+[GEM] (http://wiki.bits.vib.be/index.php/Create_a_mappability_track#Install_and_run_the_GEM_library_tools)
+
+If users want to let pRSEM call 
+
+
+#### 2. Calculating Expression Values
+
+### V. Example
+
+To run pRSEM on the [RSEM example provide above](#example)
 
 ## <a name="authors"></a> Authors
 
-[Bo Li](http://bli25ucb.github.io/) and [Colin Dewey](https://www.biostat.wisc.edu/~cdewey/) designed the RSEM algorithm. [Bo Li](http://bli25ucb.github.io/) implemented the RSEM software. [Peng Liu](https://www.biostat.wisc.edu/~cdewey/group.html) contributed the STAR aligner options.
+[Bo Li](http://bli25ucb.github.io/) and [Colin Dewey](https://www.biostat.wisc.edu/~cdewey/) designed the RSEM algorithm. [Bo Li](http://bli25ucb.github.io/) implemented the RSEM software. [Peng Liu](https://www.biostat.wisc.edu/~cdewey/group.html) contributed the STAR aligner options and prior-enhanced RSEM (pRSEM).
 
 ## <a name="acknowledgements"></a> Acknowledgements
 
