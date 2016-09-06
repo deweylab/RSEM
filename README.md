@@ -383,7 +383,7 @@ Position vs. percentage sequencing error given a reference base: x-axis is posit
 
 Histogram of reads with different number of alignments: x-axis is the number of alignments a read has and y-axis is the number of such reads. The inf in x-axis means number of reads filtered due to too many alignments
  
-## <a name="example"></a> Example
+## <a name="example_main"></a> Example
 
 Suppose we download the mouse genome from UCSC Genome Browser.  We do
 not add poly(A) tails and use `/ref/mouse_0` as the reference name.
