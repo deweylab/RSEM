@@ -12,7 +12,7 @@ Table of Contents
 * [Compilation & Installation](#compilation)
 * [Usage](#usage)
     * [Build RSEM references using RefSeq, Ensembl, or GENCODE annotations](#built)
-* [Example](#example_main)
+* [Example](#example-main)
 * [Simulation](#simulation)
 * [Generate Transcript-to-Gene-Map from Trinity Output](#gen_trinity)
 * [Differential Expression Analysis](#de)
@@ -383,7 +383,7 @@ Position vs. percentage sequencing error given a reference base: x-axis is posit
 
 Histogram of reads with different number of alignments: x-axis is the number of alignments a read has and y-axis is the number of such reads. The inf in x-axis means number of reads filtered due to too many alignments
  
-## <a name="example_main"></a> Example
+## <a name="example-main"></a> Example
 
 Suppose we download the mouse genome from UCSC Genome Browser.  We do
 not add poly(A) tails and use `/ref/mouse_0` as the reference name.
@@ -466,7 +466,7 @@ __insertL:__ Only appear for paired-end reads. It gives the insert length of the
 
 ### Example:
 
-Suppose we want to simulate 50 millon single-end reads with quality scores and use the parameters learned from [Example](#example_main). In addition, we set theta0 as 0.2 and output_name as `simulated_reads`. The command is:
+Suppose we want to simulate 50 millon single-end reads with quality scores and use the parameters learned from [Example](#example-main). In addition, we set theta0 as 0.2 and output_name as `simulated_reads`. The command is:
 
     rsem-simulate-reads /ref/mouse_0 mmliver_single_quals.stat/mmliver_single_quals.model mmliver_single_quals.isoforms.results 0.2 50000000 simulated_reads
 
@@ -617,7 +617,7 @@ If users want to let pRSEM call
 
 ### V. Example
 
-To run pRSEM on the [RSEM example provide above](#example_main)
+To run pRSEM on the [RSEM example provide above](#example-main)
 
 ## <a name="authors"></a> Authors
 
