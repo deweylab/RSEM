@@ -579,29 +579,33 @@ be sent to <a href="mailto:nleng@wisc.edu">Ning Leng</a>.
 
 ### I. Overview
 
-[Prior-enhanced RSEM (pRSEM)](https://deweylab.github.io/pRSEM/) uses complementary information (e.g. ChIP-seq data) to allocate RNA-seq multi-mapping fragments. We included pRSEM code in the subfolder `pRSEM` as well as in RSEM's scripts `rsem-prepare-reference` and `rsem-calculate-expression`. 
+[Prior-enhanced RSEM (pRSEM)](https://deweylab.github.io/pRSEM/) uses complementary information (e.g. ChIP-seq data) to allocate RNA-seq multi-mapping fragments. We included pRSEM code in the subfolder `pRSEM/` as well as in RSEM's scripts `rsem-prepare-reference` and `rsem-calculate-expression`. 
 
 ### II. Demo
 
-To get a quick idea on how to use pRSEM, you can try this [demo](https://github.com/pliu55/pRSEM_demo). It provides a single script, named `run_pRSEM_demo.sh`, allowing you to run all pRSEM's functions. It also contains detailed descriptions of pRSEM's input and output files, workflow, and system requirements.
+To get a quick idea on how to use pRSEM, you can try [this demo](https://github.com/pliu55/pRSEM_demo). It provides a single script, named `run_pRSEM_demo.sh`, allowing you to run all pRSEM's functions. It also contains detailed descriptions of pRSEM's input and output files, workflow, and system requirements.
 
 ### III. Installation
 
-To compile `pRSEM`, type
+To compile pRSEM, type
 
     make pRSEM
 
-Note that you need to first compile `RSEM` before compiling `pRSEM`. Currently, pRSEM has been tested on Linux only.
+Note that you need to first compile RSE` before compiling pRSEM. Currently, pRSEM has been tested on Linux only.
 
 
 ### IV. Example
 
-To run pRSEM on the [RSEM example provided above](#example-main), you need to provide:
-- __ChIP-seq sequencing files in FASTQ format__ or __a ChIP-seq peak file in BED format__. They will be used by pRSEM to obtain complementatry information for allocating RNA-seq multi-mapping fragments.
+To run pRSEM on the [RSEM example above](#example-main), you need to provide:
+- __ChIP-seq sequencing file(s) in FASTQ format__ or __a ChIP-seq peak file in BED format__. They will be used by pRSEM to obtain complementatry information for allocating RNA-seq multi-mapping fragments.
 - __a genome mappability file in bigWig format__ to let pRSEM build a training
-  set of isoforms to learn prior. Mappability can be obtained from UCSC's ENCODE composite track for [human hg19](http://hgdownload.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeMapability/wgEncodeCrgMapabilityAlign36mer.bigWig) and [mouse mm9](http://hgdownload.cse.ucsc.edu/goldenPath/mm9/encodeDCC/wgEncodeMapability/wgEncodeCrgMapabilityAlign36mer.bigWig). For other versions of human or mouse genome or other genomes, you can generate the mappability file by following [this tutorial] (http://wiki.bits.vib.be/index.php/Create_a_mappability_track#Install_and_run_the_GEM_library_tools)
+  set of isoforms to learn prior. Mappability can be obtained from UCSC's 
+  ENCODE composite track for [human hg19](http://hgdownload.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeMapability/wgEncodeCrgMapabilityAlign36mer.bigWig) 
+  and [mouse mm9](http://hgdownload.cse.ucsc.edu/goldenPath/mm9/encodeDCC/wgEncodeMapability/wgEncodeCrgMapabilityAlign36mer.bigWig). For other versions of 
+  human or mouse genome or other genomes, you can generate the mappability file
+  by following [this tutorial] (http://wiki.bits.vib.be/index.php/Create_a_mappability_track#Install_and_run_the_GEM_library_tools).
 
-Assuming you would like to use RNA PolII's ChIP-seq sequencing files `/data/mmliver_PolIIRep1.fq.gz` and `/data/mmliver_PolIIRep2.fq.gz`, and the ChIP-seq control `/data/mmliver_ChIPseqCtrl.fq.gz`. Also, assuming the mappability file for mouse genome is `/data/mm9.bigWig` and you prefer to use STAR at `/sw/STAr` for aligning RNA-seq fragments and use Bowtie to align ChIP-seq reads. You can use the following commands to run pRSEM:
+Assuming you would like to use RNA Pol II's ChIP-seq sequencing files `/data/mmliver_PolIIRep1.fq.gz` and `/data/mmliver_PolIIRep2.fq.gz`, with ChIP-seq control `/data/mmliver_ChIPseqCtrl.fq.gz`. Also, assuming the mappability file for mouse genome is `/data/mm9.bigWig` and you prefer to use STAR at `/sw/STAR` to align RNA-seq fragments and use Bowtie to align ChIP-seq reads. You can use the following commands to run pRSEM:
 
     rsem-prepare-reference --gtf mm9.gtf \
                            --star \
