@@ -12,11 +12,11 @@ Table of Contents
 * [Compilation & Installation](#compilation)
 * [Usage](#usage)
     * [Build RSEM references using RefSeq, Ensembl, or GENCODE annotations](#built)
-* [Example](#example)
+* [Example](#example-main)
 * [Simulation](#simulation)
 * [Generate Transcript-to-Gene-Map from Trinity Output](#gen_trinity)
 * [Differential Expression Analysis](#de)
-* [Prior-Enhanced RSEM](#pRSEM)
+* [Prior-Enhanced RSEM (pRSEM)](#pRSEM)
 * [Authors](#authors)
 * [Acknowledgements](#acknowledgements)
 * [License](#license)
@@ -383,7 +383,7 @@ Position vs. percentage sequencing error given a reference base: x-axis is posit
 
 Histogram of reads with different number of alignments: x-axis is the number of alignments a read has and y-axis is the number of such reads. The inf in x-axis means number of reads filtered due to too many alignments
  
-## <a name="example"></a> Example
+## <a name="example-main"></a> Example
 
 Suppose we download the mouse genome from UCSC Genome Browser.  We do
 not add poly(A) tails and use `/ref/mouse_0` as the reference name.
@@ -466,7 +466,7 @@ __insertL:__ Only appear for paired-end reads. It gives the insert length of the
 
 ### Example:
 
-Suppose we want to simulate 50 millon single-end reads with quality scores and use the parameters learned from [Example](#example). In addition, we set theta0 as 0.2 and output_name as `simulated_reads`. The command is:
+Suppose we want to simulate 50 millon single-end reads with quality scores and use the parameters learned from [Example](#example-main). In addition, we set theta0 as 0.2 and output_name as `simulated_reads`. The command is:
 
     rsem-simulate-reads /ref/mouse_0 mmliver_single_quals.stat/mmliver_single_quals.model mmliver_single_quals.isoforms.results 0.2 50000000 simulated_reads
 
@@ -575,17 +575,73 @@ manual](http://www.bioconductor.org/packages/devel/bioc/vignettes/EBSeq/inst/doc
 Questions related to EBSeq should
 be sent to <a href="mailto:nleng@wisc.edu">Ning Leng</a>.
 
-## <a name="pRSEM"></a> Prior-Enhanced RSEM
+## <a name="pRSEM"></a> Prior-Enhanced RSEM (pRSEM)
 
-Prior-enhanced RSEM (pRSEM) uses ChIP-seq information for RNA-seq fragment allocation. We include pRSEM as in the subfolder `pRSEM`. To compile `pRSEM`, type
+### I. Overview
+
+[Prior-enhanced RSEM (pRSEM)](https://deweylab.github.io/pRSEM/) uses complementary information (e.g. ChIP-seq data) to allocate RNA-seq multi-mapping fragments. We included pRSEM code in the subfolder `pRSEM/` as well as in RSEM's scripts `rsem-prepare-reference` and `rsem-calculate-expression`. 
+
+### II. Demo
+
+To get a quick idea on how to use pRSEM, you can try [this demo](https://github.com/pliu55/pRSEM_demo). It provides a single script, named `run_pRSEM_demo.sh`, which allows you to run all pRSEM's functions. It also contains detailed descriptions of pRSEM's input and output files, workflow, and system requirements.
+
+### III. Installation
+
+To compile pRSEM, type
 
     make pRSEM
 
-Note that you need to first compile `RSEM` before compiling `pRSEM`. You can see this [demo](https://github.com/pliu55/pRSEM_demo) for how to use `pRSEM`.
+Note that you need to first compile RSEM before compiling pRSEM. Currently, pRSEM has only been tested on Linux.
+
+
+### IV. Example
+
+To run pRSEM on the [RSEM example above](#example-main), you need to provide:
+- __ChIP-seq sequencing file(s) in FASTQ format__ or __a ChIP-seq peak file in BED format__. They will be used by pRSEM to obtain complementatry information for allocating RNA-seq multi-mapping fragments.
+- __a genome mappability file in bigWig format__ to let pRSEM build a training
+  set of isoforms to learn prior. Mappability can be obtained from UCSC's 
+  ENCODE composite track for [human hg19](http://hgdownload.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeMapability/wgEncodeCrgMapabilityAlign36mer.bigWig) 
+  and [mouse mm9](http://hgdownload.cse.ucsc.edu/goldenPath/mm9/encodeDCC/wgEncodeMapability/wgEncodeCrgMapabilityAlign36mer.bigWig). For other genomes, you 
+  can generate the mappability file by following [this tutorial] (http://wiki.bits.vib.be/index.php/Create_a_mappability_track#Install_and_run_the_GEM_library_tools).
+
+Assuming you would like to use RNA Pol II's ChIP-seq sequencing files `/data/mmliver_PolIIRep1.fq.gz` and `/data/mmliver_PolIIRep2.fq.gz`, with ChIP-seq control `/data/mmliver_ChIPseqCtrl.fq.gz`. Also, assuming the mappability file for mouse genome is `/data/mm9.bigWig` and you prefer to use STAR located at `/sw/STAR` to align RNA-seq fragments and use Bowtie to align ChIP-seq reads. Then, you can use the following commands to run pRSEM:
+
+    rsem-prepare-reference --gtf mm9.gtf \
+                           --star \
+                           --star-path /sw/STAR \
+                           -p 8 \
+                           --prep-pRSEM \
+                           --bowtie-path /sw/bowtie \
+                           --mappability-bigwig-file /data/mm9.bigWig \
+                           /data/mm9 \
+                           /ref/mouse_0
+  
+    rsem-calculate-expression --star \
+                              --star-path /sw/STAR \
+                              --calc-pme \
+                              --run-pRSEM \
+                              --chipseq-target-read-files /data/mmliver_PolIIRep1.fq.gz,/data/mmliver_PolIIRep2.fq.gz \
+                              --chipseq-control-read-files /data/mmliver_ChIPseqCtrl.fq.gz \
+                              --bowtie-path /sw/bowtie \
+                              -p 8 \
+                              /data/mmliver.fq \
+                              /ref/mouse_0 \
+                              mmliver_single_quals
+
+
+To find out more about pRSEM options and examples, you can use the commands:
+
+    rsem-prepare-reference --help
+
+and 
+
+    rsem-calculate-expression --help
+
+
 
 ## <a name="authors"></a> Authors
 
-[Bo Li](http://bli25ucb.github.io/) and [Colin Dewey](https://www.biostat.wisc.edu/~cdewey/) designed the RSEM algorithm. [Bo Li](http://bli25ucb.github.io/) implemented the RSEM software. [Peng Liu](https://www.biostat.wisc.edu/~cdewey/group.html) contributed the STAR aligner options.
+[Bo Li](http://bli25ucb.github.io/) and [Colin Dewey](https://www.biostat.wisc.edu/~cdewey/) designed the RSEM algorithm. [Bo Li](http://bli25ucb.github.io/) implemented the RSEM software. [Peng Liu](https://www.biostat.wisc.edu/~cdewey/group.html) contributed the STAR aligner options and prior-enhanced RSEM (pRSEM).
 
 ## <a name="acknowledgements"></a> Acknowledgements
 
