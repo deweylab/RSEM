@@ -28,7 +28,7 @@ main <- function() {
       CRAN      = "http://cran.us.r-project.org"
     ),
 
-    pkg_spp  = '../phantompeakqualtools/spp_1.10.1.tar.gz',
+    pkg_spp  = '../phantompeakqualtools/spp_1.10.1_on_R3.3/',
 
     pkg2ver = list(
       ## name          version

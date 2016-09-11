@@ -1,0 +1,3 @@
+useDynLib(spp)
+
+exportPattern("^[^\\.]")
