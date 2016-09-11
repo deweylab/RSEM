@@ -21,7 +21,17 @@ pRSEM/*.pyc
 pRSEM/RLib/
 pRSEM/bigWigSummary
 pRSEM/filterSam2Bed
+pRSEM/phantompeakqualtools/spp_1.10.1_on_R*/config.status
+pRSEM/phantompeakqualtools/spp_1.10.1_on_R*/src/Makevars
+pRSEM/phantompeakqualtools/spp_1.10.1_on_R*/src/config.h
 samtools-*/samtools
 samtools-*/version.h
 samtools-*/test
 samtools-*/misc
+samtools-*/config.h
+samtools-*/config.mk
+samtools-*/config.status
+samtools-*/htslib-*/config.h
+samtools-*/htslib-*/config.mk
+samtools-*/htslib-*/config.status
+samtools-*/htslib-*/version.h
