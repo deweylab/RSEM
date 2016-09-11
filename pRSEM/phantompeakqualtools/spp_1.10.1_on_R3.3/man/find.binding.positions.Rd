@@ -97,16 +97,18 @@ find.binding.positions(signal.data, e.value = NULL, fdr = NULL, masked.data = NU
 \value{
   \item{npl}{A per-chromosome list containing data frames describing
     determined binding positions. Column description:
-    \item{x}{ position }
-    \item{y}{ score }
-    \item{evalue}{ E-value }
-    \item{fdr}{ FDR. For peaks higher than the maximum control peak,
-      the highest dataset FDR is reported }
-    \item{enr}{ lower bound of the fold-enrichment ratio confidence
-      interval. This is the estimate determined using scale of
-      1. Estimates corresponding to higher scales are returned in other enr columns
-      with scale appearing in the name.}
-    \item{enr.mle}{ enrichment ratio maximum likely estimate }
+    \itemize{
+      \item{x} {position}
+      \item{y}{ score }
+      \item{evalue}{ E-value }
+      \item{fdr}{ FDR. For peaks higher than the maximum control peak,
+                  the highest dataset FDR is reported }
+      \item{enr}{ lower bound of the fold-enrichment ratio confidence
+                  interval. This is the estimate determined using scale of
+                  1. Estimates corresponding to higher scales are returned in other enr columns
+                  with scale appearing in the name.}
+      \item{enr.mle}{ enrichment ratio maximum likely estimate }
+    }
   }
   \item{thr}{ info on the chosen statistical threshold of the peak scores}
 }
