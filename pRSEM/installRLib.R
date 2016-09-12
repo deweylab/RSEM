@@ -34,7 +34,7 @@ main <- function() {
       ## name          version
       caTools       = '1.17.1',  ## for spp
       data.table    = '1.9.6',
-      GenomicRanges = '1.24.2',
+      GenomicRanges = '1.24.3',
       ShortRead     = '1.30.0'
     )
   )
