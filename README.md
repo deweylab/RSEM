@@ -648,15 +648,15 @@ and
 
 ### VI. Required External Packages
 All the following packages will be automatically installed when compiling pRSEM.
-- [data.table](https://cran.r-project.org/web/packages/data.table/index.html):
-  v1.9.6, an extension of R's data.frame, heavily used by pRSEM.
-- [GenomicRanges](https://bioconductor.org/packages/release/bioc/html/GenomicRanges.html):
-  v1.24.3, efficient representing and manipulating genomic intervals, heavily used by pRSEM.
-- [ShortRead](https://bioconductor.org/packages/release/bioc/html/ShortRead.html): v1.30.0, guessing the encoding of ChIP-seq FASTQ file's quality score.
-- [caTools](https://cran.r-project.org/web/packages/caTools/index.html):
-  v1.17.1, used for SPP Peak Caller
+- [data.table](https://cran.r-project.org/web/packages/data.table/index.html)
+  __v1.9.6__: an extension of R's data.frame, heavily used by pRSEM.
+- [GenomicRanges](https://bioconductor.org/packages/release/bioc/html/GenomicRanges.html) __v1.24.3__: efficient representing and manipulating genomic intervals, heavily used by pRSEM.
+- [ShortRead](https://bioconductor.org/packages/release/bioc/html/ShortRead.html)
+  __v1.30.0__: guessing the encoding of ChIP-seq FASTQ file's quality score.
+- [caTools](https://cran.r-project.org/web/packages/caTools/index.html)
+  __v1.17.1__: used for SPP Peak Caller.
 - [SPP Peak Caller](https://code.google.com/archive/p/phantompeakqualtools/):
-  ChIP-seq peak caller. Source code was slightly modified on included headers in order to compile it under R v3.3.1.
+  ChIP-seq peak caller. Source code was slightly modified in terms of included headers in order to be compiled under R v3.3.1.
 - [IDR](https://sites.google.com/site/anshulkundaje/projects/idr/idrCode.tar.gz?attredirects=0):
   calculating Irreproducible Discovery Rate to call peaks from multiple ChIP-seq replicates.
 
