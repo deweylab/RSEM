@@ -1473,10 +1473,11 @@ Assume the path to the bowtie executables is in the user's PATH environment vari
                            /ref/mouse_125 \
                            mmliver_single_quals
 
-2) '/data/mmliver_1.fq' and '/data/mmliver_2.fq', paired-end reads with quality scores. Quality scores are in SANGER format. We want to use 8 threads and do not generate a genome BAM file:
+2) '/data/mmliver_1.fq' and '/data/mmliver_2.fq', stranded paired-end reads with quality scores. Suppose the library is prepared using TruSeq Stranded Kit, which means the first mate should map to the reverse strand. Quality scores are in SANGER format. We want to use 8 threads and do not generate a genome BAM file:
 
  rsem-calculate-expression -p 8 \
                            --paired-end \
+                           --strandedness reverse \
                            /data/mmliver_1.fq \
                            /data/mmliver_2.fq \
                            /ref/mouse_125 \
