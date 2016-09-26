@@ -27,6 +27,12 @@ my $status = 0;
 
 my $read_type = 1; # default, single end with qual
 
+
+my $strandedness = "none"; # none, forward, reverse
+my $probF = undef; # deprecated 
+my $strand_specific = undef; # deprecated
+
+
 my $bowtie_path = "";
 my $C = 2;
 my $E = 99999999;
@@ -40,8 +46,6 @@ my $solexa = 0;
 my $is_alignment = 0;
 my $faiF = "";
 my $tagName = "XM";
-
-my $probF = 0.5;
 
 my $minL = 1;
 my $maxL = 1000;
@@ -72,8 +76,6 @@ my $paired_end = 0;
 my $no_qual = 0;
 my $keep_intermediate_files = 0;
 
-my $strand_specific = 0;
-
 my $bowtie2 = 0;
 my $bowtie2_path = "";
 my $bowtie2_mismatch_rate = 0.1;
@@ -100,12 +102,11 @@ my $alleleS = 0;
 
 my $star = 0;
 my $star_path  = '';
-#<<<<<<< HEAD
-#my $gzipped_read_file = 0;
-#my $bzipped_read_file = 0;
-#my $output_star_genome_bam = 0;
-#my $sort_bam_by_read_name = 0;
-#my $sort_bam_buffer_size = '60G';
+my $star_gzipped_read_file = 0;
+my $star_bzipped_read_file = 0;
+my $star_output_genome_bam = 0;
+
+# pRSEM options
 my $run_prsem = 0;
 my $chipseq_target_read_files  = '';
 my $chipseq_control_read_files = '';
@@ -118,18 +119,14 @@ my $chipseq_bed_files_multi_targets = '';  ## BED files for multiple targets
 my $cap_stacked_chipseq_reads = 0; ## for multiple targets, remove redundant 
                                    ## reads aligned to the same position
 my $n_max_stacked_chipseq_reads = 5; ## as above
-#=======
-my $star_gzipped_read_file = 0;
-my $star_bzipped_read_file = 0;
-my $star_output_genome_bam = 0;
-#>>>>>>> master
+
 
 GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "temporary-folder=s" => \$temp_dir,
 	   "no-qualities" => \$no_qual,
 	   "paired-end" => \$paired_end,
-	   "strand-specific" => \$strand_specific,
-	   "alignments|sam|bam" => \$is_alignment,
+     "strandedness=s" => \$strandedness,
+	   "alignments" => \$is_alignment,
 	   "fai=s" => \$faiF,
 	   "tag=s" => \$tagName,
 	   "seed-length=i" => \$L,
@@ -146,7 +143,6 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "bowtie2-mismatch-rate=f" => \$bowtie2_mismatch_rate,
 	   "bowtie2-k=i" => \$bowtie2_k,
 	   "bowtie2-sensitivity-level=s" => \$bowtie2_sensitivity_level,
-	   "forward-prob=f" => \$probF,
 	   "fragment-length-min=i" => \$minL,
 	   "fragment-length-max=i" => \$maxL,
 	   "fragment-length-mean=f" => \$mean,
@@ -190,6 +186,13 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   'chipseq-peak-file=s' => \$chipseq_peak_file,
 	   'partition-model=s' => \$partition_model,
 	   "time" => \$mTime,
+
+     # deprecated
+     "strand-specific" => \$strand_specific,
+     "forward-prob=f" => \$probF,
+     "sam|bam" => \$is_alignment,
+
+     # help
 	   "version" => \$version,
 	   "q|quiet" => \$quiet,
 	   "h|help" => \$help) or pod2usage(-exitval => 2, -verbose => 2);
@@ -297,7 +300,19 @@ if ( $run_prsem ) {
 
 if ($L < 25) { print "Warning: the seed length set is less than 25! This is only allowed if the references are not added poly(A) tails.\n"; }
 
-if ($strand_specific) { $probF = 1.0; }
+# strandedness
+if (!defined($probF)) {
+  if ($strandedness eq "forward" || ($strandedness eq "none" && defined($strand_specific))) {
+    $probF = 1.0;
+  }
+  elsif ($strandedness eq "reverse") {
+    $probF = 0.0;
+  }
+  else {
+    $probF = 0.5;
+  }
+}
+
 
 if ($paired_end) {
     if ($no_qual) { $read_type = 2; }
@@ -440,7 +455,7 @@ if (!$is_alignment) {
 	    if ($read_type == 2 || $read_type == 3) { $command .= " -I $minL -X $maxL"; }
 	    if ($chunkMbs > 0) { $command .= " --chunkmbs $chunkMbs"; }
 	
-	    if ($strand_specific || $probF == 1.0) { $command .= " --norc"; }
+	    if ($probF == 1.0) { $command .= " --norc"; }
 	    elsif ($probF == 0.0) { $command .= " --nofw"; }
 	
 	    $command .= " -p $nThreads -a -m $maxHits -S";
@@ -475,7 +490,7 @@ if (!$is_alignment) {
 	    
 	    if ($read_type == 2 || $read_type == 3) { $command .= " -I $minL -X $maxL --no-mixed --no-discordant"; }
 	    
-	    if ($strand_specific || $probF == 1.0) { $command .= " --norc"; }
+	    if ($probF == 1.0) { $command .= " --norc"; }
 	    elsif ($probF == 0.0) { $command .= " --nofw"; }
 	    
 	    $command .= " -p $nThreads -k $bowtie2_k";
@@ -809,9 +824,9 @@ Input reads are paired-end reads. (Default: off)
 
 Input reads do not contain quality scores. (Default: off)
 
-=item B<--strand-specific>
+=item B<--strandedness> <none|forward|reverse>
 
-The RNA-Seq protocol used to generate the reads is strand specific, i.e., all (upstream) reads are derived from the forward strand.  This option is equivalent to --forward-prob=1.0.  With this option set, if RSEM runs the Bowtie/Bowtie 2 aligner, the '--norc' Bowtie/Bowtie 2 option will be used, which disables alignment to the reverse strand of transcripts.  (Default: off)
+This option defines the strandedness of the RNA-Seq reads. It recognizes three values: 'none', 'forward', and 'reverse'. 'none' refers to non-strand-specific protocols. 'forward' means all (upstream) reads are derived from the forward strand. 'reverse' means all (upstream) reads are derived from the reverse strand. If 'forward'/'reverse' is set, the '--norc'/'--nofw' Bowtie/Bowtie 2 option will also be enabled to avoid aligning reads to the opposite strand. For Illumina TruSeq Stranded protocols, please use 'reverse'. (Default: 'none')
 
 =item B<-p/--num-threads> <int>
 
@@ -979,9 +994,6 @@ The path to STAR's executable. (Default: the path to STAR executable is assumed 
 
 The name of the optional field used in the SAM input for identifying a read with too many valid alignments. The field should have the format <tagName>:i:<value>, where a <value> bigger than 0 indicates a read with too many alignments. (Default: "")
 
-=item B<--forward-prob> <double>
-
-Probability of generating a read from the forward strand of a transcript. Set to 1 for a strand-specific protocol where all (upstream) reads are derived from the forward strand, 0 for a strand-specific protocol where all (upstream) read are derived from the reverse strand, or 0.5 for a non-strand-specific protocol. (Default: 0.5)
 
 =item B<--fragment-length-min> <int>
 
@@ -1081,7 +1093,6 @@ Keep a maximum number of ChIP-seq reads that aligned to the same genomic interva
 
 The maximum number of stacked ChIP-seq reads to keep. This option is used when running prior-enhanced RSEM, where prior is learned from multiple complementary data sets. This option is only in use when the option '--cap-stacked-chipseq-reads' is set. (Default: 5)
 
-
 =item B<--partition-model> <string>
 
 A keyword to specify the partition model used by prior-enhanced RSEM. It must be one of the following keywords:
@@ -1115,6 +1126,30 @@ Using a logistic regression to combine TSS signals from multiple complementary d
 =back
 
 Parameters for all the above models are learned from a training set. For detailed explainations, please see prior-enhanced RSEM's paper. (Default: 'pk')
+
+=back
+
+=head1 DEPRECATED OPTIONS
+
+=over
+
+The options in this section are deprecated. They are here only for compatibility reasons and may be removed in future releases.
+
+=item B<--sam>
+
+Inputs are alignments in SAM format. (Default: off)
+
+=item B<--bam>
+
+Inputs are alignments in BAM format. (Default: off)
+
+=item strand-specific
+
+Equivalent to '--strandedness forward'. (Default: off)
+
+=item B<--forward-prob> <double>
+
+Probability of generating a read from the forward strand of a transcript. Set to 1 for a strand-specific protocol where all (upstream) reads are derived from the forward strand, 0 for a strand-specific protocol where all (upstream) read are derived from the reverse strand, or 0.5 for a non-strand-specific protocol. (Default: off)
 
 =back
 
