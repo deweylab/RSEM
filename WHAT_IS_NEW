@@ -1,3 +1,11 @@
+RSEM v1.3.0
+
+- Added Prior-Enhanced RSEM (pRSEM) as a submodule
+- Introduced `--strandedness <none|forward|reverse>` option, `--strand-specific` and `--forward-prob` are deprecated (but still supported)
+- Revised documentation for `rsem-plot-model`, maked it clear that in alignment statistics, isoform-level (instead of genome-level) multi-mapping reads are shown
+
+--------------------------------------------------------------------------------------------
+
 RSEM v1.2.31
 
 - Rewrote `rsem-gff3-to-gtf` to handle a more general set of GFF3 files 

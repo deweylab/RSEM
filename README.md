@@ -370,8 +370,7 @@ The plots generated depends on read type and user configuration. It
 may include fragment length distribution, mate length distribution,
 read start position distribution (RSPD), quality score vs observed
 quality given a reference base, position vs percentage of sequencing
-error given a reference base and histogram of reads with different
-number of alignments.
+error given a reference base and alignment statistics.
 
 fragment length distribution and mate length distribution: x-axis is fragment/mate length, y axis is the probability of generating a fragment/mate with the associated length
 
@@ -381,7 +380,7 @@ Quality score vs. observed quality given a reference base: x-axis is Phred quali
 
 Position vs. percentage sequencing error given a reference base: x-axis is position and y-axis is percentage sequencing error
 
-Histogram of reads with different number of alignments: x-axis is the number of alignments a read has and y-axis is the number of such reads. The inf in x-axis means number of reads filtered due to too many alignments
+Alignment statistics: It includes a histogram and a pie chart. For the histogram, x-axis shows the number of **isoform-level** alignments a read has and y-axis provides the number of reads with that many alignments. The inf in x-axis means number of reads filtered due to too many alignments. For the pie chart, four categories of reads --- unalignable, unique, **isoform-level**multi-mapping, filtered -- are plotted and their percentages are noted. In both the histogram and the piechart, numbers belong to unalignable, unique, multi-mapping, and filtered are colored as green, blue, gray and red. 
  
 ## <a name="example-main"></a> Example
 
