@@ -1,0 +1,12 @@
+Package: spp
+Type: Package
+Title: some description
+Version: 1.0
+Date: 2008-11-10
+Author: Peter K
+Depends: caTools
+Maintainer: peterK<peterk@compbio.med.harvard.edu>
+Description: Describe the package
+License: GPL-2
+LazyLoad: yes
+Packaged: Wed Nov 12 10:42:54 2008; vidhuch

@@ -1,13 +1,13 @@
 #
-#  pliu 20160306
+#  pliu 20160911
 #
 #  install Bioconductor and pRSEM-required libraries to this directory
 #
-#  require R-3.2.0,
+#  require R-3.3.1
 #
 #  CRAN: data.table, caTools
 #  Local: spp
-#  BioC v3.2: ShortRead, GenomicRanges
+#  BioC v3.3: ShortRead, GenomicRanges
 #
 #  install devtools first and use its' install_version to install packages in
 #  particular version.
@@ -21,21 +21,21 @@ main <- function() {
   param <- list(
     lib_loc = './',
     repos = list(
-      BioCsoft  = "http://bioconductor.org/packages/3.2/bioc/",
-      BioCann   = "http://bioconductor.org/packages/3.2/data/annotation/",
-      BioCexp   = "http://bioconductor.org/packages/3.2/data/experiment/",
-      BioCextra = "http://bioconductor.org/packages/3.2/extra/",
+      BioCsoft  = "http://bioconductor.org/packages/3.3/bioc/",
+      BioCann   = "http://bioconductor.org/packages/3.3/data/annotation/",
+      BioCexp   = "http://bioconductor.org/packages/3.3/data/experiment/",
+      BioCextra = "http://bioconductor.org/packages/3.3/extra/",
       CRAN      = "http://cran.us.r-project.org"
     ),
 
-    pkg_spp  = '../phantompeakqualtools/spp_1.10.1.tar.gz',
+    pkg_spp  = '../phantompeakqualtools/spp_1.10.1_on_R3.3/',
 
     pkg2ver = list(
       ## name          version
       caTools       = '1.17.1',  ## for spp
       data.table    = '1.9.6',
-      GenomicRanges = '1.22.4',
-      ShortRead     = '1.28.0'
+      GenomicRanges = '1.24.3',
+      ShortRead     = '1.30.0'
     )
   )
 

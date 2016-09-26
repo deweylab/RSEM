@@ -583,7 +583,7 @@ be sent to <a href="mailto:nleng@wisc.edu">Ning Leng</a>.
 
 ### II. Demo
 
-To get a quick idea on how to use pRSEM, you can try [this demo](https://github.com/pliu55/pRSEM_demo). It provides a single script, named `run_pRSEM_demo.sh`, which allows you to run all pRSEM's functions. It also contains detailed descriptions of pRSEM's input and output files, workflow, and system requirements.
+To get a quick idea on how to use pRSEM, you can try [this demo](https://github.com/pliu55/pRSEM_demo). It provides a single script, named `run_pRSEM_demo.sh`, which allows you to run all pRSEM's functions. It also contains detailed descriptions of pRSEM's workflow, input and output files.
 
 ### III. Installation
 
@@ -637,6 +637,25 @@ and
 
     rsem-calculate-expression --help
 
+
+### V. System Requirements
+- Linux
+- Perl version >= 5.8.8
+- Python version >= 2.7.3
+- R version >= 3.3.1
+- Bioconductor 3.3
+
+
+### VI. Required External Packages
+All the following packages will be automatically installed when compiling pRSEM.
+- [data.table 1.9.6](https://cran.r-project.org/web/packages/data.table/index.html): an extension of R's data.frame, heavily used by pRSEM.
+- [GenomicRanges 1.24.3](https://bioconductor.org/packages/release/bioc/html/GenomicRanges.html): efficient representing and manipulating genomic intervals, heavily used by pRSEM.
+- [ShortRead 1.30.0](https://bioconductor.org/packages/release/bioc/html/ShortRead.html): guessing the encoding of ChIP-seq FASTQ file's quality score.
+- [caTools 1.17.1](https://cran.r-project.org/web/packages/caTools/index.html): used for SPP Peak Caller.
+- [SPP Peak Caller](https://code.google.com/archive/p/phantompeakqualtools/):
+  ChIP-seq peak caller. Source code was slightly modified in terms of included headers in order to be compiled under R v3.3.1.
+- [IDR](https://sites.google.com/site/anshulkundaje/projects/idr/idrCode.tar.gz?attredirects=0):
+  calculating Irreproducible Discovery Rate to call peaks from multiple ChIP-seq replicates.
 
 
 ## <a name="authors"></a> Authors
