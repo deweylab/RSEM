@@ -80,7 +80,9 @@ int main(int argc, char* argv[]) {
 	
 	printf("."); fflush(stdout);
 	do {
-		if (sam_read1(in, header, b) < 0) break;
+		int ret = sam_read1(in, header, b);
+		if (ret == -1) break;
+		else if (ret < 0) { isValid = false; continue; }
 		assert(b->core.l_qseq > 0);
 		
 		qname = bam_get_canonical_name(b);
@@ -98,7 +100,7 @@ int main(int argc, char* argv[]) {
 		if (ispaired) {
 			isValid = (sam_read1(in, header, b2) >= 0) && (qname == bam_get_canonical_name(b2)) && bam_is_paired(b2);
 			if (!isValid) { 
-				printf("\nOnly find one mate for paired-end read %s!\n", bam_get_qname(b)); 
+				printf("\nOnly find one mate for paired-end read %s!\nPlease make sure that the two mates of a paired-end read are adjacent to each other.\n", bam_get_qname(b)); 
 				continue; 
 			}
 
@@ -106,7 +108,7 @@ int main(int argc, char* argv[]) {
 
 			isValid = (bam_is_read1(b) && bam_is_read2(b2)) || (bam_is_read1(b2) && bam_is_read2(b));
 			if (!isValid) { 
-				printf("\nThe two mates of paired-end read %s are not adjacent!\n", bam_get_qname(b)); 
+				printf("\nThe two mates of paired-end read %s are marked as both mate1 or both mate2!\n", bam_get_qname(b)); 
 				continue; 
 			}
 
@@ -138,7 +140,7 @@ int main(int argc, char* argv[]) {
 				}
 
 				bam1_t *tb = (b->core.pos < b2->core.pos ? b : b2);
-				isValid = tb->core.pos >= 0 || tb->core.pos + abs(tb->core.isize) <= header->target_len[tb->core.tid];
+				isValid = tb->core.pos >= 0 && tb->core.pos + abs(tb->core.isize) <= header->target_len[tb->core.tid];
 				if (!isValid) {
 					printf("\nPaired-end read %s aligns to [%d, %d) of transcript %s, which exceeds the transcript's boundary [0, %d)!\n", 
 						bam_get_qname(b), tb->core.pos, tb->core.pos + abs(tb->core.isize), header->target_name[tb->core.tid], header->target_len[tb->core.tid]);
@@ -163,7 +165,7 @@ int main(int argc, char* argv[]) {
 
 		if (cqname != qname) {
 			isValid = used.find(qname) == used.end();
-			if (!isValid) { printf("\nThe alignments of read %s are not grouped together!", qname.c_str()); continue; }
+			if (!isValid) { printf("\nThe alignments of read %s are not grouped together!\n", qname.c_str()); continue; }
 			used.insert(cqname);
 			cqname = qname;
 			creadlen = readlen;
@@ -172,7 +174,7 @@ int main(int argc, char* argv[]) {
 		else {
 			assert(cqname != "");
 			isValid = (creadlen == readlen && (!ispaired || creadlen2 == readlen2));
-			if (!isValid) { printf("\nRead %s have different read/mate lengths!\n", qname.c_str()); continue; }
+			if (!isValid) { printf("\nRead %s have alignments showing different read/mate lengths!\n", qname.c_str()); continue; }
 		}
 		
 		++cnt;

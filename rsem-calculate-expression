@@ -217,7 +217,6 @@ else {
     if ($faiF ne "") { print "Warning: There is no need to set --fai if you ask RSEM to align reads for you.\n" }
 }
 
-pod2usage(-msg => "Forward probability should be in [0, 1]!", -exitval => 2, -verbose => 2) if ($probF < 0 || $probF > 1);
 pod2usage(-msg => "Min fragment length should be at least 1!", -exitval => 2, -verbose => 2) if ($minL < 1);
 pod2usage(-msg => "Min fragment length should be smaller or equal to max fragment length!", -exitval => 2, -verbose => 2) if ($minL > $maxL);
 pod2usage(-msg => "The memory allocated for calculating credibility intervals should be at least 1 MB!\n", -exitval => 2, -verbose => 2) if ($NMB < 1);
@@ -313,6 +312,7 @@ if (!defined($probF)) {
   }
 }
 
+pod2usage(-msg => "Forward probability should be in [0, 1]!", -exitval => 2, -verbose => 2) if ($probF < 0 || $probF > 1);
 
 if ($paired_end) {
     if ($no_qual) { $read_type = 2; }
@@ -1135,6 +1135,10 @@ Parameters for all the above models are learned from a training set. For detaile
 
 The options in this section are deprecated. They are here only for compatibility reasons and may be removed in future releases.
 
+=back
+
+=over
+
 =item B<--sam>
 
 Inputs are alignments in SAM format. (Default: off)
@@ -1143,7 +1147,7 @@ Inputs are alignments in SAM format. (Default: off)
 
 Inputs are alignments in BAM format. (Default: off)
 
-=item strand-specific
+=item B<--strand-specific>
 
 Equivalent to '--strandedness forward'. (Default: off)
 
