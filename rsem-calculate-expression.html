@@ -20,6 +20,8 @@
   <li><a href="#OUTPUT-OPTIONS">OUTPUT OPTIONS</a></li>
   <li><a href="#ALIGNER-OPTIONS">ALIGNER OPTIONS</a></li>
   <li><a href="#ADVANCED-OPTIONS">ADVANCED OPTIONS</a></li>
+  <li><a href="#PRIOR-ENHANCED-RSEM-OPTIONS">PRIOR-ENHANCED RSEM OPTIONS</a></li>
+  <li><a href="#DEPRECATED-OPTIONS">DEPRECATED OPTIONS</a></li>
   <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
   <li><a href="#NOTES">NOTES</a></li>
   <li><a href="#OUTPUT">OUTPUT</a></li>
@@ -92,10 +94,10 @@
 <p>Input reads do not contain quality scores. (Default: off)</p>
 
 </dd>
-<dt id="strand-specific"><b>--strand-specific</b></dt>
+<dt id="strandedness-none-forward-reverse"><b>--strandedness</b> &lt;none|forward|reverse&gt;</dt>
 <dd>
 
-<p>The RNA-Seq protocol used to generate the reads is strand specific, i.e., all (upstream) reads are derived from the forward strand. This option is equivalent to --forward-prob=1.0. With this option set, if RSEM runs the Bowtie/Bowtie 2 aligner, the &#39;--norc&#39; Bowtie/Bowtie 2 option will be used, which disables alignment to the reverse strand of transcripts. (Default: off)</p>
+<p>This option defines the strandedness of the RNA-Seq reads. It recognizes three values: &#39;none&#39;, &#39;forward&#39;, and &#39;reverse&#39;. &#39;none&#39; refers to non-strand-specific protocols. &#39;forward&#39; means all (upstream) reads are derived from the forward strand. &#39;reverse&#39; means all (upstream) reads are derived from the reverse strand. If &#39;forward&#39;/&#39;reverse&#39; is set, the &#39;--norc&#39;/&#39;--nofw&#39; Bowtie/Bowtie 2 option will also be enabled to avoid aligning reads to the opposite strand. For Illumina TruSeq Stranded protocols, please use &#39;reverse&#39;. (Default: &#39;none&#39;)</p>
 
 </dd>
 <dt id="p---num-threads-int"><b>-p/--num-threads</b> &lt;int&gt;</dt>
@@ -338,12 +340,6 @@
 <p>The name of the optional field used in the SAM input for identifying a read with too many valid alignments. The field should have the format &lt;tagName&gt;:i:&lt;value&gt;, where a &lt;value&gt; bigger than 0 indicates a read with too many alignments. (Default: &quot;&quot;)</p>
 
 </dd>
-<dt id="forward-prob-double"><b>--forward-prob</b> &lt;double&gt;</dt>
-<dd>
-
-<p>Probability of generating a read from the forward strand of a transcript. Set to 1 for a strand-specific protocol where all (upstream) reads are derived from the forward strand, 0 for a strand-specific protocol where all (upstream) read are derived from the reverse strand, or 0.5 for a non-strand-specific protocol. (Default: 0.5)</p>
-
-</dd>
 <dt id="fragment-length-min-int"><b>--fragment-length-min</b> &lt;int&gt;</dt>
 <dd>
 
@@ -436,6 +432,144 @@
 </dd>
 </dl>
 
+<h1 id="PRIOR-ENHANCED-RSEM-OPTIONS">PRIOR-ENHANCED RSEM OPTIONS</h1>
+
+<dl>
+
+<dt id="run-pRSEM"><b>--run-pRSEM</b></dt>
+<dd>
+
+<p>Running prior-enhanced RSEM (pRSEM). Prior parameters, i.e. isoform&#39;s initial pseudo-count for RSEM&#39;s Gibbs sampling, will be learned from input RNA-seq data and an external data set. When pRSEM needs and only needs ChIP-seq peak information to partition isoforms (e.g. in pRSEM&#39;s default partition model), either ChIP-seq peak file (with the &#39;--chipseq-peak-file&#39; option) or ChIP-seq FASTQ files for target and input and the path for Bowtie executables are required (with the &#39;--chipseq-target-read-files &lt;string&gt;&#39;, &#39;--chipseq-control-read-files &lt;string&gt;&#39;, and &#39;--bowtie-path &lt;path&gt; options), otherwise, ChIP-seq FASTQ files for target and control and the path to Bowtie executables are required. (Default: off)</p>
+
+</dd>
+<dt id="chipseq-peak-file-string"><b>--chipseq-peak-file</b> &lt;string&gt;</dt>
+<dd>
+
+<p>Full path to a ChIP-seq peak file in ENCODE&#39;s narrowPeak, i.e. BED6+4, format. This file is used when running prior-enhanced RSEM in the default two-partition model. It partitions isoforms by whether they have ChIP-seq overlapping with their transcription start site region or not. Each partition will have its own prior parameter learned from a training set. This file can be either gzipped or ungzipped. (Default: &quot;&quot;)</p>
+
+</dd>
+<dt id="chipseq-target-read-files-string"><b>--chipseq-target-read-files</b> &lt;string&gt;</dt>
+<dd>
+
+<p>Comma-separated full path of FASTQ read file(s) for ChIP-seq target. This option is used when running prior-enhanced RSEM. It provides information to calculate ChIP-seq peaks and signals. The file(s) can be either ungzipped or gzipped with a suffix &#39;.gz&#39; or &#39;.gzip&#39;. The options &#39;--bowtie-path &lt;path&gt;&#39; and &#39;--chipseq-control-read-files &lt;string&gt;&#39; must be defined when this option is specified. (Default: &quot;&quot;)</p>
+
+</dd>
+<dt id="chipseq-control-read-files-string"><b>--chipseq-control-read-files</b> &lt;string&gt;</dt>
+<dd>
+
+<p>Comma-separated full path of FASTQ read file(s) for ChIP-seq conrol. This option is used when running prior-enhanced RSEM. It provides information to call ChIP-seq peaks. The file(s) can be either ungzipped or gzipped with a suffix &#39;.gz&#39; or &#39;.gzip&#39;. The options &#39;--bowtie-path &lt;path&gt;&#39; and &#39;--chipseq-target-read-files &lt;string&gt;&#39; must be defined when this option is specified. (Default: &quot;&quot;)</p>
+
+</dd>
+<dt id="chipseq-read-files-multi-targets-string"><b>--chipseq-read-files-multi-targets</b> &lt;string&gt;</dt>
+<dd>
+
+<p>Comma-separated full path of FASTQ read files for multiple ChIP-seq targets. This option is used when running prior-enhanced RSEM, where prior is learned from multiple complementary data sets. It provides information to calculate ChIP-seq signals. All files can be either ungzipped or gzipped with a suffix &#39;.gz&#39; or &#39;.gzip&#39;. When this option is specified, the option &#39;--bowtie-path &lt;path&gt;&#39; must be defined and the option &#39;--partition-model &lt;string&gt;&#39; will be set to &#39;cmb_lgt&#39; automatically. (Default: &quot;&quot;)</p>
+
+</dd>
+<dt id="chipseq-bed-files-multi-targets-string"><b>--chipseq-bed-files-multi-targets</b> &lt;string&gt;</dt>
+<dd>
+
+<p>Comma-separated full path of BED files for multiple ChIP-seq targets. This option is used when running prior-enhanced RSEM, where prior is learned from multiple complementary data sets. It provides information of ChIP-seq signals and must have at least the first six BED columns. All files can be either ungzipped or gzipped with a suffix &#39;.gz&#39; or &#39;.gzip&#39;. When this option is specified, the option &#39;--partition-model &lt;string&gt;&#39; will be set to &#39;cmb_lgt&#39; automatically. (Default: &quot;&quot;)</p>
+
+</dd>
+<dt id="cap-stacked-chipseq-reads"><b>--cap-stacked-chipseq-reads</b></dt>
+<dd>
+
+<p>Keep a maximum number of ChIP-seq reads that aligned to the same genomic interval. This option is used when running prior-enhanced RSEM, where prior is learned from multiple complementary data sets. This option is only in use when either &#39;--chipseq-read-files-multi-targets &lt;string&gt;&#39; or &#39;--chipseq-bed-files-multi-targets &lt;string&gt;&#39; is specified. (Default: off)</p>
+
+</dd>
+<dt id="n-max-stacked-chipseq-reads-int"><b>--n-max-stacked-chipseq-reads</b> &lt;int&gt;</dt>
+<dd>
+
+<p>The maximum number of stacked ChIP-seq reads to keep. This option is used when running prior-enhanced RSEM, where prior is learned from multiple complementary data sets. This option is only in use when the option &#39;--cap-stacked-chipseq-reads&#39; is set. (Default: 5)</p>
+
+</dd>
+<dt id="partition-model-string"><b>--partition-model</b> &lt;string&gt;</dt>
+<dd>
+
+<p>A keyword to specify the partition model used by prior-enhanced RSEM. It must be one of the following keywords:</p>
+
+<dl>
+
+<dt id="pk">- <b>pk</b></dt>
+<dd>
+
+<p>Partitioned by whether an isoform has a ChIP-seq peak overlapping with its transcription start site (TSS) region. The TSS region is defined as [TSS-500bp, TSS+500bp]. For simplicity, we refer this type of peak as &#39;TSS peak&#39; when explaining other keywords.</p>
+
+</dd>
+<dt id="pk_lgtnopk">- <b>pk_lgtnopk</b></dt>
+<dd>
+
+<p>First partitioned by TSS peak. Then, for isoforms in the &#39;no TSS peak&#39; set, a logistic model is employed to further classify them into two partitions.</p>
+
+</dd>
+<dt id="lm3-lm4-lm5-or-lm6">- <b>lm3</b>, <b>lm4</b>, <b>lm5</b>, or <b>lm6</b></dt>
+<dd>
+
+<p>Based on their ChIP-seq signals, isoforms are classified into 3, 4, 5, or 6 partitions by a linear regression model.</p>
+
+</dd>
+<dt id="nopk_lm2pk-nopk_lm3pk-nopk_lm4pk-or-nopk_lm5pk">- <b>nopk_lm2pk</b>, <b>nopk_lm3pk</b>, <b>nopk_lm4pk</b>, or <b>nopk_lm5pk</b></dt>
+<dd>
+
+<p>First partitioned by TSS peak. Then, for isoforms in the &#39;with TSS peak&#39; set, a linear regression model is employed to further classify them into 2, 3, 4, or 5 partitions.</p>
+
+</dd>
+<dt id="pk_lm2nopk-pk_lm3nopk-pk_lm4nopk-or-pk_lm5nopk">- <b>pk_lm2nopk</b>, <b>pk_lm3nopk</b>, <b>pk_lm4nopk</b>, or <b>pk_lm5nopk</b></dt>
+<dd>
+
+<p>First partitioned by TSS peak. Then, for isoforms in the &#39;no TSS peak&#39; set, a linear regression model is employed to further classify them into 2, 3, 4, or 5 partitions.</p>
+
+</dd>
+<dt id="cmb_lgt">- <b>cmb_lgt</b></dt>
+<dd>
+
+<p>Using a logistic regression to combine TSS signals from multiple complementary data sets and partition training set isoform into &#39;expressed&#39; and &#39;not expressed&#39;. This partition model is only in use when either &#39;--chipseq-read-files-multi-targets &lt;string&gt;&#39; or &#39;--chipseq-bed-files-multi-targets &lt;string&gt; is specified.</p>
+
+</dd>
+</dl>
+
+<p>Parameters for all the above models are learned from a training set. For detailed explainations, please see prior-enhanced RSEM&#39;s paper. (Default: &#39;pk&#39;)</p>
+
+</dd>
+</dl>
+
+<h1 id="DEPRECATED-OPTIONS">DEPRECATED OPTIONS</h1>
+
+<ul>
+
+<p>The options in this section are deprecated. They are here only for compatibility reasons and may be removed in future releases.</p>
+
+</ul>
+
+<dl>
+
+<dt id="sam"><b>--sam</b></dt>
+<dd>
+
+<p>Inputs are alignments in SAM format. (Default: off)</p>
+
+</dd>
+<dt id="bam"><b>--bam</b></dt>
+<dd>
+
+<p>Inputs are alignments in BAM format. (Default: off)</p>
+
+</dd>
+<dt id="strand-specific"><b>--strand-specific</b></dt>
+<dd>
+
+<p>Equivalent to &#39;--strandedness forward&#39;. (Default: off)</p>
+
+</dd>
+<dt id="forward-prob-double"><b>--forward-prob</b> &lt;double&gt;</dt>
+<dd>
+
+<p>Probability of generating a read from the forward strand of a transcript. Set to 1 for a strand-specific protocol where all (upstream) reads are derived from the forward strand, 0 for a strand-specific protocol where all (upstream) read are derived from the reverse strand, or 0.5 for a non-strand-specific protocol. (Default: off)</p>
+
+</dd>
+</dl>
+
 <h1 id="DESCRIPTION">DESCRIPTION</h1>
 
 <p>In its default mode, this program aligns input reads against a reference transcriptome with Bowtie and calculates expression values using the alignments. RSEM assumes the data are single-end reads with quality scores, unless the &#39;--paired-end&#39; or &#39;--no-qualities&#39; options are specified. Alternatively, users can use STAR to align reads using the &#39;--star&#39; option. RSEM has provided options in &#39;rsem-prepare-reference&#39; to prepare STAR&#39;s genome indices. Users may use an alternative aligner by specifying &#39;--alignments&#39;, and providing an alignment file in SAM/BAM/CRAM format. However, users should make sure that they align against the indices generated by &#39;rsem-prepare-reference&#39; and the alignment file satisfies the requirements mentioned in ARGUMENTS section.</p>
@@ -459,6 +593,8 @@
 <p>5. With the &#39;--calc-ci&#39; option, 95% credibility intervals and posterior mean estimates will be calculated in addition to maximum likelihood estimates.</p>
 
 <p>6. The temporary directory and all intermediate files will be removed when RSEM finishes unless &#39;--keep-intermediate-files&#39; is specified.</p>
+
+<p>With the &#39;--run-pRSEM&#39; option and associated options (see section &#39;PRIOR-ENHANCED RSEM OPTIONS&#39; above for details), prior-enhanced RSEM will be running. Prior parameters will be learned from supplied external data set(s) and assigned as initial pseudo-counts for isoforms in the corresponding partition for Gibbs sampling.</p>
 
 <h1 id="OUTPUT">OUTPUT</h1>
 
@@ -587,6 +723,120 @@
 
 <p>&#39;sample_name.stat/sample_name.model&#39; stores RNA-Seq model parameters learned from the data. The format and meanings of each filed of this file are described in &#39;model_file_description.txt&#39; under RSEM directory.</p>
 
+<p>The following four output files will be generated only by prior-enhanced RSEM</p>
+
+<dl>
+
+<dt id="sample_name.stat-sample_name_prsem.all_tr_features">- &#39;sample_name.stat/sample_name_prsem.all_tr_features&#39;</dt>
+<dd>
+
+<p>It stores isofrom features for deriving and assigning pRSEM prior. The first line is a header and the rest is one isoform per line. The description for each column is:</p>
+
+<ul>
+
+<li><p><b>trid</b>: transcript ID from input annotation</p>
+
+</li>
+<li><p><b>geneid</b>: gene ID from input anntation</p>
+
+</li>
+<li><p><b>chrom</b>: isoform&#39;s chromosome name</p>
+
+</li>
+<li><p><b>strand</b>: isoform&#39;s strand name</p>
+
+</li>
+<li><p><b>start</b>: isoform&#39;s end with the lowest genomic loci</p>
+
+</li>
+<li><p><b>end</b>: isoform&#39;s end with the highest genomic loci</p>
+
+</li>
+<li><p><b>tss_mpp</b>: average mappability of [TSS-500bp, TSS+500bp], where TSS is isoform&#39;s transcription start site, i.e. 5&#39;-end</p>
+
+</li>
+<li><p><b>body_mpp</b>: average mappability of (TSS+500bp, TES-500bp), where TES is isoform&#39;s transcription end site, i.e. 3&#39;-end</p>
+
+</li>
+<li><p><b>tes_mpp</b>: average mappability of [TES-500bp, TES+500bp]</p>
+
+</li>
+<li><p><b>pme_count</b>: isoform&#39;s fragment or read count from RSEM&#39;s posterior mean estimates</p>
+
+</li>
+<li><p><b>tss</b>: isoform&#39;s TSS loci</p>
+
+</li>
+<li><p><b>tss_pk</b>: equal to 1 if isoform&#39;s [TSS-500bp, TSS+500bp] region overlaps with a RNA Pol II peak; 0 otherwise</p>
+
+</li>
+<li><p><b>is_training</b>: equal to 1 if isoform is in the training set where Pol II prior is learned; 0 otherwise</p>
+
+</li>
+</ul>
+
+</dd>
+<dt id="sample_name.stat-sample_name_prsem.all_tr_prior">- &#39;sample_name.stat/sample_name_prsem.all_tr_prior&#39;</dt>
+<dd>
+
+<p>It stores prior parameters for every isoform. This file does not have a header. Each line contains a prior parameter and an isoform&#39;s transcript ID delimited by ` # `.</p>
+
+</dd>
+<dt id="sample_name.stat-sample_name_uniform_prior_1.isoforms.results">- &#39;sample_name.stat/sample_name_uniform_prior_1.isoforms.results&#39;</dt>
+<dd>
+
+<p>RSEM&#39;s posterior mean estimates on the isoform level with an initial pseudo-count of one for every isoform. It is in the same format as the &#39;sample_name.isoforms.results&#39;.</p>
+
+</dd>
+<dt id="sample_name.stat-sample_name_uniform_prior_1.genes.results">- &#39;sample_name.stat/sample_name_uniform_prior_1.genes.results&#39;</dt>
+<dd>
+
+<p>RSEM&#39;s posterior mean estimates on the gene level with an initial pseudo-count of one for every isoform. It is in the same format as the &#39;sample_name.genes.results&#39;.</p>
+
+</dd>
+</dl>
+
+<p>When learning prior from multiple external data sets in prior-enhanced RSEM, two additional output files will be generated.</p>
+
+<dl>
+
+<dt id="sample_name.stat-sample_name.pval_LL">- &#39;sample_name.stat/sample_name.pval_LL&#39;</dt>
+<dd>
+
+<p>It stores a p-value and a log-likelihood. The p-value indicates whether the combination of multiple complementary data sets is informative for RNA-seq quantification. The log-likelihood shows how well pRSEM&#39;s Dirichlet-multinomial model fits the read counts of partitioned training set isoforms.</p>
+
+</dd>
+<dt id="sample_name.stat-sample_name.lgt_mdl.RData">- &#39;sample_name.stat/sample_name.lgt_mdl.RData&#39;</dt>
+<dd>
+
+<p>It stores an R object named &#39;glmmdl&#39;, which is a logistic regression model on the training set isoforms and multiple external data sets.</p>
+
+</dd>
+</dl>
+
+<p>In addition, extra columns will be added to &#39;sample_name.stat/all_tr_features&#39;</p>
+
+<ul>
+
+<li><p><b>is_expr</b>: equal to 1 if isoform has an abundance &gt;= 1 TPM and a non-zero read count from RSEM&#39;s posterior mean estimates; 0 otherwise</p>
+
+</li>
+<li><p><b>&quot;$external_data_set_basename&quot;</b>: log10 of external data&#39;s signal at [TSS-500, TSS+500]. Signal is the number of reads aligned within that interval and normalized to RPKM by read depth and interval length. It will be set to -4 if no read aligned to that interval.</p>
+
+<p>There are multiple columns like this one, where each represents an external data set.</p>
+
+</li>
+<li><p><b>prd_expr_prob</b>: predicted probability from logistic regression model on whether this isoform is expressed or not. A probability higher than 0.5 is considered as expressed</p>
+
+</li>
+<li><p><b>partition</b>: group index, to which this isoforms is partitioned</p>
+
+</li>
+<li><p><b>prior</b>: prior parameter for this isoform</p>
+
+</li>
+</ul>
+
 </dd>
 </dl>
 
@@ -604,10 +854,11 @@
                            /ref/mouse_125 \
                            mmliver_single_quals</code></pre>
 
-<p>2) &#39;/data/mmliver_1.fq&#39; and &#39;/data/mmliver_2.fq&#39;, paired-end reads with quality scores. Quality scores are in SANGER format. We want to use 8 threads and do not generate a genome BAM file:</p>
+<p>2) &#39;/data/mmliver_1.fq&#39; and &#39;/data/mmliver_2.fq&#39;, stranded paired-end reads with quality scores. Suppose the library is prepared using TruSeq Stranded Kit, which means the first mate should map to the reverse strand. Quality scores are in SANGER format. We want to use 8 threads and do not generate a genome BAM file:</p>
 
 <pre><code> rsem-calculate-expression -p 8 \
                            --paired-end \
+                           --strandedness reverse \
                            /data/mmliver_1.fq \
                            /data/mmliver_2.fq \
                            /ref/mouse_125 \
@@ -650,6 +901,57 @@
                            --star \
                            --star-path /sw/STAR \
                            --gzipped-read-file \
+                           --paired-end \
+                           -p 8 \
+                           /data/mmliver_1.fq.gz \
+                           /data/mmliver_2.fq.gz \
+                           /ref/mouse_125 \
+                           mmliver_paired_end_quals</code></pre>
+
+<p>7) In the above example, suppose we want to run prior-enhanced RSEM instead. Assuming we want to learn priors from a ChIP-seq peak file &#39;/data/mmlive.narrowPeak.gz&#39;:</p>
+
+<pre><code> rsem-calculate-expression --star \
+                           --star-path /sw/STAR \
+                           --gzipped-read-file \
+                           --paired-end \
+                           --calc-pme \
+                           --run-pRSEM \
+                           --chipseq-peak-file /data/mmliver.narrowPeak.gz \
+                           -p 8 \
+                           /data/mmliver_1.fq.gz \
+                           /data/mmliver_2.fq.gz \
+                           /ref/mouse_125 \
+                           mmliver_paired_end_quals</code></pre>
+
+<p>8) Similar to the example in 7), suppose we want to use the partition model &#39;pk_lm2nopk&#39; (partitioning isoforms by Pol II TSS peak first and then partitioning &#39;no TSS peak&#39; isoforms into two bins by a linear regression model), and we want to partition isoforms by RNA Pol II&#39;s ChIP-seq read files &#39;/data/mmliver_PolIIRep1.fq.gz&#39; and &#39;/data/mmliver_PolIIRep2.fq.gz&#39;, and the control ChIP-seq read files &#39;/data/mmliver_ChIPseqCtrl.fq.gz&#39;. Also, assuming Bowtie&#39;s executables are under &#39;/sw/bowtie/&#39;:</p>
+
+<pre><code> rsem-calculate-expression --star \
+                           --star-path /sw/STAR \
+                           --gzipped-read-file \
+                           --paired-end \
+                           --calc-pme \
+                           --run-pRSEM \
+                           --chipseq-target-read-files /data/mmliver_PolIIRep1.fq.gz,/data/mmliver_PolIIRep2.fq.gz \
+                           --chipseq-control-read-files /data/mmliver_ChIPseqCtrl.fq.gz \
+                           --partition-model pk_lm2nopk \
+                           --bowtie-path /sw/bowtie \
+                           -p 8 \
+                           /data/mmliver_1.fq.gz \
+                           /data/mmliver_2.fq.gz \
+                           /ref/mouse_125 \
+                           mmliver_paired_end_quals</code></pre>
+
+<p>9) Similar to the example in 8), suppose we want to derive prior from four histone modification ChIP-seq read data sets: &#39;/data/H3K27Ac.fastq.gz&#39;, &#39;/data/H3K4me1.fastq.gz&#39;, &#39;/data/H3K4me2.fastq.gz&#39;, and &#39;/data/H3K4me3.fastq.gz&#39;. Also, assuming Bowtie&#39;s executables are under &#39;/sw/bowtie/&#39;:</p>
+
+<pre><code> rsem-calculate-expression --star \
+                           --star-path /sw/STAR \
+                           --gzipped-read-file \
+                           --paired-end \
+                           --calc-pme \
+                           --run-pRSEM \
+                           --partition-model cmb_lgt \
+                           --chipseq-read-files-multi-targets /data/H3K27Ac.fastq.gz,/data/H3K4me1.fastq.gz,/data/H3K4me2.fastq.gz,/data/H3K4me3.fastq.gz \
+                           --bowtie-path /sw/bowtie \
                            -p 8 \
                            /data/mmliver_1.fq.gz \
                            /data/mmliver_2.fq.gz \

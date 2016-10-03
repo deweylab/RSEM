@@ -14,10 +14,11 @@
 <ul>
 <li><a href="#built">Build RSEM references using RefSeq, Ensembl, or GENCODE annotations</a></li>
 </ul></li>
-<li><a href="#example">Example</a></li>
+<li><a href="#example-main">Example</a></li>
 <li><a href="#simulation">Simulation</a></li>
 <li><a href="#gen_trinity">Generate Transcript-to-Gene-Map from Trinity Output</a></li>
 <li><a href="#de">Differential Expression Analysis</a></li>
+<li><a href="#pRSEM">Prior-Enhanced RSEM (pRSEM)</a></li>
 <li><a href="#authors">Authors</a></li>
 <li><a href="#acknowledgements">Acknowledgements</a></li>
 <li><a href="#license">License</a></li>
@@ -378,8 +379,7 @@ output_plot_file: the file name for plots generated from the model. It is a pdf 
 may include fragment length distribution, mate length distribution,
 read start position distribution (RSPD), quality score vs observed
 quality given a reference base, position vs percentage of sequencing
-error given a reference base and histogram of reads with different
-number of alignments.</p>
+error given a reference base and alignment statistics.</p>
 
 <p>fragment length distribution and mate length distribution: x-axis is fragment/mate length, y axis is the probability of generating a fragment/mate with the associated length</p>
 
@@ -389,9 +389,9 @@ number of alignments.</p>
 
 <p>Position vs. percentage sequencing error given a reference base: x-axis is position and y-axis is percentage sequencing error</p>
 
-<p>Histogram of reads with different number of alignments: x-axis is the number of alignments a read has and y-axis is the number of such reads. The inf in x-axis means number of reads filtered due to too many alignments</p>
+<p>Alignment statistics: It includes a histogram and a pie chart. For the histogram, x-axis shows the number of <strong>isoform-level</strong> alignments a read has and y-axis provides the number of reads with that many alignments. The inf in x-axis means number of reads filtered due to too many alignments. For the pie chart, four categories of reads &#8212; unalignable, unique, <strong>isoform-level</strong>multi-mapping, filtered &#8211; are plotted and their percentages are noted. In both the histogram and the piechart, numbers belong to unalignable, unique, multi-mapping, and filtered are colored as green, blue, gray and red. </p>
 
-<h2 id="anameexampleaexample"><a name="example"></a> Example</h2>
+<h2 id="anameexample-mainaexample"><a name="example-main"></a> Example</h2>
 
 <p>Suppose we download the mouse genome from UCSC Genome Browser. We do
 not add poly(A) tails and use <code>/ref/mouse_0</code> as the reference name.
@@ -478,7 +478,7 @@ output_name_1.fq &amp; output_name_2.fq if paired-end with quality score. </p>
 
 <h3 id="example:">Example:</h3>
 
-<p>Suppose we want to simulate 50 millon single-end reads with quality scores and use the parameters learned from <a href="#example">Example</a>. In addition, we set theta0 as 0.2 and output_name as <code>simulated_reads</code>. The command is:</p>
+<p>Suppose we want to simulate 50 millon single-end reads with quality scores and use the parameters learned from <a href="#example-main">Example</a>. In addition, we set theta0 as 0.2 and output_name as <code>simulated_reads</code>. The command is:</p>
 
 <pre><code>rsem-simulate-reads /ref/mouse_0 mmliver_single_quals.stat/mmliver_single_quals.model mmliver_single_quals.isoforms.results 0.2 50000000 simulated_reads
 </code></pre>
@@ -594,9 +594,95 @@ manual</a>.</p>
 <p>Questions related to EBSeq should
 be sent to <a href="mailto:nleng@wisc.edu">Ning Leng</a>.</p>
 
+<h2 id="anameprsemaprior-enhancedrsemprsem"><a name="pRSEM"></a> Prior-Enhanced RSEM (pRSEM)</h2>
+
+<h3 id="i.overview">I. Overview</h3>
+
+<p><a href="https://deweylab.github.io/pRSEM/">Prior-enhanced RSEM (pRSEM)</a> uses complementary information (e.g. ChIP-seq data) to allocate RNA-seq multi-mapping fragments. We included pRSEM code in the subfolder <code>pRSEM/</code> as well as in RSEM&#8217;s scripts <code>rsem-prepare-reference</code> and <code>rsem-calculate-expression</code>. </p>
+
+<h3 id="ii.demo">II. Demo</h3>
+
+<p>To get a quick idea on how to use pRSEM, you can try <a href="https://github.com/pliu55/pRSEM_demo">this demo</a>. It provides a single script, named <code>run_pRSEM_demo.sh</code>, which allows you to run all pRSEM&#8217;s functions. It also contains detailed descriptions of pRSEM&#8217;s workflow, input and output files.</p>
+
+<h3 id="iii.installation">III. Installation</h3>
+
+<p>To compile pRSEM, type</p>
+
+<pre><code>make pRSEM
+</code></pre>
+
+<p>Note that you need to first compile RSEM before compiling pRSEM. Currently, pRSEM has only been tested on Linux.</p>
+
+<h3 id="iv.example">IV. Example</h3>
+
+<p>To run pRSEM on the <a href="#example-main">RSEM example above</a>, you need to provide:
+- <strong>ChIP-seq sequencing file(s) in FASTQ format</strong> or <strong>a ChIP-seq peak file in BED format</strong>. They will be used by pRSEM to obtain complementatry information for allocating RNA-seq multi-mapping fragments.
+- <strong>a genome mappability file in bigWig format</strong> to let pRSEM build a training
+ set of isoforms to learn prior. Mappability can be obtained from UCSC&#8217;s
+ ENCODE composite track for <a href="http://hgdownload.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeMapability/wgEncodeCrgMapabilityAlign36mer.bigWig">human hg19</a>
+ and <a href="http://hgdownload.cse.ucsc.edu/goldenPath/mm9/encodeDCC/wgEncodeMapability/wgEncodeCrgMapabilityAlign36mer.bigWig">mouse mm9</a>. For other genomes, you
+ can generate the mappability file by following <a href="http://wiki.bits.vib.be/index.php/Create_a_mappability_track#Install_and_run_the_GEM_library_tools">this tutorial</a>.</p>
+
+<p>Assuming you would like to use RNA Pol II&#8217;s ChIP-seq sequencing files <code>/data/mmliver_PolIIRep1.fq.gz</code> and <code>/data/mmliver_PolIIRep2.fq.gz</code>, with ChIP-seq control <code>/data/mmliver_ChIPseqCtrl.fq.gz</code>. Also, assuming the mappability file for mouse genome is <code>/data/mm9.bigWig</code> and you prefer to use STAR located at <code>/sw/STAR</code> to align RNA-seq fragments and use Bowtie to align ChIP-seq reads. Then, you can use the following commands to run pRSEM:</p>
+
+<pre><code>rsem-prepare-reference --gtf mm9.gtf \
+                       --star \
+                       --star-path /sw/STAR \
+                       -p 8 \
+                       --prep-pRSEM \
+                       --bowtie-path /sw/bowtie \
+                       --mappability-bigwig-file /data/mm9.bigWig \
+                       /data/mm9 \
+                       /ref/mouse_0
+
+rsem-calculate-expression --star \
+                          --star-path /sw/STAR \
+                          --calc-pme \
+                          --run-pRSEM \
+                          --chipseq-target-read-files /data/mmliver_PolIIRep1.fq.gz,/data/mmliver_PolIIRep2.fq.gz \
+                          --chipseq-control-read-files /data/mmliver_ChIPseqCtrl.fq.gz \
+                          --bowtie-path /sw/bowtie \
+                          -p 8 \
+                          /data/mmliver.fq \
+                          /ref/mouse_0 \
+                          mmliver_single_quals
+</code></pre>
+
+<p>To find out more about pRSEM options and examples, you can use the commands:</p>
+
+<pre><code>rsem-prepare-reference --help
+</code></pre>
+
+<p>and </p>
+
+<pre><code>rsem-calculate-expression --help
+</code></pre>
+
+<h3 id="v.systemrequirements">V. System Requirements</h3>
+
+<ul>
+<li>Linux</li>
+<li>Perl version &gt;= 5.8.8</li>
+<li>Python version &gt;= 2.7.3</li>
+<li>R version &gt;= 3.3.1</li>
+<li>Bioconductor 3.3</li>
+</ul>
+
+<h3 id="vi.requiredexternalpackages">VI. Required External Packages</h3>
+
+<p>All the following packages will be automatically installed when compiling pRSEM.
+- <a href="https://cran.r-project.org/web/packages/data.table/index.html">data.table 1.9.6</a>: an extension of R&#8217;s data.frame, heavily used by pRSEM.
+- <a href="https://bioconductor.org/packages/release/bioc/html/GenomicRanges.html">GenomicRanges 1.24.3</a>: efficient representing and manipulating genomic intervals, heavily used by pRSEM.
+- <a href="https://bioconductor.org/packages/release/bioc/html/ShortRead.html">ShortRead 1.30.0</a>: guessing the encoding of ChIP-seq FASTQ file&#8217;s quality score.
+- <a href="https://cran.r-project.org/web/packages/caTools/index.html">caTools 1.17.1</a>: used for SPP Peak Caller.
+- <a href="https://code.google.com/archive/p/phantompeakqualtools/">SPP Peak Caller</a>:
+ ChIP-seq peak caller. Source code was slightly modified in terms of included headers in order to be compiled under R v3.3.1.
+- <a href="https://sites.google.com/site/anshulkundaje/projects/idr/idrCode.tar.gz?attredirects=0">IDR</a>:
+ calculating Irreproducible Discovery Rate to call peaks from multiple ChIP-seq replicates.</p>
+
 <h2 id="anameauthorsaauthors"><a name="authors"></a> Authors</h2>
 
-<p><a href="http://bli25ucb.github.io/">Bo Li</a> and <a href="https://www.biostat.wisc.edu/~cdewey/">Colin Dewey</a> designed the RSEM algorithm. <a href="http://bli25ucb.github.io/">Bo Li</a> implemented the RSEM software. <a href="https://www.biostat.wisc.edu/~cdewey/group.html">Peng Liu</a> contributed the STAR aligner options.</p>
+<p><a href="http://bli25ucb.github.io/">Bo Li</a> and <a href="https://www.biostat.wisc.edu/~cdewey/">Colin Dewey</a> designed the RSEM algorithm. <a href="http://bli25ucb.github.io/">Bo Li</a> implemented the RSEM software. <a href="https://www.biostat.wisc.edu/~cdewey/group.html">Peng Liu</a> contributed the STAR aligner options and prior-enhanced RSEM (pRSEM).</p>
 
 <h2 id="anameacknowledgementsaacknowledgements"><a name="acknowledgements"></a> Acknowledgements</h2>
 
