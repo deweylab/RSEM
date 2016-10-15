@@ -10,7 +10,7 @@ class File:
     self.fullname = None  ## file's full name, include dir, base, and all ext
     self.is_gz    = None  ## if file is gzipped
     self.dirname  = None  ## directory name
-    self.basename = None  ## base name sans all extension seperated by dot
+    self.basename = None  ## base name sans all extension separated by dot
     self.filename_sans_ext = None ## no path, no last extension sep by dot
 
 

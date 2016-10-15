@@ -432,7 +432,7 @@ int main(int argc, char* argv[]) {
     printf("- One isoform's prior per line\n");
     printf("- Priors must be in the same order as in the .ti file\n");
     printf("- Priors for those to-be-omitted isoforms must be included as well\n");
-    printf("- Comments can be added after prior seperated by space(s)\n");
+    printf("- Comments can be added after prior separated by space(s)\n");
 		exit(-1);
 	}
 

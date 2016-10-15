@@ -1125,7 +1125,7 @@ Using a logistic regression to combine TSS signals from multiple complementary d
 
 =back
 
-Parameters for all the above models are learned from a training set. For detailed explainations, please see prior-enhanced RSEM's paper. (Default: 'pk')
+Parameters for all the above models are learned from a training set. For detailed explanations, please see prior-enhanced RSEM's paper. (Default: 'pk')
 
 =back
 
