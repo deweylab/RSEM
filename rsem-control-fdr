@@ -62,11 +62,7 @@ __END__
 
 =head1 NAME
 
-rsem-control-fdr
-
-=head1 PURPOSE
-
-Filter EBSeq output for statistical significance.
+rsem-control-fdr - Filter EBSeq output for statistical significance.
 
 =head1 SYNOPSIS
 
