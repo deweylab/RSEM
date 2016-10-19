@@ -329,7 +329,7 @@ Build STAR indices. (Default: off)
 
 =item B<--star-path> <path>
 
-The path to STAR's executable. (Default: the path to STAR executable is assumed to be in user's PATH environment varaible)
+The path to STAR's executable. (Default: the path to STAR executable is assumed to be in user's PATH environment variable)
 
 =item B<--star-sjdboverhang> <int>
 

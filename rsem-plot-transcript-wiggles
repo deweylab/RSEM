@@ -149,7 +149,7 @@ This program generates transcript wiggle plots and outputs them in a pdf file. T
 
 =item B<output_plot_file>
 
-This is a pdf file containing all plots generated. If a list of transcript ids is provided, each page display at most 6 plots in 3 rows and 2 columns. If gene ids are provided, each page display a gene. The gene's id is showed at the top and all its transcripts' wiggle plots are showed in this page. The arrangment of plots is determined automatically. For each transcript wiggle plot, the transcript id is displayed as title. x-axis is position in the transcript and y-axis is read depth. If allele-specific expression is calculated, the basin unit becomes an allele-specific transcript and transcript ids and gene ids can be used to group allele-specific transcripts.
+This is a pdf file containing all plots generated. If a list of transcript ids is provided, each page display at most 6 plots in 3 rows and 2 columns. If gene ids are provided, each page display a gene. The gene's id is showed at the top and all its transcripts' wiggle plots are showed in this page. The arrangement of plots is determined automatically. For each transcript wiggle plot, the transcript id is displayed as title. x-axis is position in the transcript and y-axis is read depth. If allele-specific expression is calculated, the basin unit becomes an allele-specific transcript and transcript ids and gene ids can be used to group allele-specific transcripts.
 
 =item B<sample_name.transcript.sorted.bam and sample_name.transcript.readdepth>
 
