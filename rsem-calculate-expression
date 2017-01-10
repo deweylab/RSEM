@@ -214,7 +214,7 @@ if ($is_alignment) {
 }
 else {
     pod2usage(-msg => "Invalid number of arguments!", -exitval => 2, -verbose => 2) if (!$paired_end && scalar(@ARGV) != 3 || $paired_end && scalar(@ARGV) != 4);    
-    pod2usage(-msg => "Only one aligner can be specified!", -exitval => 2, -verbose => 2) if ($bowtie + $bowtie2 + $hisat2 + $star > 1)
+    pod2usage(-msg => "Only one aligner can be specified!", -exitval => 2, -verbose => 2) if ($bowtie + $bowtie2 + $hisat2 + $star > 1);
     if ($bowtie + $bowtie2 + $hisat2 + $star == 0) { $bowtie = 1; }
     pod2usage(-msg => "If --no-qualities is set, neither --phred33-quals, --phred64-quals or --solexa-quals can be active!", -exitval => 2, -verbose => 2) if ($no_qual && ($phred33 + $phred64 + $solexa > 0));
     pod2usage(-msg => "Only one of --phred33-quals, --phred64-quals, and --solexa-quals can be active!", -exitval => 2, -verbose => 2) if ($phred33 + $phred64 + $solexa > 1);          
@@ -523,7 +523,7 @@ if (!$is_alignment) {
     elsif ($phred64) { $command .= " --phred64"; }
     elsif ($solexa) { $command .= " --solexa-quals"; }
     
-    $command .= " --no-softclip --rdg 99999999,99999999 --rfg 99999999,99999999 -k 10 --secondary"
+    $command .= " --no-softclip --rdg 99999999,99999999 --rfg 99999999,99999999 -k 10 --secondary";
     if ($read_type == 2 || $read_type == 3) { $command .= " -I $minL -X $maxL --no-mixed --no-discordant"; }
         
     if ($probF == 1.0) { $command .= " --norc"; }
@@ -872,13 +872,21 @@ Input file contains alignments in SAM/BAM/CRAM format. The exact file format wil
 
 If the header section of input alignment file does not contain reference sequence information, this option should be turned on. <file> is a FAI format file containing each reference sequence's name and length. Please refer to the SAM official website for the details of FAI format. (Default: off)
 
+=item B<--bowtie>
+
+Use Bowtie to align reads. (Default: on)
+
 =item B<--bowtie2>
 
-Use Bowtie 2 instead of Bowtie to align reads. Since currently RSEM does not handle indel, local and discordant alignments, the Bowtie2 parameters are set in a way to avoid those alignments. In particular, we use options '--sensitive --dpad 0 --gbar 99999999 --mp 1,1 --np 1 --score-min L,0,-0.1' by default. The last parameter of '--score-min', '-0.1', is the negative of maximum mismatch rate. This rate can be set by option '--bowtie2-mismatch-rate'. If reads are paired-end, we additionally use options '--no-mixed' and '--no-discordant'. (Default: off)
+Use Bowtie 2 to align reads. Since currently RSEM does not handle indel, local and discordant alignments, the Bowtie2 parameters are set in a way to avoid those alignments. In particular, we use options '--sensitive --dpad 0 --gbar 99999999 --mp 1,1 --np 1 --score-min L,0,-0.1' by default. The last parameter of '--score-min', '-0.1', is the negative of maximum mismatch rate. This rate can be set by option '--bowtie2-mismatch-rate'. If reads are paired-end, we additionally use options '--no-mixed' and '--no-discordant'. (Default: off)
 
 =item B<--star>
 
 Use STAR to align reads. Alignment parameters are from ENCODE3's STAR-RSEM pipeline. To save computational time and memory resources, STAR's Output BAM file is unsorted. It is stored in RSEM's temporary directory with name as 'sample_name.bam'. Each STAR job will have its own private copy of the genome in memory. (Default: off) 
+
+=item B<--hisat2>
+
+Use Hisat 2 to align reads. The options '--no-softclip --rdg 99999999,99999999 --rfg 99999999,99999999 -k 10 --secondary' are used. For paired-end reads, the options '--no-mixed --no-discordant' are in addition used. (Default: off)
 
 =item B<--append-names>
 
@@ -1015,6 +1023,10 @@ The path to STAR's executable. (Default: the path to STAR executable is assumed 
 =item B<--star-output-genome-bam>
 
 (STAR parameter) Save the BAM file from STAR alignment under genomic coordinate to 'sample_name.STAR.genome.bam'. This file is NOT sorted by genomic coordinate. In this file, according to STAR's manual, 'paired ends of an alignment are always adjacent, and multiple alignments of a read are adjacent as well'. (Default: off)
+
+=item B<--hisat2-path> <path>
+
+The path to Hisat 2 executables. (Default: the path to the Hisat 2 executables is assumed to be in the user's PATH environment variable)
 
 =back
 
