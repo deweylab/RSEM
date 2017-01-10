@@ -523,7 +523,7 @@ if (!$is_alignment) {
     elsif ($phred64) { $command .= " --phred64"; }
     elsif ($solexa) { $command .= " --solexa-quals"; }
     
-    $command .= " --no-softclip --rdg 99999999,99999999 --rfg 99999999,99999999 -k 10 --secondary";
+    $command .= " --no-softclip --no-spliced-alignment --rdg 99999999,99999999 --rfg 99999999,99999999 -k 10 --secondary";
     if ($read_type == 2 || $read_type == 3) { $command .= " -I $minL -X $maxL --no-mixed --no-discordant"; }
         
     if ($probF == 1.0) { $command .= " --norc"; }
@@ -886,7 +886,7 @@ Use STAR to align reads. Alignment parameters are from ENCODE3's STAR-RSEM pipel
 
 =item B<--hisat2>
 
-Use Hisat 2 to align reads. The options '--no-softclip --rdg 99999999,99999999 --rfg 99999999,99999999 -k 10 --secondary' are used. For paired-end reads, the options '--no-mixed --no-discordant' are in addition used. (Default: off)
+Use Hisat 2 to align reads. The options '--no-softclip --no-spliced-alignment --rdg 99999999,99999999 --rfg 99999999,99999999 -k 10 --secondary' are used. For paired-end reads, the options '--no-mixed --no-discordant' are in addition used. (Default: off)
 
 =item B<--append-names>
 
