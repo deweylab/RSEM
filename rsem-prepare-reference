@@ -156,6 +156,7 @@ if ($bowtie) {
 
 if ($bowtie2) { 
     $command = $bowtie2_path."bowtie2-build -f";
+    if ($star_nthreads > 1) { $command .= " --threads $star_nthreads"; }
     if ($quiet) { $command .= " -q"; }
     $command .= " $ARGV[1].idx.fa $ARGV[1]";
     
