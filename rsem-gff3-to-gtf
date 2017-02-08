@@ -160,6 +160,9 @@ class Transcript:
 		self.index += 1
 		return interval
 
+	def __next__(self):
+		return self.next()
+
 
 def getTranscript(tid, feature):
 	assert tid != None
