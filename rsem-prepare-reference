@@ -185,10 +185,10 @@ if ($star) {
 }
 
 if ($hisat2) {
-	$command = $hisat2_path."hisat2-build"
+	$command = $hisat2_path."hisat2-build";
 	if ($nThreads > 1) { $command .= " -p $nThreads"; }
 	if ($quiet) { $command .= " -q"; }
-	$command .= " $ARGV[1].idx.fa $ARGV[1]"
+	$command .= " $ARGV[1].idx.fa $ARGV[1]";
 
 	&runCommand($command);
 }
