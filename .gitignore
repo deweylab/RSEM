@@ -35,3 +35,7 @@ samtools-*/htslib-*/config.h
 samtools-*/htslib-*/config.mk
 samtools-*/htslib-*/config.status
 samtools-*/htslib-*/version.h
+samtools-1.3/config.log
+samtools-1.3/htslib-1.3/config.log
+
+genFusionTranscripts
