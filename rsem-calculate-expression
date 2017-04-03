@@ -123,6 +123,8 @@ my $cap_stacked_chipseq_reads = 0; ## for multiple targets, remove redundant
                                    ## reads aligned to the same position
 my $n_max_stacked_chipseq_reads = 5; ## as above
 
+my $correctGCbias = 0;
+my $correctGCbias_quantile = 0;
 
 GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "temporary-folder=s" => \$temp_dir,
@@ -192,6 +194,9 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   'chipseq-peak-file=s' => \$chipseq_peak_file,
 	   'partition-model=s' => \$partition_model,
 	   "time" => \$mTime,
+
+     "correct-GC-bias" => \$correctGCbias,
+     "correct-GC-bias-quantile" => \$correctGCbias_quantile,
 
      # deprecated
      "strand-specific" => \$strand_specific,
@@ -380,6 +385,7 @@ if ($bowtie_path ne "") { $bowtie_path .= "/"; }
 if ($bowtie2_path ne "") { $bowtie2_path .= "/"; }
 if ($star_path ne "") { $star_path .= "/"; }
 if ($hisat2_path ne "") { $hisat2_path .= "/"; }
+
 
 my $command = "";
 
@@ -805,6 +811,17 @@ if ($mTime) {
 #    print OUTPUT "Delete: $time_del s.\n";
     close(OUTPUT);
 }
+
+
+if ($correctGCbias) {
+  &runCommand("correctGCbias.py $refName $sampleName 20", "Fail to run correctGCbias!");
+}
+
+if ($correctGCbias_quantile) {
+  &runCommand("correctGCbias_quantile.py $refName $sampleName 20", "Fail to run correctGCbias_quantile!");
+}
+
+
 
 __END__
 
