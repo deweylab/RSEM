@@ -15,7 +15,7 @@ if len(argv) != 4:
 	exit(-1)
 
 
-reference_fasta = argv[1] + ".transcripts.fa"
+reference_fasta = argv[1] + ".idx.fa"
 sampleToken = argv[2][argv[2].rfind('/') + 1 : ]
 model_file = "{0}.stat/{1}.model".format(argv[2], sampleToken)
 expression_file = "{0}.isoforms.results".format(argv[2])
@@ -120,20 +120,28 @@ def calc_background(names, refs, expression_file):
 
 
 
-def consistent(references, names):
-	if len(references) != len(names):
-		return False
-	for i in xrange(len(references)):
-		if references[i] != names[i]:
-			return False
-	return True
+def buildMap(references, names):
+	assert len(references) <= len(names)
+
+	local_map = {}
+	for i in xrange(len(names)):
+		local_map[names[i]] = i
+
+	ref_id_to_tid = []
+	for ref_name in references:
+		ref_name = ref_name.split()[0]
+		tid = local_map.get(ref_name, -1)
+		assert tid >= 0
+		ref_id_to_tid.append(tid)
+
+	return ref_id_to_tid
 
 def calc_foreground(names, refs, bam_file):
 	global foreground
 
 	sam_in = pysam.AlignmentFile(bam_file, "rb")
 
-	assert consistent(sam_in.references, names)
+	ref_id_to_tid = buildMap(sam_in.references, names)
 
 	cnt = 0
 	for aread in sam_in:
@@ -141,7 +149,7 @@ def calc_foreground(names, refs, bam_file):
 		if not aread.is_unmapped and not aread.is_reverse:
 			frac = aread.get_tag("ZW")
 			if frac > 0.0:
-				category = get_category(left_bounds, refs[aread.reference_id], aread.reference_start, abs(aread.template_length))
+				category = get_category(left_bounds, refs[ref_id_to_tid[aread.reference_id]], aread.reference_start, abs(aread.template_length))
 				foreground[category] += frac
 
 		cnt += 1
@@ -225,11 +233,13 @@ def generate_expression_files(refs, expression_file, gene_expression_file, out_e
 		nt = len(cisopct)
 		gefflens.append(sum([x * y for x, y in zip(cisopct, efflens[-nt : ])]))
 
-	exprs = [x / sum(exprs) * 1e6 for x in exprs]
+	denom = sum(exprs)
+	exprs = [x / denom * 1e6 for x in exprs]
 	factor = 1e9 / sum([x * y for x, y in zip(exprs, efflens)])
 	fpkms = [x * factor for x in exprs]
 
-	gexprs = [x / sum(gexprs) * 1e6 for x in gexprs]
+	denom = sum(gexprs)
+	gexprs = [x / denom * 1e6 for x in gexprs]
 	gfpkms = [x * factor for x in gexprs]
 
 	with open(expression_file) as fin, open(out_expression_file, "w") as fout:
