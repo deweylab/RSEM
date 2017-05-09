@@ -69,6 +69,7 @@ my $sort_bam_memory = "1G"; # default as 1G per thread
 my $calcPME = 0;
 my $calcCI = 0;
 my $single_cell_prior = 0;
+my $transcript_length_prior = 0;
 my $quiet = 0;
 my $help = 0;
 
@@ -164,6 +165,7 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "sort-bam-by-read-name" => \$sort_bam_by_read_name,
 	   "sort-bam-memory-per-thread=s" => \$sort_bam_memory,
 	   "single-cell-prior" => \$single_cell_prior,
+           "transcript-length-prior" => \$transcript_length_prior,
 	   "calc-pme" => \$calcPME,
 	   "gibbs-burnin=i" => \$BURNIN,
 	   "gibbs-number-of-samples=i" => \$NCV,
@@ -675,6 +677,7 @@ if ($calcPME || $calcCI ) {
     $command .= " -p $nThreads";
     if ($seed ne "NULL") { $command .= " --seed $seeds[1]"; }
     if ($single_cell_prior) { $command .= " --pseudo-count 0.1"; }
+    if ($transcript_length_prior) { $command .= " --set-prior-based-on-transcript-length"; }
     if ($quiet) { $command .= " -q"; }
     &runCommand($command);
 }
