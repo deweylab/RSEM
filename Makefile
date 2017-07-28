@@ -42,7 +42,10 @@ PROGS1 = rsem-extract-reference-transcripts rsem-synthesis-reference-transcripts
 PROGS2 = rsem-parse-alignments rsem-run-em rsem-tbam2gbam rsem-bam2wig rsem-bam2readdepth rsem-get-unique rsem-sam-validator rsem-scan-for-paired-end-reads
 PROGS3 = rsem-run-gibbs rsem-calculate-credibility-intervals
 
-PROGRAMS = $(PROGS1) $(PROGS2) $(PROGS3) genFusionTranscripts
+PROGS4 = genFusionTranscripts correctGTFfromMutation correctGenomefromMutation
+
+
+PROGRAMS = $(PROGS1) $(PROGS2) $(PROGS3) $(PROGS4)
 
 # Auxiliary variables for installation
 SCRIPTS = rsem-prepare-reference rsem-calculate-expression rsem-refseq-extract-primary-assembly rsem-gff3-to-gtf rsem-plot-model \
@@ -83,8 +86,18 @@ $(PROGS2) :
 $(PROGS3) :
 	$(CXX) $(LDFLAGS) -pthread -o $@ $^ $(LDLIBS)
 
+
+
+$(PROGS4) :
+	$(CXX) -O3 -std=c++11 $< -o $@
+
 genFusionTranscripts : genFusionTranscripts.cpp utils.h Transcript.h Transcripts.h
-	g++ -O3 -std=c++11 $< -o $@
+correctGTFfromMutation : correctGTFfromMutation.cpp utils.h my_assert.h GTFItem.h
+correctGenomefromMutation : correctGenomefromMutation.cpp utils.h
+
+
+
+
 
 # Dependencies for executables
 rsem-extract-reference-transcripts : extractRef.o

@@ -135,6 +135,9 @@ class GTFItem {
 	const std::string& getGeneName() const { return gene_name; }
 	const std::string& getTranscriptName() const { return transcript_name; }
 	const std::string getLeft() { return left; }
+
+	void setStart(int start) { this->start = start; }
+	void setEnd(int end) { this->end = end; }
 	
 	void setGeneID(const std::string& gene_id) {
 		this->gene_id = gene_id;

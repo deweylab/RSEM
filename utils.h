@@ -1,16 +1,17 @@
 #ifndef UTILS
 #define UTILS
 
-#include<cmath>
-#include<ctime>
-#include<cstdio>
-#include<cctype>
-#include<cstdlib>
-#include<cstring>
-#include<cassert>
-#include<string>
-#include<vector>
-#include<stdint.h>
+#include <cmath>
+#include <ctime>
+#include <cstdio>
+#include <cctype>
+#include <cstdlib>
+#include <cstring>
+#include <cassert>
+#include <string>
+#include <vector>
+#include <stdint.h>
+#include <sstream>
 
 typedef uint64_t HIT_INT_TYPE;
 typedef uint64_t READ_INT_TYPE;
@@ -161,6 +162,14 @@ inline std::string assemble_command(int argc, char* argv[]) {
   for (int i = 1; i < argc; ++i)
     command += " " + std::string(argv[i]);
   return command;
+}
+
+inline void split(const std::string& onestr, char delim, std::vector<std::string>& fields) {
+  std::istringstream strin(onestr);
+  std::string field;
+
+  fields.clear();
+  while (getline(strin, field, delim)) fields.push_back(field);
 }
 
 #endif
