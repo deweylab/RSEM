@@ -94,7 +94,7 @@ void correctGenome(const char* inpF, const char* outF) {
 		}
 
 
-		if (it2 != subs.end()) {
+		if (it2 != ins_del.end()) {
 			newseq.clear();
 			int pos = 0;
 			for (auto&& mafl : it2->second) {
