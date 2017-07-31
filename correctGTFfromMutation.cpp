@@ -291,6 +291,7 @@ void output(const char* outF) {
 void outputFusion(const string& fusionF) {
 	string outF = fusionF + ".sf";
 	ofstream fout(outF);
+	fout<< "#FusionName\tJunctionReadCount\tSpanningFragCount\tSpliceType\tLeftGene\tLeftBreakpoint\tRightGene\tRightBreakpoint"<< endl;
 	for (auto&& fusion : fusions) fout<< fusion.toString()<< endl;
 	fout.close();
 	if (verbose) printf("%s is generated.\n", outF.c_str());

@@ -3,7 +3,6 @@
 #include <string>
 #include <iostream>
 #include <fstream>
-#include <sstream>
 #include <vector>
 #include <set>
 #include <map>
@@ -52,34 +51,28 @@ vector<set<SeqType> > fuseCands;
 void parseInput(char* inpF) {
 	ifstream fin(inpF);
 	string line;
+	vector<string> fields, subfields;
 	int no;
+
+	string gid;
+	char dir;
+	int coord;
 
 	no = 0;
 	records.clear();
 	gidMap.clear();
 	getline(fin, line);
 	while (getline(fin, line)) {
-		istringstream strin(line);
+		split(line, '\t', fields);
 
-		string token, gid;
-		char dir;
-		int coord;
-		size_t fr, to;
+		split(fields[4], '^', subfields);
+		gid = subfields[1];
 
-		strin>> token>> token>> token>> token;
-		strin>> token;
+		split(fields[5], ':', subfields);
+		dir = subfields[2][0];
+		coord = stoi(subfields[1]);
 
-		fr = token.find_first_of('^') + 1;
-		to = token.find_last_of('.');
-		gid = token.substr(fr, to - fr);
-
-		strin>> token;
-		fr = token.find_first_of(':') + 1;
-		to = token.find_last_of(':');
-		dir = token[to + 1];
-		coord = stoi(token.substr(fr, to - fr));
-
-		records.push_back(GeneRecord(gid, token, true, dir, coord));
+		records.push_back(GeneRecord(gid, fields[5], true, dir, coord));
 		auto iter = gidMap.find(gid);
 		if (iter == gidMap.end()) {
 			gidMap.emplace(gid, vector<int>(1, no));
@@ -87,19 +80,14 @@ void parseInput(char* inpF) {
 		else iter->second.push_back(no);
 		++no;
 
+		split(fields[6], '^', subfields);
+		gid = subfields[1];
 
-		strin>> token;
-		fr = token.find_first_of('^') + 1;
-		to = token.find_last_of('.');
-		gid = token.substr(fr, to - fr);
+		split(fields[7], ':', subfields);
+		dir = subfields[2][0];
+		coord = stoi(subfields[1]);
 
-		strin>> token;
-		fr = token.find_first_of(':') + 1;
-		to = token.find_last_of(':');
-		dir = token[to + 1];
-		coord = stoi(token.substr(fr, to - fr));
-
-		records.push_back(GeneRecord(gid, token, false, dir, coord));
+		records.push_back(GeneRecord(gid, fields[7], false, dir, coord));
 		iter = gidMap.find(gid);
 		if (iter == gidMap.end()) {
 			gidMap.emplace(gid, vector<int>(1, no));
@@ -178,7 +166,7 @@ void enumerateFusedTranscripts(char* outF) {
 				string sequence = left.seq + right.seq;
 				if (seen.find(sequence) == seen.end()) {
 					seen.insert(sequence);
-					fout<< ">Fuse^"<< left.name<< "^"<< right.name<< endl << sequence<< endl;
+					fout<< ">#Fuse^"<< left.name<< "^"<< right.name<< endl << sequence<< endl;
 					++nFuses;
 				}
 			}
@@ -193,7 +181,7 @@ void enumerateFusedTranscripts(char* outF) {
 
 int main(int argc, char* argv[]) {
 	if (argc != 4) {
-		printf("Usage: genFusionTranscripts fusion_input.txt reference_name output.fa\n");
+		printf("Usage: genPutativeFusedTranscripts fusion_input.txt reference_name output.fa\n");
 		exit(-1);
 	}
 

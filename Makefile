@@ -42,7 +42,7 @@ PROGS1 = rsem-extract-reference-transcripts rsem-synthesis-reference-transcripts
 PROGS2 = rsem-parse-alignments rsem-run-em rsem-tbam2gbam rsem-bam2wig rsem-bam2readdepth rsem-get-unique rsem-sam-validator rsem-scan-for-paired-end-reads
 PROGS3 = rsem-run-gibbs rsem-calculate-credibility-intervals
 
-PROGS4 = genFusionTranscripts correctGTFfromMutation correctGenomefromMutation
+PROGS4 = genPutativeFusedTranscripts correctGTFfromMutation correctGenomefromMutation
 
 
 PROGRAMS = $(PROGS1) $(PROGS2) $(PROGS3) $(PROGS4)
@@ -91,7 +91,7 @@ $(PROGS3) :
 $(PROGS4) :
 	$(CXX) -O3 -std=c++11 $< -o $@
 
-genFusionTranscripts : genFusionTranscripts.cpp utils.h Transcript.h Transcripts.h
+genPutativeFusedTranscripts : genPutativeFusedTranscripts.cpp utils.h Transcript.h Transcripts.h
 correctGTFfromMutation : correctGTFfromMutation.cpp utils.h my_assert.h GTFItem.h
 correctGenomefromMutation : correctGenomefromMutation.cpp utils.h
 
