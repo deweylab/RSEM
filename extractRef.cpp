@@ -19,6 +19,7 @@
 using namespace std;
 
 bool verbose = true;
+bool removeDup = false;
 
 struct ChrInfo {
 	string name;
@@ -35,6 +36,9 @@ struct ChrInfo {
 };
 
 int M;
+
+int nDup;
+set<string> hasSeen;
 
 vector<GTFItem> items;
 vector<string> seqs;
@@ -57,15 +61,15 @@ map<string, string>::iterator mi_iter; //mapping info table's iterator
 set<string> sources;
 
 void parseSources(char* sstr) {
-  char* p = strtok(sstr, ",");
-  while (p != NULL) {
-    sources.insert(p);
-    p = strtok(NULL, ",");
-  }
+	char* p = strtok(sstr, ",");
+	while (p != NULL) {
+		sources.insert(p);
+		p = strtok(NULL, ",");
+	}
 }
 
 inline bool isTrusted(const string& source) {
-  return sources.size() == 0 || sources.find(source) != sources.end();
+	return sources.size() == 0 || sources.find(source) != sources.end();
 }
 
 void loadMappingInfo(char* mappingF) {
@@ -108,12 +112,12 @@ bool buildTranscript(int sp, int ep) {
 		general_assert(seqname == items[i].getSeqName(), "According to the GTF file given, transcript " + transcript_id + " has exons on multiple chromosomes!");
 
 		if (items[i].getGeneName() != "") {
-		  if (gene_name == "") gene_name = items[i].getGeneName();
-		  else general_assert(gene_name == items[i].getGeneName(), "Transcript " + transcript_id + " is associated with multiple gene names!");
+			if (gene_name == "") gene_name = items[i].getGeneName();
+			else general_assert(gene_name == items[i].getGeneName(), "Transcript " + transcript_id + " is associated with multiple gene names!");
 		}
 		if (items[i].getTranscriptName() != "") {
-		  if (transcript_name == "") transcript_name = items[i].getTranscriptName();
-		  else general_assert(transcript_name == items[i].getTranscriptName(), "Transcript " + transcript_id + " is associated with multiple transcript names!");
+			if (transcript_name == "") transcript_name = items[i].getTranscriptName();
+			else general_assert(transcript_name == items[i].getTranscriptName(), "Transcript " + transcript_id + " is associated with multiple transcript names!");
 		}
 
 		if (cur_e + 1 < start) {
@@ -146,16 +150,16 @@ void parse_gtf_file(char* gtfF) {
  		item.parse(line);
   		if (item.getFeature() == "exon" && isTrusted(item.getSource())) {
  			if (item.getStart() > item.getEnd()) {
-			  if (++n_warns <= MAX_WARNS) {
-			    fprintf(stderr, "Warning: exon's start position is larger than its end position! This exon is discarded.\n");
-			    fprintf(stderr, "\t%s\n\n", line.c_str());
-			  }
+				if (++n_warns <= MAX_WARNS) {
+					fprintf(stderr, "Warning: exon's start position is larger than its end position! This exon is discarded.\n");
+					fprintf(stderr, "\t%s\n\n", line.c_str());
+				}
  			}
  			else if (item.getStart() < 1) {
-			  if (++n_warns <= MAX_WARNS) {
-			    fprintf(stderr, "Warning: exon's start position is less than 1! This exon is discarded.\n");
-			    fprintf(stderr, "\t%s\n\n", line.c_str());
-			  }
+				if (++n_warns <= MAX_WARNS) {
+					fprintf(stderr, "Warning: exon's start position is less than 1! This exon is discarded.\n");
+					fprintf(stderr, "\t%s\n\n", line.c_str());
+				}
  			}
  			else {
  				item.parseAttributes(line);
@@ -216,41 +220,45 @@ void parse_gtf_file(char* gtfF) {
 }
 
 void shrink() {
-  int curp = 0;
+	int curp = 0;
+	int n_warns = 0;
 
-  int n_warns = 0;
-  
-  for (int i = 1; i <= M; i++) 
-    if (seqs[i] == "") {
-      if (++n_warns <= MAX_WARNS) {
-	const Transcript& transcript = transcripts.getTranscriptAt(i);
-	fprintf(stderr, "Warning: Cannot extract transcript %s's sequence since the chromosome it locates, %s, is absent!\n", transcript.getTranscriptID().c_str(), transcript.getSeqName().c_str());
-      }
-    }
-    else {
-      ++curp;
-      transcripts.move(i, curp);
-      if (i > curp) seqs[curp] = seqs[i];
-    }
+	nDup = 0;
+	hasSeen.clear();
+	for (int i = 1; i <= M; ++i) 
+		if (seqs[i] == "") {
+			if (++n_warns <= MAX_WARNS) {
+				const Transcript& transcript = transcripts.getTranscriptAt(i);
+				fprintf(stderr, "Warning: Cannot extract transcript %s's sequence since the chromosome it locates, %s, is absent!\n", transcript.getTranscriptID().c_str(), transcript.getSeqName().c_str());
+			}
+		}
+		else if (removeDup && hasSeen.find(seqs[i]) != hasSeen.end()) ++nDup;
+		else {
+			++curp;
+			transcripts.move(i, curp);
+			if (i > curp) seqs[curp] = seqs[i];
+			if (removeDup) hasSeen.insert(seqs[curp]);
+		}
 
-  if (n_warns > 0) fprintf(stderr, "Warning: %d transcripts are failed to extract because their chromosome sequences are absent.\n", n_warns);
-  if (verbose) printf("%d transcripts are extracted.\n", curp);
+	if (n_warns > 0) fprintf(stderr, "Warning: %d transcripts are failed to extract because their chromosome sequences are absent.\n", n_warns);
+	if (nDup > 0) fprintf(stderr, "%d duplicated transcripts are removed.\n", nDup);
+	if (verbose) printf("%d transcripts are extracted.\n", curp);
 
-  transcripts.setM(curp);
-  M = transcripts.getM();
-  general_assert(M > 0, "The reference contains no transcripts!");
+	transcripts.setM(curp);
+	M = transcripts.getM();
+	general_assert(M > 0, "The reference contains no transcripts!");
 
-  starts.clear();
-  string curgid = "", gid;
+	starts.clear();
+	string curgid = "", gid;
 
-  for (int i = 1; i <= M; i++) {
-    gid = transcripts.getTranscriptAt(i).getGeneID();
-    if (curgid != gid) { 
-      starts.push_back(i);
-      curgid = gid;
-    }
-  }
-  starts.push_back(M + 1);
+	for (int i = 1; i <= M; i++) {
+		gid = transcripts.getTranscriptAt(i).getGeneID();
+		if (curgid != gid) { 
+			starts.push_back(i);
+			curgid = gid;
+		}
+	}
+	starts.push_back(M + 1);
 }
 
 void writeResults(char* refName) {
@@ -290,25 +298,28 @@ void writeResults(char* refName) {
 }
 
 struct CursorPos {
-  char *filename;
-  int line_no, pos;
+	char *filename;
+	int line_no, pos;
 } cursor;
 
 inline char check(char c) {
-  general_assert(isalpha(c), "FASTA file " + cstrtos(cursor.filename) + " contains an unknown character, " + \
-		 ctos(c) + " (ASCII code " + itos(c) + "), at line " + itos(cursor.line_no) + ", position " + itos(cursor.pos + 1) + "!");
-  if (isupper(c) && c != 'A' && c != 'C' && c != 'G' && c != 'T') c = 'N';
-  if (islower(c) && c != 'a' && c != 'c' && c != 'g' && c != 't') c = 'n';
-  return c;
+	general_assert(isalpha(c), "FASTA file " + cstrtos(cursor.filename) + " contains an unknown character, " + \
+					ctos(c) + " (ASCII code " + itos(c) + "), at line " + itos(cursor.line_no) + ", position " + itos(cursor.pos + 1) + "!");
+	if (isupper(c) && c != 'A' && c != 'C' && c != 'G' && c != 'T') c = 'N';
+	if (islower(c) && c != 'a' && c != 'c' && c != 'g' && c != 't') c = 'n';
+	return c;
 }
 
 int main(int argc, char* argv[]) {
-  if (argc < 7 || ((hasMappingFile = atoi(argv[5])) && argc < 8)) {
-		printf("Usage: rsem-extract-reference-transcripts refName quiet gtfF sources hasMappingFile [mappingFile] chromosome_file_1 [chromosome_file_2 ...]\n");
+	if (argc < 7 || ((hasMappingFile = atoi(argv[5])) && argc < 8)) {
+		printf("Usage: rsem-extract-reference-transcripts refName quiet<first bit, quiet, second bit, removeDup> gtfF sources hasMappingFile [mappingFile] chromosome_file_1 [chromosome_file_2 ...]\n");
 		exit(-1);
 	}
 
-	verbose = !atoi(argv[2]);
+	int bits = atoi(argv[2]);
+	verbose = !(bits & 1);
+	removeDup = (bits & 2);
+
 	if (hasMappingFile) {
 		loadMappingInfo(argv[6]);
 	}
@@ -341,11 +352,11 @@ int main(int argc, char* argv[]) {
 			
 			gseq = ""; seqlen = 0;
 			while((getline(fin, line)) && (line[0] != '>')) {
-			  ++cursor.line_no;
-			  len = line.length();
-			  for (cursor.pos = 0; cursor.pos < len; ++cursor.pos) line[cursor.pos] = check(line[cursor.pos]);
-			  seqlen += len;
-			  gseq += line;
+				++cursor.line_no;
+				len = line.length();
+				for (cursor.pos = 0; cursor.pos < len; ++cursor.pos) line[cursor.pos] = check(line[cursor.pos]);
+				seqlen += len;
+				gseq += line;
 			}
 			assert(seqlen > 0);
 			
@@ -357,8 +368,8 @@ int main(int argc, char* argv[]) {
 			vector<int>& vec = iter->second;
 			int s = vec.size();
 			for (int j = 0; j < s; j++) {
-			  assert(vec[j] > 0 && vec[j] <= M);
-			  transcripts.getTranscriptAt(vec[j]).extractSeq(gseq, seqs[vec[j]]);
+				assert(vec[j] > 0 && vec[j] <= M);
+				transcripts.getTranscriptAt(vec[j]).extractSeq(gseq, seqs[vec[j]]);
 			}
 		}
 		fin.close();

@@ -30,6 +30,7 @@ my $bowtie2 = 0;
 my $bowtie2_path = "";
 my $prep_prsem = 0; ## if prepare reference for pRSEM
 my $mappability_bigwig_file  = '';
+my $remove_duplicates = 0;
 my $quiet = 0;
 my $help = 0;
 
@@ -63,6 +64,7 @@ GetOptions("gtf=s" => \$gtfF,
 		   "hisat2" => \$hisat2,
 		   "hisat2-path=s" => \$hisat2_path,
 		   "p|num-threads=i" => \$nThreads,
+		   "remove-duplicates" => \$remove_duplicates,
 		   "prep-pRSEM" => \$prep_prsem, ## bool if prepare reference for pRSEM
 		   "mappability-bigwig-file=s" => \$mappability_bigwig_file,
 		   "q|quiet" => \$quiet,
@@ -126,10 +128,12 @@ if ($gff3F ne "") {
 	&runCommand($command)
 }
 
+my $bits = ($remove_duplicates << 1) + $quiet;
+
 if ($gtfF ne "") {
 	$"=" ";
 	$gtf_sources =~ s/ /\\ /g;
-	$command = "rsem-extract-reference-transcripts $ARGV[1] $quiet $gtfF $gtf_sources";
+	$command = "rsem-extract-reference-transcripts $ARGV[1] $bits $gtfF $gtf_sources";
 	if ($mappingF ne "") { $command .= " 1 $mappingF"; }
 	else { $command .= " 0"; }
 	$command .= " @list";
@@ -137,7 +141,7 @@ if ($gtfF ne "") {
 }
 else {
 	$"=" ";
-	$command = "rsem-synthesis-reference-transcripts $ARGV[1] $quiet";
+	$command = "rsem-synthesis-reference-transcripts $ARGV[1] $bits";
 	if ($mappingF ne "") { $command .= " 1 $mappingF"; }
 	elsif ($alleleMappingF ne "") { $command .= " 2 $alleleMappingF"; }
 	else { $command .= " 0"; } 
@@ -354,6 +358,10 @@ Build Hisat 2 indices. (Default: off)
 =item B<--hisat2-path>
 
 The path to the Hisat 2 executables. (Default: the path to Hisat 2 executables is assumed to be in the user's PATH environment variable)
+
+=item B<--remove-duplicates>
+
+Remove transcript sequences that are identical to previous sequences. (Default: off)
 
 =item B<-p/--num-threads> <int>
 

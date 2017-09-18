@@ -5,6 +5,7 @@
 #include<fstream>
 #include<sstream>
 #include<map>
+#include<set>
 #include<vector>
 
 #include "utils.h"
@@ -15,8 +16,12 @@
 using namespace std;
 
 bool verbose = true;
+bool removeDup = false;
 
 int M;
+int nDup;
+
+set<string> hasSeen;
 
 map<string, string> name2seq;
 map<string, string>::iterator iter;
@@ -35,38 +40,38 @@ map<string, string> mi_table2; // allele_id to transcript_id
 map<string, string>::iterator mi_iter2; // corresponding iterator
 
 void loadMappingInfo(int file_type, char* mappingF) {
-  ifstream fin(mappingF);
-  string line, key, value, value2;
+	ifstream fin(mappingF);
+	string line, key, value, value2;
 
-  general_assert(fin.is_open(), "Cannot open " + cstrtos(mappingF) + "! It may not exist.");
+	general_assert(fin.is_open(), "Cannot open " + cstrtos(mappingF) + "! It may not exist.");
 
-  switch(file_type) {
-  case 1: 
-    mi_table.clear();
-    while (getline(fin, line)) {
-      line = cleanStr(line);
-      if (line[0] == '#') continue;
-      istringstream strin(line);
-      strin>>value>>key;
-      mi_table[key] = value;
-    }
-    break;
-  case 2: 
-    mi_table.clear();
-    mi_table2.clear();
-    while (getline(fin, line)) {
-      line = cleanStr(line);
-      if (line[0] == '#') continue;
-      istringstream strin(line);
-      strin>> value>> value2>> key;
-      mi_table[key] = value;
-      mi_table2[key] = value2;
-    }
-    break;
-  default: assert(false);
-  }
+	switch(file_type) {
+		case 1: 
+    		mi_table.clear();
+    		while (getline(fin, line)) {
+				line = cleanStr(line);
+				if (line[0] == '#') continue;
+				istringstream strin(line);
+				strin>>value>>key;
+				mi_table[key] = value;
+			}
+			break;
+		case 2: 
+			mi_table.clear();
+			mi_table2.clear();
+			while (getline(fin, line)) {
+				line = cleanStr(line);
+				if (line[0] == '#') continue;
+				istringstream strin(line);
+				strin>> value>> value2>> key;
+				mi_table[key] = value;
+				mi_table2[key] = value2;
+			}
+			break;
+		default: assert(false);
+	}
 
-  fin.close();
+	fin.close();
 }
 
 void writeResults(int option, char* refName) {
@@ -83,13 +88,13 @@ void writeResults(int option, char* refName) {
 	for (int i = 1; i <= M; i++) {
 		const Transcript& transcript = transcripts.getTranscriptAt(i);
 		if (cur_gene_id != transcript.getGeneID()) {
-		  gi.push_back(i);
-		  if (option == 2) gt.push_back((int)ta.size());
-		  cur_gene_id = transcript.getGeneID();
+			gi.push_back(i);
+			if (option == 2) gt.push_back((int)ta.size());
+			cur_gene_id = transcript.getGeneID();
 		}
 		if ((option == 2) && (cur_transcript_id != transcript.getTranscriptID())) {
-		    ta.push_back(i);
-		    cur_transcript_id = transcript.getTranscriptID();
+			ta.push_back(i);
+			cur_transcript_id = transcript.getTranscriptID();
 		}
 	}
 	gi.push_back(M + 1);
@@ -102,15 +107,15 @@ void writeResults(int option, char* refName) {
 	if (verbose) { printf("Group File is generated!\n"); }
 
 	if (option == 2) {
-	  sprintf(gtF, "%s.gt", refName);
-	  fout.open(gtF);
-	  for (int i = 0; i < (int)gt.size(); i++) fout<< gt[i]<< endl;
-	  fout.close();
-	  sprintf(taF, "%s.ta", refName);
-	  fout.open(taF);
-	  for (int i = 0; i < (int)ta.size(); i++) fout<< ta[i]<< endl;
-	  fout.close();
-	  if (verbose) { printf("Allele-specific group files are generated!\n"); }
+		sprintf(gtF, "%s.gt", refName);
+		fout.open(gtF);
+		for (int i = 0; i < (int)gt.size(); i++) fout<< gt[i]<< endl;
+		fout.close();
+		sprintf(taF, "%s.ta", refName);
+		fout.open(taF);
+		for (int i = 0; i < (int)ta.size(); i++) fout<< ta[i]<< endl;
+		fout.close();
+		if (verbose) { printf("Allele-specific group files are generated!\n"); }
 	}
 
 	sprintf(refFastaF, "%s.transcripts.fa", refName);
@@ -125,30 +130,32 @@ void writeResults(int option, char* refName) {
 	fout.close();
 	
 	if (verbose) { 
-	  printf("Extracted Sequences File is generated!\n"); 
+		printf("Extracted Sequences File is generated!\n"); 
 	}
 }
 
 struct CursorPos {
-  char *filename;
-  int line_no, pos;
+	char *filename;
+	int line_no, pos;
 } cursor;
 
 inline char check(char c) {
-  general_assert(isalpha(c), "FASTA file " + cstrtos(cursor.filename) + " contains an unknown character, " + \
-		 ctos(c) + " (ASCII code " + itos(c) + "), at line " + itos(cursor.line_no) + ", position " + itos(cursor.pos + 1) + "!");
-  if (isupper(c) && c != 'A' && c != 'C' && c != 'G' && c != 'T') c = 'N';
-  if (islower(c) && c != 'a' && c != 'c' && c != 'g' && c != 't') c = 'n';
-  return c;
+	general_assert(isalpha(c), "FASTA file " + cstrtos(cursor.filename) + " contains an unknown character, " + \
+					ctos(c) + " (ASCII code " + itos(c) + "), at line " + itos(cursor.line_no) + ", position " + itos(cursor.pos + 1) + "!");
+	if (isupper(c) && c != 'A' && c != 'C' && c != 'G' && c != 'T') c = 'N';
+	if (islower(c) && c != 'a' && c != 'c' && c != 'g' && c != 't') c = 'n';
+	return c;
 }
 
 int main(int argc, char* argv[]) {
-  if (argc < 5 || ((hasMappingFile = atoi(argv[3])) && argc < 6)) {
-		printf("Usage: synthesisRef refName quiet hasMappingFile<0,no;1,yes;2,allele-specific> [mappingFile] reference_file_1 [reference_file_2 ...]\n");
+	if (argc < 5 || ((hasMappingFile = atoi(argv[3])) && argc < 6)) {
+		printf("Usage: synthesisRef refName quiet<first bit: quiet; second bit: remove dup> hasMappingFile<0,no;1,yes;2,allele-specific> [mappingFile] reference_file_1 [reference_file_2 ...]\n");
 		exit(-1);
 	}
 
-	verbose = !atoi(argv[2]);
+	int bits = atoi(argv[2]);
+	verbose = !(bits & 1);
+	removeDup = (bits & 2);
 
 	if (hasMappingFile) { loadMappingInfo(hasMappingFile, argv[4]); }
 
@@ -164,7 +171,8 @@ int main(int argc, char* argv[]) {
 	
 	vector<Interval> vec;
 
-	M = 0;
+	M = nDup = 0;
+	hasSeen.clear();
 	name2seq.clear();
 	for (int i = start; i < argc; i++) {
 		fin.open(argv[i]);
@@ -186,27 +194,34 @@ int main(int argc, char* argv[]) {
 			  seqlen += len;
 			  gseq += line;
 			}
-			assert(seqlen > 0);
-			name2seq[seqname] = gseq;
-
-			transcript_id = seqname;
-			gene_id = seqname;
-
-			if (hasMappingFile) {
-			      mi_iter = mi_table.find(seqname);
-			      general_assert(mi_iter != mi_table.end(), "Mapping Info is not correct, cannot find " + seqname + "'s gene_id!");
-			      gene_id = mi_iter->second;
-			      if (hasMappingFile == 2) {
-				mi_iter2 = mi_table2.find(seqname);
-				general_assert(mi_iter2 != mi_table2.end(), "Mapping Info is not correct, cannot find allele " + seqname + "'s transcript_id!");
-				transcript_id = mi_iter2->second;
-			      }
-			}
 			
-			vec.clear();
-			vec.push_back(Interval(1, seqlen));
-			transcripts.add(Transcript(transcript_id, gene_id, seqname, '+', vec, ""));
-			++M;
+			assert(seqlen > 0);
+
+			if (!removeDup || (removeDup && hasSeen.find(gseq) == hasSeen.end())) {
+				if (removeDup) hasSeen.insert(gseq);
+
+				name2seq[seqname] = gseq;
+
+				transcript_id = seqname;
+				gene_id = seqname;
+
+				if (hasMappingFile) {
+				    mi_iter = mi_table.find(seqname);
+				    general_assert(mi_iter != mi_table.end(), "Mapping Info is not correct, cannot find " + seqname + "'s gene_id!");
+				    gene_id = mi_iter->second;
+				    if (hasMappingFile == 2) {
+						mi_iter2 = mi_table2.find(seqname);
+						general_assert(mi_iter2 != mi_table2.end(), "Mapping Info is not correct, cannot find allele " + seqname + "'s transcript_id!");
+						transcript_id = mi_iter2->second;
+				    }
+				}
+				
+				vec.clear();
+				vec.push_back(Interval(1, seqlen));
+				transcripts.add(Transcript(transcript_id, gene_id, seqname, '+', vec, ""));
+				++M;
+			}
+			else ++nDup;
 
 			if (verbose && M % 1000000 == 0) { printf("%d sequences are processed!\n", M); }
 		}
@@ -218,6 +233,8 @@ int main(int argc, char* argv[]) {
 		exit(-1);
 	}
 
+	if (nDup > 0) fprintf(stderr, "%d duplicated transcript sequences were removed!\n", nDup);
+
 	assert(M == transcripts.getM());
 	transcripts.sort();
 
@@ -225,3 +242,4 @@ int main(int argc, char* argv[]) {
 
 	return 0;
 }
+
