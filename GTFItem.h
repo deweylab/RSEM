@@ -1,6 +1,6 @@
-/* Copyright (c) 2015
-	 Bo Li (University of California, Berkeley)
-	 bli25@berkeley.edu
+/* Copyright (c) 2017
+   Bo Li (The Broad Institute of MIT and Harvard)
+   libo@broadinstitute.org
 
 	 This program is free software; you can redistribute it and/or
 	 modify it under the terms of the GNU General Public License as
@@ -21,12 +21,12 @@
 #ifndef GTFITEM_H_
 #define GTFITEM_H_
 
-#include<cstdio>
-#include<cctype>
-#include<cstdlib>
-#include<cassert>
-#include<string>
-#include<sstream>
+#include <cstdio>
+#include <cctype>
+#include <cstdlib>
+#include <cassert>
+#include <string>
+#include <sstream>
 
 class GTFItem {
  public:
@@ -135,6 +135,9 @@ class GTFItem {
 	const std::string& getGeneName() const { return gene_name; }
 	const std::string& getTranscriptName() const { return transcript_name; }
 	const std::string getLeft() { return left; }
+
+	void setStart(int start) { this->start = start; }
+	void setEnd(int end) { this->end = end; }
 	
 	void setGeneID(const std::string& gene_id) {
 		this->gene_id = gene_id;
