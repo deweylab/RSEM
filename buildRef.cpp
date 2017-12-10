@@ -24,6 +24,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
+#include <set>
 #include <map>
 #include <vector>
 #include <algorithm>
@@ -39,14 +40,14 @@ using namespace std;
 
 bool verbose = true; // define verbose
 
-// hasGTF: if has GTF file ; hasMapping: if has mapping file; isAllele: if allele-specific; rmdup : if remove duplicate sequences; appendPolyA : if append polyA tails; n2g_idx : if generate n2g index
-bool hasGTF, hasMapping, isAllele, rmdup, appendPolyA, n2g_idx; 
+// hasGTF: if has GTF file ; hasMapping: if has mapping file; isAllele: if allele-specific; rmdup : if remove duplicate sequences; appendPolyA : if append polyA tails; noPolyASet, if has file for non-mRNAs; n2g_idx : if generate n2g index
+bool hasGTF, hasMapping, isAllele, rmdup, appendPolyA, noPolyASet, n2g_idx; 
 
 int num_files; // Number of reference input files
 int mappingPos, file_pos; // position in argv vector for mapping file and reference files
 int polyALen; // length of poly(A)s appended
 
-char gtfF[STRLEN];
+char gtfF[STRLEN], polyAExcludeF[STRLEN];
 char tiF[STRLEN], refFastaF[STRLEN];
 char transListF[STRLEN], chromListF[STRLEN];
 char groupF[STRLEN], gtF[STRLEN], taF[STRLEN]; 
@@ -69,16 +70,13 @@ vector<GTFItem> items;
 map<string, vector<int> > sn2tr; // map from chromosome name to transcripts
 map<string, vector<int> >::iterator sn2tr_iter;
 
-
-
-
-
-
 // for GTF extracting
 vector<string> seqs;
 // for transcripts input
 map<string, string> name2seq;
 map<string, string>::iterator n2s_iter;
+
+set<string> no_polyA_set;
 
 
 // test if we should skip this line
@@ -263,6 +261,19 @@ void parse_gtf_file(char* gtfF) {
 }
 
 
+void load_polyA_exclusion_set(char* polyAExcludeF) {
+	ifstream fin(polyAExcludeF);
+	string line;
+
+	no_polyA_set.clear();
+	general_assert(fin.is_open(), "Cannot open " + cstrtos(polyAExcludeF) + "! It may not exist.");
+
+	while (getline(fin, line)) {
+		no_polyA_set.insert(line);
+	}
+
+	if (verbose) { printf("%s is loaded.\n", polyAExcludeF); }
+}
 
 inline string n2g(const string& seq) {
 	string newseq = seq;
@@ -273,6 +284,9 @@ inline string n2g(const string& seq) {
 	
 	return newseq;
 }
+
+
+
 
 void writeToDisk(char* refName) {
 	ofstream fout;
@@ -343,9 +357,11 @@ void writeToDisk(char* refName) {
 	}
 }
 
+
+
 int main(int argc, char* argv[]) {
 	if (argc < 2) {
-		printf("Usage: PROBer-build-reference refName [--gtf gtfF] [--mapping mappingF] [--allele-specific] [--remove-duplicates] [--polyA-length length] [--n2g-index] [-q] [--files num_of_files file_1 file_2 ...]\n");
+		printf("Usage: PROBer-build-reference refName [--gtf gtfF] [--mapping mappingF] [--allele-specific] [--remove-duplicates] [--polyA-length length] [--no-polyA-subset polyAExcludeF][--n2g-index] [-q] [--files num_of_files file_1 file_2 ...]\n");
 		exit(-1);
 	}
 
@@ -354,6 +370,7 @@ int main(int argc, char* argv[]) {
 	isAllele = false;
 	rmdup = false;
 	appendPolyA = false;
+	noPolyASet = false;
 	n2g_idx = false;
 	
 	int argpos = 2;
@@ -371,6 +388,10 @@ int main(int argc, char* argv[]) {
 		if (!strcmp(argv[argpos], "--polyA-length")) {
 			appendPolyA = true;
 			polyALen = atoi(argv[++argpos]);
+		}
+		if (!strcmp(argv[argpos], "--no-polyA-subset")) {
+			noPolyASet = true;
+			strcpy(polyAExcludeF, argv[++argpos]);
 		}
 		if (!strcmp(argv[argpos], "--n2g-index")) n2g_idx = true;
 		if (!strcmp(argv[argpos], "-q")) verbose = false;

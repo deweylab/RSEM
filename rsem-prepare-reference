@@ -21,8 +21,7 @@ my $gff3_RNA_patterns = "";
 my $gtf_sources = "None";
 my $mappingF = "";
 my $alleleMappingF = "";
-my $polyA = 0; # for option --polyA, default off 
-my $polyALen = 125;
+my $polyALen = 0; # default is not to append poly(A) tails
 my $polyAExcludeF = ""; # do not add poly(A) tails for these transcripts
 my $bowtie = 0;
 my $bowtie_path = "";
@@ -49,8 +48,7 @@ GetOptions("gtf=s" => \$gtfF,
 		   "trusted-sources=s" => \$gtf_sources,
 		   "transcript-to-gene-map=s" => \$mappingF,
 		   "allele-to-gene-map=s" => \$alleleMappingF,
-		   "polyA" => \$polyA, 
-		   "polyA-length=i" => \$polyALen,
+		   "polyA=i" => \$polyALen, 
 		   "no-polyA-subset=s" => \$subsetFile,
 		   "bowtie" => \$bowtie,
 		   "bowtie-path=s" => \$bowtie_path,
@@ -137,7 +135,9 @@ if ($gtfF ne "") {
 if ($mappingF ne "") { $command .= " --mapping $mappingF"; }
 if ($alleleMappingF ne "") { $command .= " --mapping $alleleMappingF --allele-specific"; }
 if ($remove_duplicates) { $command .= " --remove-duplicates"; }
-if ($polyA) {
+
+$polyALen = max(0, $polyALen - 20);
+if ($polyALen > 0) {
   $command .= " --polyA-length $polyALen";
   if ($polyAExcludeF ne "") { $command .= " --no-polyA-subset $polyAExcludeF"; }
 }
@@ -302,17 +302,13 @@ This option is designed for quantifying allele-specific expression. It is only v
 
 (Default: off) 
 
-=item B<--polyA>
+=item B<--polyA> <expected-read-length>
 
-Add poly(A) tails to the end of all reference isoforms. The length of poly(A) tail added is specified by '--polyA-length' option. STAR aligner users may not want to use this option. (Default: do not add poly(A) tail to any of the isoforms)
-
-=item B<--polyA-length> <int>
-
-The length of the poly(A) tails to be added. (Default: 125)
+Add poly(A) tails to the end of all reference isoforms. The length of poly(A) tail appended is determined by <expected-read-length> - 20. Do not append poly(A) tails if reads are aligned to a genome. (Default: do not add poly(A) tail to any of the isoforms)
 
 =item B<--no-polyA-subset> <file>
 
-Only meaningful if '--polyA' is specified. Do not add poly(A) tails to those transcripts listed in <file>. <file> is a file containing a list of transcript_ids. (Default: off)
+Only meaningful if '--polyA' is specified. Do not add poly(A) tails to those transcripts listed in <file>. <file> is a file containing a list of transcript_ids, which are separated by newlines. (Default: off)
 
 =item B<--bowtie>
 
