@@ -30,49 +30,39 @@
 
 Refs::Refs() {
 	M = 0;
-	seqs.assign(1, NULL);
-}
-
-Refs::~Refs() {
-	for (int i = 1; i <= M; ++i) delete seqs[i];
+	seqs.assign(1, RefSeq());
 }
 
 void Refs::readFrom(char* inpF) {
 	std::ifstream fin(inpF);
-	RefSeq* seq;
+	RefSeq seq;
 
 	general_assert(fin.is_open(), "Cannot open " + cstrtos(inpF) + "! It may not exist.");
 	
 	M = 0;
-	seqs.assign(1, NULL);
-	seq = new RefSeq();
-	
-	while (seq->read(fin)) {
+	seqs.assign(1, RefSeq());
+	while (seq.read(fin)) {
 		seqs.push_back(seq);
 		++M;
-		seq = new RefSeq();
 	}
-	delete seq;
-	
 	fin.close();
-
 	assert(M + 1 == (int)seqs.size());
 
-	if (verbose) { printf("Refs.readFrom finished!\n"); }
+	if (verbose) printf("%s is loaded.\n", inpF);
 }
 
 void Refs::writeTo(char* outF) {
 	std::ofstream fout(outF);
 	for (int i = 1; i <= M; ++i) 
-		seqs[i]->write(fout);
+		seqs[i].write(fout);
 	fout.close();
-	if (verbose) { printf("Refs.writeTo finished!\n"); }
+	if (verbose) printf("%s is generated.\n", outF);
 }
 
 void Refs::writeTransListTo(char* outF) {
 	std::ofstream fout(outF);
 	for (int i = 1; i <= M; ++i)
-		fout<< seqs[i]->getName()<< '\t'<< seqs[i]->getLen()<< std::endl;
+		fout<< seqs[i].getName()<< '\t'<< seqs[i].getLen()<< std::endl;
 	fout.close();
-	if (verbose) { printf("Refs.writeTransListTo finished!\n"); }
+	if (verbose) printf("%s is generated.\n", outF);
 }

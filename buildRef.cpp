@@ -34,24 +34,29 @@
 #include "GTFItem.h"
 #include "Transcript.hpp"
 #include "Transcripts.hpp"
+#include "RefSeq.hpp"
 #include "Refs.hpp"
 
 using namespace std;
 
 bool verbose = true; // define verbose
 
-// hasGTF: if has GTF file ; hasMapping: if has mapping file; isAllele: if allele-specific; rmdup : if remove duplicate sequences; appendPolyA : if append polyA tails; noPolyASet, if has file for non-mRNAs; n2g_idx : if generate n2g index
-bool hasGTF, hasMapping, isAllele, rmdup, appendPolyA, noPolyASet, n2g_idx; 
+
+int M;
+Transcripts transcripts;
+Refs refs;
+
+// hasGTF: if has GTF file ; hasMapping: if has mapping file; isAlleleSpecific: if allele-specific; rmdup : if remove duplicate sequences; appendPolyA : if append polyA tails; n2g_idx : if generate n2g index
+bool hasGTF, hasMapping, isAlleleSpecific, rmdup, appendPolyA, n2g_idx; 
 
 int num_files; // Number of reference input files
 int mappingPos, file_pos; // position in argv vector for mapping file and reference files
 int polyALen; // length of poly(A)s appended
 
 char gtfF[STRLEN], polyAExcludeF[STRLEN];
-char tiF[STRLEN], refFastaF[STRLEN];
+char tiF[STRLEN], dupF[STRLEN], refFastaF[STRLEN];
 char transListF[STRLEN], chromListF[STRLEN];
 char groupF[STRLEN], gtF[STRLEN], taF[STRLEN]; 
-char n2g_idxF[STRLEN];
 
 // Mapping file related data structures
 map<string, string> mi_table; // mapping info table
@@ -59,24 +64,40 @@ map<string, string>::iterator mi_iter; //mapping info table's iterator
 map<string, string> mi_table2; // allele_id to transcript_id
 map<string, string>::iterator mi_iter2; // corresponding iterator
 
-
-
-int M;
-Transcripts transcripts;
-Refs refs;
-vector<Interval> vec;
+set<string> sources, no_polyA_set; // sources, trusted sources; no_polyA_set, transcripts without polyA tails
 
 vector<GTFItem> items;
 map<string, vector<int> > sn2tr; // map from chromosome name to transcripts
 map<string, vector<int> >::iterator sn2tr_iter;
+vector<Interval> vec;
 
-// for GTF extracting
-vector<string> seqs;
-// for transcripts input
-map<string, string> name2seq;
-map<string, string>::iterator n2s_iter;
+// chromosome info
+struct ChrInfo {
+	string name;
+	size_t len;
 
-set<string> no_polyA_set;
+	ChrInfo(const string& name, size_t len) : name(name), len(len) {}
+
+	bool operator< (const ChrInfo& o) const {
+		return name < o.name;
+	}
+};
+
+vector<ChrInfo> chrvec;
+
+struct CursorPos {
+	char *filename;
+	int line_no, pos;
+};
+
+CursorPos cursor;
+
+
+int nDup;
+map<string, int> hasSeen; // map from sequence to tid
+pair<map<string, int>::iterator, bool> dup_ret;
+transcripts dups; // duplicated transcripts
+vector<int> dup_tids; // tid of the original transcripts
 
 
 // test if we should skip this line
@@ -86,34 +107,53 @@ inline bool skip(const string& line) {
 	return pos >= len || line[pos] == '#'; // skipping if empty line or commented line
 }
 
+// check nucleotides
+inline char check(char c) {
+	general_assert(isalpha(c), "FASTA file " + cstrtos(cursor.filename) + " contains an unknown character, " + \
+					ctos(c) + " (ASCII code " + itos(c) + "), at line " + itos(cursor.line_no) + ", position " + itos(cursor.pos + 1) + "!");
+	c = toupper(c);
+	if (c != 'A' && c != 'C' && c != 'G' && c != 'T') c = 'N';
 
-// chromosome info
+	return c;
+}
 
-struct ChrInfo {
-	string name;
-	size_t len;
+// GTF related, trust sources
+void parseSources(char* sstr) {
+	char* p = strtok(sstr, ",");
+	while (p != NULL) {
+		sources.insert(p);
+		p = strtok(NULL, ",");
+	}
+}
 
-	ChrInfo(const string& name, size_t len) {
-		this->name = name;
-		this->len = len;
+inline bool isTrusted(const string& source) {
+	return sources.size() == 0 || sources.find(source) != sources.end();
+}
+
+// load polyA exclusion ids
+void load_polyA_exclusion_set(char* polyAExcludeF) {
+	ifstream fin(polyAExcludeF);
+	string line;
+
+	general_assert(fin.is_open(), "Cannot open " + cstrtos(polyAExcludeF) + "! It may not exist.");
+
+	while (getline(fin, line)) {
+		no_polyA_set.insert(line);
 	}
 
-	bool operator< (const ChrInfo& o) const {
-		return name < o.name;
-	}
-};
-
-vector<ChrInfo> chrvec;
+	if (verbose) { printf("%s is loaded.\n", polyAExcludeF); }
+}
 
 
 
-void loadMappingInfo(char* mappingF, bool isAllele) {
+// load mapping info
+void loadMappingInfo(char* mappingF, bool isAlleleSpecific) {
 	ifstream fin(mappingF);
 	string line, key, value, value2;
 
 	general_assert(fin.is_open(), "Cannot open " + cstrtos(mappingF) + "! It may not exist.");
 
-	if (!isAllele) {
+	if (!isAlleleSpecific) {
 		mi_table.clear();
 		while (getline(fin, line)) {
 			if (skip(line)) continue;
@@ -138,9 +178,6 @@ void loadMappingInfo(char* mappingF, bool isAllele) {
 }
 
 // Extracting transcript sequences from the genome
-
-
-
 void buildTranscript(int sp, int ep) {
 	int cur_s, cur_e; // current_start, current_end
 	
@@ -178,10 +215,7 @@ void buildTranscript(int sp, int ep) {
 	}
 	if (cur_s > 0) vec.push_back(Interval(cur_s, cur_e));
 
-	//  if (gene_name != "") gene_id += "_" + gene_name;
-	//  if (transcript_name != "") transcript_id += "_" + transcript_name;
-	
-	transcripts.add(Transcript(transcript_id, gene_id, seqname, strand, vec, left));
+	transcripts.add(Transcript(transcript_id, gene_id, seqname, strand, vec, left, transcript_name, gene_name));
 }
 
 void parse_gtf_file(char* gtfF) {
@@ -192,39 +226,45 @@ void parse_gtf_file(char* gtfF) {
 	general_assert(fin.is_open(), "Cannot open " + cstrtos(gtfF) + "! It may not exist.");
 
 	int cnt = 0;
-	
+	int n_warns = 0;
+
 	items.clear();
 	while (getline(fin, line)) {
 		if (skip(line)) continue;
 		item.parse(line);
-		string feature = item.getFeature();
-		if (feature == "exon") {
-			if (item.getStart() > item.getEnd()) {
-	printf("Warning: exon's start position is larger than its end position! This exon is discarded.\n");
-	printf("\t%s\n\n", line.c_str());
-			}
-			else if (item.getStart() < 1) {
-	printf("Warning: exon's start position is less than 1! This exon is discarded.\n");
-	printf("\t%s\n\n", line.c_str());
-			}
-			else {
-	item.parseAttributes(line);
-	if (mappingType > 0) {
-		tid = item.getTranscriptID();
-		mi_iter = mi_table.find(tid);
-		general_assert(mi_iter != mi_table.end(), "Mapping Info is not correct, cannot find " + tid + "'s gene_id!");
-		gid = mi_iter->second;
-		item.setGeneID(gid);
-	}
-	items.push_back(item);
-			}
-		}
+  		if (item.getFeature() == "exon" && isTrusted(item.getSource())) {
+ 			if (item.getStart() > item.getEnd()) {
+				if (++n_warns <= MAX_WARNS) {
+					fprintf(stderr, "Warning: exon's start position is larger than its end position! This exon is discarded.\n");
+					fprintf(stderr, "\t%s\n\n", line.c_str());
+				}
+ 			}
+ 			else if (item.getStart() < 1) {
+				if (++n_warns <= MAX_WARNS) {
+					fprintf(stderr, "Warning: exon's start position is less than 1! This exon is discarded.\n");
+					fprintf(stderr, "\t%s\n\n", line.c_str());
+				}
+ 			}
+ 			else {
+ 				item.parseAttributes(line);
+ 		 		if (hasMapping) {
+ 		 			tid = item.getTranscriptID();
+					mi_iter = mi_table.find(tid);
+					general_assert(mi_iter != mi_table.end(), "Mapping Info is not correct, cannot find " + tid + "'s gene_id!");
+					gid = mi_iter->second;
+					item.setGeneID(gid);
+ 		 		}
+ 				items.push_back(item);
+ 			}
+ 		}
 		
 		++cnt;
 		if (verbose && cnt % 200000 == 0) { printf("Parsed %d lines\n", cnt); }
 	}
 	fin.close();
-	
+
+	if (n_warns > 0) fprintf(stderr, "Warning: In total, %d exons are discarded.", n_warns);
+
 	sort(items.begin(), items.end());
 	
 	int sp = 0, ep; // start pointer, end pointer
@@ -257,23 +297,182 @@ void parse_gtf_file(char* gtfF) {
 	
 	items.clear();
 	
+	M = transcripts.getM();
+	general_assert(M > 0, "The reference contains no transcripts!");
+
 	if (verbose) { printf("Parsing GTF File is done!\n"); }
 }
 
+void extract_reference_sequences(char* argv[]) {
+	ifstream fin;
+	string line, gseq, tseq, seqname;
+	int len;
+	size_t seqlen;
 
-void load_polyA_exclusion_set(char* polyAExcludeF) {
-	ifstream fin(polyAExcludeF);
-	string line;
+	transcripts.setType(0);
+	general_assert(!isAlleleSpecific, "RSEM could not extract allele-specific transcript sequences from a genome!");
+	parse_gtf_file(gtfF);
 
-	no_polyA_set.clear();
-	general_assert(fin.is_open(), "Cannot open " + cstrtos(polyAExcludeF) + "! It may not exist.");
+	chrvec.clear();
+	refs.setM(M);
 
-	while (getline(fin, line)) {
-		no_polyA_set.insert(line);
+	for (int i = 0; i < num_files; ++i, ++file_pos) {
+		fin.open(argv[file_pos]);
+		general_assert(fin.is_open(), "Cannot open " + cstrtos(argv[file_pos]) + "! It may not exist.");
+		cursor.filename = argv[file_pos]; cursor.line_no = cursor.pos = 0;
+
+		getline(fin, line);
+		while ((fin) && (line[0] == '>')) {
+			istringstream strin(line.substr(1));
+			strin>>seqname;
+			++cursor.line_no;
+			
+			gseq = ""; seqlen = 0;
+			while((getline(fin, line)) && (line[0] != '>')) {
+				++cursor.line_no;
+				len = line.length();
+				for (cursor.pos = 0; cursor.pos < len; ++cursor.pos) line[cursor.pos] = check(line[cursor.pos]);
+				seqlen += len;
+				gseq += line;
+			}
+			assert(seqlen > 0);
+
+			chrvec.push_back(ChrInfo(seqname, seqlen));
+			
+			sn2tr_iter = sn2tr.find(seqname);
+			if (sn2tr_iter == sn2tr.end()) continue;
+		
+			vector<int>& vec = sn2tr_iter->second;
+			int s = vec.size();
+			for (int j = 0; j < s; ++j) {
+				assert(vec[j] > 0 && vec[j] <= M);
+				const Transcript& transcript = transcripts.getTranscriptAt(vec[j]);
+				transcript.extractSeq(gseq, tseq);
+				refs.setRef(vec[j], transcript.getTranscriptID(), tseq);
+			}
+		}
+		fin.close();
+
+		if (verbose) { printf("%s is processed!\n", argv[file_pos]); } 
+	}
+		
+	sort(chrvec.begin(), chrvec.end());
+	if (verbose) { printf("Extracting sequences is done!\n"); }
+}
+
+void load_reference_sequences(char* argv[]) {
+	ifstream fin;
+	string line, tseq;
+	string seqname, gene_id, transcript_id;
+	int len;
+	size_t seqlen;
+
+	map<string, string> name2seq;
+	map<string, string>::iterator n2s_iter;
+
+
+	transcripts.setType(isAlleleSpecific ? 2 : 1);
+		
+	M = 0;
+	name2seq.clear();
+	for (int i = 0; i < num_files; ++i, ++file_pos) {
+		fin.open(argv[file_pos]);
+		general_assert(fin.is_open(), "Cannot open " + cstrtos(argv[file_pos]) + "! It may not exist."); 
+		cursor.filename = argv[file_pos]; cursor.line_no = cursor.pos = 0;
+
+		getline(fin, line);
+		while ((fin) && (line[0] == '>')) {
+			istringstream strin(line.substr(1));
+			strin>> seqname;
+			++cursor.line_no;
+
+			tseq = ""; seqlen = 0;
+			while((getline(fin, line)) && (line[0] != '>')) {
+				++cursor.line_no;
+				len = line.length();
+				for (cursor.pos = 0; cursor.pos < len; ++cursor.pos) line[cursor.pos] = check(line[cursor.pos]);
+				seqlen += len;
+				tseq += line;
+			}
+			assert(seqlen > 0);
+			name2seq[seqname] = tseq;
+			transcript_id = seqname;
+			gene_id = seqname;
+	
+			if (hasMapping) {
+				mi_iter = mi_table.find(seqname);
+				general_assert(mi_iter != mi_table.end(), "Mapping Info is not correct, cannot find " + seqname + "'s gene_id!");
+				gene_id = mi_iter->second;
+				if (isAlleleSpecific) {
+					mi_iter2 = mi_table2.find(seqname);
+					general_assert(mi_iter2 != mi_table2.end(), "Mapping Info is not correct, cannot find allele " + seqname + "'s transcript_id!");
+					transcript_id = mi_iter2->second;
+				}
+			}
+	
+			vec.assign(1, Interval(1, (int)tseq.length()));
+			transcripts.add(Transcript(transcript_id, gene_id, seqname, '+', vec, ""));
+			++M;
+
+			if (verbose && M % 1000000 == 0) { printf("%d sequences are processed!\n", M); }
+		}
+		fin.close();
+	}
+	
+	assert(M == transcripts.getM());
+	general_assert(M > 0, "The reference contains no transcripts!");
+
+	transcripts.sort();	
+
+	refs.setM(M);
+	for (int i = 1; i <= M; ++i) {
+		seqname = transcripts.getTranscriptAt(i).getSeqName();		
+		n2s_iter = name2seq.find(seqname);
+		assert(n2s_iter != name2seq.end());
+		refs.setRef(i, seqname, n2s_iter->second);
+	}
+}
+
+void shrink() {
+	int curp = 0;
+	int n_warns = 0;
+
+	nDup = 0; 
+	if (rmdup) hasSeen.clear(), dup_tids.clear();
+	for (int i = 1; i <= M; ++i) {
+		const RefSeq& ref = refs.getRef(i);
+		if (ref.getSeq() == "") {
+			if (++n_warns <= MAX_WARNS) {
+				const Transcript& transcript = transcripts.getTranscriptAt(i);
+				fprintf(stderr, "Warning: Cannot extract transcript %s's sequence since the chromosome it locates, %s, is absent!\n", transcript.getTranscriptID().c_str(), transcript.getSeqName().c_str());
+			}
+		}
+		else {
+			++curp;
+			if (rmdup) {
+				dup_ret = hasSeen.insert(pair<string, int>(ref.getSeq(), curp));
+				if (!dup_ret.second) {
+					++nDup; --curp;
+					dups.add(transcripts.getTranscriptAt(i));
+					dup_tids.push_back(dup_ret.first->second);
+					continue;
+				}
+			}
+			transcripts.move(i, curp);
+			refs.move(i, curp);
+		} 
 	}
 
-	if (verbose) { printf("%s is loaded.\n", polyAExcludeF); }
+	transcripts.setM(curp);
+	refs.setM(curp);
+	M = transcripts.getM();
+	general_assert(M > 0, "The reference contains no transcripts!");
+
+	if (n_warns > 0) fprintf(stderr, "Warning: %d transcripts are failed to extract because their chromosome sequences are absent.\n", n_warns);
+	if (nDup > 0) fprintf(stderr, "%d duplicated transcripts are removed.\n", nDup);
+	if (verbose) printf("%d transcripts are extracted.\n", curp);
 }
+
 
 inline string n2g(const string& seq) {
 	string newseq = seq;
@@ -285,57 +484,94 @@ inline string n2g(const string& seq) {
 	return newseq;
 }
 
-
-
-
 void writeToDisk(char* refName) {
 	ofstream fout;
 
 	sprintf(tiF, "%s.ti", refName);
 	transcripts.writeTo(tiF);
-	if (verbose) { printf("Transcript Information File is generated!\n"); }
+	if (verbose) printf("Transcript information file is generated.\n");
+
+	if (rmdup && nDup > 0) {
+		sprintf(tiF, "%s.dup.ti", refName);
+		dups.writeTo(tiF);
+
+		sprintf(dupF, "%s.dup.ids", refName);
+		fout.open(dupF);
+		for (int i = 0; i < (int)dup_tids.size(); ++i) fout<< dup_tids[i]<< endl;
+		fout.close();
+
+		if (verbose) printf("Duplicated transcript information files is generated.\n");
+	}
 	
+
+
 	sprintf(refFastaF, "%s.transcripts.fa", refName);
+	refs.writeTo(refFastaF);
+
+	if (appendPolyA) {
+		for (int i = 1; i <= M; ++i)
+			if (no_polyA_set.size() == 0 || no_polyA_set.find(refs.getRef(i).getName()) == no_polyA_set.end()) 
+				refs.appendPolyATail(i, polyALen);
+	}
+
+	sprintf(refFastaF, "%s.idx.fa", refName);
 	refs.writeTo(refFastaF);
 
 	sprintf(transListF, "%s.translist", refName);
 	refs.writeTransListTo(transListF);
 
-	sprintf(chromListF, "%s.chrlist", refName);
-	fout.open(chromListF);
-	for (int i = 0; i < (int)chrvec.size(); ++i)
-		fout<< chrvec[i].name<< '\t'<< chrvec[i].len<< endl;
-	fout.close();
-	if (verbose) { printf("Chromosome List File is generated!\n"); }
+	if (n2g_idx) {
+		sprintf(refFastaF, "%s.n2g.idx.fa", refName);
+		fout.open(refFastaF);
+		for (int i = 1; i <= M; ++i) {
+			const RefSeq& ref = refs.getRef(i);
+			fout<< ">"<< refs.getName()<< endl<< n2g(refs.getSeq())<< endl;
+		}
+		fout.close();
+		if (verbose) printf("%s is generated.\n", refFastaF);
+	}
+
+
+
+	if (hasGTF) {
+		sprintf(chromListF, "%s.chrlist", refName);
+		fout.open(chromListF);
+		for (int i = 0; i < (int)chrvec.size(); ++i)
+			fout<< chrvec[i].name<< '\t'<< chrvec[i].len<< endl;
+		fout.close();
+		if (verbose) printf("Chromosome list file is generated.\n");
+	}
+
+
 	
 	string cur_gene_id, cur_transcript_id, name;
 	vector<int> gi, gt, ta;
 
 	cur_gene_id = ""; gi.clear(); 
-	if (mappingType == 2) { cur_transcript_id = ""; gt.clear(); ta.clear(); }
+	if (isAlleleSpecific) { cur_transcript_id = ""; gt.clear(); ta.clear(); }
 	for (int i = 1; i <= M; ++i) {
 		const Transcript& transcript = transcripts.getTranscriptAt(i);
 		if (cur_gene_id != transcript.getGeneID()) {
 			gi.push_back(i);
-			if (mappingType == 2) gt.push_back((int)ta.size());
+			if (isAlleleSpecific) gt.push_back((int)ta.size());
 			cur_gene_id = transcript.getGeneID();
 		}
-		if ((mappingType == 2) && (cur_transcript_id != transcript.getTranscriptID())) {
+		if (isAlleleSpecific && (cur_transcript_id != transcript.getTranscriptID())) {
 			ta.push_back(i);
 			cur_transcript_id = transcript.getTranscriptID();
 		}
 	}
 	
 	gi.push_back(M + 1);
-	if (mappingType == 2) { gt.push_back((int)ta.size()); ta.push_back(M + 1); }
+	if (isAlleleSpecific) { gt.push_back((int)ta.size()); ta.push_back(M + 1); }
 
 	sprintf(groupF, "%s.grp", refName);
 	fout.open(groupF);
 	for (int i = 0; i < (int)gi.size(); ++i) fout<< gi[i]<< endl;
 	fout.close();
-	if (verbose) { printf("Group File is generated!\n"); }
+	if (verbose) printf("Group file is generated.\n");
 
-	if (mappingType == 2) {
+	if (isAlleleSpecific) {
 		sprintf(gtF, "%s.gt", refName);
 		fout.open(gtF);
 		for (int i = 0; i < (int)gt.size(); ++i) fout<< gt[i]<< endl;
@@ -344,55 +580,44 @@ void writeToDisk(char* refName) {
 		fout.open(taF);
 		for (int i = 0; i < (int)ta.size(); ++i) fout<< ta[i]<< endl;
 		fout.close();
-		if (verbose) { printf("Allele-specific group files are generated!\n"); }
-	}
-
-	if (n2g_idx) {
-		sprintf(n2g_idxF, "%s.n2g.idx.fa", refName);
-		fout.open(n2g_idxF);
-		for (int i = 1; i <= M; ++i) 
-			fout<< '>'<< refs.getRef(i)->getName()<< endl<< n2g(refs.getRef(i)->getSeq())<< endl;
-		fout.close();
-		if (verbose) printf("%s is generated!\n", n2g_idxF);
+		if (verbose) printf("Allele-specific group files are generated.\n");
 	}
 }
 
-
-
 int main(int argc, char* argv[]) {
 	if (argc < 2) {
-		printf("Usage: PROBer-build-reference refName [--gtf gtfF] [--mapping mappingF] [--allele-specific] [--remove-duplicates] [--polyA-length length] [--no-polyA-subset polyAExcludeF][--n2g-index] [-q] [--files num_of_files file_1 file_2 ...]\n");
+		printf("Usage: rsem-build-reference refName [--gtf gtfF] [--trusted-sources sources] [--mapping mappingF] [--allele-specific] [--remove-duplicates] [--polyA-length length] [--no-polyA-subset polyAExcludeF][--n2g-index] [-q] [--files num_of_files file_1 file_2 ...]\n");
 		exit(-1);
 	}
 
 	hasGTF = false;
 	hasMapping = false;
-	isAllele = false;
+	isAlleleSpecific = false;
 	rmdup = false;
 	appendPolyA = false;
-	noPolyASet = false;
 	n2g_idx = false;
-	
+
+	sources.clear();
+	no_polyA_set.clear();
+
 	int argpos = 2;
 	while (argpos < argc) {
 		if (!strcmp(argv[argpos], "--gtf")) {
 			hasGTF = true;
 			strcpy(gtfF, argv[++argpos]);
 		}
+		if (!strcmp(argv[argpos], "--trusted-sources")) parseSources(argv[++argpos]);
 		if (!strcmp(argv[argpos], "--mapping")) {
 			hasMapping = true;
 			mappingPos = ++argpos;
 		}
-		if (!strcmp(argv[argpos], "--allele-specific")) isAllele = true;
+		if (!strcmp(argv[argpos], "--allele-specific")) isAlleleSpecific = true;
 		if (!strcmp(argv[argpos], "--remove-duplicates")) rmdup = true;
 		if (!strcmp(argv[argpos], "--polyA-length")) {
 			appendPolyA = true;
 			polyALen = atoi(argv[++argpos]);
 		}
-		if (!strcmp(argv[argpos], "--no-polyA-subset")) {
-			noPolyASet = true;
-			strcpy(polyAExcludeF, argv[++argpos]);
-		}
+		if (!strcmp(argv[argpos], "--no-polyA-subset")) load_polyA_exclusion_set(argv[++argpos]);
 		if (!strcmp(argv[argpos], "--n2g-index")) n2g_idx = true;
 		if (!strcmp(argv[argpos], "-q")) verbose = false;
 		if (!strcmp(argv[argpos], "--files")) {
@@ -403,129 +628,12 @@ int main(int argc, char* argv[]) {
 		++argpos;
 	}
 
-	if (hasMapping) loadMappingInfo(argv[mappingPos], isAllele);
+	if (hasMapping) loadMappingInfo(argv[mappingPos], isAlleleSpecific);
 
-	ifstream fin;
-	string line, gseq, tseq; // gseq, genomic sequence; tseq, transcript sequence
-	string seqname, gene_id, transcript_id;
-	
-	if (hasGTF) {
-		transcripts.setType(0);
-		general_assert(!isAllele, "RSEM could not extract allele-specific transcript sequences from a genome!");
-		parse_gtf_file(gtfF);
+	if (hasGTF) extract_reference_sequences(argv);
+	else load_reference_sequences(argv);
 
-		M = transcripts.getM();
-		general_assert(M > 0, "The reference contains no transcripts!");
-		seqs.assign(M + 1, "");
-		
-		chrvec.clear();
-		
-		for (int i = 0; i < num_files; ++i, ++file_pos) {
-			fin.open(argv[file_pos]);
-			general_assert(fin.is_open(), "Cannot open " + cstrtos(argv[file_pos]) + "! It may not exist.");
-			getline(fin, line);
-			while ((fin) && (line[0] == '>')) {
-	istringstream strin(line.substr(1));
-	strin>>seqname;
-	
-	gseq = "";
-	while((getline(fin, line)) && (line[0] != '>')) {
-		gseq += line;
-	}
-	assert(gseq.length() > 0);
-			
-	sn2tr_iter = sn2tr.find(seqname);
-	if (sn2tr_iter == sn2tr.end()) continue;
-	
-	chrvec.push_back(ChrInfo(seqname, gseq.length()));
-	
-	vector<int>& vec = sn2tr_iter->second;
-	int s = vec.size();
-	for (int j = 0; j < s; ++j) {
-		assert(vec[j] > 0 && vec[j] <= M);
-		transcripts.getTranscriptAt(vec[j]).extractSeq(gseq, seqs[vec[j]]);
-	}
-			}
-			fin.close();
-
-			if (verbose) { printf("%s is processed!\n", argv[file_pos]); } 
-		}
-		
-		sort(chrvec.begin(), chrvec.end());
-
-		// Shrink and build up Refs
-		int curp = 0;
-		for (int i = 1; i <= M; ++i) {
-			const Transcript& transcript = transcripts.getTranscriptAt(i);
-			if (seqs[i] == "") 
-	printf("Warning: Cannot extract transcript %s because the chromosome it locates -- %s -- is absent!\n", transcript.getTranscriptID().c_str(), transcript.getSeqName().c_str());
-			else {
-	refs.addRef(transcript.getTranscriptID(), seqs[i]); // insert RefSeqs
-	++curp;
-	transcripts.move(i, curp);
-			}
-		}
-		printf("%d transcripts are extracted and %d transcripts are omitted.\n", curp, M - curp);
-		
-		transcripts.setM(curp);
-		M = transcripts.getM();
-		general_assert(M > 0, "The reference contains no transcripts!");
-		assert(refs.getM() == M);
-	}
-	else {
-		transcripts.setType(mappingType != 2 ? 1 : 2);
-		
-		M = 0;
-		name2seq.clear();
-		for (int i = 0; i < num_files; ++i, ++file_pos) {
-			fin.open(argv[file_pos]);
-			general_assert(fin.is_open(), "Cannot open " + cstrtos(argv[file_pos]) + "! It may not exist."); 
-			getline(fin, line);
-			while ((fin) && (line[0] == '>')) {
-	istringstream strin(line.substr(1));
-	strin>>seqname;
-	
-	tseq = "";
-	while((getline(fin, line)) && (line[0] != '>')) {
-		tseq += line;
-	}
-	assert(tseq.length() > 0);
-	name2seq[seqname] = tseq;
-	transcript_id = seqname;
-	gene_id = seqname;
-	
-	if (mappingType > 0) {
-		mi_iter = mi_table.find(seqname);
-		general_assert(mi_iter != mi_table.end(), "Mapping Info is not correct, cannot find " + seqname + "'s gene_id!");
-		gene_id = mi_iter->second;
-		if (mappingType == 2) {
-			mi_iter2 = mi_table2.find(seqname);
-			general_assert(mi_iter2 != mi_table2.end(), "Mapping Info is not correct, cannot find allele " + seqname + "'s transcript_id!");
-			transcript_id = mi_iter2->second;
-		}
-	}
-	
-	vec.assign(1, Interval(1, (int)tseq.length()));
-	transcripts.add(Transcript(transcript_id, gene_id, seqname, '+', vec, ""));
-	++M;
-
-	if (verbose && M % 1000000 == 0) { printf("%d sequences are processed!\n", M); }
-			}
-			fin.close();
-		}
-
-		assert(M == transcripts.getM());
-		general_assert(M > 0, "The reference contains no transcripts!");
-		transcripts.sort();
-	
-		// build refs
-		for (int i = 1; i <= M; ++i) {
-			seqname = transcripts.getTranscriptAt(i).getSeqName();
-			n2s_iter = name2seq.find(seqname);
-			general_assert(n2s_iter != name2seq.end(), "Cannot recognize sequence ID" + seqname + "!");
-			refs.addRef(seqname, n2s_iter->second);
-		}
-	}
+	shrink(); // remove duplicates 
 
 	writeToDisk(argv[1]); // write out generated indices
 	

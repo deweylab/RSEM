@@ -38,7 +38,7 @@ OBJS1 = parseIt.o
 OBJS2 = extractRef.o synthesisRef.o preRef.o buildReadIndex.o wiggle.o tbam2gbam.o bam2wig.o bam2readdepth.o getUnique.o samValidator.o scanForPairedEndReads.o SamHeader.o
 OBJS3 = EM.o Gibbs.o calcCI.o simulation.o
 
-PROGS1 = rsem-extract-reference-transcripts rsem-synthesis-reference-transcripts rsem-preref rsem-build-read-index rsem-simulate-reads
+PROGS1 = rsem-build-reference rsem-build-read-index rsem-simulate-reads
 PROGS2 = rsem-parse-alignments rsem-run-em rsem-tbam2gbam rsem-bam2wig rsem-bam2readdepth rsem-get-unique rsem-sam-validator rsem-scan-for-paired-end-reads
 PROGS3 = rsem-run-gibbs rsem-calculate-credibility-intervals
 
@@ -48,7 +48,6 @@ PROGRAMS = $(PROGS1) $(PROGS2) $(PROGS3)
 SCRIPTS = rsem-prepare-reference rsem-calculate-expression rsem-refseq-extract-primary-assembly rsem-gff3-to-gtf rsem-plot-model \
 	  rsem-plot-transcript-wiggles rsem-gen-transcript-plots rsem-generate-data-matrix \
 	  extract-transcript-to-gene-map-from-trinity convert-sam-for-rsem    
-
 
 
 
@@ -85,9 +84,7 @@ $(PROGS3) :
 
 
 # Dependencies for executables
-rsem-extract-reference-transcripts : extractRef.o
-rsem-synthesis-reference-transcripts : synthesisRef.o
-rsem-preref : preRef.o
+rsem-build-reference : buildRef.o Transcript.o Transcripts.o RefSeq.o Refs.o
 rsem-build-read-index : buildReadIndex.o
 rsem-simulate-reads : simulation.o
 
@@ -106,9 +103,14 @@ rsem-calculate-credibility-intervals : calcCI.o
 # Dependencies for objects
 parseIt.o : parseIt.cpp $(SAMHEADERS) sam_utils.h utils.h my_assert.h GroupInfo.h Transcripts.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h HitContainer.h SamParser.h
 
-extractRef.o : extractRef.cpp utils.h my_assert.h GTFItem.h Transcript.h Transcripts.h
-synthesisRef.o : synthesisRef.cpp utils.h my_assert.h Transcript.h Transcripts.h
-preRef.o : preRef.cpp utils.h RefSeq.h Refs.h PolyARules.h RefSeqPolicy.h AlignerRefSeqPolicy.h
+
+Transcript.o: Transcript.cpp utils.h my_assert.h Transcript.hpp
+Transcripts.o : Transcripts.cpp utils.h my_assert.h Transcript.hpp Transcripts.hpp
+RefSeq.o : RefSeq.cpp utils.h my_assert.h RefSeq.hpp
+Refs.o : Refs.cpp utils.h my_assert.h RefSeq.hpp Refs.hpp
+buildRef.o : buildRef.cpp utils.h my_assert.h GTFItem.h Transcript.hpp Transcripts.hpp RefSeq.hpp Refs.hpp
+
+
 buildReadIndex.o : buildReadIndex.cpp utils.h
 wiggle.o: wiggle.cpp $(SAMHEADERS) sam_utils.h utils.h my_assert.h wiggle.h
 tbam2gbam.o : tbam2gbam.cpp $(SAMHEADERS) utils.h Transcripts.h Transcript.h BamConverter.h sam_utils.h SamHeader.hpp my_assert.h bc_aux.h
@@ -125,11 +127,10 @@ calcCI.o : calcCI.cpp utils.h my_assert.h $(BOOST)/boost/random.hpp sampling.h s
 simulation.o : simulation.cpp utils.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h Refs.h RefSeq.h GroupInfo.h Transcript.h Transcripts.h Orientation.h LenDist.h RSPD.h QualDist.h QProfile.h NoiseQProfile.h Profile.h NoiseProfile.h simul.h $(BOOST)/boost/random.hpp WriteResults.h
 
 # Dependencies for header files
-Transcript.h : utils.h
-Transcripts.h : utils.h my_assert.h Transcript.h
-BowtieRefSeqPolicy.h : RefSeqPolicy.h
-RefSeq.h : utils.h
-Refs.h : utils.h RefSeq.h RefSeqPolicy.h PolyARules.h
+Transcripts.hpp : Transcript.hpp
+RefSeq.hpp : utils.h my_assert.h
+Refs.hpp : utils.h my_assert.h RefSeq.hpp
+
 SingleRead.h : Read.h
 SingleReadQ.h : Read.h
 PairedEndRead.h : Read.h SingleRead.h

@@ -29,24 +29,32 @@
 class Refs {
  public:
 	Refs();
-	~Refs();
 	
 	void readFrom(char* inpF);
 	void writeTo(char* outF);
 	void writeTransListTo(char* outF);
 	
 	int getM() const { return M; } // get number of isoforms
+	void setM(int M) { this->M = M; seqs.resize(M + 1); } 
 
-	const RefSeq* getRef(int sid) const { return seqs[sid]; } // get a particular reference
+	const RefSeq& getRef(int sid) const { return seqs[sid]; } // get a particular reference
 
-	void addRef(const std::string& name, const std::string& rawseq, int polyALen = 0) {
-		++M;
-		seqs.push_back(new RefSeq(name, rawseq, polyALen));
+	void setRef(int sid, const std::string& name, const std::string& seq) {
+		seqs[sid].set(name, seq);
 	}
 	
+	void appendPolyATail(int sid, int polyALen) {
+		seqs[sid].appendPolyATail(polyALen);
+	}
+	
+	void move(int from, int to) {
+		assert(from >= to);
+		if (from > to) seqs[to] = seqs[from];
+	}
+
  private:
 	int M; // # of isoforms, id starts from 1
-	std::vector<RefSeq*> seqs;  // reference sequences, starts from 1; 0 is for noise transcript
+	std::vector<RefSeq> seqs;  // reference sequences, starts from 1; 0 is for noise transcript
 };
 
 #endif

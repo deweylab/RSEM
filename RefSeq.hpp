@@ -22,7 +22,6 @@
 #define REFSEQ_H_
 
 #include <cctype>
-#include <cassert>
 #include <fstream>
 #include <string>
 
@@ -34,7 +33,17 @@
 class RefSeq {
 public:
 	RefSeq();
-	RefSeq(const std::string& name, const std::string& rawseq, int polyALen = 0);
+	RefSeq(const std::string& name, const std::string& seq);
+
+	void set(const std::string& name, const std::string& seq) {
+		this->name = name; this->seq = seq;
+		len = seq.length(); assert(len > 0);
+	}
+
+	void appendPolyATail(int polyALen) { 
+		len += polyALen;
+		seq.append(polyALen, 'A');
+	}
 	
 	bool read(std::ifstream& fin);
 	void write(std::ofstream& fout);
@@ -44,28 +53,19 @@ public:
 	const std::string& getSeq() const { return seq; }
 
 	char baseAt(char dir, int pos) const {
-		assert(pos >= 0 && pos < len);
+		general_assert(pos >= 0 && pos < len, "At RefSeq.baseAt. Requested position is out of boundary: pos = " + itos(pos) + ", transcript = " + name + ", length = " + itos(len) + ".");
 		return (dir == '+' ? seq[pos] : base2rbase[seq[len - pos - 1]]);
 	}
 
 	int baseCodeAt(char dir, int pos) const {
-		assert(pos >= 0 && pos < len);
+		general_assert(pos >= 0 && pos < len, "At RefSeq.baseCodeAt. Requested position is out of boundary: pos = " + itos(pos) + ", transcript = " + name + ", length = " + itos(len) + ".");
 		return (dir == '+' ? base2code[seq[pos]] : rbase2code[seq[len - pos - 1]]);
 	}
 	
 private:
 	int len; // the transcript length
 	std::string name; // the tag
-	std::string seq; // the sequence, in the forward strand
-
-	void convertRawSeq() {
-		for (int i = 0; i < len; ++i) {
-			general_assert(isalpha(seq[i]), "Sequence contains unknown code " + ctos(seq[i]) + "!");
-			seq[i] = toupper(seq[i]);
-			if (seq[i] != 'A' && seq[i] != 'C' && seq[i] != 'G' && seq[i] != 'T') seq[i] = 'N';
-		}
-	}
-	
+	std::string seq; // the sequence, in the forward strand	
 };
 
 #endif

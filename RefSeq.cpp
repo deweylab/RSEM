@@ -29,11 +29,8 @@ RefSeq::RefSeq() {
 	name = seq = "";
 }
 
-RefSeq::RefSeq(const std::string& name, const std::string& rawseq, int polyALen) : name(name), seq(rawseq) {
-	len = seq.length();
-	assert(len > 0);
-	if (polyALen > 0) { len += polyALen; seq.append(polyALen, 'A'); }
-	convertRawSeq();
+RefSeq::RefSeq(const std::string& name, const std::string& seq) {
+   set(name, seq);
 }
 
 bool RefSeq::read(std::ifstream& fin) {
