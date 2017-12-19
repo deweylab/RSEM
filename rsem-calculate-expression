@@ -32,7 +32,7 @@ my $strandedness = "none"; # none, forward, reverse
 my $probF = undef; # deprecated 
 my $strand_specific = undef; # deprecated
 
-
+my $bowtie = 0;
 my $bowtie_path = "";
 my $C = 2;
 my $E = 99999999;
@@ -106,6 +106,9 @@ my $star_gzipped_read_file = 0;
 my $star_bzipped_read_file = 0;
 my $star_output_genome_bam = 0;
 
+my $hisat2 = 0;
+my $hisat2_path = "";
+
 # pRSEM options
 my $run_prsem = 0;
 my $chipseq_target_read_files  = '';
@@ -130,6 +133,7 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "fai=s" => \$faiF,
 	   "tag=s" => \$tagName,
 	   "seed-length=i" => \$L,
+     "bowtie" => \$bowtie,
 	   "bowtie-path=s" => \$bowtie_path,
 	   "bowtie-n=i" => \$C,
 	   "bowtie-e=i" => \$E,
@@ -166,11 +170,13 @@ GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
 	   "ci-credibility-level=f" => \$CONFIDENCE,
 	   "ci-memory=i" => \$NMB,
 	   "ci-number-of-samples-per-count-vector=i" => \$NSPC,
-	   'star' => \$star,
-	   'star-path=s' => \$star_path,
+	   "star" => \$star,
+	   "star-path=s" => \$star_path,
 	   "star-gzipped-read-file" => \$star_gzipped_read_file,
 	   "star-bzipped-read-file" => \$star_bzipped_read_file,
-	   "star-output-genome-bam" => \$star_output_genome_bam,	   
+	   "star-output-genome-bam" => \$star_output_genome_bam,
+     "hisat2" => \$hisat2,
+     "hisat2-path=s" => \$hisat2_path,  
 	   "seed=i" => \$seed,
 	   'run-pRSEM' => \$run_prsem,
 	   'chipseq-target-read-files=s' => \$chipseq_target_read_files, 
@@ -204,14 +210,14 @@ pod2usage(-verbose => 2) if ($help == 1);
 
 if ($is_alignment) {
     pod2usage(-msg => "Invalid number of arguments!", -exitval => 2, -verbose => 2) if (scalar(@ARGV) != 3);
-    pod2usage(-msg => "--bowtie-path, --bowtie-n, --bowtie-e, --bowtie-m, --phred33-quals, --phred64-quals, --solexa-quals, --bowtie2, --bowtie2-path, --bowtie2-mismatch-rate, --bowtie2-k, --bowtie2-sensitivity-level, --star, --star-path, and --star-output-genome-bam cannot be set if input is SAM/BAM/CRAM format!", -exitval => 2, -verbose => 2) if ($bowtie_path ne "" || $C != 2 || $E != 99999999 || $maxHits != 200 || $phred33 || $phred64 || $solexa || $bowtie2 || $bowtie2_path ne "" || $bowtie2_mismatch_rate != 0.1 || $bowtie2_k != 200 || $bowtie2_sensitivity_level ne "sensitive" || $star || $star_path ne "" || $star_output_genome_bam);
+    pod2usage(-msg => "--bowtie-path, --bowtie-n, --bowtie-e, --bowtie-m, --phred33-quals, --phred64-quals, --solexa-quals, --bowtie2, --bowtie2-path, --bowtie2-mismatch-rate, --bowtie2-k, --bowtie2-sensitivity-level, --star, --star-path, --star-output-genome-bam, --hisat2, and --hisat2-path cannot be set if input is SAM/BAM/CRAM format!", -exitval => 2, -verbose => 2) if ($bowtie_path ne "" || $C != 2 || $E != 99999999 || $maxHits != 200 || $phred33 || $phred64 || $solexa || $bowtie2 || $bowtie2_path ne "" || $bowtie2_mismatch_rate != 0.1 || $bowtie2_k != 200 || $bowtie2_sensitivity_level ne "sensitive" || $star || $star_path ne "" || $star_output_genome_bam || $hisat2 || $hisat2_path ne "");
 }
 else {
     pod2usage(-msg => "Invalid number of arguments!", -exitval => 2, -verbose => 2) if (!$paired_end && scalar(@ARGV) != 3 || $paired_end && scalar(@ARGV) != 4);    
+    pod2usage(-msg => "Only one aligner can be specified!", -exitval => 2, -verbose => 2) if ($bowtie + $bowtie2 + $hisat2 + $star > 1);
+    if ($bowtie + $bowtie2 + $hisat2 + $star == 0) { $bowtie = 1; }
     pod2usage(-msg => "If --no-qualities is set, neither --phred33-quals, --phred64-quals or --solexa-quals can be active!", -exitval => 2, -verbose => 2) if ($no_qual && ($phred33 + $phred64 + $solexa > 0));
-    pod2usage(-msg => "Only one of --phred33-quals, --phred64-quals, and --solexa-quals can be active!", -exitval => 2, -verbose => 2) if ($phred33 + $phred64 + $solexa > 1);    
-    pod2usage(-msg => "--bowtie2-path, --bowtie2-mismatch-rate, --bowtie2-k and --bowtie2-sensitivity-level cannot be set if bowtie aligner is used!", -exitval => 2, -verbose => 2) if (!$bowtie2 && ($bowtie2_path ne "" || $bowtie2_mismatch_rate != 0.1 || $bowtie2_k != 200 || $bowtie2_sensitivity_level ne "sensitive"));
-    pod2usage(-msg => "--bowtie-path, --bowtie-n, --bowtie-e, --bowtie-m cannot be set if bowtie2 aligner is used!", -exitval => 2, -verbose => 2) if ($bowtie2 && ($bowtie_path ne "" || $C != 2 || $E != 99999999 || $maxHits != 200));
+    pod2usage(-msg => "Only one of --phred33-quals, --phred64-quals, and --solexa-quals can be active!", -exitval => 2, -verbose => 2) if ($phred33 + $phred64 + $solexa > 1);          
     pod2usage(-msg => "Mismatch rate must be within [0, 1]!", -exitval => 2, -verbose => 2) if ($bowtie2 && ($bowtie2_mismatch_rate < 0.0 || $bowtie2_mismatch_rate > 1.0));
     pod2usage(-msg => "Sensitivity level must be one of \"very_fast\", \"fast\", \"sensitive\", and \"very_sensitive\"!", -exitval => 2, -verbose => 2) if ($bowtie2 && (($bowtie2_sensitivity_level ne "very_fast") && ($bowtie2_sensitivity_level ne "fast") && ($bowtie2_sensitivity_level ne "sensitive") && ($bowtie2_sensitivity_level ne "very_sensitive")));
     if ($faiF ne "") { print "Warning: There is no need to set --fai if you ask RSEM to align reads for you.\n" }
@@ -372,7 +378,8 @@ my ($mate_minL, $mate_maxL) = (1, $maxL);
 
 if ($bowtie_path ne "") { $bowtie_path .= "/"; }
 if ($bowtie2_path ne "") { $bowtie2_path .= "/"; }
-if ($star_path ne '') { $star_path .= '/'; }
+if ($star_path ne "") { $star_path .= "/"; }
+if ($hisat2_path ne "") { $hisat2_path .= "/"; }
 
 my $command = "";
 
@@ -442,7 +449,7 @@ if (!$is_alignment) {
 	    } else {
 		$command .= " --readFilesIn $mate1_list $mate2_list";
 	    }
-	} elsif (!$bowtie2) {
+	} elsif ($bowtie) {
 	    $command = $bowtie_path."bowtie";
 	    if ($no_qual) { $command .= " -f"; }
 	    else { $command .= " -q"; }
@@ -472,7 +479,7 @@ if (!$is_alignment) {
 	    # pipe to samtools to generate a BAM file
 	    $command .= " | samtools view -S -b -o $imdName.bam -";
 	}
-	else {
+	elsif ($bowtie2) {
 	    $command = $bowtie2_path."bowtie2";
 	    if ($no_qual) { $command .= " -f"; }
 	    else { $command .= " -q"; }
@@ -507,6 +514,35 @@ if (!$is_alignment) {
 	    # pipe to samtools to generate a BAM file
 	    $command .= " | samtools view -S -b -o $imdName.bam -";
 	}
+  else {
+    $command = $hisat2_path."hisat2";
+    if ($no_qual) { $command .= " -f"; }
+    else { $command .= " -q"; }
+        
+    if ($phred33) { $command .= " --phred33"; }
+    elsif ($phred64) { $command .= " --phred64"; }
+    elsif ($solexa) { $command .= " --solexa-quals"; }
+    
+    $command .= " --no-softclip --no-spliced-alignment --rdg 99999999,99999999 --rfg 99999999,99999999 -k 10 --secondary";
+    if ($read_type == 2 || $read_type == 3) { $command .= " -I $minL -X $maxL --no-mixed --no-discordant"; }
+        
+    if ($probF == 1.0) { $command .= " --norc"; }
+    elsif ($probF == 0.0) { $command .= " --nofw"; }
+        
+    $command .= " -p $nThreads";
+    if ($quiet) { $command .= " --quiet"; }    
+        
+    $command .= " -x $refName";
+    if ($read_type == 0 || $read_type == 1) {
+      $command .= " -U $mate1_list"; 
+    }
+    else {
+      $command .= " -1 $mate1_list -2 $mate2_list";
+    }
+
+    # pipe to samtools to generate a BAM file
+    $command .= " | samtools view -S -b -o $imdName.bam -";    
+  }
 	
 	if ($mTime) { $time_start = time(); }
 
@@ -836,13 +872,21 @@ Input file contains alignments in SAM/BAM/CRAM format. The exact file format wil
 
 If the header section of input alignment file does not contain reference sequence information, this option should be turned on. <file> is a FAI format file containing each reference sequence's name and length. Please refer to the SAM official website for the details of FAI format. (Default: off)
 
+=item B<--bowtie>
+
+Use Bowtie to align reads. (Default: on)
+
 =item B<--bowtie2>
 
-Use Bowtie 2 instead of Bowtie to align reads. Since currently RSEM does not handle indel, local and discordant alignments, the Bowtie2 parameters are set in a way to avoid those alignments. In particular, we use options '--sensitive --dpad 0 --gbar 99999999 --mp 1,1 --np 1 --score-min L,0,-0.1' by default. The last parameter of '--score-min', '-0.1', is the negative of maximum mismatch rate. This rate can be set by option '--bowtie2-mismatch-rate'. If reads are paired-end, we additionally use options '--no-mixed' and '--no-discordant'. (Default: off)
+Use Bowtie 2 to align reads. Since currently RSEM does not handle indel, local and discordant alignments, the Bowtie2 parameters are set in a way to avoid those alignments. In particular, we use options '--sensitive --dpad 0 --gbar 99999999 --mp 1,1 --np 1 --score-min L,0,-0.1' by default. The last parameter of '--score-min', '-0.1', is the negative of maximum mismatch rate. This rate can be set by option '--bowtie2-mismatch-rate'. If reads are paired-end, we additionally use options '--no-mixed' and '--no-discordant'. (Default: off)
 
 =item B<--star>
 
 Use STAR to align reads. Alignment parameters are from ENCODE3's STAR-RSEM pipeline. To save computational time and memory resources, STAR's Output BAM file is unsorted. It is stored in RSEM's temporary directory with name as 'sample_name.bam'. Each STAR job will have its own private copy of the genome in memory. (Default: off) 
+
+=item B<--hisat2>
+
+Use Hisat 2 to align reads. The options '--no-softclip --no-spliced-alignment --rdg 99999999,99999999 --rfg 99999999,99999999 -k 10 --secondary' are used. For paired-end reads, the options '--no-mixed --no-discordant' are in addition used. (Default: off)
 
 =item B<--append-names>
 
@@ -979,6 +1023,10 @@ The path to STAR's executable. (Default: the path to STAR executable is assumed 
 =item B<--star-output-genome-bam>
 
 (STAR parameter) Save the BAM file from STAR alignment under genomic coordinate to 'sample_name.STAR.genome.bam'. This file is NOT sorted by genomic coordinate. In this file, according to STAR's manual, 'paired ends of an alignment are always adjacent, and multiple alignments of a read are adjacent as well'. (Default: off)
+
+=item B<--hisat2-path> <path>
+
+The path to Hisat 2 executables. (Default: the path to the Hisat 2 executables is assumed to be in the user's PATH environment variable)
 
 =back
 
