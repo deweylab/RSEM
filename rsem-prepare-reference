@@ -184,9 +184,9 @@ if ($hisat2) {
 	if ($hisat2_genome) {
 		# Build hisat2 genome indices
 		pod2usage(-msg => "GTF file must be provided if --hisat2-genome is set.", -exitval => 2, -verbose => 2) if ($gtfF eq "");
-		$command = $hisat2_path."hisat2_extract_splice_sites.py $gtfF > $ARGV[1].hisat2.ss"
+		$command = $hisat2_path."hisat2_extract_splice_sites.py $gtfF > $ARGV[1].hisat2.ss";
 		&runCommand($command);
-		$command = $hisat2_path."hisat2_extract_exons.py $gtfF > $ARGV[1].hisat2.exon"
+		$command = $hisat2_path."hisat2_extract_exons.py $gtfF > $ARGV[1].hisat2.exon";
 		&runCommand($command);
 		$command = $hisat2_path."hisat2-build --ss $ARGV[1].hisat2.ss --exon $ARGV[1].hisat2.exon";
 		if ($nThreads > 1) { $command .= " -p $nThreads"; }
