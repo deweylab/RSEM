@@ -106,10 +106,6 @@ if ($size == 1 && (-d $list[0])) {
 
 pod2usage(-msg => "reference_fasta_file(s) is empty! Please check if you provide the correct folder name or file suffixes!", -exitval => 2, -verbose => 2) if ($size <= 0);
 
-if ($polyA) { 
-	$polyAChoice = ($polyAExcludeF ne "") ? 2 : 0;
-}
-
 if ($bowtie_path ne "") { $bowtie_path .= "/"; }
 if ($bowtie2_path ne "") { $bowtie2_path .= "/"; }
 if ($star_path ne "") { $star_path .= "/"; }
