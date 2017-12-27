@@ -128,7 +128,7 @@ if ($gff3F ne "") {
 $command = "rsem-build-reference $ARGV[1]";
 if ($gtfF ne "") {
   $command .= " --gtf $gtfF";
-  if ($gtf_sources != "") { 
+  if ($gtf_sources ne "") { 
     $gtf_sources =~ s/ /\\ /g;
     $command .= " --trusted-sources $gtf_sources";
   }
