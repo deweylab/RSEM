@@ -96,7 +96,7 @@ CursorPos cursor;
 int nDup;
 map<string, int> hasSeen; // map from sequence to tid
 pair<map<string, int>::iterator, bool> dup_ret;
-transcripts dups; // duplicated transcripts
+Transcripts dups; // duplicated transcripts
 vector<int> dup_tids; // tid of the original transcripts
 
 
@@ -525,7 +525,7 @@ void writeToDisk(char* refName) {
 		fout.open(refFastaF);
 		for (int i = 1; i <= M; ++i) {
 			const RefSeq& ref = refs.getRef(i);
-			fout<< ">"<< refs.getName()<< endl<< n2g(refs.getSeq())<< endl;
+			fout<< ">"<< ref.getName()<< endl<< n2g(ref.getSeq())<< endl;
 		}
 		fout.close();
 		if (verbose) printf("%s is generated.\n", refFastaF);

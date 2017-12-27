@@ -12,8 +12,9 @@ BOOST = .
 
 # Compilation variables
 CXX = g++
-CXXFLAGS = -std=gnu++98 -Wall -I. -I$(BOOST) -I$(SAMTOOLS)/$(HTSLIB)
+CXXFLAGS = -std=gnu++98 -Wall -I. 
 CPPFLAGS =
+#-I$(BOOST) -I$(SAMTOOLS)/$(HTSLIB)
 
 LDFLAGS =
 LDLIBS =
@@ -34,8 +35,9 @@ SAMHEADERS = $(SAMTOOLS)/$(HTSLIB)/htslib/sam.h
 SAMLIBS = $(SAMTOOLS)/$(HTSLIB)/libhts.a
 CONFIGURE = ./configure
 
-OBJS1 = parseIt.o
-OBJS2 = extractRef.o synthesisRef.o preRef.o buildReadIndex.o wiggle.o tbam2gbam.o bam2wig.o bam2readdepth.o getUnique.o samValidator.o scanForPairedEndReads.o SamHeader.o
+OBJS1 = Transcript.o Transcripts.o RefSeq.o Refs.o buildRef.o
+OBJS2 = parseIt.o
+# OBJS2 = buildReadIndex.o wiggle.o tbam2gbam.o bam2wig.o bam2readdepth.o getUnique.o samValidator.o scanForPairedEndReads.o SamHeader.o
 OBJS3 = EM.o Gibbs.o calcCI.o simulation.o
 
 PROGS1 = rsem-build-reference rsem-build-read-index rsem-simulate-reads
@@ -63,10 +65,10 @@ $(SAMLIBS) : $(SAMTOOLS)/samtools
 
 # Compile objects
 $(OBJS1) :
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -O2 -c -o $@ $<
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -O3 -c -o $@ $<
 
 $(OBJS2) :
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -O3 -c -o $@ $<
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -O2 -c -o $@ $<
 
 $(OBJS3) :
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -O3 -ffast-math -c -o $@ $<

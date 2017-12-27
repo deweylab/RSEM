@@ -32,6 +32,7 @@ my $star_path = '';
 my $star_sjdboverhang = 100;
 my $hisat2 = 0;
 my $hisat2_path = "";
+my $hisat2_genome = 0;
 my $nThreads = 1;
 my $remove_duplicates = 0;
 my $quiet = 0;
@@ -49,7 +50,7 @@ GetOptions("gtf=s" => \$gtfF,
 		   "transcript-to-gene-map=s" => \$mappingF,
 		   "allele-to-gene-map=s" => \$alleleMappingF,
 		   "polyA=i" => \$polyALen, 
-		   "no-polyA-subset=s" => \$subsetFile,
+		   "no-polyA-subset=s" => \$polyAExcludeF,
 		   "bowtie" => \$bowtie,
 		   "bowtie-path=s" => \$bowtie_path,
 		   "bowtie2" => \$bowtie2,
@@ -59,6 +60,7 @@ GetOptions("gtf=s" => \$gtfF,
 		   "star-sjdboverhang=i" => \$star_sjdboverhang,
 		   "hisat2" => \$hisat2,
 		   "hisat2-path=s" => \$hisat2_path,
+		   "hisat2-genome" => \$hisat2_genome,
 		   "p|num-threads=i" => \$nThreads,
 		   "remove-duplicates" => \$remove_duplicates,
 		   "prep-pRSEM" => \$prep_prsem, ## bool if prepare reference for pRSEM
@@ -71,7 +73,7 @@ pod2usage(-msg => "--transcript-to-gene-map and --allele-to-gene-map are mutuall
 pod2usage(-msg => "--gtf and --gff3 are mutually exclusive!", -exitval => 2, -verbose => 2) if (($gtfF ne "") && ($gff3F ne ""));
 pod2usage(-msg => "--gtf/--gff3 and --allele-to-gene-map are mutually exclusive!", -exitval => 2, -verbose => 2) if ((($gtfF ne "") || ($gff3F ne "")) && ($alleleMappingF ne ""));
 pod2usage(-msg => "Invalid number of arguments!", -exitval => 2, -verbose => 2) if (scalar(@ARGV) != 2);
-pod2usage(-msg => "No poly(A) tail should be added if --star is set!", -exitval => 2, -verbose => 2) if ($star && $polyA);
+pod2usage(-msg => "No poly(A) tail should be added if --star or --hisat2-genome is set!", -exitval => 2, -verbose => 2) if (($star || $hisat2_genome) && $polyALen > 0);
 
 if ( $prep_prsem ) {
 	my $msg = '';
@@ -105,7 +107,7 @@ if ($size == 1 && (-d $list[0])) {
 pod2usage(-msg => "reference_fasta_file(s) is empty! Please check if you provide the correct folder name or file suffixes!", -exitval => 2, -verbose => 2) if ($size <= 0);
 
 if ($polyA) { 
-	$polyAChoice = ($subsetFile ne "") ? 2 : 0;
+	$polyAChoice = ($polyAExcludeF ne "") ? 2 : 0;
 }
 
 if ($bowtie_path ne "") { $bowtie_path .= "/"; }
@@ -183,6 +185,22 @@ if ($star) {
 }
 
 if ($hisat2) {
+	if ($hisat2_genome) {
+		# Build hisat2 genome indices
+		pod2usage(-msg => "GTF file must be provided if --hisat2-genome is set.", -exitval => 2, -verbose => 2) if ($gtfF eq "");
+		$command = $hisat2_path."hisat2_extract_splice_sites.py $gtfF > $ARGV[1].hisat2.ss"
+		&runCommand($command);
+		$command = $hisat2_path."hisat2_extract_exons.py $gtfF > $ARGV[1].hisat2.exon"
+		&runCommand($command);
+		$command = $hisat2_path."hisat2-build --ss $ARGV[1].hisat2.ss --exon $ARGV[1].hisat2.exon";
+		if ($nThreads > 1) { $command .= " -p $nThreads"; }
+		if ($quiet) { $command .= " -q"; }
+		$" = ",";
+		$command .= " @list $ARGV[1]_genome";
+		&runCommand($command); 
+	}
+
+	# Build hisat2 transcriptome indices
 	$command = $hisat2_path."hisat2-build";
 	if ($nThreads > 1) { $command .= " -p $nThreads"; }
 	if ($quiet) { $command .= " -q"; }
@@ -389,7 +407,7 @@ This program extracts/preprocesses the reference sequences for RSEM and prior-en
 
 This program will generate 'reference_name.transcripts.fa', 'reference_name.idx.fa', 'reference_name.n2g.idx.fa' (if Bowtie indices are generated), and optional Bowtie/Bowtie2/STAR/HISAT2 index files. 
 
-This program will also generate internally-used files 'reference_name.grp', 'reference_name.ti', 'reference_name.dup.ti' & 'reference_name.dup.ids' (if '--remove-duplicate' is on), 'reference_name.translist', 'reference_name.chrlist' (if '--gtf' is on), 'reference_name.grp' and  'reference_name.gt' & 'reference_name.ta' (if '--allele-to-gene-map' is on).
+This program will also generate internally-used files 'reference_name.grp', 'reference_name.ti', 'reference_name.dup.ti' & 'reference_name.dup.ids' (if '--remove-duplicates' is on), 'reference_name.translist', 'reference_name.chrlist' (if '--gtf' is on), 'reference_name.grp' and  'reference_name.gt' & 'reference_name.ta' (if '--allele-to-gene-map' is on).
 
 B<'reference_name.transcripts.fa'> contains the extracted reference transcripts in Multi-FASTA format. Poly(A) tails are not added.
 

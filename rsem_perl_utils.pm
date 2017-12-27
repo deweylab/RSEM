@@ -27,8 +27,8 @@ sub runCommand {
     if ($status != 0) {
         my $errmsg = "";
         if (scalar(@_) > 1) { $errmsg .= $_[1]."\n"; }
-	$errmsg .= "\"$_[0]\" failed! Plase check if you provide correct parameters/options for the pipeline!\n";
-	print $errmsg;
+        $errmsg .= "\"$_[0]\" failed! Plase check if you provide correct parameters/options for the pipeline!\n";
+        print $errmsg;
         exit(-1);
     }
     print "\n";
