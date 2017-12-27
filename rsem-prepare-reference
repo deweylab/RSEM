@@ -5,6 +5,7 @@ use Pod::Usage;
 use File::Basename;
 use FindBin;
 use lib $FindBin::RealBin;
+use List::Util qw(min max);
 use rsem_perl_utils;
 
 use Env qw(@PATH);
