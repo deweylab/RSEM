@@ -30,11 +30,14 @@
  */
 
 struct Interval {
-	int start, end;
+	int start, end, clen; // clen: cumulative length from the left 
+
+	Interval() : start(0), end(0), clen(0) {}
 
 	Interval(int start, int end) {
 		this->start = start;
 		this->end = end;
+		clen = 0;
 	}
 };
 
@@ -60,8 +63,11 @@ public:
 		this->left = left.substr(pos);
 
 		length = 0;
-		int s = structure.size();
-		for (int i = 0; i < s; ++i) length += structure[i].end + 1 - structure[i].start;
+		int s = this->structure.size();
+		for (int i = 0; i < s; ++i) {
+			this->structure[i].clen = length;
+			length += this->structure[i].end + 1 - this->structure[i].start;
+		}
 	}
 
 	bool operator< (const Transcript& o) const {

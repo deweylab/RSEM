@@ -54,7 +54,7 @@ void Transcript::extractSeq(const std::string& gseq, std::string& seq) const {
 }
 
 void Transcript::read(std::ifstream& fin) {
-	int s;
+	int s, clen;
 	std::string tmp;
 	std::istringstream strin;
 
@@ -73,13 +73,16 @@ void Transcript::read(std::ifstream& fin) {
 	fin>> tmp>> length;
 	assert(tmp.length() == 1 && (tmp[0] == '+' || tmp[0] == '-'));
 	strand = tmp[0];
-	structure.clear();
+
 	fin>> s;
+	clen = 0;
+	structure.resize(s);
 	for (int i = 0; i < s; ++i) {
-		int start, end;
-		fin>> start>> end;
-		structure.push_back(Interval(start, end));
+		fin>> structure[i].start>> structure[i].end;
+		structure[i].clen = clen;
+		clen += structure[i].end - structure[i].start + 1;
 	}
+
 	std::getline(fin, tmp); //get the end of this line
 	std::getline(fin, left);
 }
