@@ -61,6 +61,7 @@ void Refs::writeTo(char* outF) {
 
 void Refs::writeTransListTo(char* outF) {
 	std::ofstream fout(outF);
+	fout<< M<< std::endl;
 	for (int i = 1; i <= M; ++i)
 		fout<< seqs[i].getName()<< '\t'<< seqs[i].getLen()<< std::endl;
 	fout.close();

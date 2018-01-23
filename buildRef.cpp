@@ -473,6 +473,9 @@ void shrink() {
 	if (verbose) printf("%d transcripts are extracted.\n", curp);
 }
 
+void annotateGenome() {
+
+}
 
 inline string n2g(const string& seq) {
 	string newseq = seq;
@@ -634,6 +637,8 @@ int main(int argc, char* argv[]) {
 	else load_reference_sequences(argv);
 
 	shrink(); // remove duplicates 
+
+	if (hasGTF) annotateGenome(); // partition genome into non-overlap intervals and annotate each interval as either intergenetic/intron/exon etc.
 
 	writeToDisk(argv[1]); // write out generated indices
 	

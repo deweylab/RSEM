@@ -63,11 +63,9 @@ public:
 		this->left = left.substr(pos);
 
 		length = 0;
-		int s = this->structure.size();
-		for (int i = 0; i < s; ++i) {
-			this->structure[i].clen = length;
-			length += this->structure[i].end + 1 - this->structure[i].start;
-		}
+		int s = structure.size();
+		for (int i = 0; i < s; ++i)
+			length += structure[i].end + 1 - structure[i].start;
 	}
 
 	bool operator< (const Transcript& o) const {
@@ -92,7 +90,9 @@ public:
 
 	const std::vector<Interval>& getStructure() const { return structure; }
 
-	void extractSeq (const std::string&, std::string&) const;
+	void extractSeq(const std::string&, std::string&) const;
+
+	void updateCLen(); // update cumulative length field for vector structure
 
 	void read(std::ifstream&);
 	void write(std::ofstream&);

@@ -18,40 +18,33 @@
    USA
 */
 
-#include <string>
-#include <fstream>
+#ifndef BAMWRITER_H_
+#define BAMWRITER_H_
 
-#include "utils.h"
+#include <string>
+#include "htslib/sam.h"
 #include "my_assert.h"
 
-#include "Transcript.hpp"
-#include "Transcripts.hpp"
+class BamWriter {
+public:
+	/*
+		@param   outF         output BAM file name
+		@param   header       BAM header for output
+		@param   n_threads     number of threads used to generate the BAM file, the number of compressing threads is n_threads - 1
+	 */
+	BamWriter(const char* outF, const bam_hdr_t* header, const char* program_id = NULL, int n_threads = 1);	
+	~BamWriter();
 
-void Transcripts::readFrom(const char* inpF) {
-	std::string line;
-	std::ifstream fin(inpF);
-
-	general_assert(fin.is_open(), "Cannot open " + cstrtos(inpF) + "! It may not exist.");
-
-	fin>> M>> type;
-	std::getline(fin, line);
-	transcripts.assign(M + 1, Transcript());
-	for (int i = 1; i <= M; ++i) {
-		transcripts[i].read(fin);
+	void write(bam1_t* b) {
+		general_assert(sam_write1(bam_out, header, b) >= 0, "Fail to write alignments to BAM file!");    
 	}
-	fin.close();
-}
 
-void Transcripts::writeTo(const char* outF) {
-	std::ofstream fout(outF);
-	fout<< M<< " "<< type<< std::endl;
-	for (int i = 1; i <= M; ++i) {
-		transcripts[i].write(fout);
-	}
-	fout.close();
-}
+private:
+	samFile* bam_out;
+	bam_hdr_t* header;
 
-void Transcripts::updateCLens() {
-	for (int i = 1; i <= M; ++i)
-		transcripts[i].updateCLen();
-}
+	bam_hdr_t* header_duplicate_without_text(const bam_hdr_t* ori_h);
+	void header_append_new_text(bam_hdr_t* header, const std::string& new_text);
+};
+
+#endif

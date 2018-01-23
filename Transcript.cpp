@@ -53,8 +53,18 @@ void Transcript::extractSeq(const std::string& gseq, std::string& seq) const {
 	assert(seq.length() > 0);
 }
 
+void Transcript::updateCLen() {
+	int s = structure.size();
+	int clen = 0;
+
+	for (int i = 0; i < s; ++i) {
+		structure[i].clen = clen;
+		clen += structure[i].end + 1 - structure[i].start;
+	}
+}
+
 void Transcript::read(std::ifstream& fin) {
-	int s, clen;
+	int s;
 	std::string tmp;
 	std::istringstream strin;
 
@@ -75,13 +85,9 @@ void Transcript::read(std::ifstream& fin) {
 	strand = tmp[0];
 
 	fin>> s;
-	clen = 0;
 	structure.resize(s);
-	for (int i = 0; i < s; ++i) {
+	for (int i = 0; i < s; ++i)
 		fin>> structure[i].start>> structure[i].end;
-		structure[i].clen = clen;
-		clen += structure[i].end - structure[i].start + 1;
-	}
 
 	std::getline(fin, tmp); //get the end of this line
 	std::getline(fin, left);
