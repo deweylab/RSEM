@@ -27,7 +27,6 @@
 
 #include <stdint.h>
 #include "htslib/sam.h"
-
 #include "my_assert.h"
 #include "SamParser.hpp"
 #include "BamWriter.hpp"
@@ -61,10 +60,11 @@ bool BamAlignment::read(SamParser *in, BamAlignment *o) {
 	if (is_paired) is_aligned |= ((char)bam_is_mapped(b2) << 1);
 		
 	// The following four statements are grouped together
-	if (b->core.l_qseq <= 0) b->core.l_qseq = o->getSeqLength(1);
-	if (is_paired && b2->core.l_qseq <= 0) b2->core.l_qseq = o->getSeqLength(2);
-	assert(!(is_aligned & 1) || b->core.l_qseq == bam_cigar2qlen(b->core.n_cigar, bam_get_cigar(b)));
-	assert(!(is_aligned & 2) || b2->core.l_qseq == bam_cigar2qlen(b2->core.n_cigar, bam_get_cigar(b2)));
+	int tmp_len = 0, tmp_len2 = 0;
+	tmp_len = b->core.l_qseq <= 0 ? o->getSeqLength(1) : b->core.l_qseq;
+	if (is_paired) tmp_len2 = b2->core.l_qseq <= 0 ? o->getSeqLength(2) : b2->core.l_qseq;
+	assert(!(is_aligned & 1) || tmp_len == bam_cigar2qlen(b->core.n_cigar, bam_get_cigar(b)));
+	assert(!(is_aligned & 2) || tmp_len2 == bam_cigar2qlen(b2->core.n_cigar, bam_get_cigar(b2)));
 
 	return true;
 }

@@ -56,6 +56,7 @@ public:
 
 	~BamBufferedWriters();
 
+	// Directly feed bam record into buffer.
 	bam1_t* get_bam1_t(int id) {
 		if (buffer_size == 1) {
 			if (pos >= 0) writers[pos].write(buffer[0]);

@@ -28,12 +28,11 @@
 
 #include <stdint.h>
 #include "htslib/sam.h"
-
 #include "my_assert.h"
-
 #include "CIGARstring.hpp"
 #include "SEQstring.hpp"
 #include "QUALstring.hpp"
+#include "MDstring.hpp"
 #include "SamParser.hpp"
 #include "BamWriter.hpp"
 #include "BamBufferedWriters.hpp"
@@ -124,13 +123,7 @@ public:
 		if (is_aligned & 1) return bam_is_rev(b) ? std::max(0, bam_endpos(b) - fragment_length) : b->core.pos;
 		else return bam_is_rev(b2) ? std::max(0, bam_endpos(b2) - fragment_length) : b2->core.pos;
 	}
-	
-	// if length = 2k, midpoint is k - 1
-	int getMidPos(int fragment_length = 0) const {
-		assert(is_aligned > 0);
-		return (is_aligned == 3 ? getLeftMostPos() + (getInsertSize() - 1) / 2 : getLeftMostPos(fragment_length) + (fragment_length - 1) / 2);
-	}
-	
+		
 	int getMapQ() const { return (is_aligned & 1) ? b->core.qual : b2->core.qual; }
 	
 	void setMapQ(int MapQ) { 
@@ -189,6 +182,15 @@ public:
 		assert(((mate == 1) && (b->core.l_qseq > 0)) || ((mate == 2) && (b2->core.l_qseq > 0)));
 		if (mate == 1) qi.setUp(bam_get_qual(b), b->core.l_qseq, is_ori(b));
 		else qi.setUp(bam_get_qual(b2), b2->core.l_qseq, is_ori(b2));
+		return true;
+	}
+	
+	bool getMD(MDstring& mdstr, int mate = 1) {
+		uint8_t* p;    
+		assert(mate == 1 || (is_paired && mate == 2));
+		p = bam_aux_get((mate == 1 ? b : b2), "MD");
+		assert(p != NULL && *p++ == 'Z');
+		mdstr.setUp((char*)p);
 		return true;
 	}
 	
