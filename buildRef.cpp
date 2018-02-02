@@ -36,6 +36,7 @@
 #include "Transcripts.hpp"
 #include "RefSeq.hpp"
 #include "Refs.hpp"
+#include "GenomeMap.hpp"
 
 using namespace std;
 
@@ -45,6 +46,7 @@ bool verbose = true; // define verbose
 int M;
 Transcripts transcripts;
 Refs refs;
+GenomeMap genomeMap;
 
 // hasGTF: if has GTF file ; hasMapping: if has mapping file; isAlleleSpecific: if allele-specific; rmdup : if remove duplicate sequences; appendPolyA : if append polyA tails; n2g_idx : if generate n2g index
 bool hasGTF, hasMapping, isAlleleSpecific, rmdup, appendPolyA, n2g_idx; 
@@ -55,7 +57,7 @@ int polyALen; // length of poly(A)s appended
 
 char gtfF[STRLEN], polyAExcludeF[STRLEN];
 char tiF[STRLEN], dupF[STRLEN], refFastaF[STRLEN];
-char transListF[STRLEN], chromListF[STRLEN];
+char transListF[STRLEN], chromListF[STRLEN], genomeMapF[STRLEN];
 char groupF[STRLEN], gtF[STRLEN], taF[STRLEN]; 
 
 // Mapping file related data structures
@@ -473,10 +475,6 @@ void shrink() {
 	if (verbose) printf("%d transcripts are extracted.\n", curp);
 }
 
-void annotateGenome() {
-
-}
-
 inline string n2g(const string& seq) {
 	string newseq = seq;
 	int len = newseq.length();
@@ -506,8 +504,6 @@ void writeToDisk(char* refName) {
 		if (verbose) printf("Duplicated transcript information files is generated.\n");
 	}
 	
-
-
 	sprintf(refFastaF, "%s.transcripts.fa", refName);
 	refs.writeTo(refFastaF);
 
@@ -534,8 +530,6 @@ void writeToDisk(char* refName) {
 		if (verbose) printf("%s is generated.\n", refFastaF);
 	}
 
-
-
 	if (hasGTF) {
 		sprintf(chromListF, "%s.chrlist", refName);
 		fout.open(chromListF);
@@ -543,10 +537,12 @@ void writeToDisk(char* refName) {
 			fout<< chrvec[i].name<< '\t'<< chrvec[i].len<< endl;
 		fout.close();
 		if (verbose) printf("Chromosome list file is generated.\n");
+
+		sprintf(genomeMapF, "%s.g2t.map", refName);
+		genomeMap.writeTo(genomeMapF);
+		if (verbose) printf("Genome map file is generated.\n");
 	}
 
-
-	
 	string cur_gene_id, cur_transcript_id, name;
 	vector<int> gi, gt, ta;
 
@@ -638,7 +634,11 @@ int main(int argc, char* argv[]) {
 
 	shrink(); // remove duplicates 
 
-	if (hasGTF) annotateGenome(); // partition genome into non-overlap intervals and annotate each interval as either intergenetic/intron/exon etc.
+	if (hasGTF) { // partition genome into non-overlap intervals and annotate each interval as either intergenetic/intron/exon etc.
+		if (rmdup && nDup > 0) genomeMap.constructMap(&transcripts, &dups);
+		else genomeMap.constructMap(&transcripts);
+		if (verbose) printf("Map construction done.\n");
+	} 
 
 	writeToDisk(argv[1]); // write out generated indices
 	

@@ -86,8 +86,8 @@ $(PROGS3) :
 
 
 # Dependencies for executables
-rsem-build-reference : buildRef.o Transcript.o Transcripts.o RefSeq.o Refs.o
-rsem-build-read-index : buildReadIndex.o
+rsem-build-reference : buildRef.o Transcript.o Transcripts.o RefSeq.o Refs.o GenomeMap.o
+
 rsem-simulate-reads : simulation.o
 
 rsem-parse-alignments : parseIt.o $(SAMLIBS)
@@ -106,14 +106,14 @@ rsem-calculate-credibility-intervals : calcCI.o
 parseIt.o : parseIt.cpp $(SAMHEADERS) sam_utils.h utils.h my_assert.h GroupInfo.h Transcripts.h Read.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h HitContainer.h SamParser.h
 
 
-Transcript.o: Transcript.cpp utils.h my_assert.h Transcript.hpp
+Transcript.o : Transcript.cpp utils.h my_assert.h Transcript.hpp
 Transcripts.o : Transcripts.cpp utils.h my_assert.h Transcript.hpp Transcripts.hpp
 RefSeq.o : RefSeq.cpp utils.h my_assert.h RefSeq.hpp
 Refs.o : Refs.cpp utils.h my_assert.h RefSeq.hpp Refs.hpp
-buildRef.o : buildRef.cpp utils.h my_assert.h GTFItem.h Transcript.hpp Transcripts.hpp RefSeq.hpp Refs.hpp
+GenomeMap.o : GenomeMap.cpp my_assert.h Transcript.hpp Transcripts.hpp GenomeMap.hpp 
+buildRef.o : buildRef.cpp utils.h my_assert.h GTFItem.h Transcript.hpp Transcripts.hpp RefSeq.hpp Refs.hpp GenomeMap.hpp
 
 
-buildReadIndex.o : buildReadIndex.cpp utils.h
 wiggle.o: wiggle.cpp $(SAMHEADERS) sam_utils.h utils.h my_assert.h wiggle.h
 tbam2gbam.o : tbam2gbam.cpp $(SAMHEADERS) utils.h Transcripts.h Transcript.h BamConverter.h sam_utils.h SamHeader.hpp my_assert.h bc_aux.h
 bam2wig.o : bam2wig.cpp utils.h my_assert.h wiggle.h
@@ -133,12 +133,6 @@ Transcripts.hpp : Transcript.hpp
 RefSeq.hpp : utils.h my_assert.h
 Refs.hpp : utils.h my_assert.h RefSeq.hpp
 
-SingleRead.h : Read.h
-SingleReadQ.h : Read.h
-PairedEndRead.h : Read.h SingleRead.h
-PairedEndReadQ.h : Read.h SingleReadQ.h
-PairedEndHit.h : SingleHit.h
-HitContainer.h : GroupInfo.h
 sam_utils.h : $(SAMHEADERS) Transcript.h Transcripts.h
 SamParser.h : $(SAMHEADERS) sam_utils.h utils.h my_assert.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h Transcripts.h
 simul.h : $(BOOST)/boost/random.hpp
