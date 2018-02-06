@@ -95,11 +95,15 @@ static int g_is_by_qname = 0;
 static int g_is_by_tag = 0;
 static char g_sort_tag[2] = {0,0};
 
+// Added for RSEM by Bo Li: Test if the query name should stop
+static bool ok(char c) { return c > 0 && !isspace(c); }
+
 static int strnum_cmp(const char *_a, const char *_b)
 {
     const unsigned char *a = (const unsigned char*)_a, *b = (const unsigned char*)_b;
     const unsigned char *pa = a, *pb = b;
-    while (*pa && *pb) {
+    // while (*pa && *pb) { // Modified for RSEM by Bo Li
+    while (ok(*pa) && ok(*pb)) {
         if (isdigit(*pa) && isdigit(*pb)) {
             while (*pa == '0') ++pa;
             while (*pb == '0') ++pb;
@@ -116,7 +120,8 @@ static int strnum_cmp(const char *_a, const char *_b)
             ++pa; ++pb;
         }
     }
-    return *pa? 1 : *pb? -1 : 0;
+    // return *pa? 1 : *pb? -1 : 0; // Modified for RSEM by Bo Li
+    return ok(*pa)? 1 : ok(*pb)? -1 : 0;
 }
 
 #define HEAP_EMPTY UINT64_MAX
@@ -130,6 +135,7 @@ typedef struct {
 static inline int bam1_cmp_by_tag(const bam1_tag a, const bam1_tag b);
 
 // Function to compare reads in the heap and determine which one is < the other
+// Note by Bo Li: It actually returns which one is > 
 static inline int heap_lt(const heap1_t a, const heap1_t b)
 {
     if (!a.entry.bam_record)
@@ -145,9 +151,10 @@ static inline int heap_lt(const heap1_t a, const heap1_t b)
         int t, fa, fb;
         t = strnum_cmp(bam_get_qname(a.entry.bam_record), bam_get_qname(b.entry.bam_record));
         if (t != 0) return t > 0;
-        fa = a.entry.bam_record->core.flag & 0xc0;
-        fb = b.entry.bam_record->core.flag & 0xc0;
-        if (fa != fb) return fa > fb;
+        // Modified for RSEM by Bo Li, to make sure the two mates of an alignment are adjacent to each other
+        // fa = a.entry.bam_record->core.flag & 0xc0;
+        // fb = b.entry.bam_record->core.flag & 0xc0;
+        // if (fa != fb) return fa > fb;
     } else {
         if (a.pos != b.pos) return a.pos > b.pos;
     }
@@ -1801,8 +1808,10 @@ static inline int bam1_cmp_core(const bam1_tag a, const bam1_tag b)
 
     if (g_is_by_qname) {
         int t = strnum_cmp(bam_get_qname(a.bam_record), bam_get_qname(b.bam_record));
-        if (t != 0) return t;
-        return (int) (a.bam_record->core.flag&0xc0) - (int) (b.bam_record->core.flag&0xc0);
+        return t;
+        // Modified for RSEM by Bo Li
+        // if (t != 0) return t;
+        // return (int) (a.bam_record->core.flag&0xc0) - (int) (b.bam_record->core.flag&0xc0);
     } else {
         pa = (uint64_t)a.bam_record->core.tid<<32|(a.bam_record->core.pos+1)<<1|bam_is_rev(a.bam_record);
         pb = (uint64_t)b.bam_record->core.tid<<32|(b.bam_record->core.pos+1)<<1|bam_is_rev(b.bam_record);
