@@ -1,5 +1,5 @@
-SAMTOOLS = samtools-1.3
-HTSLIB = htslib-1.3
+SAMTOOLS = samtools-1.7
+HTSLIB = htslib-1.7
 
 ifneq ($(cygwin), true)
   SAMTOOLS_MAKEFILE = Makefile
@@ -13,8 +13,7 @@ BOOST = .
 # Compilation variables
 CXX = g++
 CXXFLAGS = -std=gnu++98 -Wall -I. 
-CPPFLAGS =
-#-I$(BOOST) -I$(SAMTOOLS)/$(HTSLIB)
+CPPFLAGS = -I$(BOOST) -I$(SAMTOOLS)/$(HTSLIB)
 
 LDFLAGS =
 LDLIBS =
@@ -35,12 +34,12 @@ SAMHEADERS = $(SAMTOOLS)/$(HTSLIB)/htslib/sam.h
 SAMLIBS = $(SAMTOOLS)/$(HTSLIB)/libhts.a
 CONFIGURE = ./configure
 
-OBJS1 = Transcript.o Transcripts.o RefSeq.o Refs.o buildRef.o
+OBJS1 = Transcript.o Transcripts.o RefSeq.o Refs.o GenomeMap.o buildRef.o
 OBJS2 = parseIt.o
 # OBJS2 = buildReadIndex.o wiggle.o tbam2gbam.o bam2wig.o bam2readdepth.o getUnique.o samValidator.o scanForPairedEndReads.o SamHeader.o
 OBJS3 = EM.o Gibbs.o calcCI.o simulation.o
 
-PROGS1 = rsem-build-reference rsem-build-read-index rsem-simulate-reads
+PROGS1 = rsem-build-reference rsem-simulate-reads
 PROGS2 = rsem-parse-alignments rsem-run-em rsem-tbam2gbam rsem-bam2wig rsem-bam2readdepth rsem-get-unique rsem-sam-validator rsem-scan-for-paired-end-reads
 PROGS3 = rsem-run-gibbs rsem-calculate-credibility-intervals
 

@@ -80,12 +80,12 @@ bool BamAlignment::write(BamWriter *out, int choice, BamAlignment *o) {
 	case 0: 
 		break;
 	case 1:
-		if (b->core.l_qname > 1) compress(b);
-		if (is_paired && (b2->core.l_qname > 1)) compress(b2);
+		if (b->core.l_qname - b->core.l_extranul > 1) compress(b);
+		if (is_paired && (b2->core.l_qname - b2->core.l_extranul > 1)) compress(b2);
 		break;
 	case 2:
-		if (b->core.l_qname == 1) decompress(b, o->b);
-		if (is_paired && (b2->core.l_qname == 1)) decompress(b2, o->b2);
+		if (b->core.l_qname - b->core.l_extranul == 1) decompress(b, o->b);
+		if (is_paired && (b2->core.l_qname - b->core.l_extranul == 1)) decompress(b2, o->b2);
 		break;
 	default: assert(false);
 	}
@@ -117,22 +117,24 @@ bool BamAlignment::writeToBuffer(BamBufferedWriters* buffer, int id, int choice)
 
 void BamAlignment::compress(bam1_t* b) {
 	int l_aux = bam_get_l_aux(b);
-	b->data[0] = 0;
-	memmove(b->data + 1, bam_get_cigar(b), b->core.n_cigar * 4);
-	memmove(b->data + 1 + b->core.n_cigar * 4, bam_get_aux(b), l_aux);
-	b->l_data = 1 + b->core.n_cigar * 4 + l_aux;
-	b->core.l_qname = 1;
+	memset(b->data, 0, 4);
+	memmove(b->data + 4, bam_get_cigar(b), b->core.n_cigar * 4);
+	memmove(b->data + 4 + b->core.n_cigar * 4, bam_get_aux(b), l_aux);
+	b->l_data = 4 + b->core.n_cigar * 4 + l_aux;
+	b->core.l_qname = 4;
+	b->core.l_extranul = 3;
 	b->core.l_qseq = 0;
 }
 
 void BamAlignment::decompress(bam1_t* b, bam1_t* other) {
 	int l_aux = bam_get_l_aux(b);
 	b->core.l_qname = other->core.l_qname;
+	b->core.l_extranul = other->core.l_extranul;
 	b->core.l_qseq = other->core.l_qseq;
 	b->l_data = b->core.l_qname + b->core.n_cigar * 4 + (b->core.l_qseq + 1) / 2 + b->core.l_qseq + l_aux;
 	expand_data_size(b);
-	memmove(bam_get_aux(b), b->data + 1 + b->core.n_cigar * 4, l_aux); // move aux options
-	memmove(bam_get_cigar(b), b->data + 1, b->core.n_cigar * 4); // move cigar string
+	memmove(bam_get_aux(b), b->data + 4 + b->core.n_cigar * 4, l_aux); // move aux options
+	memmove(bam_get_cigar(b), b->data + 4, b->core.n_cigar * 4); // move cigar string
 	memcpy(bam_get_qname(b), bam_get_qname(other), b->core.l_qname); // copy qname
 
 	if (bam_is_rev(b) == bam_is_rev(other)) {
