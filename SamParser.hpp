@@ -22,26 +22,23 @@
 #define SAMPARSER_H_
 
 #include <cctype>
+#include <cstdint>
 #include <cassert>
 #include <string>
 #include <vector>
 #include <map>
 
+#include "htslib/bgzf.h"
 #include "htslib/sam.h"
 
 #include "utils.h"
 
 class SamParser {
 public:
-	static void buildRefHeader(const char* transListF);
-	static void releaseRefHeader();
+	static void buildMapping(const char* transListF, const bam_hdr_t* header, const char* remapF);
+	static void loadMapping(const char* remapF);
 
-	// omitF contains RSEM tids that never appeared in any of the alignment files
-	// FORMAT: one tid per line
-	static void writeOmitFile(const char* omitF); 
-
-
-	SamParser(const char* inpF, bool build_mapping = false); 
+	SamParser(const char* inpF, htsThreadPool* p = NULL); 
 	~SamParser();
 
 	const bam_hdr_t* getHeader() const { 
@@ -59,27 +56,26 @@ public:
 		return true;
 	}
 	
+	int64_t tell() { return bgzf_tell(sam_in->fp.bgzf); }
+
+	void seek(int64_t pos) {
+		assert(bgzf_seek(sam_in->fp.bgzf, pos, SEEK_SET) == 0);
+	}
+
 private:
-	static const bam_hdr_t *ref_header = NULL;
-	static std::map<std::string, int> tname2tid; // mapping from transcript name to transcript id
-	static std::map<std::string, int>::iterator iter;
-	static std::vector<bool> appeared; // vector recording if a RSEM tid appeared in the alignment file
+	static bool remap; // if the input BAM header is not consistent with the RSEM BAM header
+	static std::vector<int> sid2tid; // mapping from input BAM sequence id to RSEM BAM transcript id
+
+	// 0-based
+	static int get_tid(int sid) const {
+		return sid2tid[sid];
+	}
+
 
 	samFile *sam_in;
 	bam_hdr_t *header;
 
-	bool delete_header;
 	char program_id[STRLEN];
-
-	bool remap; // if the input BAM header is not consistent with the RSEM BAM header
-	std::vector<int> sid2tid; // mapping from input BAM sequence id to RSEM BAM transcript id
-
-	void buildMapping();
-
-	// 0-based
-	int get_tid(int sid) const {
-		return sid2tid[sid];
-	}
 
 	bool set_program_id(const char *fr, const char *p) {
 		if (p - fr > 3 && !strncmp(fr, "ID:", 3)) {

@@ -20,12 +20,13 @@
 
 #include <cstdio>
 #include <cassert>
+#include <cstdint> 
 #include <cstring>
 #include <cstdlib>
 #include <string>
 #include <sstream>
 
-#include <stdint.h>
+#include "htslib/hts.h"
 #include "htslib/sam.h"
 
 #include "my_assert.h"
@@ -33,19 +34,9 @@
 
 // If header == NULL, just create an empty header with one target (to avoid free non null pointer due to calloc) and paste the program_id line
 // if program_id == NULL, use the header passed
-BamWriter::BamWriter(const char* outF, const bam_hdr_t* header, const char* program_id, int n_threads) {
-	if (header != NULL) {
-		this->header = (program_id == NULL ? bam_hdr_dup(header) : header_duplicate_without_text(header));
-	}
-	else {
-		this->header = bam_hdr_init();
-		this->header->n_targets = 1;
-		this->header->target_len = new uint32_t[1];
-		this->header->target_name = new char*[1];
-		this->header->target_len[0] = 0;
-		this->header->target_name[0] = new char[1];
-		this->header->target_name[0][0] = 0;
-	}
+BamWriter::BamWriter(const char* outF, const bam_hdr_t* header, const char* program_id, htsThreadPool* p) {
+	assert(header != NULL);
+	this->header = (program_id == NULL ? bam_hdr_dup(header) : header_duplicate_without_text(header));
 
 	if (program_id != NULL) {
 		std::ostringstream strout;
@@ -56,7 +47,7 @@ BamWriter::BamWriter(const char* outF, const bam_hdr_t* header, const char* prog
 	bam_out = sam_open(outF, "wb");
 	general_assert(bam_out != 0, "Cannot write to " + cstrtos(outF) + "!");
 	sam_hdr_write(bam_out, this->header);
-	if (n_threads > 1) assert(hts_set_threads(bam_out, n_threads) == 0);
+	if (p != NULL) hts_set_opt(bam_out, HTS_OPT_THREAD_POOL, p);
 }
 
 BamWriter::~BamWriter() {

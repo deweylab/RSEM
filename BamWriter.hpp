@@ -22,7 +22,10 @@
 #define BAMWRITER_H_
 
 #include <string>
+
+#include "htslib/hts.h"
 #include "htslib/sam.h"
+
 #include "my_assert.h"
 
 class BamWriter {
@@ -30,9 +33,9 @@ public:
 	/*
 		@param   outF         output BAM file name
 		@param   header       BAM header for output
-		@param   n_threads     number of threads used to generate the BAM file, the number of compressing threads is n_threads - 1
+		@param   p 			  pointer to htsThreadPool, NULL if no multi-threading.
 	 */
-	BamWriter(const char* outF, const bam_hdr_t* header, const char* program_id = NULL, int n_threads = 1);	
+	BamWriter(const char* outF, const bam_hdr_t* header, const char* program_id = NULL, htsThreadPool* p = NULL);	
 	~BamWriter();
 
 	void write(bam1_t* b) {

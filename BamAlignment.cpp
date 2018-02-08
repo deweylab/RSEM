@@ -21,16 +21,16 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <cstdint>
 #include <cassert>
 #include <string>
 #include <algorithm>
 
-#include <stdint.h>
 #include "htslib/sam.h"
+
 #include "my_assert.h"
 #include "SamParser.hpp"
 #include "BamWriter.hpp"
-#include "BamBufferedWriters.hpp"
 #include "BamAlignment.hpp"
 
 const uint8_t BamAlignment::rnt_table[16] = {0, 8, 4, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 15};
@@ -96,25 +96,6 @@ bool BamAlignment::write(BamWriter *out, int choice, BamAlignment *o) {
 	return true;
 }
 
-bool BamAlignment::writeToBuffer(BamBufferedWriters* buffer, int id, int choice) {
-	assert(is_aligned >= 0 && b != NULL && (!is_paired || b2 != NULL));
-	
-	if (b->core.l_qname == 1) b->core.l_qseq = 0;
-	if (is_paired && (b2->core.l_qname == 1)) b2->core.l_qseq = 0;
-
-	bam1_t *target = NULL;
-	
-	target = buffer->get_bam1_t(id);
-	copy_bam1_t(target, b, choice);
-
-	if (is_paired) {
-		target = buffer->get_bam1_t(id);
-		copy_bam1_t(target, b2, choice);
-	}
-
-	return true;
-}
-
 void BamAlignment::compress(bam1_t* b) {
 	int l_aux = bam_get_l_aux(b);
 	memset(b->data, 0, 4);
@@ -145,24 +126,4 @@ void BamAlignment::decompress(bam1_t* b, bam1_t* other) {
 		copy_rc_seq(bam_get_seq(b), bam_get_seq(other), b->core.l_qseq); // copy reverse complement seq
 		copy_r_qual(bam_get_qual(b), bam_get_qual(other), b->core.l_qseq); // copy reverse qual
 	}
-}
-
-// choice can only be 0 or 1
-void BamAlignment::copy_bam1_t(bam1_t *target, bam1_t *b, int choice) {
-	target->core = b->core;
-	if (choice == 0 || b->core.l_qname <= 1) { // copy
-		target->l_data = b->l_data;
-		expand_data_size(target);
-		memcpy(target->data, b->data, target->l_data);
-	}
-	else { // compress
-		int l_aux = bam_get_l_aux(b);
-		target->l_data = 1 + b->core.n_cigar * 4 + l_aux;
-		expand_data_size(target);
-		target->data[0] = 0;
-		memcpy(target->data + 1, bam_get_cigar(b), target->core.n_cigar * 4);
-		memcpy(target->data + 1 + target->core.n_cigar * 4, bam_get_aux(b), l_aux);
-		target->core.l_qname = 1;
-		target->core.l_qseq = 0;
-	}  
 }

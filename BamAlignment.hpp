@@ -23,11 +23,12 @@
 
 #include <cmath>
 #include <cassert>
+#include <cstdint>
 #include <string>
 #include <algorithm>
 
-#include <stdint.h>
 #include "htslib/sam.h"
+
 #include "my_assert.h"
 #include "CIGARstring.hpp"
 #include "SEQstring.hpp"
@@ -35,7 +36,6 @@
 #include "MDstring.hpp"
 #include "SamParser.hpp"
 #include "BamWriter.hpp"
-#include "BamBufferedWriters.hpp"
 
 class BamAlignment {
 public:
@@ -66,13 +66,6 @@ public:
 		@param   o       An BamAlignment oject that contains sequence/qual score information
 	 */
 	bool write(BamWriter* out, int choice = 0, BamAlignment* o = NULL);
-
-	/*
-		@param   buffer   the buffer used for parseAlignmentss
-		@param   id       the writer id to write into
-		@param   choice   0, do nothing; 1, shrink the alignment
-	 */
-	bool writeToBuffer(BamBufferedWriters* buffer, int id, int choice = 0);
 	
 	// overall stats
 	
@@ -312,7 +305,6 @@ protected:
 
 	void compress(bam1_t* b); 	// compress a BAM record
 	void decompress(bam1_t* b, bam1_t* other); // decompress a BAM record
-	void copy_bam1_t(bam1_t *target, bam1_t *b, int choice); // copy BAM record to BamWriterBuffer, choice can only be 0 or 1
 	
 	// Caution: this function may change b->data's adddress!  
 	void expand_data_size(bam1_t* b) {
