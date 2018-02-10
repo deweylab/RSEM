@@ -73,6 +73,9 @@ const char* SamParser::getProgramID() {
 
 
 
+bool SamParser::remap = false;
+std::vector<int> SamParser::sid2tid;
+
 void SamParser::buildMapping(const char* transListF, const bam_hdr_t* header, const char* remapF) {
 	bam_hdr_t *ref_header = NULL;
 	std::map<std::string, int> tname2tid; // mapping from transcript name to transcript id
@@ -144,7 +147,7 @@ void SamParser::buildMapping(const char* transListF, const bam_hdr_t* header, co
 	bam_hdr_destroy(ref_header);
 }
 
-static void loadMapping(const char* remapF) {
+void SamParser::loadMapping(const char* remapF) {
 	int n_targets;
 	std::ifstream fin(remapF);
 	general_assert(fin.is_open(), "Cannot open " + cstrtos(remapF) + "!");

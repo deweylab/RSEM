@@ -27,13 +27,10 @@
 #include <cassert>
 #include <vector>
 
-#include "htslib/sam.h"
-
 #include "SEQstring.hpp"
 #include "QUALstring.hpp"
 #include "SamParser.hpp"
 #include "BamWriter.hpp"
-#include "BamBufferedWriters.hpp"
 #include "BamAlignment.hpp"
 
 // One alignment group associates with one file. 
@@ -65,7 +62,6 @@ public:
 
 	bool read(SamParser* in);
 	bool write(BamWriter* out, int choice = 0);
-	bool writeToBuffer(BamBufferedWriters* buffer, int id);
 	
 	bool isPaired() const { return (s > 0) && alignments[0]->isPaired(); }
 
@@ -148,13 +144,6 @@ inline bool AlignmentGroup::write(BamWriter *out, int choice) {
 	assert(s > 0);
 	alignments[0]->write(out);
 	for (int i = 1; i < s; ++i) alignments[i]->write(out, choice, alignments[0]);
-	return true;
-}
-
-inline bool AlignmentGroup::writeToBuffer(BamBufferedWriters* buffer, int id) {
-	assert(s > 0);
-	alignments[0]->writeToBuffer(buffer, id);
-	for (int i = 1; i < s; ++i) alignments[i]->writeToBuffer(buffer, id, 1);
 	return true;
 }
 

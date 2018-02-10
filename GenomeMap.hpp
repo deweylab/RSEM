@@ -65,18 +65,47 @@ struct Chrom {
 	}
 };
 
+typedef std::map<std::string, Chrom> genome_map;
+typedef std::map<std::string, Chrom>::iterator genome_map_iter;
+
 class GenomeMap {
 public:
-	GenomeMap() { genomeMap.clear(); }
+	GenomeMap() { genomeMap.clear(); empty.clear(); }
 
 	void constructMap(const Transcripts* transcripts, const Transcripts* duplicates = NULL); 
 
 	void readFrom(const char* inpF);
 	void writeTo(const char* outF);
 
+	// pos is one-based
+	const std::vector<Exon>& getExonList(const std::string& chrname, int pos) {
+		g_it = genomeMap.find(chrname);
+		if (g_it == genomeMap.end()) return empty;
+		Chrom& chrom = g_it->second;
+		int idx = binary_search(chrom.coords, pos);
+		if (idx < 0) return empty;
+		return chrom.exons[idx];
+	}
+
 private:
-	std::map<std::string, Chrom> genomeMap;
+	genome_map genomeMap;
+	genome_map_iter g_it;
+
+	std::vector<Exon> empty;
+
+	// return the largest index r such as coords[r] <= pos
+	int binary_search(const std::vector<int>& coords, int pos) {
+		int l, r, mid;
+
+		l = 0; r = coords.size() - 1;
+		while (l <= r) {
+			mid = (l + r) / 2;
+			if (pos >= coords[mid]) l = mid + 1;
+			else r = mid - 1;
+		}
+
+		return r;
+	}
 };
 	
 #endif /* GENOMEMAP_H_ */
-

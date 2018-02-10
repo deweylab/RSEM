@@ -126,6 +126,11 @@ public:
 
 	// for mates
 
+	int getPos(int mate) const {
+		assert(is_aligned > 0 && (mate == 1 || (is_paired && mate == 2)));
+		return (mate == 1 ? b->core.pos : b2->core.pos);
+	}
+	
 	/*
 	  @param   mate   which mate (1 or 2)
 	  @param   target_len   the length of reference sequence

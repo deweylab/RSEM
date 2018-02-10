@@ -36,7 +36,6 @@
 typedef std::map<std::string, std::vector<Point> > chrom_type;
 typedef std::map<std::string, std::vector<Point> >::iterator chrom_type_iter;
 typedef std::pair<std::string, std::vector<Point> > value_type_pair;
-typedef std::map<std::string, Chrom>::iterator genome_map_iter;
 
 void GenomeMap::constructMap(const Transcripts* transcripts, const Transcripts* duplicates) {
 	int s;

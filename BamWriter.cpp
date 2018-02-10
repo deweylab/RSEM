@@ -46,7 +46,7 @@ BamWriter::BamWriter(const char* outF, const bam_hdr_t* header, const char* prog
 	
 	bam_out = sam_open(outF, "wb");
 	general_assert(bam_out != 0, "Cannot write to " + cstrtos(outF) + "!");
-	sam_hdr_write(bam_out, this->header);
+	general_assert(sam_hdr_write(bam_out, this->header) == 0, "Cannot write header!");
 	if (p != NULL) hts_set_opt(bam_out, HTS_OPT_THREAD_POOL, p);
 }
 

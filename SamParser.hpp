@@ -48,7 +48,7 @@ public:
 	const char* getProgramID(); // scan header to look up program ID, and convert it to lower case, slow
 
 	bool read(bam1_t* b) {
-		if (sam_read1(in, header, b) < 0) return false;
+		if (sam_read1(sam_in, header, b) < 0) return false;
 		if (remap) {
 			if (!(b->core.flag & BAM_FUNMAP)) b->core.tid = get_tid(b->core.tid);
 			if ((b->core.flag & BAM_FPAIRED) && !(b->core.flag & BAM_FMUNMAP)) b->core.mtid = get_tid(b->core.mtid);
@@ -62,12 +62,16 @@ public:
 		assert(bgzf_seek(sam_in->fp.bgzf, pos, SEEK_SET) == 0);
 	}
 
+	const char* getSeqName(int tid) {
+		return header->target_name[tid];
+	}
+
 private:
 	static bool remap; // if the input BAM header is not consistent with the RSEM BAM header
 	static std::vector<int> sid2tid; // mapping from input BAM sequence id to RSEM BAM transcript id
 
 	// 0-based
-	static int get_tid(int sid) const {
+	static int get_tid(int sid) {
 		return sid2tid[sid];
 	}
 

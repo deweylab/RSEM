@@ -30,18 +30,19 @@ exec_prefix = $(prefix)
 bindir = $(exec_prefix)/bin
 
 # Auxiliary variables for compilation
-SAMHEADERS = $(SAMTOOLS)/$(HTSLIB)/htslib/sam.h
+SAMHEADERS = $(SAMTOOLS)/$(HTSLIB)/htslib/bgzf.h $(SAMTOOLS)/$(HTSLIB)/htslib/hts.h $(SAMTOOLS)/$(HTSLIB)/htslib/sam.h $(SAMTOOLS)/$(HTSLIB)/htslib/thread_pool.h
 SAMLIBS = $(SAMTOOLS)/$(HTSLIB)/libhts.a
 CONFIGURE = ./configure
 
-OBJS1 = Transcript.o Transcripts.o RefSeq.o Refs.o GenomeMap.o buildRef.o
+OBJS1 = Transcript.o Transcripts.o RefSeq.o Refs.o GenomeMap.o buildRef.o SamParser.o BamWriter.o BamAlignment.o gbam2tbam.o
 OBJS2 = parseIt.o
 # OBJS2 = buildReadIndex.o wiggle.o tbam2gbam.o bam2wig.o bam2readdepth.o getUnique.o samValidator.o scanForPairedEndReads.o SamHeader.o
 OBJS3 = EM.o Gibbs.o calcCI.o simulation.o
 
-PROGS1 = rsem-build-reference rsem-simulate-reads
-PROGS2 = rsem-parse-alignments rsem-run-em rsem-tbam2gbam rsem-bam2wig rsem-bam2readdepth rsem-get-unique rsem-sam-validator rsem-scan-for-paired-end-reads
-PROGS3 = rsem-run-gibbs rsem-calculate-credibility-intervals
+PROGS1 = rsem-build-reference
+PROGS2 = rsem-gbam2tbam
+# PROGS2 = rsem-simulate-reads rsem-parse-alignments rsem-run-em rsem-tbam2gbam rsem-bam2wig rsem-bam2readdepth rsem-get-unique rsem-sam-validator rsem-scan-for-paired-end-reads
+# PROGS3 = rsem-run-gibbs rsem-calculate-credibility-intervals
 
 PROGRAMS = $(PROGS1) $(PROGS2) $(PROGS3)
 
@@ -78,7 +79,7 @@ $(PROGS1) :
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 $(PROGS2) :
-	$(CXX) $(LDFLAGS) -pthread -o $@ $^ $(LDLIBS) -lz
+	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS) -lbz2 -lz -lcurl -llzma
 
 $(PROGS3) :
 	$(CXX) $(LDFLAGS) -pthread -o $@ $^ $(LDLIBS)
@@ -86,6 +87,7 @@ $(PROGS3) :
 
 # Dependencies for executables
 rsem-build-reference : buildRef.o Transcript.o Transcripts.o RefSeq.o Refs.o GenomeMap.o
+rsem-gbam2tbam : gbam2tbam.o $(SAMLIBS) Transcript.o Transcripts.o GenomeMap.o SEQstring.o SamParser.o BamWriter.o BamAlignment.o
 
 rsem-simulate-reads : simulation.o
 
@@ -111,6 +113,12 @@ RefSeq.o : RefSeq.cpp utils.h my_assert.h RefSeq.hpp
 Refs.o : Refs.cpp utils.h my_assert.h RefSeq.hpp Refs.hpp
 GenomeMap.o : GenomeMap.cpp my_assert.h Transcript.hpp Transcripts.hpp GenomeMap.hpp 
 buildRef.o : buildRef.cpp utils.h my_assert.h GTFItem.h Transcript.hpp Transcripts.hpp RefSeq.hpp Refs.hpp GenomeMap.hpp
+SEQstring.o : SEQstring.cpp $(SAMHEADERS) SEQstring.hpp
+SamParser.o : SamParser.cpp $(SAMHEADERS) my_assert.h SamParser.hpp
+BamWriter.o : BamWriter.cpp $(SAMHEADERS) my_assert.h BamWriter.hpp
+BamAlignment.o : BamAlignment.cpp $(SAMHEADERS) my_assert.h CIGARstring.hpp SEQstring.hpp QUALstring.hpp MDstring.hpp SamParser.hpp BamWriter.hpp BamAlignment.hpp
+gbam2tbam.o : gbam2tbam.cpp $(SAMHEADERS) utils.h my_assert.h Transcript.hpp Transcripts.hpp GenomeMap.hpp CIGARstring.hpp SEQstring.hpp QUALstring.hpp MDstring.hpp SamParser.hpp BamWriter.hpp BamAlignment.hpp AlignmentGroup.hpp
+
 
 
 wiggle.o: wiggle.cpp $(SAMHEADERS) sam_utils.h utils.h my_assert.h wiggle.h
@@ -131,18 +139,13 @@ simulation.o : simulation.cpp utils.h Read.h SingleRead.h SingleReadQ.h PairedEn
 Transcripts.hpp : Transcript.hpp
 RefSeq.hpp : utils.h my_assert.h
 Refs.hpp : utils.h my_assert.h RefSeq.hpp
+SamParser.hpp : $(SAMHEADERS) utils.h
+BamWriter.hpp : $(SAMHEADERS) my_assert.h
+BamAlignment.hpp : $(SAMHEADERS) my_assert.h CIGARstring.hpp SEQstring.hpp QUALstring.hpp MDstring.hpp SamParser.hpp BamWriter.hpp
+AlignmentGroup.hpp : $(SAMHEADERS) SEQstring.hpp QUALstring.hpp SamParser.hpp BamWriter.hpp BamAlignment.hpp
 
-sam_utils.h : $(SAMHEADERS) Transcript.h Transcripts.h
-SamParser.h : $(SAMHEADERS) sam_utils.h utils.h my_assert.h SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h SingleHit.h PairedEndHit.h Transcripts.h
-simul.h : $(BOOST)/boost/random.hpp
-ReadReader.h : SingleRead.h SingleReadQ.h PairedEndRead.h PairedEndReadQ.h ReadIndex.h
-SingleModel.h : utils.h my_assert.h Orientation.h LenDist.h RSPD.h Profile.h NoiseProfile.h ModelParams.h RefSeq.h Refs.h SingleRead.h SingleHit.h ReadReader.h simul.h
-SingleQModel.h : utils.h my_assert.h Orientation.h LenDist.h RSPD.h QualDist.h QProfile.h NoiseQProfile.h ModelParams.h RefSeq.h Refs.h SingleReadQ.h SingleHit.h ReadReader.h simul.h
-PairedEndModel.h : utils.h my_assert.h Orientation.h LenDist.h RSPD.h Profile.h NoiseProfile.h ModelParams.h RefSeq.h Refs.h SingleRead.h PairedEndRead.h PairedEndHit.h ReadReader.h simul.h 
-PairedEndQModel.h : utils.h my_assert.h Orientation.h LenDist.h RSPD.h QualDist.h QProfile.h NoiseQProfile.h ModelParams.h RefSeq.h Refs.h SingleReadQ.h PairedEndReadQ.h PairedEndHit.h ReadReader.h simul.h
-HitWrapper.h : HitContainer.h
-BamWriter.h : $(SAMHEADERS) sam_utils.h SamHeader.hpp utils.h my_assert.h SingleHit.h PairedEndHit.h HitWrapper.h Transcript.h Transcripts.h
-sampling.h : $(BOOST)/boost/random.hpp
+
+
 WriteResults.h : utils.h my_assert.h GroupInfo.h Transcript.h Transcripts.h RefSeq.h Refs.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h
 bc_aux.h : $(SAMHEADERS)
 BamConverter.h : $(SAMHEADERS) sam_utils.h SamHeader.hpp utils.h my_assert.h bc_aux.h Transcript.h Transcripts.h
