@@ -180,6 +180,7 @@ void GenomeMap::writeTo(const char* outF) {
 		fout<< iters[i]->first<< '\t'<< chrom.coords.size()<< std::endl;
 		for (std::size_t j = 0; j < chrom.coords.size(); ++j) {
 			fout<< chrom.coords[j]<< '\t'<< chrom.types[j]<< '\t'<< chrom.exons[j].size();
+			std::sort(chrom.exons[j].begin(), chrom.exons[j].end());
 			for (std::size_t k = 0; k < chrom.exons[j].size(); ++k) fout<< ' '<< chrom.exons[j][k].tid<< ' '<< chrom.exons[j][k].eid;			
 			fout<< std::endl;
 		}

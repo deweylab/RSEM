@@ -31,6 +31,8 @@ typedef uint64_t HIT_INT_TYPE;
 typedef uint64_t READ_INT_TYPE;
 
 extern bool verbose; // show detail intermediate outputs
+const std::string version = "v2.0";
+
 
 const int STRLEN = 10005 ;
 const double EPSILON = 1e-300;

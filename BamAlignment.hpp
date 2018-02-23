@@ -54,6 +54,45 @@ public:
 		if (b2 != NULL) bam_destroy1(b2);
 	}
 	
+	// Only used to sort alignments in an alignment group, comparing tid, dir, pos, and cigar
+	bool operator< (const BamAlignment& o) const {
+		uint32_t *cigar1, *cigar2;
+		assert((is_paired && o.is_paired) || (!is_paired && !o.is_paired));
+		assert(is_aligned == o.is_aligned);		
+
+		if (is_aligned & 1) {
+			if (b->core.tid != o.b->core.tid) return b->core.tid < o.b->core.tid;
+			if (b->core.pos != o.b->core.pos) return b->core.pos < o.b->core.pos;
+			if (bam_is_rev(b) != bam_is_rev(o.b)) return bam_is_rev(b) < bam_is_rev(o.b);
+			if (b->core.n_cigar != o.b->core.n_cigar) return b->core.n_cigar < o.b->core.n_cigar;
+			cigar1 = bam_get_cigar(b); cigar2 = bam_get_cigar(o.b);
+			for (int i = 0; i < b->core.n_cigar; ++i) 
+				if (cigar1[i] != cigar2[i]) return cigar1[i] < cigar2[i];
+		}
+
+		if (is_aligned& 2) {
+			if (b2->core.tid != o.b2->core.tid) return b2->core.tid < o.b2->core.tid;
+			if (b2->core.pos != o.b2->core.pos) return b2->core.pos < o.b2->core.pos;
+			if (bam_is_rev(b2) != bam_is_rev(o.b2)) return bam_is_rev(b2) < bam_is_rev(o.b2);
+			if (b2->core.n_cigar != o.b2->core.n_cigar) return b2->core.n_cigar < o.b2->core.n_cigar;
+			cigar1 = bam_get_cigar(b2); cigar2 = bam_get_cigar(o.b2);
+			for (int i = 0; i < b2->core.n_cigar; ++i) 
+				if (cigar1[i] != cigar2[i]) return cigar1[i] < cigar2[i];
+		}
+
+		return false;
+	}
+
+	// initialize this alignment with o as a template
+	void init_with(const BamAlignment* o) {
+		is_paired = o->is_paired;
+		is_aligned = o->is_aligned;
+		if (b == NULL) b = bam_init1();
+		if (is_paried && b2 == NULL) b2 = bam_init1();
+		b->core = o->b->core;
+		if (is_paired) b2->core = o->b2->core;
+	}
+
 	/*
 		@param   in   input SamParser 
 		@param   o    An BamAlignment object that contains sequence/qual score information
@@ -125,7 +164,6 @@ public:
 	}
 
 	// for mates
-
 	int getPos(int mate) const {
 		assert(is_aligned > 0 && (mate == 1 || (is_paired && mate == 2)));
 		return (mate == 1 ? b->core.pos : b2->core.pos);
@@ -191,6 +229,11 @@ public:
 		mdstr.setUp((char*)p);
 		return true;
 	}
+
+	// set up converted info for gbam -> tbam or tbam -> gbam
+	void setConvertedInfo(int mate, int32_t tid, int32_t pos, bool is_rev, uint32_t n_cigar, const uint32_t* cigar);
+	// fill in sequence, qual etc. using o as a template
+	void completeAlignment(const BamAlignment* o);
 	
 	// optional fields
 	void removeTag(const char tag[2]) {
@@ -334,7 +377,12 @@ protected:
 	// copy reverse quality score
 	void copy_r_qual(uint8_t* dst, uint8_t* src, int len) {
 		for (int i = 0; i < len; ++i) dst[i] = src[len - i - 1];
-	}	
+	}
+
+	// copy reverse cigar string
+	void copy_r_cigar(uint32_t* dst, uint32_t* src, int n_cigar) {
+		for (int i = 0; i < n_cigar; ++i) dst[i] = src[n_cigar - i - 1];
+	}
 };
 
 #endif

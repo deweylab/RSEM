@@ -94,7 +94,7 @@ public:
 		return alignments[id];
 	}
 
-private:
+protected:
 	char leftover; // if has next read. -1, initial value, standing for not called; 0, no next read; 1, has next read, which is the alignments[s]
 	int s, max_size; // s, total number of alignments; max_size, max capacity
 	std::vector<BamAlignment*> alignments; // pointers to BamAlignment objects

@@ -18,25 +18,47 @@
    USA
 */
 
-#include <cstdio>
-#include <cstdlib>
+#ifndef SAMHEADERTEXT_H_
+#define SAMHEADERTEXT_H_
 
-#include "htslib/hts.h"
+#include <cstdlib>
+#include <string>
+#include <vector>
+#include <map>
+
 #include "htslib/sam.h"
 
 #include "my_assert.h"
-#include "BamHeaderText.hpp"
-#include "BamWriter.hpp"
 
-BamWriter::BamWriter(const char* outF, const bam_hdr_t* header, htsThreadPool* p) {
-	bam_out = sam_open(outF, "wb");
-	general_assert(bam_out != 0, "Cannot write to " + cstrtos(outF) + "!");
-	ht = new SamHeaderText(header);
-	if (p != NULL) hts_set_opt(bam_out, HTS_OPT_THREAD_POOL, p);
-}
+class SamHeaderText {
+public:
+	SamHeaderText(const bam_hdr_t* h) {
+		parse_text(h->text);
+		if (SQs.size() == 0) fillSQ(h);
+		assign_top_pid();
+	}
 
-BamWriter::~BamWriter() {
-	delete ht;
-	bam_hdr_destroy(header);
-	sam_close(bam_out);
-}
+	// return the PG ID appeared first in the text
+	const std::string& getProgramID() { return top_pid; }
+
+	void addProgram(const std::string& pid, const std::string& version = "", const std::string& command = "");
+
+	void addComment(const std::string& comment) {
+		COs.push_back("@CO\t" + comment);
+	}
+	
+	void replaceSQ(const char* faiF);
+
+	bam_hdr_t* create_header();
+
+private:
+	std::vector<std::string> HDs, SQs, RGs, PGs, COs;
+	std::string top_pid;
+
+	std::map<std::string, std::string> parse_line(const std::string& line);
+	void parse_text(const char* text);
+	void fillSQ(const bam_hdr_t* h);
+	void assign_top_pid();
+};
+
+#endif

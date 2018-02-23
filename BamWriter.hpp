@@ -27,17 +27,33 @@
 #include "htslib/sam.h"
 
 #include "my_assert.h"
+#include "SamHeaderText.hpp"
 
 class BamWriter {
 public:
 	/*
 		@param   outF         output BAM file name
-		@param   header       BAM header for output
+		@param   header       input header
 		@param   p 			  pointer to htsThreadPool, NULL if no multi-threading.
 	 */
-	BamWriter(const char* outF, const bam_hdr_t* header, const char* program_id = NULL, htsThreadPool* p = NULL);	
+	BamWriter(const char* outF, const bam_hdr_t* header, htsThreadPool* p = NULL);	
 	~BamWriter();
 
+	// switch between genome references and transcriptome references
+	void replace_references(const char* faiF) {
+		ht->replaceSQ(faiF);
+	}
+
+	// add program line
+	void addProgram(const std::string& pid, const std::string& version = "", const std::string& command = "") {
+		ht->addProgram(pid, version, command);
+	}
+
+	void write_header() {
+		header = ht->create_header();
+		general_assert(sam_hdr_write(bam_out, header) == 0, "Cannot write header!");
+	}
+	
 	void write(bam1_t* b) {
 		general_assert(sam_write1(bam_out, header, b) >= 0, "Fail to write alignments to BAM file!");    
 	}
@@ -45,9 +61,7 @@ public:
 private:
 	samFile* bam_out;
 	bam_hdr_t* header;
-
-	bam_hdr_t* header_duplicate_without_text(const bam_hdr_t* ori_h);
-	void header_append_new_text(bam_hdr_t* header, const std::string& new_text);
+	SamHeaderText* ht;
 };
 
 #endif

@@ -31,7 +31,7 @@
 #include "htslib/bgzf.h"
 #include "htslib/sam.h"
 
-#include "utils.h"
+#include "SamHeaderText.hpp"
 
 class SamParser {
 public:
@@ -45,7 +45,9 @@ public:
 		return header;
 	}
 
-	const char* getProgramID(); // scan header to look up program ID, and convert it to lower case, slow
+	const std::string& getProgramID() { 
+		return ht->getProgramID(); 
+	}
 
 	bool read(bam1_t* b) {
 		if (sam_read1(sam_in, header, b) < 0) return false;
@@ -76,21 +78,9 @@ private:
 	}
 
 
-	samFile *sam_in;
-	bam_hdr_t *header;
-
-	char program_id[STRLEN];
-
-	bool set_program_id(const char *fr, const char *p) {
-		if (p - fr > 3 && !strncmp(fr, "ID:", 3)) {
-			fr += 3;
-			assert(p - fr <= 100);
-			for (int i = 0; i < p - fr; ++i)
-				program_id[i] = tolower(fr[i]);
-			return true;
-		}
-		return false;
-	}
+	samFile* sam_in;
+	bam_hdr_t* header;
+	SamHeaderText* ht;
 };
 
 #endif

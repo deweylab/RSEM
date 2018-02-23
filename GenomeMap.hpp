@@ -44,6 +44,10 @@ struct Exon {
 
 	Exon() : tid(0), eid(0) {}
 	Exon(int tid, int eid) : tid(tid), eid(eid) {}
+
+	bool operator< (const Exon& o) const {
+		return tid < o.tid;
+	}
 };
 
 struct Chrom {

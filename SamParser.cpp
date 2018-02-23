@@ -32,6 +32,7 @@
 #include "htslib/sam.h"
 
 #include "my_assert.h"
+#include "SamHeaderText.hpp"
 #include "SamParser.hpp"
 
 SamParser::SamParser(const char* inpF, htsThreadPool* p) {
@@ -40,6 +41,7 @@ SamParser::SamParser(const char* inpF, htsThreadPool* p) {
 
 	header = sam_hdr_read(sam_in);
 	general_assert(header != 0, "Fail to parse the header!");
+	ht = new SamHeaderText(header);
 
 	memset(program_id, 0, sizeof(program_id));
 
@@ -47,28 +49,9 @@ SamParser::SamParser(const char* inpF, htsThreadPool* p) {
 }
 
 SamParser::~SamParser() {
+	delete ht;
 	bam_hdr_destroy(header);
 	sam_close(sam_in);
-}
-
-// This is an simple implementation, improve it later if necessary
-const char* SamParser::getProgramID() {
-	if (program_id[0]) return program_id;
-  
-	char *p = strstr(header->text, "@PG\t");
-  	assert(p != NULL);
-  	p += 4;
-
-  	char *fr = p;
-  	while (*p != '\n' && *p != '\0') {
-		if (*p == '\t') {
-			if (set_program_id(fr, p)) return program_id;
-	  		fr = p + 1;
-		}
-		++p;
-	}
-	assert(set_program_id(fr, p)); 
-	return program_id;
 }
 
 

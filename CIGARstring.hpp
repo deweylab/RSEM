@@ -21,11 +21,11 @@
 #ifndef CIGARSTRING_H_
 #define CIGARSTRING_H_
 
+#include <cstdint>
 #include <cassert>
 #include <string>
 #include <sstream>
 
-#include <stdint.h>
 #include "htslib/sam.h"
 
 // An iterator for BAM CIGAR strings
@@ -53,27 +53,24 @@ public:
 		}
 	}
 
+	// return current cigar string
+	void setCurrent() { return_current = true; }
+
 	int getLen() const { return len; }
 
-	int opAt(int pos) const {
+	uint32_t valueAt(int pos) const {
 		assert(pos >= 0 && pos < len);
-		return bam_cigar_op(return_current ? cigar[pos] : cigar[len - pos - 1]);
+		return return_current ? cigar[pos] : cigar[len - pos - 1];
 	}
 
-	char opchrAt(int pos) const { 
-		assert(pos >= 0 && pos < len);
-		return bam_cigar_opchr(return_current ? cigar[pos] : cigar[len - pos - 1]);
-	}
+	int opAt(int pos) const { return bam_cigar_op(valueAt(pos)); }
 
-	int oplenAt(int pos) const {
-		assert(pos >= 0 && pos < len);
-		return bam_cigar_oplen(return_current ? cigar[pos] : cigar[len - pos - 1]);
-	}
+	char opchrAt(int pos) const { return bam_cigar_opchr(valueAt(pos)); }
+
+	int oplenAt(int pos) const { return bam_cigar_oplen(valueAt(pos)); }
 
 	// 0: consume nothing; 1: query; 2: reference; 3: both
-	int optypeAt(int pos) const {
-		return bam_cigar_type(opAt(pos));
-	}
+	int optypeAt(int pos) const { return bam_cigar_type(opAt(pos)); }
 	
 	// toString will reset dir
 	std::string toString(char dir = '+') {

@@ -48,6 +48,13 @@ bool BamAlignment::read(SamParser *in, BamAlignment *o) {
 		if (b2 == NULL) b2 = bam_init1();
 
 		general_assert(in->read(b2) && bam_is_paired(b2), "Fail to read the other mate for a paired-end alignment!");
+
+		if (!(((b->core.flag & 0x00C0) == 0x0040 && (b2->core.flag & 0x00C0) == 0x0080) || 
+			 ((b->core.flag & 0x00C0) == 0x0080 && (b2->core.flag & 0x00C0) == 0x0040))) {
+			printf("%s\n", bam_get_qname(b));
+			printf("%s\n", bam_get_qname(b2));
+		}
+
 		general_assert(((b->core.flag & 0x00C0) == 0x0040 && (b2->core.flag & 0x00C0) == 0x0080) || 
 			 ((b->core.flag & 0x00C0) == 0x0080 && (b2->core.flag & 0x00C0) == 0x0040), 
 			 "Cannot detect both mates of a paired-end alignment!");
@@ -126,4 +133,17 @@ void BamAlignment::decompress(bam1_t* b, bam1_t* other) {
 		copy_rc_seq(bam_get_seq(b), bam_get_seq(other), b->core.l_qseq); // copy reverse complement seq
 		copy_r_qual(bam_get_qual(b), bam_get_qual(other), b->core.l_qseq); // copy reverse qual
 	}
+}
+
+void BamAlignment::setConvertedInfo(int mate, int32_t tid, int32_t pos, bool is_rev, uint32_t n_cigar, const uint32_t* cigar) {
+	assert(mate == 1 || (is_paired && mate == 2));
+	bam1_t *bt = (mate == 1 ? b : b2);
+	bt->core.tid = tid;
+	bt->core.pos = pos;
+	bt->core.flag = (bt->core.flag ^ (bt->core.flag & BAM_FREVERSE)) | (is_rev ? BAM_FREVERSE : 0);
+	bt->l_data = bt->l_data - (bt->n_cigar<< 2) + (n_cigar << 2);
+	bt->n_cigar = n_cigar;
+	expand_data_size(bt);
+	if (is_rev) copy_r_cigar(bam_get_cigar(bt), cigar, n_cigar);
+	else memcpy(bam_get_cigar(bt), cigar, sizeof(uint32_t) * n_cigar);
 }
