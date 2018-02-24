@@ -20,6 +20,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <cctype>
 #include <cstring>
 #include <cstdint>
 #include <cassert>
@@ -103,6 +104,31 @@ bool BamAlignment::write(BamWriter *out, int choice, BamAlignment *o) {
 	return true;
 }
 
+void BamAlignment::setConvertedInfo(int mate, int32_t tid, int32_t pos, bool is_rev, uint32_t n_cigar, const uint32_t* cigar) {
+	assert(mate == 1 || (is_paired && mate == 2));
+	bam1_t *bt = (mate == 1 ? b : b2);
+	bt->core.tid = tid;
+	bt->core.pos = pos;
+	bt->core.flag = (bt->core.flag ^ (bt->core.flag & BAM_FREVERSE)) | (is_rev ? BAM_FREVERSE : 0);
+	bt->l_data = bt->l_data - (bt->n_cigar<< 2) + (n_cigar << 2);
+	bt->n_cigar = n_cigar;
+	expand_data_size(bt);
+	if (is_rev) copy_r_cigar(bam_get_cigar(bt), cigar, n_cigar);
+	else memcpy(bam_get_cigar(bt), cigar, sizeof(uint32_t) * n_cigar);
+}
+
+void BamAlignment::completeAlignment(const BamAlignment* o) {
+	transfer(b, o->b);
+	if (is_paired) transfer(b2, o->b2);
+	
+	if (is_aligned == 3) {
+		b->core.mtid = b2->core.tid; b2->core.mtid = b->core.tid;
+		b->core.mpos = b2->core.pos; b2->core.mpos = b->core.pos;
+		if (b->core.pos < b2->core.pos) { b->core.isize = bam_endpos(b2) - b->core.pos; b2->core.isize = -b->core.isize; }
+		else { b2->core.isize = bam_endpos(b) - b2->core.pos; b->core.isize = -b2->core.isize; }
+	}
+}
+
 void BamAlignment::compress(bam1_t* b) {
 	int l_aux = bam_get_l_aux(b);
 	memset(b->data, 0, 4);
@@ -114,7 +140,7 @@ void BamAlignment::compress(bam1_t* b) {
 	b->core.l_qseq = 0;
 }
 
-void BamAlignment::decompress(bam1_t* b, bam1_t* other) {
+void BamAlignment::decompress(bam1_t* b, const bam1_t* other) {
 	int l_aux = bam_get_l_aux(b);
 	b->core.l_qname = other->core.l_qname;
 	b->core.l_extranul = other->core.l_extranul;
@@ -135,15 +161,46 @@ void BamAlignment::decompress(bam1_t* b, bam1_t* other) {
 	}
 }
 
-void BamAlignment::setConvertedInfo(int mate, int32_t tid, int32_t pos, bool is_rev, uint32_t n_cigar, const uint32_t* cigar) {
-	assert(mate == 1 || (is_paired && mate == 2));
-	bam1_t *bt = (mate == 1 ? b : b2);
-	bt->core.tid = tid;
-	bt->core.pos = pos;
-	bt->core.flag = (bt->core.flag ^ (bt->core.flag & BAM_FREVERSE)) | (is_rev ? BAM_FREVERSE : 0);
-	bt->l_data = bt->l_data - (bt->n_cigar<< 2) + (n_cigar << 2);
-	bt->n_cigar = n_cigar;
-	expand_data_size(bt);
-	if (is_rev) copy_r_cigar(bam_get_cigar(bt), cigar, n_cigar);
-	else memcpy(bam_get_cigar(bt), cigar, sizeof(uint32_t) * n_cigar);
+void BamAlignment::transfer(bam1_t* b, const bam1_t* other) {
+	memcpy(bam_get_qname(b), bam_get_qname(other), b->core.l_qname); // copy qname
+	if (bam_is_unmapped(b) || bam_is_rev(b) == bam_is_rev(other)) {
+		memcpy(bam_get_seq(b), bam_get_seq(other), other->l_data - other->core.l_qname - other->core.n_cigar << 2); // copy seq-qual-aux
+	}
+	else {
+		copy_rc_seq(bam_get_seq(b), bam_get_seq(other), other->core.l_qseq); // copy reverse complement seq
+		copy_r_qual(bam_get_qual(b), bam_get_qual(other), other->core.l_qseq); // copy reverse qual
+		memcpy(bam_get_aux(b), bam_get_aux(other), bam_get_l_aux(other)); // copy aux
+		reverse_MD(b);
+	}
+}
+
+void BamAlignment::reverse_MD(bam1_t* b) {
+	uint8_t* p = bam_aux_get(b, "MD");
+	if (p == NULL) return;
+	char* mdstr = bam_aux2Z(p);
+	assert(mdstr != 0);
+
+	int len = strlen(mdstr), fr, to;
+	int rpos, rsize;
+	char* buffer = strdup(mdstr);
+
+	fr = to = 0; rpos = len - 1;
+	while (to < len) {
+		if (isdigit(buffer[to])) {
+			++to;
+			while (isdigit(buffer[to])) ++to;
+			rsize = to - fr;
+			for (int i = 1; i <= rsize; ++i) mdstr[rpos - rsize + i] = buffer[fr + i - 1];
+			rpos -= rsize;	
+		} 
+		else if (buffer[to] == '^') {
+			++to; assert(isalpha(buffer[to]));
+			mdstr[rpos - 1] = '^'; mdstr[rpos] = base2rbase[buffer[to++]];
+			rpos -= 2;
+		}
+		else mdstr[rpos--] = base2rbase[buffer[to++]];
+		fr = to;	
+	}
+
+	delete[] buffer;
 }

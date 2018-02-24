@@ -352,8 +352,8 @@ protected:
 
 
 	void compress(bam1_t* b); 	// compress a BAM record
-	void decompress(bam1_t* b, bam1_t* other); // decompress a BAM record
-	
+	void decompress(bam1_t* b, const bam1_t* other); // decompress a BAM record
+	void transfer(bam1_t* b, const bam1_t* other); // for gbam <-> tbam, transfer qname, seq, qual, and MD	
 	// Caution: this function may change b->data's adddress!  
 	void expand_data_size(bam1_t* b) {
 		if (b->m_data < b->l_data) {
@@ -383,6 +383,8 @@ protected:
 	void copy_r_cigar(uint32_t* dst, uint32_t* src, int n_cigar) {
 		for (int i = 0; i < n_cigar; ++i) dst[i] = src[n_cigar - i - 1];
 	}
+
+	void reverse_MD(bam1_t* b); // reverse the MD field
 };
 
 #endif

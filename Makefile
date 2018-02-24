@@ -34,7 +34,7 @@ SAMHEADERS = $(SAMTOOLS)/$(HTSLIB)/htslib/bgzf.h $(SAMTOOLS)/$(HTSLIB)/htslib/ht
 SAMLIBS = $(SAMTOOLS)/$(HTSLIB)/libhts.a
 CONFIGURE = ./configure
 
-OBJS1 = Transcript.o Transcripts.o RefSeq.o Refs.o GenomeMap.o buildRef.o SamParser.o BamWriter.o BamAlignment.o gbam2tbam.o
+OBJS1 = Transcript.o Transcripts.o RefSeq.o Refs.o GenomeMap.o buildRef.o SamHeaderText.o SamParser.o BamWriter.o BamAlignment.o gbam2tbam.o
 OBJS2 = parseIt.o
 # OBJS2 = buildReadIndex.o wiggle.o tbam2gbam.o bam2wig.o bam2readdepth.o getUnique.o samValidator.o scanForPairedEndReads.o SamHeader.o
 OBJS3 = EM.o Gibbs.o calcCI.o simulation.o
@@ -87,7 +87,7 @@ $(PROGS3) :
 
 # Dependencies for executables
 rsem-build-reference : buildRef.o Transcript.o Transcripts.o RefSeq.o Refs.o GenomeMap.o
-rsem-gbam2tbam : gbam2tbam.o $(SAMLIBS) Transcript.o Transcripts.o GenomeMap.o SEQstring.o SamParser.o BamWriter.o BamAlignment.o
+rsem-gbam2tbam : gbam2tbam.o $(SAMLIBS) Transcript.o Transcripts.o GenomeMap.o SEQstring.o SamHeaderText.o SamParser.o BamWriter.o BamAlignment.o
 
 rsem-simulate-reads : simulation.o
 
@@ -114,10 +114,11 @@ Refs.o : Refs.cpp utils.h my_assert.h RefSeq.hpp Refs.hpp
 GenomeMap.o : GenomeMap.cpp my_assert.h Transcript.hpp Transcripts.hpp GenomeMap.hpp 
 buildRef.o : buildRef.cpp utils.h my_assert.h GTFItem.h Transcript.hpp Transcripts.hpp RefSeq.hpp Refs.hpp GenomeMap.hpp
 SEQstring.o : SEQstring.cpp $(SAMHEADERS) SEQstring.hpp
-SamParser.o : SamParser.cpp $(SAMHEADERS) my_assert.h SamParser.hpp
-BamWriter.o : BamWriter.cpp $(SAMHEADERS) my_assert.h BamWriter.hpp
-BamAlignment.o : BamAlignment.cpp $(SAMHEADERS) my_assert.h CIGARstring.hpp SEQstring.hpp QUALstring.hpp MDstring.hpp SamParser.hpp BamWriter.hpp BamAlignment.hpp
-gbam2tbam.o : gbam2tbam.cpp $(SAMHEADERS) utils.h my_assert.h Transcript.hpp Transcripts.hpp GenomeMap.hpp CIGARstring.hpp SEQstring.hpp QUALstring.hpp MDstring.hpp SamParser.hpp BamWriter.hpp BamAlignment.hpp AlignmentGroup.hpp
+SamHeaderText.o : SamHeaderText.cpp $(SAMHEADERS) my_assert.h SamHeaderText.hpp
+SamParser.o : SamParser.cpp $(SAMHEADERS) my_assert.h SamHeaderText.hpp SamParser.hpp
+BamWriter.o : BamWriter.cpp $(SAMHEADERS) my_assert.h SamHeaderText.hpp BamWriter.hpp
+BamAlignment.o : BamAlignment.cpp $(SAMHEADERS) my_assert.h CIGARstring.hpp SEQstring.hpp QUALstring.hpp MDstring.hpp SamHeaderText.hpp SamParser.hpp BamWriter.hpp BamAlignment.hpp
+gbam2tbam.o : gbam2tbam.cpp $(SAMHEADERS) utils.h my_assert.h Transcript.hpp Transcripts.hpp GenomeMap.hpp CIGARstring.hpp SEQstring.hpp QUALstring.hpp MDstring.hpp SamHeaderText.hpp SamParser.hpp BamWriter.hpp BamAlignment.hpp AlignmentGroup.hpp
 
 
 
