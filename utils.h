@@ -31,8 +31,8 @@ typedef uint64_t HIT_INT_TYPE;
 typedef uint64_t READ_INT_TYPE;
 
 extern bool verbose; // show detail intermediate outputs
-const std::string version = "v2.0";
 
+const std::string VERSION = "v2.0";
 
 const int STRLEN = 10005 ;
 const double EPSILON = 1e-300;
@@ -63,6 +63,12 @@ inline std::string cleanStr(const std::string& str) {
 	while (to >= 0 && isspace(str[to])) --to;
 
 	return (fr <= to ? str.substr(fr, to - fr + 1) : "");
+}
+
+inline std::string generateCommand(int argc, char* argv[]) {
+	std::string command = argv[0];
+	for (int i = 1; i < argc; ++i) command += " " + argv[i];
+	return command;
 }
 
 static const char code2base[] = "ACGTN";

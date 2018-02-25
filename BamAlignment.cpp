@@ -27,6 +27,7 @@
 #include <string>
 #include <algorithm>
 
+#include "htslib/hts.h"
 #include "htslib/sam.h"
 
 #include "my_assert.h"
@@ -172,6 +173,9 @@ void BamAlignment::transfer(bam1_t* b, const bam1_t* other) {
 		memcpy(bam_get_aux(b), bam_get_aux(other), bam_get_l_aux(other)); // copy aux
 		reverse_MD(b);
 	}
+	if (bam_is_mapped(b)) {
+		b->core.bin = hts_reg2bin(b->core.pos, b->core.pos + bam_cigar2rlen(b->core.n_cigar, bam_get_cigar(b)), 14, 5);
+	}
 }
 
 void BamAlignment::reverse_MD(bam1_t* b) {
@@ -180,27 +184,38 @@ void BamAlignment::reverse_MD(bam1_t* b) {
 	char* mdstr = bam_aux2Z(p);
 	assert(mdstr != 0);
 
+	const uint32_t* cigar = bam_get_cigar(b);
+
 	int len = strlen(mdstr), fr, to;
-	int rpos, rsize;
+	int rpos, rsize, rc_pos;
 	char* buffer = strdup(mdstr);
 
-	fr = to = 0; rpos = len - 1;
+	fr = to = 0; rpos = len - 1; rc_pos = b->core.n_cigar - 1;
 	while (to < len) {
 		if (isdigit(buffer[to])) {
-			++to;
+			fr = to++;
 			while (isdigit(buffer[to])) ++to;
 			rsize = to - fr;
 			for (int i = 1; i <= rsize; ++i) mdstr[rpos - rsize + i] = buffer[fr + i - 1];
 			rpos -= rsize;	
 		} 
 		else if (buffer[to] == '^') {
-			++to; assert(isalpha(buffer[to]));
-			mdstr[rpos - 1] = '^'; mdstr[rpos] = base2rbase[buffer[to++]];
-			rpos -= 2;
+			while (rc_pos >= 0 && bam_cigar_op(cigar[rc_pos]) != BAM_CDEL) --rc_pos;
+			assert(rc_pos >= 0);
+
+			fr = ++to; 
+			rsize = bam_cigar_oplen(cigar[rc_pos]);
+			for (int i = 0; i < rsize; ++i) {
+				assert(isalpha(buffer[fr + i]));
+				mdstr[rpos--] = base2rbase[buffer[fr + i]];
+			}
+			mdstr[rpos--] = '^';
 		}
-		else mdstr[rpos--] = base2rbase[buffer[to++]];
-		fr = to;	
+		else {
+			assert(isalpha(buffer[to]));
+			mdstr[rpos--] = base2rbase[buffer[to++]];
+		}
 	}
 
-	delete[] buffer;
+	free(buffer);
 }

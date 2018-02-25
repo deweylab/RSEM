@@ -118,7 +118,7 @@ SamHeaderText.o : SamHeaderText.cpp $(SAMHEADERS) my_assert.h SamHeaderText.hpp
 SamParser.o : SamParser.cpp $(SAMHEADERS) my_assert.h SamHeaderText.hpp SamParser.hpp
 BamWriter.o : BamWriter.cpp $(SAMHEADERS) my_assert.h SamHeaderText.hpp BamWriter.hpp
 BamAlignment.o : BamAlignment.cpp $(SAMHEADERS) my_assert.h CIGARstring.hpp SEQstring.hpp QUALstring.hpp MDstring.hpp SamHeaderText.hpp SamParser.hpp BamWriter.hpp BamAlignment.hpp
-gbam2tbam.o : gbam2tbam.cpp $(SAMHEADERS) utils.h my_assert.h Transcript.hpp Transcripts.hpp GenomeMap.hpp CIGARstring.hpp SEQstring.hpp QUALstring.hpp MDstring.hpp SamHeaderText.hpp SamParser.hpp BamWriter.hpp BamAlignment.hpp AlignmentGroup.hpp
+gbam2tbam.o : gbam2tbam.cpp $(SAMHEADERS) utils.h my_assert.h Transcript.hpp Transcripts.hpp GenomeMap.hpp CIGARstring.hpp SEQstring.hpp QUALstring.hpp MDstring.hpp SamHeaderText.hpp SamParser.hpp BamWriter.hpp BamAlignment.hpp AlignmentGroup.hpp ConversionGroup.hpp
 
 
 
@@ -144,8 +144,7 @@ SamParser.hpp : $(SAMHEADERS) utils.h
 BamWriter.hpp : $(SAMHEADERS) my_assert.h
 BamAlignment.hpp : $(SAMHEADERS) my_assert.h CIGARstring.hpp SEQstring.hpp QUALstring.hpp MDstring.hpp SamParser.hpp BamWriter.hpp
 AlignmentGroup.hpp : $(SAMHEADERS) SEQstring.hpp QUALstring.hpp SamParser.hpp BamWriter.hpp BamAlignment.hpp
-
-
+ConversionGroup.hpp : $(SAMHEADERS) SEQstring.hpp QUALstring.hpp SamParser.hpp BamWriter.hpp BamAlignment.hpp AlignmentGroup.hpp
 
 WriteResults.h : utils.h my_assert.h GroupInfo.h Transcript.h Transcripts.h RefSeq.h Refs.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h
 bc_aux.h : $(SAMHEADERS)

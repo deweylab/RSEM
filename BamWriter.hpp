@@ -40,7 +40,7 @@ public:
 	~BamWriter();
 
 	// switch between genome references and transcriptome references
-	void replace_references(const char* faiF) {
+	void replaceReferences(const char* faiF) {
 		ht->replaceSQ(faiF);
 	}
 
@@ -49,7 +49,7 @@ public:
 		ht->addProgram(pid, version, command);
 	}
 
-	void write_header() {
+	void writeHeader() {
 		header = ht->create_header();
 		general_assert(sam_hdr_write(bam_out, header) == 0, "Cannot write header!");
 	}

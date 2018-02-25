@@ -52,7 +52,7 @@ int num_threads;
 htsThreadPool p = {NULL, 0};
 
 int M;
-char tiF[STRLEN], dupF[STRLEN], dupidF[STRLEN], genomeMapF[STRLEN];
+char tiF[STRLEN], dupF[STRLEN], dupidF[STRLEN], genomeMapF[STRLEN], transListF[STRLEN];
 Transcripts transcripts, dups;
 vector<int> dup_ids;
 GenomeMap genomeMap;
@@ -186,7 +186,7 @@ void convertCoord(int gpos, const Exon& exon, int ref_len, char dir, int& tid, i
 
 int main(int argc, char* argv[]) {
 	if (argc < 4) {
-		printf("Usage: gbam2tbam reference_name input.bam output.bam [-p num_threads]\n");
+		printf("Usage: rsem-gbam2tbam reference_name input.bam output.bam [-p num_threads]\n");
 		exit(-1);
 	}
 
@@ -200,6 +200,11 @@ int main(int argc, char* argv[]) {
 	if (num_threads > 1) assert(p.pool = hts_tpool_init(num_threads));
 
 	parser = new SamParser(argv[2], &p);
+	writer = new BamWriter(argv[3], parser->getHeader(), &p);
+	sprintf(transListF, "%s.translist", argv[1]);
+	writer->replaceReferences(transListF);
+	writer->addProgram("rsem-gbam2tbam", VERSION, generateCommand(argc, argv));
+	writer->writeHeader();
 
 	int s, pos1, pos2;
 	vector<Exon> list1, list2;
@@ -251,14 +256,14 @@ int main(int argc, char* argv[]) {
 					}
 				}
 			}
+			cg.write(writer);
 			cg.clear(); // clear for the next alignment group
 		}
+		else ag.write(writer);
 	}
 
-// tid, pos, cigar A &
-
 	delete parser;
-
+	delete writer;
 	if (num_threads > 1) hts_tpool_destroy(p.pool);
 
 	return 0;

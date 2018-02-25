@@ -44,8 +44,7 @@ public:
 			if (counter > 0) { --counter; return 0; }
 		}
 		if (*mdstr == 0) return -1; // end of the MD string
-		while (*mdstr == '^') ++mdstr;
-		assert(isalpha(*mdstr));
+		if (*mdstr == '^') ++mdstr; assert(isalpha(*mdstr));
 		return *mdstr++;
 	}
 	
