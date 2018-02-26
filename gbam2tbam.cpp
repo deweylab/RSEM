@@ -26,7 +26,6 @@
 #include <cassert>
 #include <vector>
 #include <fstream>
-#include <iostream>
 
 #include "htslib/sam.h"
 #include "htslib/thread_pool.h"
@@ -71,11 +70,11 @@ struct cigar_type {
 	cigar_type() {
 		n_cigar = 0;
 		max_size = STRLEN;
-		cigar = new uint32_t[max_size];
+		cigar = (uint32_t*)calloc(max_size, sizeof(uint32_t));
 		ref_len = 0;
 	}
 
-	~cigar_type { delete[] cigar; }
+	~cigar_type() { free(cigar); }
 
 	void set_ci(BamAlignment* ba, int mate) {
 		ba->getCIGAR(ci, mate);
@@ -85,15 +84,25 @@ struct cigar_type {
 	// calculate cigar info for transcripts
 	void calc_trans_cigar() {
 		int len = ci.getLen();
+		uint32_t value;
+		int op, oplen;
+
 		if (len > max_size) { max_size = len; kroundup32(max_size); cigar = (uint32_t*)realloc(cigar, sizeof(uint32_t) * max_size); }
 
 		ci.setDir('+');
 		n_cigar = 0; ref_len = 0;
-		for (int i = 0; i < len; ++i)
-			if (ci.opAt(i) != BAM_CREF_SKIP) {
-				cigar[n_cigar++] = ci.valueAt(i);
-				ref_len += (ci.optypeAt(i) & 2) ? ci.oplenAt(i) : 0; 
+		for (int i = 0; i < len; ++i) {
+			value = ci.valueAt(i);
+			op = bam_cigar_op(value);
+			oplen = bam_cigar_oplen(value);
+
+			if (op != BAM_CREF_SKIP) {
+				if (n_cigar > 0 && bam_cigar_op(cigar[n_cigar - 1]) == op)
+					cigar[n_cigar - 1] = bam_cigar_gen(bam_cigar_oplen(cigar[n_cigar - 1]) + oplen, op);
+				else cigar[n_cigar++] = value;
+				ref_len += (bam_cigar_type(op) & 2) ? oplen : 0;
 			}
+		}
 	}
 };
 
@@ -198,9 +207,8 @@ int main(int argc, char* argv[]) {
 	load_references(argv[1]);
 
 	if (num_threads > 1) assert(p.pool = hts_tpool_init(num_threads));
-
-	parser = new SamParser(argv[2], &p);
-	writer = new BamWriter(argv[3], parser->getHeader(), &p);
+	parser = new SamParser(argv[2], num_threads > 1 ? &p : NULL);
+	writer = new BamWriter(argv[3], parser->getHeader(), num_threads > 1 ? &p : NULL);
 	sprintf(transListF, "%s.translist", argv[1]);
 	writer->replaceReferences(transListF);
 	writer->addProgram("rsem-gbam2tbam", VERSION, generateCommand(argc, argv));
@@ -209,20 +217,28 @@ int main(int argc, char* argv[]) {
 	int s, pos1, pos2;
 	vector<Exon> list1, list2;
 	cigar_type c1, c2;
+	string iv_type1, iv_type2;
 	BamAlignment *ba, *nba;
 
 	int tid, tpos;
 	bool is_rev;
 
 	while (ag.read(parser)) {
+		// if (ag.getName() == "SRR1974543.4") {
+		// 	ba = ag.getAlignment(0);
+		// 	printf("%d\n", ba->b->core.n_cigar);
+		// 	exit(-1);			
+		// }
+
 		if (ag.isAligned()) {
+			int tns = 0;
 			for (int i = 0; i < ag.size(); ++i) {
 				ba = ag.getAlignment(i);
 				if (ba->isAligned() & 1) {
 					c1.set_ci(ba, 1);
 					pos1 = ba->getPos(1) + 1;
 					list1.clear();
-					const vector<Exon>& exon_list = genomeMap.getExonList(parser->getSeqName(ba->get_tid()), pos1);
+					const vector<Exon>& exon_list = genomeMap.getExonList(parser->getSeqName(ba->get_tid()), pos1, iv_type1);
 					for (int j = 0; j < (int)exon_list.size(); ++j) 
 						if (check_consistency(pos1, exon_list[j], c1.ci)) list1.push_back(exon_list[j]);
 				}
@@ -230,7 +246,7 @@ int main(int argc, char* argv[]) {
 					c2.set_ci(ba, 2);
 					pos2 = ba->getPos(2) + 1;
 					list2.clear();
-					const vector<Exon>& exon_list = genomeMap.getExonList(parser->getSeqName(ba->get_tid()), pos2);
+					const vector<Exon>& exon_list = genomeMap.getExonList(parser->getSeqName(ba->get_tid()), pos2, iv_type2);
 					for (int j = 0; j < (int)exon_list.size(); ++j) 
 						if (check_consistency(pos2, exon_list[j], c2.ci)) list2.push_back(exon_list[j]);
 				}
@@ -238,26 +254,33 @@ int main(int argc, char* argv[]) {
 				if (ba->isAligned() == 3) merge_candidates(list1, list2);
 
 				s = (ba->isAligned() & 1) ? list1.size() : list2.size();
+				tns += s;
 				if (s > 0) {
 					if (ba->isAligned() & 1) c1.calc_trans_cigar();
 					if (ba->isAligned() & 2) c2.calc_trans_cigar();
 
+					// if (!strcmp(ba->getName(), "SRR1974543.41")) printf("%s:", ba->getName());
 					for (int j = 0; j < s; ++j) {
 						nba = cg.getNewBA(ba);
+						// if (!strcmp(ba->getName(), "SRR1974543.41")) printf("\t(%d, %d, %d;", list1[j].tid, list1[j].eid, list2[j].eid);
 						if (ba->isAligned() & 1) {
 							convertCoord(pos1, list1[j], c1.ref_len, ba->getMateDir(1), tid, tpos, is_rev);
 							nba->setConvertedInfo(1, tid, tpos, is_rev, c1.n_cigar, c1.cigar);
 						}
+						// if (!strcmp(ba->getName(), "SRR1974543.41")) printf(" %d, %d, %d;", tid, tpos, is_rev);
 						if (ba->isAligned() & 2) {
 							convertCoord(pos2, list2[j], c2.ref_len, ba->getMateDir(2), tid, tpos, is_rev);
 							nba->setConvertedInfo(2, tid, tpos, is_rev, c2.n_cigar, c2.cigar);
 						}
-						cg.pushBackBA();
+						// if (!strcmp(ba->getName(), "SRR1974543.41")) printf(" %d, %d, %d)", tid, tpos, is_rev);
+						cg.pushBackBA(ba);
 					}
+					// if (!strcmp(ba->getName(), "SRR1974543.41")) printf("\n");
 				}
 			}
-			cg.write(writer);
-			cg.clear(); // clear for the next alignment group
+			if (cg.size() == 0) cg.asUnmap(ba, iv_type1, iv_type2);
+			cg.write(writer); 
+			cg.clear(); // clear for the next alignment group 
 		}
 		else ag.write(writer);
 	}

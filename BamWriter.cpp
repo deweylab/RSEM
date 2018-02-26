@@ -25,7 +25,7 @@
 #include "htslib/sam.h"
 
 #include "my_assert.h"
-#include "BamHeaderText.hpp"
+#include "SamHeaderText.hpp"
 #include "BamWriter.hpp"
 
 BamWriter::BamWriter(const char* outF, const bam_hdr_t* header, htsThreadPool* p) {

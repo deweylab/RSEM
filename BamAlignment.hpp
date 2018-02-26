@@ -88,9 +88,13 @@ public:
 		is_paired = o->is_paired;
 		is_aligned = o->is_aligned;
 		if (b == NULL) b = bam_init1();
-		if (is_paried && b2 == NULL) b2 = bam_init1();
-		b->core = o->b->core;
-		if (is_paired) b2->core = o->b2->core;
+		if (is_paired && b2 == NULL) b2 = bam_init1();
+		b->core = o->b->core; 
+		b->l_data = o->b->l_data;
+		if (is_paired) {
+			b2->core = o->b2->core;
+			b2->l_data = o->b2->l_data;
+		}
 	}
 
 	/*
@@ -234,7 +238,9 @@ public:
 	void setConvertedInfo(int mate, int32_t tid, int32_t pos, bool is_rev, uint32_t n_cigar, const uint32_t* cigar);
 	// fill in sequence, qual etc. using o as a template
 	void completeAlignment(const BamAlignment* o);
-	
+	// set this alignment as unmapped, using o as a template
+	void asUnmap(const BamAlignment* o, const std::string& str1, const std::string& str2);
+
 	// optional fields
 	void removeTag(const char tag[2]) {
 		uint8_t *p_tag = NULL;
@@ -315,7 +321,7 @@ public:
 		setMapQ(frac2MapQ(frac));
 	}
 
-protected:
+// protected:
 	static const uint8_t rnt_table[16];
 
 	bool is_paired;
@@ -380,7 +386,7 @@ protected:
 	}
 
 	// copy reverse cigar string
-	void copy_r_cigar(uint32_t* dst, uint32_t* src, int n_cigar) {
+	void copy_r_cigar(uint32_t* dst, const uint32_t* src, int n_cigar) {
 		for (int i = 0; i < n_cigar; ++i) dst[i] = src[n_cigar - i - 1];
 	}
 

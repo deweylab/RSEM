@@ -30,6 +30,7 @@
 #include "htslib/hts.h"
 #include "htslib/sam.h"
 
+#include "utils.h"
 #include "my_assert.h"
 #include "SamParser.hpp"
 #include "BamWriter.hpp"
@@ -111,8 +112,8 @@ void BamAlignment::setConvertedInfo(int mate, int32_t tid, int32_t pos, bool is_
 	bt->core.tid = tid;
 	bt->core.pos = pos;
 	bt->core.flag = (bt->core.flag ^ (bt->core.flag & BAM_FREVERSE)) | (is_rev ? BAM_FREVERSE : 0);
-	bt->l_data = bt->l_data - (bt->n_cigar<< 2) + (n_cigar << 2);
-	bt->n_cigar = n_cigar;
+	bt->l_data = bt->l_data - (bt->core.n_cigar<< 2) + (n_cigar << 2);
+	bt->core.n_cigar = n_cigar;
 	expand_data_size(bt);
 	if (is_rev) copy_r_cigar(bam_get_cigar(bt), cigar, n_cigar);
 	else memcpy(bam_get_cigar(bt), cigar, sizeof(uint32_t) * n_cigar);
@@ -127,6 +128,49 @@ void BamAlignment::completeAlignment(const BamAlignment* o) {
 		b->core.mpos = b2->core.pos; b2->core.mpos = b->core.pos;
 		if (b->core.pos < b2->core.pos) { b->core.isize = bam_endpos(b2) - b->core.pos; b2->core.isize = -b->core.isize; }
 		else { b2->core.isize = bam_endpos(b) - b2->core.pos; b->core.isize = -b2->core.isize; }
+		b->core.flag = (b->core.flag ^ (b->core.flag & BAM_FMREVERSE)) | (bam_is_rev(b2) ? BAM_FMREVERSE : 0);
+		b2->core.flag = (b2->core.flag ^ (b2->core.flag & BAM_FMREVERSE)) | (bam_is_rev(b) ? BAM_FMREVERSE : 0);
+	}
+}
+
+void BamAlignment::asUnmap(const BamAlignment* o, const std::string& str1, const std::string& str2) {
+	is_paired = o->is_paired;
+	is_aligned = 0;
+	if (b == NULL) b = bam_init1();
+	if (is_paired && b2 == NULL) b2 = bam_init1();
+
+	b->core.tid = b->core.pos = b->core.mtid = b->core.mpos = -1; b->core.isize = 0;
+	b->core.bin = 0; b->core.qual = b->core.unused1 = 0; b->core.n_cigar = 0;
+	b->core.l_qname = o->b->core.l_qname; b->core.l_extranul = o->b->core.l_extranul; b->core.l_qseq = o->b->core.l_qseq;
+	b->core.flag = (o->b->core.flag & 0x06C1) | BAM_FUNMAP | (is_paired ? BAM_FMUNMAP : 0); // 0x06C1 = 0x0001, 0x0040, 0x0080, 0x0200, 0x0400
+	b->l_data = b->core.l_qname + ((b->core.l_qseq + 1)>> 1) + b->core.l_qseq;
+	expand_data_size(b);
+	memcpy(bam_get_qname(b), bam_get_qname(o->b), b->core.l_qname); // copy qname
+	if (!bam_is_rev(o->b)) {
+		memcpy(bam_get_seq(b), bam_get_seq(o->b), ((b->core.l_qseq + 1)>> 1) + b->core.l_qseq); // copy seq + qual
+	}
+	else {
+		copy_rc_seq(bam_get_seq(b), bam_get_seq(o->b), b->core.l_qseq); // copy reverse complement seq
+		copy_r_qual(bam_get_qual(b), bam_get_qual(o->b), b->core.l_qseq); // copy reverse qual
+	}
+	bam_aux_append(b, "ZG", 'Z', str1.length() + 1, (uint8_t*)str1.c_str()); // append read type tag
+
+	if (is_paired) {
+		b2->core.tid = b2->core.pos = b2->core.mtid = b2->core.mpos = -1; b2->core.isize = 0;
+		b2->core.bin = 0; b2->core.qual = b2->core.unused1 = 0; b2->core.n_cigar = 0;
+		b2->core.l_qname = o->b2->core.l_qname; b2->core.l_extranul = o->b2->core.l_extranul; b2->core.l_qseq = o->b2->core.l_qseq;
+		b2->core.flag = (o->b2->core.flag & 0x06C1) | BAM_FUNMAP | (is_paired ? BAM_FMUNMAP : 0); // 0x06C1 = 0x0001, 0x0040, 0x0080, 0x0200, 0x0400
+		b2->l_data = b2->core.l_qname + ((b2->core.l_qseq + 1)>> 1) + b2->core.l_qseq;
+		expand_data_size(b2);
+		memcpy(bam_get_qname(b2), bam_get_qname(o->b2), b2->core.l_qname); // copy qname
+		if (!bam_is_rev(o->b2)) {
+			memcpy(bam_get_seq(b2), bam_get_seq(o->b2), ((b2->core.l_qseq + 1)>> 1) + b2->core.l_qseq); // copy seq + qual
+		}
+		else {
+			copy_rc_seq(bam_get_seq(b2), bam_get_seq(o->b2), b2->core.l_qseq); // copy reverse complement seq
+			copy_r_qual(bam_get_qual(b2), bam_get_qual(o->b2), b2->core.l_qseq); // copy reverse qual			
+		}
+		bam_aux_append(b2, "ZG", 'Z', str2.length() + 1, (uint8_t*)str2.c_str()); // append read type tag
 	}
 }
 
@@ -165,7 +209,7 @@ void BamAlignment::decompress(bam1_t* b, const bam1_t* other) {
 void BamAlignment::transfer(bam1_t* b, const bam1_t* other) {
 	memcpy(bam_get_qname(b), bam_get_qname(other), b->core.l_qname); // copy qname
 	if (bam_is_unmapped(b) || bam_is_rev(b) == bam_is_rev(other)) {
-		memcpy(bam_get_seq(b), bam_get_seq(other), other->l_data - other->core.l_qname - other->core.n_cigar << 2); // copy seq-qual-aux
+		memcpy(bam_get_seq(b), bam_get_seq(other), other->l_data - other->core.l_qname - (other->core.n_cigar << 2)); // copy seq-qual-aux
 	}
 	else {
 		copy_rc_seq(bam_get_seq(b), bam_get_seq(other), other->core.l_qseq); // copy reverse complement seq
@@ -205,6 +249,7 @@ void BamAlignment::reverse_MD(bam1_t* b) {
 
 			fr = ++to; 
 			rsize = bam_cigar_oplen(cigar[rc_pos]);
+			to += rsize;
 			for (int i = 0; i < rsize; ++i) {
 				assert(isalpha(buffer[fr + i]));
 				mdstr[rpos--] = base2rbase[buffer[fr + i]];
@@ -216,6 +261,5 @@ void BamAlignment::reverse_MD(bam1_t* b) {
 			mdstr[rpos--] = base2rbase[buffer[to++]];
 		}
 	}
-
 	free(buffer);
 }

@@ -43,8 +43,6 @@ SamParser::SamParser(const char* inpF, htsThreadPool* p) {
 	general_assert(header != 0, "Fail to parse the header!");
 	ht = new SamHeaderText(header);
 
-	memset(program_id, 0, sizeof(program_id));
-
 	if (p != NULL) hts_set_opt(sam_in, HTS_OPT_THREAD_POOL, p);
 }
 

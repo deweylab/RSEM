@@ -40,9 +40,9 @@ struct Signature {
 	bool operator< (const Signature& o) const { return (*ba) < (*o.ba); }
 };
 
-class ConvertionGroup : public AlignmentGroup {
+class ConversionGroup : public AlignmentGroup {
 public:
-	ConvertionGroup() { has_seen.clear(); }
+	ConversionGroup() { has_seen.clear(); }
 
 	void clear() {
 		s = 0;
@@ -52,14 +52,21 @@ public:
 	// get new BamAlignment
 	BamAlignment* getNewBA(const BamAlignment* o) { 
 		allocate();
-		alignments[s].init_with(o);
+		alignments[s]->init_with(o);
 		return alignments[s];
 	}
 
 	void pushBackBA(const BamAlignment *o) {
 		if (has_seen.insert(Signature(alignments[s])).second) {
-			alignments[s++].completeAlignment(o);
+			alignments[s++]->completeAlignment(o);
 		}
+	}
+
+	void asUnmap(const BamAlignment *o, const std::string& iv_type1, const std::string& iv_type2) {
+		assert(s == 0);
+		allocate();
+		alignments[0]->asUnmap(o, iv_type1, iv_type2);
+		++s;
 	}
 
 private:

@@ -82,12 +82,13 @@ public:
 	void writeTo(const char* outF);
 
 	// pos is one-based
-	const std::vector<Exon>& getExonList(const std::string& chrname, int pos) {
+	const std::vector<Exon>& getExonList(const std::string& chrname, int pos, std::string& iv_type) {
 		g_it = genomeMap.find(chrname);
 		if (g_it == genomeMap.end()) return empty;
 		Chrom& chrom = g_it->second;
 		int idx = binary_search(chrom.coords, pos);
-		if (idx < 0) return empty;
+		if (idx < 0) { iv_type = "intergenic_region"; return empty; }
+		else iv_type = chrom.types[idx];
 		return chrom.exons[idx];
 	}
 
@@ -103,7 +104,7 @@ private:
 
 		l = 0; r = coords.size() - 1;
 		while (l <= r) {
-			mid = (l + r) / 2;
+			mid = (l + r) >> 1;
 			if (pos >= coords[mid]) l = mid + 1;
 			else r = mid - 1;
 		}
