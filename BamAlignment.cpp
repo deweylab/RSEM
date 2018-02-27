@@ -119,9 +119,9 @@ void BamAlignment::setConvertedInfo(int mate, int32_t tid, int32_t pos, bool is_
 	else memcpy(bam_get_cigar(bt), cigar, sizeof(uint32_t) * n_cigar);
 }
 
-void BamAlignment::completeAlignment(const BamAlignment* o) {
-	transfer(b, o->b);
-	if (is_paired) transfer(b2, o->b2);
+void BamAlignment::completeAlignment(const BamAlignment* o, bool is_secondary) {
+	transfer(b, o->b, is_secondary);
+	if (is_paired) transfer(b2, o->b2, is_secondary);
 	
 	if (is_aligned == 3) {
 		b->core.mtid = b2->core.tid; b2->core.mtid = b->core.tid;
@@ -206,7 +206,7 @@ void BamAlignment::decompress(bam1_t* b, const bam1_t* other) {
 	}
 }
 
-void BamAlignment::transfer(bam1_t* b, const bam1_t* other) {
+void BamAlignment::transfer(bam1_t* b, const bam1_t* other, bool is_secondary) {
 	memcpy(bam_get_qname(b), bam_get_qname(other), b->core.l_qname); // copy qname
 	if (bam_is_unmapped(b) || bam_is_rev(b) == bam_is_rev(other)) {
 		memcpy(bam_get_seq(b), bam_get_seq(other), other->l_data - other->core.l_qname - (other->core.n_cigar << 2)); // copy seq-qual-aux
@@ -218,6 +218,7 @@ void BamAlignment::transfer(bam1_t* b, const bam1_t* other) {
 		reverse_MD(b);
 	}
 	if (bam_is_mapped(b)) {
+		if (is_secondary) b->core.flag |= BAM_FSECONDARY;
 		b->core.bin = hts_reg2bin(b->core.pos, b->core.pos + bam_cigar2rlen(b->core.n_cigar, bam_get_cigar(b)), 14, 5);
 	}
 }

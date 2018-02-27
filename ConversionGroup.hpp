@@ -58,7 +58,7 @@ public:
 
 	void pushBackBA(const BamAlignment *o) {
 		if (has_seen.insert(Signature(alignments[s])).second) {
-			alignments[s++]->completeAlignment(o);
+			alignments[s++]->completeAlignment(o, has_seen.size() > 1);
 		}
 	}
 

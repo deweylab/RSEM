@@ -90,9 +90,11 @@ public:
 		if (b == NULL) b = bam_init1();
 		if (is_paired && b2 == NULL) b2 = bam_init1();
 		b->core = o->b->core; 
+		b->core.flag ^= (b->core.flag & BAM_FSECONDARY);
 		b->l_data = o->b->l_data;
 		if (is_paired) {
 			b2->core = o->b2->core;
+			b2->core.flag ^= (b2->core.flag & BAM_FSECONDARY);
 			b2->l_data = o->b2->l_data;
 		}
 	}
@@ -237,7 +239,7 @@ public:
 	// set up converted info for gbam -> tbam or tbam -> gbam
 	void setConvertedInfo(int mate, int32_t tid, int32_t pos, bool is_rev, uint32_t n_cigar, const uint32_t* cigar);
 	// fill in sequence, qual etc. using o as a template
-	void completeAlignment(const BamAlignment* o);
+	void completeAlignment(const BamAlignment* o, bool is_secondary);
 	// set this alignment as unmapped, using o as a template
 	void asUnmap(const BamAlignment* o, const std::string& str1, const std::string& str2);
 
@@ -359,7 +361,7 @@ public:
 
 	void compress(bam1_t* b); 	// compress a BAM record
 	void decompress(bam1_t* b, const bam1_t* other); // decompress a BAM record
-	void transfer(bam1_t* b, const bam1_t* other); // for gbam <-> tbam, transfer qname, seq, qual, and MD	
+	void transfer(bam1_t* b, const bam1_t* other, bool is_secondary); // for gbam <-> tbam, transfer qname, seq, qual, and MD	
 	// Caution: this function may change b->data's adddress!  
 	void expand_data_size(bam1_t* b) {
 		if (b->m_data < b->l_data) {
