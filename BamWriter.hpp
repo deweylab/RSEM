@@ -54,6 +54,8 @@ public:
 		general_assert(sam_hdr_write(bam_out, header) == 0, "Cannot write header!");
 	}
 	
+	int name2id(const char* ref) { return bam_name2id(header, ref); }
+
 	void write(bam1_t* b) {
 		general_assert(sam_write1(bam_out, header, b) >= 0, "Fail to write alignments to BAM file!");    
 	}

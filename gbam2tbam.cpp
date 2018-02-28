@@ -32,6 +32,7 @@
 
 #include "utils.h"
 #include "my_assert.h"
+#include "Transcript.hpp"
 #include "Transcripts.hpp"
 #include "GenomeMap.hpp"
 #include "SamParser.hpp"
@@ -224,14 +225,7 @@ int main(int argc, char* argv[]) {
 	bool is_rev;
 
 	while (ag.read(parser)) {
-		// if (ag.getName() == "SRR1974543.4") {
-		// 	ba = ag.getAlignment(0);
-		// 	printf("%d\n", ba->b->core.n_cigar);
-		// 	exit(-1);			
-		// }
-
 		if (ag.isAligned()) {
-			int tns = 0;
 			for (int i = 0; i < ag.size(); ++i) {
 				ba = ag.getAlignment(i);
 				if (ba->isAligned() & 1) {
@@ -250,32 +244,25 @@ int main(int argc, char* argv[]) {
 					for (int j = 0; j < (int)exon_list.size(); ++j) 
 						if (check_consistency(pos2, exon_list[j], c2.ci)) list2.push_back(exon_list[j]);
 				}
-
 				if (ba->isAligned() == 3) merge_candidates(list1, list2);
 
 				s = (ba->isAligned() & 1) ? list1.size() : list2.size();
-				tns += s;
 				if (s > 0) {
 					if (ba->isAligned() & 1) c1.calc_trans_cigar();
 					if (ba->isAligned() & 2) c2.calc_trans_cigar();
 
-					// if (!strcmp(ba->getName(), "SRR1974543.41")) printf("%s:", ba->getName());
 					for (int j = 0; j < s; ++j) {
 						nba = cg.getNewBA(ba);
-						// if (!strcmp(ba->getName(), "SRR1974543.41")) printf("\t(%d, %d, %d;", list1[j].tid, list1[j].eid, list2[j].eid);
 						if (ba->isAligned() & 1) {
 							convertCoord(pos1, list1[j], c1.ref_len, ba->getMateDir(1), tid, tpos, is_rev);
 							nba->setConvertedInfo(1, tid, tpos, is_rev, c1.n_cigar, c1.cigar);
 						}
-						// if (!strcmp(ba->getName(), "SRR1974543.41")) printf(" %d, %d, %d;", tid, tpos, is_rev);
 						if (ba->isAligned() & 2) {
 							convertCoord(pos2, list2[j], c2.ref_len, ba->getMateDir(2), tid, tpos, is_rev);
 							nba->setConvertedInfo(2, tid, tpos, is_rev, c2.n_cigar, c2.cigar);
 						}
-						// if (!strcmp(ba->getName(), "SRR1974543.41")) printf(" %d, %d, %d)", tid, tpos, is_rev);
 						cg.pushBackBA(ba);
 					}
-					// if (!strcmp(ba->getName(), "SRR1974543.41")) printf("\n");
 				}
 			}
 			if (cg.size() == 0) cg.asUnmap(ba, iv_type1, iv_type2);

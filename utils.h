@@ -23,9 +23,9 @@
 
 #include <cmath>
 #include <cctype>
+#include <cstdint>
 #include <string>
 #include <vector>
-#include <stdint.h>
 
 typedef uint64_t HIT_INT_TYPE;
 typedef uint64_t READ_INT_TYPE;
