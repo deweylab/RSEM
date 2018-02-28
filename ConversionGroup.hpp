@@ -27,7 +27,8 @@
 #include <cstdlib>
 #include <cassert>
 #include <vector>
-#include <set>
+#include <map>
+#include <utility>
 
 #include "BamAlignment.hpp"
 #include "AlignmentGroup.hpp"
@@ -35,6 +36,7 @@
 struct Signature {
 	BamAlignment *ba;
 
+	Signature() : ba(NULL) {}
 	Signature(BamAlignment *ba) : ba(ba) {}
 
 	bool operator< (const Signature& o) const { return (*ba) < (*o.ba); }
@@ -42,12 +44,7 @@ struct Signature {
 
 class ConversionGroup : public AlignmentGroup {
 public:
-	ConversionGroup() { has_seen.clear(); }
-
-	void clear() {
-		s = 0;
-		has_seen.clear();
-	}
+	ConversionGroup() { s = 0; align2pos.clear(); fracs.clear(); }
 
 	// get new BamAlignment
 	BamAlignment* getNewBA(const BamAlignment* o) { 
@@ -56,10 +53,22 @@ public:
 		return alignments[s];
 	}
 
-	void pushBackBA(const BamAlignment *o) {
-		if (has_seen.insert(Signature(alignments[s])).second) {
-			alignments[s++]->completeAlignment(o, has_seen.size() > 1);
+	void pushBackBA(const BamAlignment *o, double frac, char strand = '.') {
+		pair.first.ba = alignments[s];
+		pair.second = s;
+		ret = align2pos.insert(pair);
+		if (ret.second) {
+			alignments[s]->completeAlignment(o, s > 0);
+			if (strand == '+' || strand == '-') { // insert XS:A tag
+				if (alignments[s]->isAligned() & 1) alignments[s]->insertTag("XS", 'A', 1, (uint8_t*)&strand, 1);
+				if (alignments[s]->isAligned() & 2) alignments[s]->insertTag("XS", 'A', 1, (uint8_t*)&strand, 2);
+			}
+			++s;
+			if (frac >= 0.0) fracs.push_back(frac);
 		}
+		else {
+			if (frac >= 0.0) fracs[ret.first->second] += frac;
+		} 
 	}
 
 	void asUnmap(const BamAlignment *o, const std::string& iv_type1, const std::string& iv_type2) {
@@ -69,8 +78,19 @@ public:
 		++s;
 	}
 
+	void wrapUp() {
+		if (fracs.size() > 0) {
+			assert(s == fracs.size());
+			for (int i = 0; i < s; ++i) alignments[i]->setFrac(fracs[i]);
+		}
+		s = 0; align2pos.clear(); fracs.clear();
+	}
+
 private:
-	std::set<Signature> has_seen; // if we have seen this alignment
+	std::map<Signature, int> align2pos; // a map from alignment to position in the group, used to remove duplicated alignments
+	std::vector<double> fracs; // stores the ZW values
+	std::pair<Signature, int> pair;
+	std::pair<std::map<Signature, int>::iterator, bool> ret;
 };
 
 #endif

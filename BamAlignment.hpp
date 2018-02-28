@@ -24,6 +24,7 @@
 #include <cmath>
 #include <cassert>
 #include <cstdint>
+#include <cstring>
 #include <string>
 #include <algorithm>
 
@@ -244,12 +245,65 @@ public:
 	void asUnmap(const BamAlignment* o, const std::string& str1, const std::string& str2);
 
 	// optional fields
-	void removeTag(const char tag[2]) {
+	char tag2A(const uint8_t* p) const { return bam_aux2A(p); }
+	int tag2i(const uint8_t* p) const { return bam_aux2i(p); }
+	unsigned int tag2u(const uint8_t* p) const { return bam_aux2i(p); }	
+	double tag2f(const uint8_t* p) const { return bam_aux2f(p); }
+	char* tag2Z(const uint8_t* p) const { return bam_aux2Z(p); }
+
+	// type can be either 'f': float, 'i': signed int, 'u': unsigned int, 'Z': char array, 'A': char, or 'B' : byte array
+	bool findTag(const char tag[2], uint8_t*& p, char& type, int mate = 1) {
+		assert(mate == 1 || (is_paired && mate == 2));
+		p = bam_aux_get((mate == 1 ? b : b2), tag);
+		if (p == NULL) return false;
+		type = *p;
+		if (type == 'c' || type == 's' || type == 'i') type = 'i';
+		else if (type == 'C' || type == 'S' || type == 'I') type = 'u';
+		else if (type == 'd' || type == 'f') type = 'f';
+		else assert(type == 'A' || type == 'Z' || type == 'H' || type == 'B');
+		return true;
+	}
+
+	void insertTag(const char tag[2], char type, int len, const uint8_t *data, int mate = 0) {
+		uint8_t *p_tag = NULL;
+		int old_len, delta, rest_len;
+
+		if (mate != 2) {
+			p_tag = bam_aux_get(b, tag);
+			if (p_tag == NULL) bam_aux_append(b, tag, type, len, data);
+			else {
+				assert(*p_tag == type);
+				old_len = bam_aux_type2size(*p_tag, p_tag);
+				delta = p_tag - b->data;
+				rest_len = b->l_data - (delta + 1 + old_len);
+				b->l_data += len - old_len; expand_data_size(b);
+				p_tag = b->data + delta; // reassign since expand_data_size might realloc b->data
+				if (diff_len != 0 && rest_len > 0) memmove(p_tag + 1 + len, p_tag + 1 + old_len, rest_len);
+				memcpy(p_tag + 1, data, len);
+			}			
+		}
+
+		if (is_paired && mate != 1) {
+			p_tag = bam_aux_get(b2, tag);
+			if (p_tag == NULL) bam_aux_append(b2, tag, type, len, data);
+			else {
+				assert(*p_tag == type);
+				old_len = bam_aux_type2size(*p_tag, p_tag);
+				delta = p_tag - b->data;
+				rest_len = b->l_data - (delta + 1 + old_len);
+				b->l_data += len - old_len; expand_data_size(b);
+				p_tag = b->data + delta; // reassign since expand_data_size might realloc b->data
+				if (diff_len != 0 && rest_len > 0) memmove(p_tag + 1 + len, p_tag + 1 + old_len, rest_len);
+				memcpy(p_tag + 1, data, len);
+			}
+		}
+	}
+
+	void removeTag(const char tag[2], int mate = 0) {
 		uint8_t *p_tag = NULL;
 
-		while ((p_tag = bam_aux_get(b, tag)) != NULL) bam_aux_del(b, p_tag);
-		if (is_paired) 
-			while ((p_tag = bam_aux_get(b2, tag)) != NULL) bam_aux_del(b2, p_tag);
+		if (mate != 2 && (p_tag = bam_aux_get(b, tag)) != NULL) bam_aux_del(b, p_tag);
+		if (is_paired && mate != 1 && (p_tag = bam_aux_get(b2, tag)) != NULL) bam_aux_del(b2, p_tag);
 	}
 
 	/*
@@ -259,71 +313,25 @@ public:
 		return bam_aux_get(b, "ZF") != NULL;
 	}
 
-	/*
-		@func   this function append a ZF:A:! field to indicate this alignment is filtered out if it is not marked before
-	 */
+	//this function append a ZF:A:! field to indicate this alignment is filtered out if it is not marked before
 	void markAsFiltered() {
-		char c = '!';
-		uint8_t *p_tag = NULL;
-
-		p_tag = bam_aux_get(b, "ZF");
-		if (p_tag == NULL) bam_aux_append(b, "ZF", 'A', bam_aux_type2size('A'), (uint8_t*)&c);
-		if (is_paired) {
-			p_tag = bam_aux_get(b2, "ZF");
-			if (p_tag == NULL) bam_aux_append(b2, "ZF", 'A', bam_aux_type2size('A'), (uint8_t*)&c);
-		}
+		insertTag("ZF", 'A', bam_aux_type2size('A'), (uint8_t*)&'!');
 	}
-
-	bool findTag(const char tag[2], uint8_t*& p, char& type, int mate = 1) {
-		assert(mate == 1 || (is_paired && mate == 2));
-		p = bam_aux_get((mate == 1 ? b : b2), tag);
-		if (p == NULL) return false;
-		type = *p;
-		if (type == 'c' || type == 'C' || type == 's' || type == 'S' || type == 'I') type = 'i';
-		assert(type == 'A' || type == 'i' || type == 'f' || type == 'd' || type == 'Z' || type == 'H' || type == 'B');
-		return true;
-	}
-
-	// no check, must guarantee the type is consistent
-	char tag2A(const uint8_t* p) const { return bam_aux2A(p); }
-	int tag2i(const uint8_t* p) const { return bam_aux2i(p); }
-	float tag2f(const uint8_t* p) const { return bam_aux2f(p); }
-	double tag2d(const uint8_t* p) const { return bam_aux2f(p); }
-	char* tag2Z(const uint8_t* p) const { return bam_aux2Z(p); }
-	char* tag2H(const uint8_t* p) const { return bam_aux2Z(p); }
-	char* tag2B(const uint8_t* p) const { return (char*)(p + 1); }
 
 	// If no ZW field, return -1.0
-	float getFrac() {
+	double getFrac() {
+		if (is_aligned == 0) return -1.0;
 		uint8_t *p_tag = bam_aux_get(((is_aligned & 1) ? b : b2), "ZW");
 		return p_tag != NULL ? bam_aux2f(p_tag) : -1.0;
 	}
-	  
+
 	void setFrac(float frac) {
-		uint8_t *p_tag = NULL;
-
-		if (bam_is_mapped(b)) {
-	    	p_tag = bam_aux_get(b, "ZW");
-	    	if (p_tag != NULL) {
-				memcpy(p_tag + 1, (uint8_t*)&(frac), bam_aux_type2size('f'));
-	      	} else {
-				bam_aux_append(b, "ZW", 'f', bam_aux_type2size('f'), (uint8_t*)&frac);
-	      	}
-	    }
-	    
-	    if (is_paired && bam_is_mapped(b2)) {
-	    	p_tag = bam_aux_get(b2, "ZW");
-	    	if (p_tag != NULL) {
-				memcpy(p_tag + 1, (uint8_t*)&(frac), bam_aux_type2size('f'));
-	    	} else {
-				bam_aux_append(b2, "ZW", 'f', bam_aux_type2size('f'), (uint8_t*)&frac);
-	    	}
-	    }
-
+		if (is_aligned & 1) insertTag("ZW", 'f', bam_aux_type2size('f'), (uint8_t*)&frac);
+		if (is_aligned & 2) insertTag("ZW", 'f', bam_aux_type2size('f'), (uint8_t*)&frac);
 		setMapQ(frac2MapQ(frac));
 	}
 
-// protected:
+private:
 	static const uint8_t rnt_table[16];
 
 	bool is_paired;
@@ -339,12 +347,16 @@ public:
 	bool bam_is_read1(const bam1_t* b) const { return (b->core.flag & BAM_FREAD1); }
 	bool bam_is_read2(const bam1_t* b) const { return (b->core.flag & BAM_FREAD2); }
 	
-	int bam_aux_type2size(char x) {
+	int bam_aux_type2size(char x, const uint8_t* p = NULL) {
 		if (x == 'C' || x == 'c' || x == 'A') return 1;
 		else if (x == 'S' || x == 's') return 2;
 		else if (x == 'I' || x == 'i' || x == 'f') return 4;
 		else if (x == 'd') return 8;
-		else return 0;
+		else if (x == 'Z' || x == 'H') { assert(p != NULL); return strlen(p + 1); }
+		else {
+			assert(x == 'B' && p != NULL);
+			return 1 + 4 + bam_auxB_len(p) * bam_aux_type2size(*(p + 1));
+		}
 	}
 
 	uint8_t frac2MapQ(float val) {

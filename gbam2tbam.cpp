@@ -223,6 +223,7 @@ int main(int argc, char* argv[]) {
 
 	int tid, tpos;
 	bool is_rev;
+	double frac;
 
 	while (ag.read(parser)) {
 		if (ag.isAligned()) {
@@ -251,6 +252,9 @@ int main(int argc, char* argv[]) {
 					if (ba->isAligned() & 1) c1.calc_trans_cigar();
 					if (ba->isAligned() & 2) c2.calc_trans_cigar();
 
+					frac = ba->getFrac(); 
+					if (frac > 0.0) frac /= s;
+
 					for (int j = 0; j < s; ++j) {
 						nba = cg.getNewBA(ba);
 						if (ba->isAligned() & 1) {
@@ -261,13 +265,13 @@ int main(int argc, char* argv[]) {
 							convertCoord(pos2, list2[j], c2.ref_len, ba->getMateDir(2), tid, tpos, is_rev);
 							nba->setConvertedInfo(2, tid, tpos, is_rev, c2.n_cigar, c2.cigar);
 						}
-						cg.pushBackBA(ba);
+						cg.pushBackBA(ba, frac);
 					}
 				}
 			}
 			if (cg.size() == 0) cg.asUnmap(ba, iv_type1, iv_type2);
 			cg.write(writer); 
-			cg.clear(); // clear for the next alignment group 
+			cg.wrapUp(); // wrap up for this alignment and prepare for the next one
 		}
 		else ag.write(writer);
 	}

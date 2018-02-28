@@ -202,6 +202,7 @@ int main(int argc, char* argv[]) {
 	int cid, cpos; // cid, chromosome id; cpos, chromosome position
 	bool is_rev;
 	cigar_array ca;
+	double frac;
 
 	while (ag.read(parser)) {
 		if (ag.isAligned()) {
@@ -209,6 +210,8 @@ int main(int argc, char* argv[]) {
 				ba = ag.getAlignment(i);
 				const Transcript& transcript = transcripts.getTranscriptAt(ba->getTid());
 				cid = writer->name2id(transcript.getSeqName().c_str());
+
+				frac = ba->getFrac();
 
 				nba = cg.getNewBA(ba);
 				if (ba->isAligned() & 1) {
@@ -219,11 +222,11 @@ int main(int argc, char* argv[]) {
 					convert_t2g(ba, 2, transcript, cpos, is_rev, ca);
 					nba->setConvertedInfo(2, cid, cpos, is_rev, ca.n_cigar, ca.cigar);
 				}
-				cg.pushBackBA(ba);
+				cg.pushBackBA(ba, frac, transcript.getStrand());
 			}
 			assert(cg.size() > 0);
 			cg.write(writer); 
-			cg.clear(); // clear for the next alignment group 
+			cg.wrapUp(); // wrap up for this alignment and prepare for the next one
 		}
 		else ag.write(writer);
 	}
