@@ -53,22 +53,26 @@ public:
 		return alignments[s];
 	}
 
-	void pushBackBA(const BamAlignment *o, double frac, char strand = '.') {
+	void pushBackBA(const BamAlignment *o, double frac, char strand1 = '.', char strand2 = '.') {
 		pair.first.ba = alignments[s];
 		pair.second = s;
 		ret = align2pos.insert(pair);
 		if (ret.second) {
 			alignments[s]->completeAlignment(o, s > 0);
-			if (strand == '+' || strand == '-') { // insert XS:A tag
-				if (alignments[s]->isAligned() & 1) alignments[s]->insertTag("XS", 'A', 1, (uint8_t*)&strand, 1);
-				if (alignments[s]->isAligned() & 2) alignments[s]->insertTag("XS", 'A', 1, (uint8_t*)&strand, 2);
+			if (alignments[s]->isAligned() & 1) {
+				if (strand1 == '.') alignments[s]->removeTag("XS", 1);
+				else alignments[s]->insertTag("XS", 'A', 1, (uint8_t*)&strand1, 1);
 			}
-			++s;
+			if (alignments[s]->isAligned() & 2) { 
+				if (strand2 == '.') alignments[s]->removeTag("XS", 2);
+				else alignments[s]->insertTag("XS", 'A', 1, (uint8_t*)&strand2, 2); 
+			}
 			if (frac >= 0.0) fracs.push_back(frac);
+			++s;
 		}
 		else {
-			if (frac >= 0.0) fracs[ret.first->second] += frac;
-		} 
+			if (frac > 0.0) fracs[ret.first->second] += frac;
+		}
 	}
 
 	void asUnmap(const BamAlignment *o, const std::string& iv_type1, const std::string& iv_type2) {
@@ -78,11 +82,12 @@ public:
 		++s;
 	}
 
-	void wrapUp() {
+	void write(BamWriter* out, int choice = 0) {
 		if (fracs.size() > 0) {
 			assert(s == fracs.size());
 			for (int i = 0; i < s; ++i) alignments[i]->setFrac(fracs[i]);
 		}
+		AlignmentGroup::write(out, choice);
 		s = 0; align2pos.clear(); fracs.clear();
 	}
 

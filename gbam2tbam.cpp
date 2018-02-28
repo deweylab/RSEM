@@ -184,11 +184,12 @@ void merge_candidates(vector<Exon>& list1, vector<Exon>& list2) {
 	list2.resize(np2);
 }
 
+// tid is 0-based here
 void convertCoord(int gpos, const Exon& exon, int ref_len, char dir, int& tid, int& pos, bool& is_rev) {
 	const Transcript& transcript = (exon.tid <= M ? transcripts.getTranscriptAt(exon.tid) : dups.getTranscriptAt(exon.tid - M));
 	const vector<Interval>& structures = transcript.getStructure();
 
-	tid = (exon.tid <= M ? exon.tid : dup_ids[exon.tid - M - 1]);
+	tid = (exon.tid <= M ? exon.tid : dup_ids[exon.tid - M - 1]) - 1;
 	pos = structures[exon.eid].clen + (gpos - structures[exon.eid].start); // 0-based
 	if (transcript.getStrand() == '-') pos = transcript.getLength() - pos - ref_len;
 	is_rev = transcript.getStrand() != dir;
@@ -252,7 +253,7 @@ int main(int argc, char* argv[]) {
 					if (ba->isAligned() & 1) c1.calc_trans_cigar();
 					if (ba->isAligned() & 2) c2.calc_trans_cigar();
 
-					frac = ba->getFrac(); 
+					frac = 1.0; // ba->getFrac(); 
 					if (frac > 0.0) frac /= s;
 
 					for (int j = 0; j < s; ++j) {
@@ -270,8 +271,7 @@ int main(int argc, char* argv[]) {
 				}
 			}
 			if (cg.size() == 0) cg.asUnmap(ba, iv_type1, iv_type2);
-			cg.write(writer); 
-			cg.wrapUp(); // wrap up for this alignment and prepare for the next one
+			cg.write(writer); // write and then clear the content for next alignment group
 		}
 		else ag.write(writer);
 	}

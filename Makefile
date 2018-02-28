@@ -95,7 +95,6 @@ rsem-simulate-reads : simulation.o
 
 rsem-parse-alignments : parseIt.o $(SAMLIBS)
 rsem-run-em : EM.o SamHeader.o $(SAMLIBS)
-rsem-tbam2gbam : tbam2gbam.o SamHeader.o $(SAMLIBS)
 rsem-bam2wig : bam2wig.o wiggle.o $(SAMLIBS)
 rsem-bam2readdepth : bam2readdepth.o wiggle.o $(SAMLIBS)
 rsem-get-unique : getUnique.o $(SAMLIBS)

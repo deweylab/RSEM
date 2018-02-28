@@ -69,7 +69,7 @@ struct cigar_array {
 		cigar = (uint32_t*)calloc(max_size, sizeof(uint32_t));
 	}
 
-	~cigar_type() { free(cigar); }
+	~cigar_array() { free(cigar); }
 
 	void expand_size(uint32_t size) {
 		if (size > max_size) {
@@ -101,7 +101,10 @@ int binary_search(const std::vector<Interval>& structures, int pos) {
 }
 
 // pos : 0-based genomic coordinate
-void convert_t2g(BamAlignment* ba, int mate, const Transcript& transcript, int& pos, bool& is_rev, cigar_array& ca) {
+// return true if it crosses exon-exon junctions
+bool convert_t2g(BamAlignment* ba, int mate, const Transcript& transcript, int& pos, bool& is_rev, cigar_array& ca) {
+	bool cross_junc = false;
+
 	int tpos, s, idx, endpos;
 	const vector<Interval>& structures = transcript.getStructure();
 	s = structures.size();
@@ -113,7 +116,7 @@ void convert_t2g(BamAlignment* ba, int mate, const Transcript& transcript, int& 
 
 	is_rev = transcript.getStrand() != ba->getMateDir(mate);
 
-	tpos = ba->getPos(mate);
+	tpos = transcript.getStrand() == '+' ? ba->getPos(mate) : transcript.getLength() - ba->getPos(mate) - 1;
 	idx = binary_search(structures, tpos);
 
 	ba->getCIGAR(ci, mate);
@@ -134,19 +137,20 @@ void convert_t2g(BamAlignment* ba, int mate, const Transcript& transcript, int& 
 				endpos += oplen;
 				while (idx < s - 1 && endpos > structures[idx].end) {
 					residue = endpos - structures[idx].end;
-					ca.cigar[n_cigar++] = bam_cigar_gen(oplen - residue, op);
-					ca.cigar[n_cigar++] = bam_cigar_gen((structures[idx + 1].start - 1) - structures[idx].end, BAM_CREF_SKIP);
+					ca.cigar[ca.n_cigar++] = bam_cigar_gen(oplen - residue, op);
+					ca.cigar[ca.n_cigar++] = bam_cigar_gen((structures[idx + 1].start - 1) - structures[idx].end, BAM_CREF_SKIP);
+					cross_junc = true;
 					oplen = residue; 
 					endpos = structures[++idx].start + oplen - 1;
 				}
 				assert(endpos <= structures[idx].end);
-				ca.cigar[n_cigar++] = bam_cigar_gen(oplen, op);
+				ca.cigar[ca.n_cigar++] = bam_cigar_gen(oplen, op);
 			}
-			else ca.cigar[n_cigar++] = value;
+			else ca.cigar[ca.n_cigar++] = value;
 		}
 	}
 	else {
-		endpos = structures[idx].start = (tpos - structures[idx].clen);
+		endpos = structures[idx].start + (tpos - structures[idx].clen);
 		pos = endpos + 1;
 		for (int i = 0; i < len; ++i) {
 			value = ci.valueAt(i);
@@ -157,20 +161,23 @@ void convert_t2g(BamAlignment* ba, int mate, const Transcript& transcript, int& 
 				pos -= oplen;
 				while (idx > 0 && pos < structures[idx].start) {
 					residue = structures[idx].start - pos;
-					ca.cigar[n_cigar++] = bam_cigar_gen(oplen - residue, op);
-					ca.cigar[n_cigar++] = bam_cigar_gen((structures[idx].start - 1) - structures[idx - 1].end, BAM_CREF_SKIP);
+					ca.cigar[ca.n_cigar++] = bam_cigar_gen(oplen - residue, op);
+					ca.cigar[ca.n_cigar++] = bam_cigar_gen((structures[idx].start - 1) - structures[idx - 1].end, BAM_CREF_SKIP);
+					cross_junc = true;
 					oplen = residue;
 					pos = structures[--idx].end - oplen + 1;
 				}
 				assert(pos >= structures[idx].start);
-				ca.cigar[n_cigar++] = bam_cigar_gen(oplen, op);		
+				ca.cigar[ca.n_cigar++] = bam_cigar_gen(oplen, op);		
 			}
-			else ca.cigar[n_cigar++] = value;
+			else ca.cigar[ca.n_cigar++] = value;
 		}
 	}
 
-	--pos;
+	--pos; // switch to 0-based coordinate
 	if (ba->getMateDir(mate) == '-') ca.flip();
+
+	return cross_junc;
 }
 
 int main(int argc, char* argv[]) {
@@ -185,7 +192,7 @@ int main(int argc, char* argv[]) {
 	}
 	if (num_threads > 1) assert(p.pool = hts_tpool_init(num_threads));
 
-	sprintf(tiF, "%s.ti", reference_name);
+	sprintf(tiF, "%s.ti", argv[1]);
 	transcripts.readFrom(tiF);
 	M = transcripts.getM();
 	transcripts.updateCLens();
@@ -203,6 +210,7 @@ int main(int argc, char* argv[]) {
 	bool is_rev;
 	cigar_array ca;
 	double frac;
+	char strand1, strand2;
 
 	while (ag.read(parser)) {
 		if (ag.isAligned()) {
@@ -210,23 +218,23 @@ int main(int argc, char* argv[]) {
 				ba = ag.getAlignment(i);
 				const Transcript& transcript = transcripts.getTranscriptAt(ba->getTid());
 				cid = writer->name2id(transcript.getSeqName().c_str());
+				strand1 = strand2 = '.';
 
 				frac = ba->getFrac();
 
 				nba = cg.getNewBA(ba);
 				if (ba->isAligned() & 1) {
-					convert_t2g(ba, 1, transcript, cpos, is_rev, ca);
+					if (convert_t2g(ba, 1, transcript, cpos, is_rev, ca)) strand1 = transcript.getStrand();
 					nba->setConvertedInfo(1, cid, cpos, is_rev, ca.n_cigar, ca.cigar);
 				}
 				if (ba->isAligned() & 2) {
-					convert_t2g(ba, 2, transcript, cpos, is_rev, ca);
+					if (convert_t2g(ba, 2, transcript, cpos, is_rev, ca)) strand2 = transcript.getStrand();
 					nba->setConvertedInfo(2, cid, cpos, is_rev, ca.n_cigar, ca.cigar);
 				}
-				cg.pushBackBA(ba, frac, transcript.getStrand());
+				cg.pushBackBA(ba, frac, strand1, strand2);
 			}
 			assert(cg.size() > 0);
-			cg.write(writer); 
-			cg.wrapUp(); // wrap up for this alignment and prepare for the next one
+			cg.write(writer); // write and then clear the content for next alignment group
 		}
 		else ag.write(writer);
 	}

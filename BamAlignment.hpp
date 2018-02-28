@@ -264,7 +264,7 @@ public:
 		return true;
 	}
 
-	void insertTag(const char tag[2], char type, int len, const uint8_t *data, int mate = 0) {
+	void insertTag(const char tag[2], char type, int len, const uint8_t* data, int mate = 0) {
 		uint8_t *p_tag = NULL;
 		int old_len, delta, rest_len;
 
@@ -278,7 +278,7 @@ public:
 				rest_len = b->l_data - (delta + 1 + old_len);
 				b->l_data += len - old_len; expand_data_size(b);
 				p_tag = b->data + delta; // reassign since expand_data_size might realloc b->data
-				if (diff_len != 0 && rest_len > 0) memmove(p_tag + 1 + len, p_tag + 1 + old_len, rest_len);
+				if (old_len != len && rest_len > 0) memmove(p_tag + 1 + len, p_tag + 1 + old_len, rest_len);
 				memcpy(p_tag + 1, data, len);
 			}			
 		}
@@ -289,11 +289,11 @@ public:
 			else {
 				assert(*p_tag == type);
 				old_len = bam_aux_type2size(*p_tag, p_tag);
-				delta = p_tag - b->data;
-				rest_len = b->l_data - (delta + 1 + old_len);
-				b->l_data += len - old_len; expand_data_size(b);
-				p_tag = b->data + delta; // reassign since expand_data_size might realloc b->data
-				if (diff_len != 0 && rest_len > 0) memmove(p_tag + 1 + len, p_tag + 1 + old_len, rest_len);
+				delta = p_tag - b2->data;
+				rest_len = b2->l_data - (delta + 1 + old_len);
+				b2->l_data += len - old_len; expand_data_size(b2);
+				p_tag = b2->data + delta; // reassign since expand_data_size might realloc b->data
+				if (old_len != len && rest_len > 0) memmove(p_tag + 1 + len, p_tag + 1 + old_len, rest_len);
 				memcpy(p_tag + 1, data, len);
 			}
 		}
@@ -315,7 +315,8 @@ public:
 
 	//this function append a ZF:A:! field to indicate this alignment is filtered out if it is not marked before
 	void markAsFiltered() {
-		insertTag("ZF", 'A', bam_aux_type2size('A'), (uint8_t*)&'!');
+		char c = '!';
+		insertTag("ZF", 'A', bam_aux_type2size('A'), (const uint8_t*)&c);
 	}
 
 	// If no ZW field, return -1.0
@@ -326,12 +327,12 @@ public:
 	}
 
 	void setFrac(float frac) {
-		if (is_aligned & 1) insertTag("ZW", 'f', bam_aux_type2size('f'), (uint8_t*)&frac);
-		if (is_aligned & 2) insertTag("ZW", 'f', bam_aux_type2size('f'), (uint8_t*)&frac);
+		if (is_aligned & 1) insertTag("ZW", 'f', bam_aux_type2size('f'), (const uint8_t*)&frac);
+		if (is_aligned & 2) insertTag("ZW", 'f', bam_aux_type2size('f'), (const uint8_t*)&frac);
 		setMapQ(frac2MapQ(frac));
 	}
 
-private:
+// private:
 	static const uint8_t rnt_table[16];
 
 	bool is_paired;
@@ -352,7 +353,7 @@ private:
 		else if (x == 'S' || x == 's') return 2;
 		else if (x == 'I' || x == 'i' || x == 'f') return 4;
 		else if (x == 'd') return 8;
-		else if (x == 'Z' || x == 'H') { assert(p != NULL); return strlen(p + 1); }
+		else if (x == 'Z' || x == 'H') { assert(p != NULL); return strlen((char*)(p + 1)) + 1; }
 		else {
 			assert(x == 'B' && p != NULL);
 			return 1 + 4 + bam_auxB_len(p) * bam_aux_type2size(*(p + 1));
