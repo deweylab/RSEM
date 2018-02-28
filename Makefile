@@ -40,7 +40,7 @@ OBJS2 = parseIt.o
 OBJS3 = EM.o Gibbs.o calcCI.o simulation.o
 
 PROGS1 = rsem-build-reference
-PROGS2 = rsem-gbam2tbam
+PROGS2 = rsem-gbam2tbam rsem-tbam2gbam
 # PROGS2 = rsem-simulate-reads rsem-parse-alignments rsem-run-em rsem-tbam2gbam rsem-bam2wig rsem-bam2readdepth rsem-get-unique rsem-sam-validator rsem-scan-for-paired-end-reads
 # PROGS3 = rsem-run-gibbs rsem-calculate-credibility-intervals
 
@@ -88,6 +88,8 @@ $(PROGS3) :
 # Dependencies for executables
 rsem-build-reference : buildRef.o Transcript.o Transcripts.o RefSeq.o Refs.o GenomeMap.o
 rsem-gbam2tbam : gbam2tbam.o $(SAMLIBS) Transcript.o Transcripts.o GenomeMap.o SEQstring.o SamHeaderText.o SamParser.o BamWriter.o BamAlignment.o
+rsem-tbam2gbam : tbam2gbam.o $(SAMLIBS) Transcript.o Transcripts.o SEQstring.o SamHeaderText.o SamParser.o BamWriter.o BamAlignment.o
+
 
 rsem-simulate-reads : simulation.o
 
@@ -119,11 +121,11 @@ SamParser.o : SamParser.cpp $(SAMHEADERS) my_assert.h SamHeaderText.hpp SamParse
 BamWriter.o : BamWriter.cpp $(SAMHEADERS) my_assert.h SamHeaderText.hpp BamWriter.hpp
 BamAlignment.o : BamAlignment.cpp $(SAMHEADERS) utils.h my_assert.h CIGARstring.hpp SEQstring.hpp QUALstring.hpp MDstring.hpp SamHeaderText.hpp SamParser.hpp BamWriter.hpp BamAlignment.hpp
 gbam2tbam.o : gbam2tbam.cpp $(SAMHEADERS) utils.h my_assert.h Transcript.hpp Transcripts.hpp GenomeMap.hpp CIGARstring.hpp SEQstring.hpp QUALstring.hpp MDstring.hpp SamHeaderText.hpp SamParser.hpp BamWriter.hpp BamAlignment.hpp AlignmentGroup.hpp ConversionGroup.hpp
+tbam2gbam.o : tbam2gbam.cpp $(SAMHEADERS) utils.h my_assert.h Transcript.hpp Transcripts.hpp CIGARstring.hpp SEQstring.hpp QUALstring.hpp MDstring.hpp SamHeaderText.hpp SamParser.hpp BamWriter.hpp BamAlignment.hpp AlignmentGroup.hpp ConversionGroup.hpp
 
 
 
 wiggle.o: wiggle.cpp $(SAMHEADERS) sam_utils.h utils.h my_assert.h wiggle.h
-tbam2gbam.o : tbam2gbam.cpp $(SAMHEADERS) utils.h Transcripts.h Transcript.h BamConverter.h sam_utils.h SamHeader.hpp my_assert.h bc_aux.h
 bam2wig.o : bam2wig.cpp utils.h my_assert.h wiggle.h
 bam2readdepth.o : bam2readdepth.cpp utils.h my_assert.h wiggle.h
 getUnique.o : getUnique.cpp $(SAMHEADERS) sam_utils.h utils.h 
@@ -147,8 +149,6 @@ AlignmentGroup.hpp : $(SAMHEADERS) SEQstring.hpp QUALstring.hpp SamParser.hpp Ba
 ConversionGroup.hpp : $(SAMHEADERS) SEQstring.hpp QUALstring.hpp SamParser.hpp BamWriter.hpp BamAlignment.hpp AlignmentGroup.hpp
 
 WriteResults.h : utils.h my_assert.h GroupInfo.h Transcript.h Transcripts.h RefSeq.h Refs.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h
-bc_aux.h : $(SAMHEADERS)
-BamConverter.h : $(SAMHEADERS) sam_utils.h SamHeader.hpp utils.h my_assert.h bc_aux.h Transcript.h Transcripts.h
 Buffer.h : my_assert.h
 SamHeader.hpp : $(SAMHEADERS)
 
