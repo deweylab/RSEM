@@ -332,7 +332,7 @@ public:
 		setMapQ(frac2MapQ(frac));
 	}
 
-// private:
+private:
 	static const uint8_t rnt_table[16];
 
 	bool is_paired;

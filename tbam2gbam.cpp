@@ -45,8 +45,6 @@ using namespace std;
 
 bool verbose = true;
 
-
-
 int num_threads;
 htsThreadPool p = {NULL, 0};
 
@@ -133,7 +131,10 @@ bool convert_t2g(BamAlignment* ba, int mate, const Transcript& transcript, int& 
 			op = bam_cigar_op(value);
 			oplen = bam_cigar_oplen(value);
 			if (bam_cigar_type(op) & 2) {
-				if (idx < s - 1 && endpos == structures[idx].end) endpos = structures[++idx].start - 1;
+				if (idx < s - 1 && endpos == structures[idx].end) {
+					ca.cigar[ca.n_cigar++] = bam_cigar_gen((structures[idx + 1].start - 1) - structures[idx].end, BAM_CREF_SKIP);
+					endpos = structures[++idx].start - 1;
+				}
 				endpos += oplen;
 				while (idx < s - 1 && endpos > structures[idx].end) {
 					residue = endpos - structures[idx].end;
@@ -157,7 +158,10 @@ bool convert_t2g(BamAlignment* ba, int mate, const Transcript& transcript, int& 
 			op = bam_cigar_op(value);
 			oplen = bam_cigar_oplen(value);
 			if (bam_cigar_type(op) & 2) {
-				if (idx > 0 && pos == structures[idx].start) pos = structures[--idx].end + 1;
+				if (idx > 0 && pos == structures[idx].start) {
+					ca.cigar[ca.n_cigar++] = bam_cigar_gen((structures[idx].start - 1) - structures[idx - 1].end, BAM_CREF_SKIP);
+					pos = structures[--idx].end + 1;
+				}
 				pos -= oplen;
 				while (idx > 0 && pos < structures[idx].start) {
 					residue = structures[idx].start - pos;

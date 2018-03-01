@@ -46,8 +46,6 @@ using namespace std;
 
 bool verbose = true;
 
-
-
 int num_threads;
 htsThreadPool p = {NULL, 0};
 
@@ -253,7 +251,7 @@ int main(int argc, char* argv[]) {
 					if (ba->isAligned() & 1) c1.calc_trans_cigar();
 					if (ba->isAligned() & 2) c2.calc_trans_cigar();
 
-					frac = 1.0; // ba->getFrac(); 
+					frac = ba->getFrac(); 
 					if (frac > 0.0) frac /= s;
 
 					for (int j = 0; j < s; ++j) {
