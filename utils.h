@@ -45,6 +45,12 @@ const int OLEN = 25; // overlap length, number of bases must not be in poly(A) t
 const int NBITS = 32; // use unsigned int, 32 bits per variable
 const int MASK_LEN = 24; // the last MASK_LEN bp of a sequence cannot be aligned if poly(A) tail is added
 
+const int NCODES = 5; // A, C, G, T, N
+const int QSIZE = 100; // quality score range, from 0 to QSIZE - 1
+
+inline char qval2char(int qval) { return char(qval + 33); }
+inline int char2qval(int c) { return c - 33; }  
+
 /*
 	In our context, isXXZero is called only for non-negative values. Thus we omit the fabs function
  */
@@ -72,6 +78,11 @@ inline std::string generateCommand(int argc, char* argv[]) {
 
 	return command;
 }
+
+
+
+static const double pseudoC[NCODES] = {1.0, 1.0, 1.0, 1.0, 0.1}; // pseudo count for A/C/G/T/N
+static const double initP[4] = {0.9, 0.03, 0.01, 0.2}; // 0, ref_base == read_base; 1, ref_base != read_base & read_base != 'N'; 2, read_base == 'N'; 3, ref_base == 'N', uniform
 
 static const char code2base[] = "ACGTN";
 

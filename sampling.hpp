@@ -1,6 +1,6 @@
-/* Copyright (c) 2017
-   Bo Li (The Broad Institute of MIT and Harvard)
-   libo@broadinstitute.org
+/* Copyright (c) 2016
+   Bo Li (University of California, Berkeley)
+   bli25@berkeley.edu
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -23,10 +23,10 @@
 
 #include <ctime>
 #include <cassert>
-#include <cstdint>
 #include <vector>
 #include <set>
 
+#include <stdint.h>
 #include "boost/random.hpp"
 
 typedef uint32_t seedType;
@@ -135,15 +135,11 @@ inline int Sampler::sample(const std::vector<double>& arr, int len) {
 class EngineFactory {
 public:
 	EngineFactory() { seedEngine = NULL; }
-	~EngineFactory() { 
-		if (seedEngine != NULL) delete seedEngine; 
-		for (int i = 0; i < (int)queue.size(); ++i) delete queue[i];
-	}
+	~EngineFactory() { if (seedEngine != NULL) delete seedEngine; }
 
 	void init(seedType seed = time(NULL)) { 
 		seedEngine = new engine_type(seed); 
 		seedSet.clear();
-		queue.clear();
 	}
 
 	engine_type* new_engine() {
@@ -159,17 +155,13 @@ public:
 	}
 
 	Sampler* new_sampler() {
-		Sampler* sampler = new Sampler(new_engine());
-		queue.push_back(sampler);
-
-		return sampler;
+		return (new Sampler(new_engine()));
 	}
 
 private:
 	engine_type *seedEngine;
 	std::set<seedType> seedSet; // Empty set of seeds
-	std::set<seedType>::iterator iter;
-	std::vector<Sampler*> queue; 
+	std::set<seedType>::iterator iter; 
 };
 
 #endif
