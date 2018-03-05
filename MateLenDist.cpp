@@ -1,6 +1,6 @@
-/* Copyright (c) 2016
-   Bo Li (University of California, Berkeley)
-   bli25@berkeley.edu
+/* Copyright (c) 2017
+   Bo Li (The Broad Institute of MIT and Harvard)
+   libo@broadinstitute.org
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -18,62 +18,98 @@
    USA
 */
 
+#include <new>
 #include <cmath>
+#include <limits>
 #include <cassert>
 #include <string>
 #include <fstream>
 
 #include "MateLenDist.hpp"
 
-MateLenDist::MateLenDist(){
-	lb = 1; 
-	ub = span = 0;
-	ss.clear();
+MateLenDist::MateLenDist(int mode, int maxL): mode(mode), pmf(NULL), ss(NULL), cdf(NULL) {
+	lb = 1; ub = maxL; span = ub - lb + 1;
+	pmf = new double[span];
+	if (mode == 0) ss = new double[span];
+}
+
+MateLenDist::~MateLenDist() {
+	if (pmf != NULL) delete pmf;
+	if (ss != NULL) delete ss;
+	if (cdf != NULL) delete cdf;
+}
+
+void findBoundaries() {
+	while (ub >= lb && pmf[ub] == 0.0) --ub;
+	while (lb <= ub && pmf[lb] == 0.0) ++lb;
+	span = ub - lb + 1;
+	assert(span > 0);
+}
+
+void MateLenDist::clear() {
+	memset(pmf, 0, sizeof(double) * span);
+}
+
+void MateLenDist::collect(const MateLenDist* o) {
+	for (int i = 0; i < span; ++i) pmf[i] += o->pmf[i];
 }
 
 void MateLenDist::finish() {
-	double sum;
-
-	while (lb <= ub && pmf[lb] == 0.0) ++lb;
-	assert(lb <= ub);
-	
-	sum = 0.0;
-	span = ub - lb + 1;
-	for (int i = lb; i <= ub; ++i) {
-		sum += ss[i];
-		ss[i - lb] = ss[i];
-	}
-	ss.resize(span);
-	assert(sum > 0.0);
-
-	pmf = ss;
-	for (int i = 0; i < span; ++i) pmf[i] /= sum;
+	memcpy(ss, pmf, sizeof(double) * span);
+	ss2p();
+	p2logp();
 }
 
 double MateLenDist::calcLogP() const {
 	double logp = 0.0;
 	for (int i = 0; i < span; ++i)
-		if (ss[i] > 0.0) logp += ss[i] * log(pmf[i]);
+		if (ss[i] > 0.0) logp += ss[i] * pmf[i];
 	return logp;
 }
 
-void MateLenDist::read(std::ifstream& fin) {
+void MateLenDist::read(std::ifstream& fin, int choice) {
 	std::string line;
+	double *in = NULL;
+
+	switch(choice) {
+		case 0: in = pmf; break;
+		case 1: in = ss;
+	}
 
 	assert(fin>> lb>> ub>> span);
-	for (int i = 0; i < span; ++i) assert(fin>> pmf[i]);
+	for (int i = 0; i < span; ++i) assert(fin>> in[i]);
 	getline(fin, line);
+
+	if (mode == 0 && choice == o) p2logp();
+	if (mode == 2) prepare_for_simulation();
 }
 
-void MateLenDist::write(std::ofstream& fout, int mate, bool isProb) {
-	fout<< "#mld"<< mate<< " 4 MateLenDist, format: lb ub span; [lb, ub], span = ub - lb + 1, probability mass function values"<< std::endl;
+void MateLenDist::write(std::ofstream& fout, int choice) {
+	double *out = NULL;
 
+	switch(choice) {
+		case 0: ss2p(); out = pmf; break;
+		case 1: out = ss;
+	}
+
+	fout<< "#mld\tMateLenDist\t4\tformat: lb ub span; probability mass function values in [lb, ub], span = ub - lb + 1"<< std::endl;
 	fout<< lb<< '\t'<< ub<< '\t'<< span<< std::endl;  
-	for (int i = 1; i < span - 1; ++i) fout<< (isProb ? pmf[i] : ss[i])<< '\t';
-	fout<< (isProb ? pmf[span - 1] : ss[span - 1])<< std::endl<< std::endl<< std::endl;
+	for (int i = 1; i < span - 1; ++i) fout<< out[i]<< '\t';
+	fout<< out[span - 1]<< std::endl<< std::endl<< std::endl;
+}
+
+void MateLenDist::ss2p() {	
+	double sum;
+	for (int i = 0; i < span; ++i) sum += ss[i];
+	for (int i = 0; i < span; ++i) pmf[i] = ss[i] / sum;
+}
+
+void MateLenDist::p2logp() {
+	for (int i = 0; i < span; ++i) pmf[i] = (pmf[i] > 0.0 : log(pmf[i]) : -std::numeric_limits<double>::infinity());
 }
 
 void MateLenDist::prepare_for_simulation() {
-	cdf = pmf;
-	for (int i = 1; i < span; ++i) cdf[i] += cdf[i - 1]; 
+	if (cdf == NULL) cdf = new double[span];
+	cdf[0] = pmf[0];
+	for (int i = 1; i < span; ++i) cdf[i] = cdf[i - 1] + pmf[i];
 }

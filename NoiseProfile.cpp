@@ -18,9 +18,9 @@
    USA
 */
 
+#include <new>
 #include <cmath>
 #include <cstring>
-#include <cstdlib>
 #include <cassert>
 #include <string>
 #include <fstream>
@@ -28,7 +28,7 @@
 #include "utils.h"
 #include "NoiseProfile.hpp"
 
-NoiseProfile::NoiseProfile(int mode, int maxL) : mode(mode), maxL(maxL) {
+NoiseProfile::NoiseProfile(int mode, int maxL) : mode(mode), maxL(maxL), p(NULL), c(NULL), ss(NULL) {
 	assert(maxL > 0);
 	p = new double[maxL][NCODES];
 	if (mode == 0) {
@@ -87,6 +87,7 @@ void NoiseProfile::read(std::ifstream& fin, int choice) {
 	getline(fin, line);
 
 	if (mode == 0 && choice == 0) p2logp();
+	if (mode == 2) prepare_for_simulation();
 }
 
 void NoiseProfile::write(std::ofstream& fout, int choice) {
@@ -105,12 +106,6 @@ void NoiseProfile::write(std::ofstream& fout, int choice) {
 		fout<< out[i][NCODES - 1]<< std::endl;
 	}
 	fout<< std::endl<< std::endl;
-}
-
-void NoiseProfile::prepare_for_simulation() {
-	for (int i = 0; i < maxL; ++i)
-		for (int j = 1; j < NCODES; ++j)
-			p[i][j] += p[i][j - 1];
 }
 
 void NoiseProfile::calc_ss() {
@@ -136,4 +131,10 @@ void NoiseProfile::p2logp() {
 	for (int i = 0; i < maxL; ++i)
 		for (int j = 0; j < NCODES; ++j)
 			p[i][j] = log(p[i][j]);
+}
+
+void NoiseProfile::prepare_for_simulation() {
+	for (int i = 0; i < maxL; ++i)
+		for (int j = 1; j < NCODES; ++j)
+			p[i][j] += p[i][j - 1];
 }

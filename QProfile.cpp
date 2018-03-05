@@ -1,6 +1,6 @@
-/* Copyright (c) 2016
-   Bo Li (University of California, Berkeley)
-   bli25@berkeley.edu
+/* Copyright (c) 2017
+   Bo Li (The Broad Institute of MIT and Harvard)
+   libo@broadinstitute.org
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -18,6 +18,7 @@
    USA
 */
 
+#include <new>
 #include <cmath>
 #include <cstring>
 #include <cassert>
@@ -27,13 +28,18 @@
 #include "utils.h"
 #include "QProfile.hpp"
 
-QProfile::QProfile(bool to_log_space) : to_log_space(to_log_space) {
-	memset(p, 0, sizeof(p));	
-	ss = NULL;
+QProfile::QProfile(int mode) : mode(mode), p(NULL), ss(NULL) {
+	p = new double[QSIZE][NCODES][NCODES];
+	if (mode == 0) ss = new double[QSIZE][NCODES][NCODES];
 }
 
 QProfile::~QProfile() {
+	if (p != NULL) delete[] p;
 	if (ss != NULL) delete[] ss;
+}
+
+void QProfile::clear() {
+	memset(p, 0, sizeof(double) * QSIZE * NCODES * NCODES);
 }
 
 void QProfile::collect(const QProfile* o) {
@@ -44,62 +50,55 @@ void QProfile::collect(const QProfile* o) {
 }
 
 void QProfile::finish() {
-	// collect sufficient statistics
-	if (ss == NULL) ss = new double[QSIZE][NCODES][NCODES];
-	memcpy(ss, p, sizeof(p));
-	// calculate p
-	ss2p();
-	// convert to log space
-	if (to_log_space)
-		for (int i = 0; i < QSIZE; ++i)
-			for (int j = 0; j < NCODES; ++j)
-				for (int k = 0; k < NCODES; ++k)
-					p[i][j][k] = log(p[i][j][k]);
+	memcpy(ss, p, sizeof(double) * QSIZE * NCODES * NCODES);
+	ss2p(); // calculate p
+	p2logp(); // convert to log space
 }
 
-void QProfile::clear() {
-	memset(p, 0, sizeof(p));
-}
-
-void QProfile::read(std::ifstream& fin) {
+void QProfile::read(std::ifstream& fin, int choice) {
 	std::string line;
 	int tmp_qsize, tmp_ncodes;
+	double (*in)[NCODES][NCODES] = NULL;
+
+	switch(choice) {
+		case 0: in = p; break;
+		case 1: in = ss;
+	}
 
 	assert((fin>> tmp_qsize>> tmp_ncodes) && (tmp_qsize == QSIZE) && (tmp_ncodes == NCODES));
 	for (int i = 0; i < QSIZE; ++i)
 		for (int j = 0; j < NCODES; ++j)
 			for (int k = 0; k < NCODES; ++k)
-				assert(fin>> p[i][j][k]);
+				assert(fin>> in[i][j][k]);
 	getline(fin, line);
+
+	if (mode == 0 && choice == 0) p2logp();
+	if (mode == 2) prepare_for_simulation();
 }
 
-void QProfile::write(std::ofstream& fout, bool isProb) {
-	if (isProb && to_log_space) ss2p();
+void QProfile::write(std::ofstream& fout, int choice) {
+	double (*out)[NCODES][NCODES] = NULL;
 
-	fout<< "#qpro "<< 1 + (NCODES + 1) * QSIZE + 1<< " QProfile, format: SIZE NCODES; P[QUAL][REF_BASE][OBSERVED_BASE], SIZE blocks separated by a blank line, each block contains NCODES lines"<< std::endl;
+	switch(choice) {
+		case 0: ss2p(); out = p; break;
+		case 1: out = ss;
+	}
 
+	fout<< "#qpro\tQProfile\t"<< 1 + (NCODES + 1) * QSIZE + 1<< "\tformat: SIZE NCODES; P[QUAL][REF_BASE][OBSERVED_BASE], SIZE blocks separated by a blank line, each block is a NCODES x NCODES matrix"<< std::endl;
 	fout<< QSIZE<< '\t'<< NCODES<< std::endl;
 	for (int i = 0; i < QSIZE; ++i) {
 		for (int j = 0; j < NCODES; ++j) {
 			for (int k = 0; k < NCODES - 1; ++k)
-				fout<< (isProb ? p[i][j][k] : ss[i][j][k])<< '\t';
-			fout<< (isProb ? p[i][j][NCODES - 1] : ss[i][j][NCODES - 1])<< std::endl;
+				fout<< out[i][j][k]<< '\t';
+			fout<< out[i][j][NCODES - 1]<< std::endl;
 		}
 		fout<< std::endl;
 	}
 	fout<< std::endl;
 }
 
-void QProfile::prepare_for_simulation() {
-	for (int i = 0; i < QSIZE; ++i)
-		for (int j = 0; j < NCODES; ++j)
-			for (int k = 1; k < NCODES; ++k)
-				p[i][j][k] += p[i][j][k - 1];
-}
-
 void QProfile::ss2p() {
 	double sum;
-	
 	for (int i = 0; i < QSIZE; ++i) 
 		for (int j = 0; j < NCODES; ++j) {
 			sum = 0.0;
@@ -110,4 +109,18 @@ void QProfile::ss2p() {
 			for (int k = 0; k < NCODES; ++k)
 				p[i][j][k] /= sum;
 		}
+}
+
+void QProfile::p2logp() {
+	for (int i = 0; i < QSIZE; ++i)
+		for (int j = 0; j < NCODES; ++j)
+			for (int k = 0; k < NCODES; ++k)
+				p[i][j][k] = log(p[i][j][k]);
+}
+
+void QProfile::prepare_for_simulation() {
+	for (int i = 0; i < QSIZE; ++i)
+		for (int j = 0; j < NCODES; ++j)
+			for (int k = 1; k < NCODES; ++k)
+				p[i][j][k] += p[i][j][k - 1];
 }

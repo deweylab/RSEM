@@ -1,6 +1,6 @@
-/* Copyright (c) 2016
-   Bo Li (University of California, Berkeley)
-   bli25@berkeley.edu
+/* Copyright (c) 2017
+   Bo Li (The Broad Institute of MIT and Harvard)
+   libo@broadinstitute.org
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -21,9 +21,6 @@
 #ifndef QUALDIST_H_
 #define QUALDIST_H_
 
-#include <cmath>
-#include <cstring>
-#include <cassert>
 #include <string>
 #include <fstream>
 
@@ -34,7 +31,7 @@
 //from 33 to 126 to encode 0 to 93
 class QualDist {
 public:
-	QualDist();
+	QualDist(int mode);
 	~QualDist();
 	
 	void update(const QUALstring& qual) {
@@ -46,6 +43,7 @@ public:
 		}
 	}
 
+	void clear();
 	void collect(const QualDist* o);
 	void finish();
 	
@@ -63,11 +61,9 @@ public:
 
 	double calcLogP() const;
 	
-	void read(std::ifstream& fin);
-	void write(std::ofstream& fout, bool isProb = true);
+	void read(std::ifstream& fin, int choice); // choice: 0 -> p; 1 -> ss; 2 -> c
+	void write(std::ofstream& fout, int choice);
 	
-	void prepare_for_simulation();
-
 	// The first two simulate functions are used for simulating alignable reads
 	int simulate(Sampler* sampler) {
 		return sampler->sample(p_init, QSIZE);
@@ -90,11 +86,13 @@ public:
 	}
 	
 private:
-	double p_init[QSIZE];
-	double p_tran[QSIZE][QSIZE]; //p_tran[a][b] = p(b|a)
+	int mode; // 0, master; 1, child; 2, simulation	
+	double *p_init, *ss_init;
+	double (*p_tran)[QSIZE], (*ss_tran)[QSIZE]; //p_tran[a][b] = p(b|a)
 
-	double *ss_init;
-	double (*ss_tran)[QSIZE];
+	void ss2p(); // from sufficient statistics to p
+	void p2logp();
+	void prepare_for_simulation();
 };
 
 #endif /* QUALDIST_H_ */

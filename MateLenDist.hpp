@@ -1,6 +1,6 @@
-/* Copyright (c) 2016
-   Bo Li (University of California, Berkeley)
-   bli25@berkeley.edu
+/* Copyright (c) 2017
+   Bo Li (The Broad Institute of MIT and Harvard)
+   libo@broadinstitute.org
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -21,55 +21,46 @@
 #ifndef MATELENDIST_H_
 #define MATELENDIST_H_
 
-#include <cmath>
-#include <cassert>
 #include <fstream>
-#include <vector>
 
 #include "sampling.hpp"
 
 class MateLenDist {
 public:
-	MateLenDist();
-	
+	MateLenDist(int mode, int maxL);
+	~MateLenDist();
+
+	void findBoundaries();
+
 	int getMinL() const { return lb; }
 	int getMaxL() const { return ub; }
+	
 
-	/*
-		comment: In theory, this length should be the untrimmed length. If necessary, may ask user to provide the untrimmed lengths of each trimmed read (for example, 
-						 encode this information in the header line of each read).
-						 Do not need this for the EM algorithm, only need it for calculating the complete log likelihood score.
-	*/
-	double getLogProb(int len) const {
-		assert(len > lb && len <= ub);
-		return log(pmf[len - lb]);
-	}
+	double getLogProb(int len) const { return pmf[len - lb]; }
 	
-	void update(int len) {
-		if (len > ub) { ub = len; ss.resize(ub, 0.0); }
-		++ss[len - lb];
-	}
+	void update(int len) { ++pmf[len - lb]; }
 	
+	void clear();
+	void collect(const MateLenDist* o);
 	void finish();
 	
-	/*
-		comment: Calculate log probability for unalignable reads, call after finish()
-	*/
 	double calcLogP() const;
 	
-	void read(std::ifstream& fin);
-	void write(std::ofstream& fout, int mate, bool isProb = true); // mate = 1 or 2
-
-	void prepare_for_simulation();
+	void read(std::ifstream& fin, int choice); // choice: 0 -> p; 1 -> ss
+	void write(std::ofstream& fout, int choice);
 	
-	// In the RNASeqModel, if the simulate mate length > fragment length, the fragment length is used
 	int simulate(Sampler* sampler) {
 		return lb + sampler->sample(cdf, span);
 	}
 
 private:
+	int mode; // 0, master; 1, child; 2, simulation	
 	int lb, ub, span; // [lb, ub], span = ub - lb + 1
-	std::vector<double> pmf, cdf, ss; // probability mass function, cumulative density function and sufficiant statistics
+	double *pmf, *ss, *cdf; // probability mass function, sufficiant statistics, and cumulative density function
+
+	void ss2p(); // from sufficient statistics to pmf
+	void p2logp(); // convert to log space
+	void prepare_for_simulation();
 };
 
-#endif 
+#endif /* MATELENDIST_H_ */

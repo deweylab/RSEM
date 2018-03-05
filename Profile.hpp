@@ -1,6 +1,6 @@
-/* Copyright (c) 2016
-   Bo Li (University of California, Berkeley)
-   bli25@berkeley.edu
+/* Copyright (c) 2017
+   Bo Li (The Broad Institute of MIT and Harvard)
+   libo@broadinstitute.org
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -21,7 +21,6 @@
 #ifndef PROFILE_H_
 #define PROFILE_H_
 
-#include <cstdlib>
 #include <fstream>
 
 #include "utils.h"
@@ -29,52 +28,38 @@
 
 class Profile {
 public:
-	Profile(bool to_log_space = false, int maxL = 0);
+	Profile(int mode, int maxL);
 	~Profile();
 
 	double getLogProb(int pos, int ref_base, int read_base) const {
 		return p[pos][ref_base][read_base]; // p is in log space
 	}
 
-	void expand(int len) {
-		if (len <= maxL) return;
-		p = (double (**)[NCODES])realloc(p, sizeof(double (*)[NCODES]) * len);
-		for (int i = maxL; i < len; ++i)
-			p[i] = (double (*)[NCODES])calloc(NCODES * NCODES, sizeof(double));
-		maxL = len;
-	}
-
 	void update(int pos, int ref_base, int read_base, double frac) {
 		p[pos][ref_base][read_base] += frac;
 	}
 
-	void collect(const Profile* o);
-	void finish(int length = -1);
-	void clear();
-	
-	void read(std::ifstream& fin);
-	void write(std::ofstream& fout, bool isProb = true);
+	void setMaxL(int maxL) { this->maxL = maxL; } // set maxL, only used in parseAlignments
 
-	void prepare_for_simulation();
+	void clear();
+	void collect(const Profile* o);
+	void finish();
+	
+	void read(std::ifstream& fin, int choice); // choice: 0 -> p; 1 -> ss
+	void write(std::ofstream& fout, int choice); 
 	
 	char simulate(Sampler* sampler, int pos, int ref_base) {
 		return code2base[sampler->sample(p[pos][ref_base], NCODES)];
 	}
 	
 private:
-	bool to_log_space; // true if we should transfer p to log space
-
+	int mode; // 0, master; 1, child; 2, simulation
 	int maxL; // profile length
-	double (**p)[NCODES]; //profile matrices
-	double (*ss)[NCODES][NCODES];
+	double (*p)[NCODES][NCODES], (*ss)[NCODES][NCODES]; // p, probability in log space; ss, sufficient statistics
 
-	void ss2p(); // calculate p from ss
-
-	void allocate_space(int len) {
-		p = (double (**)[NCODES])calloc(len, sizeof(double (*)[NCODES]));
-		for (int i = 0; i < len; ++i)
-			p[i] = (double (*)[NCODES])calloc(NCODES * NCODES, sizeof(double)); // should be 0 initialized
-	}
+	void ss2p(); // from sufficient statistics to probabilities
+	void p2logp(); // convert to log space
+	void prepare_for_simulation();
 };
 
 #endif /* PROFILE_H_ */

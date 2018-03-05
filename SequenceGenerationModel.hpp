@@ -35,10 +35,14 @@
 #include "QUALstring.hpp"
 #include "SEQstring.hpp"
 
+#include "MateLenDist.hpp"
 #include "Markov.hpp"
 #include "Profile.hpp"
-#include "QualDist.hpp"
 #include "QProfile.hpp"
+#include "QualDist.hpp"
+#include "NoiseProfile.hpp"
+#include "NoiseQProfile.hpp"
+
 
 // This class is an abstraction of the NGS sequencing error model, it is applicable to different types of sequencing, e.g. RNA-Seq, ChIP-Seq, Structure-Seq  
 class SequencingErrorModel {

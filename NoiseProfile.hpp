@@ -61,8 +61,6 @@ public:
 	void read(std::ifstream& fin, int choice); // choice: 0 -> p; 1 -> ss; 2 -> c
 	void write(std::ofstream& fout, int choice); 
 	
-	void prepare_for_simulation();
-
 	// here p is not in log space
 	void simulate(Sampler* sampler, int len, std::string& readseq) {
 		readseq.assign(len, 0);
@@ -79,6 +77,7 @@ private:
 	void calc_ss(); // calculate sufficient statistics
 	void ss2p(); // from sufficient statistics to probabilities
 	void p2logp(); // convert to log space
+	void prepare_for_simulation();
 };
 
 #endif /* NOISEPROFILE_H_ */

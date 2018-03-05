@@ -1,6 +1,6 @@
-/* Copyright (c) 2016
-   Bo Li (University of California, Berkeley)
-   bli25@berkeley.edu
+/* Copyright (c) 2017
+   Bo Li (The Broad Institute of MIT and Harvard)
+   libo@broadinstitute.org
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -18,9 +18,9 @@
    USA
 */
 
+#include <new>
 #include <cmath>
 #include <cstring>
-#include <cstdlib>
 #include <cassert>
 #include <string>
 #include <fstream>
@@ -28,17 +28,19 @@
 #include "utils.h"
 #include "Profile.hpp"
 
-Profile::Profile(bool to_log_space, int maxL) : to_log_space(to_log_space), maxL(maxL) {
-	p = NULL; ss = NULL;
-	if (maxL > 0) allocate_space(maxL);
+Profile::Profile(int mode, int maxL) : mode(mode), maxL(maxL), p(NULL), ss(NULL) {
+	assert(maxL > 0);
+	p = new double[maxL][NCODES][NCODES];
+	if (mode == 0) ss = new double[maxL][NCODES][NCODES];
 }
 
 Profile::~Profile() {
-	if (p != NULL) { 
-		for (int i = 0; i < maxL; ++i) free(p[i]);
-		free(p); 
-	}
+	if (p != NULL) delete[] p;
 	if (ss != NULL) delete[] ss;
+}
+
+void Profile::clear() {
+	memset(p, 0, sizeof(double) * maxL * NCODES * NCODES);
 }
 
 void Profile::collect(const Profile* o) {
@@ -49,75 +51,55 @@ void Profile::collect(const Profile* o) {
 }
 
 void Profile::finish(int length) {
-	// expand p if necessary, length is the maximum mate length observed
-	expand(length);
-	// collect sufficient statistics
-	if (ss == NULL) ss = new double[maxL][NCODES][NCODES];
 	memcpy(ss, p, sizeof(double) * maxL * NCODES * NCODES);
-	// calculate p
-	ss2p();
-	// convert p into log space
-	if (to_log_space) 
-		for (int i = 0; i < maxL; ++i)
-			for (int j = 0; j < NCODES; ++j)
-				for (int k = 0; k < NCODES; ++k)
-					p[i][j][k] = log(p[i][j][k]);
+	ss2p(); // calculate p
+	p2logp(); // convert to log space
 }
 
-void Profile::clear() {
-	size_t num = sizeof(double) * NCODES * NCODES;
-	for (int i = 0; i < maxL; ++i) memset(p[i], 0, num);
-}
-
-void Profile::read(std::ifstream& fin) {
+void Profile::read(std::ifstream& fin, int choice) {
 	std::string line;
 	int tmp_maxl, tmp_ncodes;
+	double (*in)[NCODES][NCODES] = NULL;
 
-	assert((fin>> tmp_maxl>> tmp_ncodes) && (tmp_ncodes == NCODES));
+	switch(choice) {
+		case 0: in = p; break;
+		case 1: in = ss;
+	}
 
-	if (maxL == 0) maxL = tmp_maxl;
-	else assert(maxL == tmp_maxl);
-
-	assert(p == NULL);
-	allocate_space(maxL);
-
+	assert((fin>> tmp_maxl>> tmp_ncodes) && (tmp_maxl == maxL) && (tmp_ncodes == NCODES));
 	for (int i = 0; i < maxL; ++i)
 		for (int j = 0; j < NCODES; ++j)
 			for (int k = 0; k < NCODES; ++k)
-				assert(fin>> p[i][j][k]);
-
+				assert(fin>> in[i][j][k]);
 	getline(fin, line);
+
+	if (mode == 0 && choice == 0) p2logp();
+	if (mode == 2) prepare_for_simulation();
 }
 
-void Profile::write(std::ofstream& fout, bool isProb) {
-	if (to_log_space) ss2p();
+void Profile::write(std::ofstream& fout, int choice) {
+	double (*out)[NCODES][NCODES] = NULL;
 
-	fout<< "#pro "<< 1 + (NCODES + 1) * maxL + 1<< " Profile, format: maxL NCODES; P[POS][REF_BASE][OBSERVED_BASE], maxL blocks separated by a blank line, each block contains NCODES lines"<< std::endl;
+	switch(choice) {
+		case 0: ss2p(); out = p; break;
+		case 1: out = ss;
+	}
 
+	fout<< "#pro\tProfile\t"<< 1 + (NCODES + 1) * maxL + 1<< "\tformat: maxL NCODES; P[POS][REF_BASE][OBSERVED_BASE], maxL blocks separated by a blank line, each block is a NCODES x NCODES matrix"<< std::endl;
 	fout<< maxL<< '\t'<< NCODES<< std::endl;
-
 	for (int i = 0; i < maxL; ++i) {
 		for (int j = 0; j < NCODES; ++j) {
 			for (int k = 0; k < NCODES - 1; ++k)
-				fout<< (isProb ? p[i][j][k] : ss[i][j][k])<< '\t';
-			fout<< (isProb ? p[i][j][NCODES - 1] : ss[i][j][NCODES - 1])<< std::endl;
+				fout<< out[i][j][k]<< '\t';
+			fout<< out[i][j][NCODES - 1]<< std::endl;
 		}
 		fout<< std::endl;
 	}
-
 	fout<< std::endl;
 }
 
-void Profile::prepare_for_simulation() {
-	for (int i = 0; i < maxL; ++i) 
-		for (int j = 0; j < NCODES; ++j)
-			for (int k = 1; k < NCODES; ++k)
-				p[i][j][k] += p[i][j][k - 1];
-}
-
 void Profile::ss2p() {
-	double sum;
-	
+	double sum;	
 	for (int i = 0; i < maxL; ++i) 
 		for (int j = 0; j < NCODES; ++j) {
 			sum = 0.0;
@@ -128,4 +110,18 @@ void Profile::ss2p() {
 			for (int k = 0; k < NCODES; ++k)
 				p[i][j][k] /= sum;
 		}
+}
+
+void Profile::p2logp() {
+	for (int i = 0; i < maxL; ++i)
+		for (int j = 0; j < NCODES; ++j)
+			for (int k = 0; k < NCODES; ++k)
+				p[i][j][k] = log(p[i][j][k]);
+}
+
+void Profile::prepare_for_simulation() {
+	for (int i = 0; i < maxL; ++i) 
+		for (int j = 0; j < NCODES; ++j)
+			for (int k = 1; k < NCODES; ++k)
+				p[i][j][k] += p[i][j][k - 1];
 }

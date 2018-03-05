@@ -1,6 +1,6 @@
-/* Copyright (c) 2016
-   Bo Li (University of California, Berkeley)
-   bli25@berkeley.edu
+/* Copyright (c) 2017
+   Bo Li (The Broad Institute of MIT and Harvard)
+   libo@broadinstitute.org
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -21,7 +21,6 @@
 #ifndef QPROFILE_H_
 #define QPROFILE_H_
 
-#include <cassert>
 #include <fstream>
 
 #include "utils.h"
@@ -29,7 +28,7 @@
 
 class QProfile {
 public:
-	QProfile(bool to_log_space = false);
+	QProfile(int mode);
 	~QProfile();
 	
 	// qual starts from 0, 33 is already deducted
@@ -41,26 +40,24 @@ public:
 		p[qual][ref_base][read_base] += frac;
 	}
 
+	void clear();
 	void collect(const QProfile* o);
 	void finish();
-	void clear();
 	
-	void read(std::ifstream& fin);
-	void write(std::ofstream& fout, bool isProb);
+	void read(std::ifstream& fin, int choice); // choice: 0 -> p; 1 -> ss; 2 -> c; 
+	void write(std::ofstream& fout, int choice);
 
-	void prepare_for_simulation();
-	
 	char simulate(Sampler* sampler, int qual, int ref_base) {
 		return code2base[sampler->sample(p[qual][ref_base], NCODES)];
 	}
 	
 private:
-	bool to_log_space; // if we should transfer p to log space
-	
-	double p[QSIZE][NCODES][NCODES]; // p[q][r][c] = p(c|r,q), if isMaster == true, p is in log space
-	double (*ss)[NCODES][NCODES]; // sufficient statistics
+	int mode; // 0, master; 1, child; 2, simulation	
+	double (*p)[NCODES][NCODES], (*ss)[NCODES][NCODES]; // p[q][r][c] = p(c|r,q), if mode == 0, p is in log space; ss, sufficient statistics
 
 	void ss2p(); // from sufficient statistics to p
+	void p2logp(); // convert to log space
+	void prepare_for_simulation();
 };
 
 #endif /* QPROFILE_H_ */

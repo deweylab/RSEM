@@ -18,6 +18,7 @@
    USA
 */
 
+#include <new>
 #include <cmath>
 #include <cstring>
 #include <cassert>
@@ -27,7 +28,7 @@
 #include "utils.h"
 #include "NoiseQProfile.hpp"
 
-NoiseQProfile::NoiseQProfile(int mode) : mode(mode) {
+NoiseQProfile::NoiseQProfile(int mode) : mode(mode), p(NULL), c(NULL), ss(NULL) {
 	p = new double[QSIZE][NCODES];
 	if (mode == 0) {
 		c = new double[QSIZE][NCODES];
@@ -85,6 +86,7 @@ void NoiseQProfile::read(std::ifstream& fin, int choice) {
 	getline(fin, line);
 
 	if (mode == 0 && choice == 0) p2logp();
+	if (mode == 2) prepare_for_simulation();
 }
 
 void NoiseQProfile::write(std::ofstream& fout, int choice) {
@@ -103,12 +105,6 @@ void NoiseQProfile::write(std::ofstream& fout, int choice) {
 		fout<< out[i][j]<< std::endl;
 	}
 	fout<< std::endl<< std::endl;
-}
-
-void NoiseQProfile::prepare_for_simulation() {
-	for (int i = 0; i < QSIZE; ++i) 
-		for (int j = 1; j < NCODES; ++j)
-			p[i][j] += p[i][j - 1];
 }
 
 void NoiseQProfile::calc_ss() {
@@ -134,4 +130,10 @@ void NoiseQProfile::p2logp() {
 	for (int i = 0; i < QSIZE; ++i)
 		for (int j = 0; j < NCODES; ++j)
 			p[i][j] = log(p[i][j]);
+}
+
+void NoiseQProfile::prepare_for_simulation() {
+	for (int i = 0; i < QSIZE; ++i) 
+		for (int j = 1; j < NCODES; ++j)
+			p[i][j] += p[i][j - 1];
 }
