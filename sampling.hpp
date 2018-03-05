@@ -23,10 +23,10 @@
 
 #include <ctime>
 #include <cassert>
+#include <cstdint>
 #include <vector>
 #include <set>
 
-#include <stdint.h>
 #include "boost/random.hpp"
 
 typedef uint32_t seedType;
@@ -78,8 +78,8 @@ public:
 
 	double random() { return (*rg)(); }  
 
-	int sample(const double*, int);
-	int sample(const std::vector<double>&, int);
+	int sample(const double* arr, int len);
+	int sample(const std::vector<double>& arr, int len);
 
 	double sample() {
 		switch(type) {
@@ -92,14 +92,14 @@ private:
 	engine_type *engine;
 	uniform_01_generator *rg;
 
-	int type;
+	int type; // -1, 0-1; 0, EXP_DIST
 	void *orng; // other random number generator
 
 	static const int EXP_DIST = 0;
 };
 
 // arr should be cumulative!
-// interval : [,)
+// interval : [arr[i - 1], arr[i])
 // random number should be in [0, arr[len - 1])
 // If by chance arr[len - 1] == 0.0, one possibility is to sample uniformly from 0...len-1
 inline int Sampler::sample(const double* arr, int len) {
@@ -108,7 +108,7 @@ inline int Sampler::sample(const double* arr, int len) {
 
 	l = 0; r = len - 1;
 	while (l <= r) {
-		mid = (l + r) / 2;
+		mid = (l + r) << 1;
 		if (arr[mid] <= prb) l = mid + 1;
 		else r = mid - 1;
 	}
@@ -123,7 +123,7 @@ inline int Sampler::sample(const std::vector<double>& arr, int len) {
 
 	l = 0; r = len - 1;
 	while (l <= r) {
-		mid = (l + r) / 2;
+		mid = (l + r) << 1;
 		if (arr[mid] <= prb) l = mid + 1;
 		else r = mid - 1;
 	}
