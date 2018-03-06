@@ -18,8 +18,8 @@
    USA
 */
 
-#ifndef SEQUENCINGERRORMODEL_H_
-#define SEQUENCINGERRORMODEL_H_
+#ifndef IlluminaSequenceModel_H_
+#define IlluminaSequenceModel_H_
 
 #include <cassert>
 #include <string>
@@ -44,27 +44,29 @@
 #include "NoiseQProfile.hpp"
 
 
-// This class is an abstraction of the NGS sequencing error model, it is applicable to different types of sequencing, e.g. RNA-Seq, ChIP-Seq, Structure-Seq  
-class SequencingErrorModel {
+class IlluminaSequenceModel {
 public:
-	/*
-		@param   hasQual      if we have quality scores
-		@param   to_log_space if we should convert probability to log space
-		@param   maxL         maximum read/mate length 
-	*/
-	SequencingErrorModel(bool hasQual, bool to_log_space = false, int maxL = 0);  
-	~SequencingErrorModel();
+	// mode: 0, master; 1, child; 2 simulation
+	// status: 2 bits, bit 1: has qual, bit 2: is first pass
+	// min_len: minimum read length; max_len: maximum read length; 
+	IlluminaSequenceModel(int mode, int status, int min_len, int max_len); 
+	~IlluminaSequenceModel();
 	
 	/*
 		@param   dir             strand information
 		@param   pos             position in dir strand, 0-based
 		@param   refseq          reference sequence in '+' strand
-		@param   cigar           cigar string
-		@param   seq             read sequence
-		@param   qual            optional quality score sequence
-		@return  log probability of generating the read sequence
+		@param   cigar           cigar string, as in dir strand 
+		@param   seq             read sequence, as in dir strand
+		@param   qual            optional quality score sequence, as in dir strand
+		@return  log probability of generating the read sequence, no QD
 	*/
-	double getLogProb(char dir, int pos, const RefSeq* refseq, const CIGARstring* cigar, const SEQstring* seq, const QUALstring* qual = NULL) const;
+	double getLogProb(char dir, int pos, const RefSeq& refseq, const CIGARstring& cigar, const SEQstring& seq, const QUALstring& qual) const;
+
+	// for noise reads, no QD
+	double getLogProb(const SEQstring& seq, const QUALstring& qual) const {
+		return mld->getLobProb(seq.getLen()) + ((status & 1) ? nqpro->getLogProb(qual, seq) : npro->getLogProb(seq));
+	}
 
 	/*
 		@param   frac            the expected fraction of this alignment
@@ -74,28 +76,42 @@ public:
 		@param   cigar           cigar string
 		@param   seq             read sequence
 		@param   qual            optional quality score sequence
+		@comment   do not update mld qd 
 	*/
-	void update(double frac, char dir, int pos, const RefSeq* refseq, const CIGARstring* cigar, const SEQstring* seq, const QUALstring* qual = NULL);
-	
-	void collect(const SequencingErrorModel* o);
-	void finish(int length = -1); // for parseAlignment.cpp, length set the observed maximum read/mate length
+	void update(double frac, char dir, int pos, const RefSeq& refseq, const CIGARstring& cigar, const SEQstring& seq, const QUALstring& qual);
+
+	// Important, must call for each read, update MLD, QD, NQPRO and NPRO	
+	void update(double frac, bool is_aligned, const SEQstring& seq, const QUALstring& qual) {
+		if (mode == 0 && (status & 2)) {
+			mld->update(seq.getLen());
+			if (status & 1) qd->update(qual);
+		}
+		if (status & 1) nqpro->update(qual, seq, is_aligned, frac);
+		else npro->update(seq, is_aligned, frac);
+	}
+
 	void clear();
+	void collect(const IlluminaSequenceModel* o);
+	void finish();
 	
-	void read(std::ifstream& fin);
-	void write(std::ofstream& fout, bool isProb = true);
+	void read(std::ifstream& fin, int choice); // choice: 0 -> p; 1 -> ss; 2 -> c; 
+	void write(std::ofstream& fout, int choice);
 
-	void prepare_for_simulation(QualDist* qd);
-
-	void simulate(Sampler* sampler, int frag_len, int len, char dir, int pos, const RefSeq* refseq, std::string& cigar, std::string& readseq, std::string& qual);
+	// return number of mapped bases, -1 means failed
+	int simulate(Sampler* sampler, char dir, int pos, const RefSeq& refseq, std::string& cigar, std::string& readseq, std::string& qual);
 
 private:
-	bool hasQual; // if we have quality scores
+	int mode; // 0, master; 1, child; 2, simulation
+	int status; // 2 bits, bit 1: has qual, bit 2: is first pass
+	int min_len, max_len;
 
+	MateLenDist *mld;
 	Markov *markov;
-	Profile *profile;
-	QProfile *qprofile;
-	
-	QualDist *qd; // qd is only used for simulation
+	Profile *pro;
+	QProfile *qpro;
+	QualDist *qd;
+	NoiseProfile *npro;
+	NoiseQProfile *nqpro;
 
 	void push_cigar_operation(std::string& cigar, char opchr, int oplen) {
 		int s = 0;
@@ -108,9 +124,9 @@ private:
 };
 
 // No QualDist prob because it is the same for all alignments of the same read
-inline double SequencingErrorModel::getLogProb(char dir, int pos, const RefSeq* refseq, const CIGARstring* cigar, const SEQstring* seq, const QUALstring* qual) const {
-	double log_prob = 0.0;
-	int len = cigar->getLen();
+inline double IlluminaSequenceModel::getLogProb(char dir, int pos, const RefSeq& refseq, const CIGARstring& cigar, const SEQstring& seq, const QUALstring& qual) const {
+	double log_prob = mld->getLogProb(seq.getLen());
+	int len = cigar.getLen();
 	int readpos = 0;
 
 	int prev_state, curr_state; // current Markov state
@@ -121,17 +137,17 @@ inline double SequencingErrorModel::getLogProb(char dir, int pos, const RefSeq* 
 
 	prev_state = Markov::Begin;
 	for (int i = 0; i < len; ++i) {
-		opchr = cigar->opchrAt(i);
-		oplen = cigar->oplenAt(i);
+		opchr = cigar.opchrAt(i);
+		oplen = cigar.oplenAt(i);
 
 		if (opchr == 'M' || opchr == '=' || opchr == 'X') {
 			// set curr_state
 			curr_state = Markov::M;
 			// calculate read generating probabilities
 			for (int j = 0; j < oplen; ++j) {
-				ref_base = refseq->baseCodeAt(dir, pos);
-				read_base = seq->baseCodeAt(readpos);
-				log_prob += (hasQual ? qprofile->getLogProb(qual->qualAt(readpos), ref_base, read_base) : profile->getLogProb(readpos, ref_base, read_base));
+				ref_base = refseq.baseCodeAt(dir, pos);
+				read_base = seq.baseCodeAt(readpos);
+				log_prob += ((status & 1) ? qpro->getLogProb(qual.qualAt(readpos), ref_base, read_base) : pro->getLogProb(readpos, ref_base, read_base));
 				++pos; ++readpos;
 			}
 		}
@@ -140,7 +156,7 @@ inline double SequencingErrorModel::getLogProb(char dir, int pos, const RefSeq* 
 			curr_state = (opchr == 'I' ? Markov::I : (prev_state <= Markov::S1 ? Markov::S1 : Markov::S2));
 			// calculate read generating probabilities with I/S states
 			for (int j = 0; j < oplen; ++j) {
-				log_prob += markov->getLogProbBase(curr_state, seq->baseCodeAt(readpos));
+				log_prob += markov->getLogProbBase(curr_state, seq.baseCodeAt(readpos));
 				++readpos;
 			}
 		}
@@ -161,8 +177,8 @@ inline double SequencingErrorModel::getLogProb(char dir, int pos, const RefSeq* 
 	return log_prob;
 }
 
-inline void SequencingErrorModel::update(double frac, char dir, int pos, const RefSeq* refseq, const CIGARstring* cigar, const SEQstring* seq, const QUALstring* qual) {
-	int len = cigar->getLen();
+inline void IlluminaSequenceModel::update(double frac, char dir, int pos, const RefSeq& refseq, const CIGARstring& cigar, const SEQstring& seq, const QUALstring& qual) {
+	int len = cigar.getLen();
 	int readpos = 0;
 
 	int prev_state, curr_state; // current Markov state
@@ -173,18 +189,18 @@ inline void SequencingErrorModel::update(double frac, char dir, int pos, const R
 
 	prev_state = Markov::Begin;
 	for (int i = 0; i < len; ++i) {
-		opchr = cigar->opchrAt(i);
-		oplen = cigar->oplenAt(i);
+		opchr = cigar.opchrAt(i);
+		oplen = cigar.oplenAt(i);
 
 		if (opchr == 'M' || opchr == '=' || opchr == 'X') {
 			// set curr_state
 			curr_state = Markov::M;
 			// update read generating probabilities
 			for (int j = 0; j < oplen; ++j) {
-				ref_base = refseq->baseCodeAt(dir, pos);
-				read_base = seq->baseCodeAt(readpos);
-				if (hasQual) qprofile->update(qual->qualAt(readpos), ref_base, read_base, frac);
-				else profile->update(readpos, ref_base, read_base, frac);
+				ref_base = refseq.baseCodeAt(dir, pos);
+				read_base = seq.baseCodeAt(readpos);
+				if (status & 1) qpro->update(qual.qualAt(readpos), ref_base, read_base, frac);
+				else pro->update(readpos, ref_base, read_base, frac);
 				++pos; ++readpos;
 			}
 		}
@@ -193,7 +209,7 @@ inline void SequencingErrorModel::update(double frac, char dir, int pos, const R
 			curr_state = (opchr == 'I' ? Markov::I : (prev_state <= Markov::S1 ? Markov::S1 : Markov::S2));
 			// update read generating probabilities with I/S states
 			for (int j = 0; j < oplen; ++j) {
-				markov->update(curr_state, seq->baseCodeAt(readpos), frac);
+				markov->updateBase(curr_state, seq.baseCodeAt(readpos), frac);
 				++readpos;
 			}
 		}
@@ -212,19 +228,27 @@ inline void SequencingErrorModel::update(double frac, char dir, int pos, const R
 	}
 }
 
-inline void SequencingErrorModel::simulate(Sampler* sampler, int fraglen, int readlen, char dir, int pos, const RefSeq* refseq, std::string& cigar, std::string& readseq, std::string& qual) {
+// assume pos is valid
+inline int IlluminaSequenceModel::simulate(Sampler* sampler, char dir, int pos, const RefSeq& refseq, std::string& cigar, std::string& readseq, std::string& qual) {
 	int curr_state; // current Markov states
-	int qval = -1;
+	int qval, refpos, readpos, reflen, readlen;
 	
-	char opchr, curr_opchr = 0;
-	int oplen = 0;
+	char opchr, curr_opchr, non_s_opchr;
+	int oplen;
 	
+	qval = -1; 
+	refpos = pos; readpos = 0;
+	reflen = refseq.getLen();
+	readlen = mld->simulate(sampler); // simulate read length
+	curr_opchr = 0; oplen = 0; non_s_opchr = 0;
 	cigar = readseq = qual = "";
+
 	curr_state = Markov::Begin;
 	do {
 		curr_state = markov->simulate(sampler, curr_state);
 		opchr = Markov::getOpChr(curr_state);
-		
+		if (opchr != 'S') non_s_opchr = opchr;
+
 		if (curr_opchr != opchr) {
 			if (oplen > 0) push_cigar_operation(cigar, curr_opchr, oplen);
 			curr_opchr = opchr;
@@ -233,41 +257,37 @@ inline void SequencingErrorModel::simulate(Sampler* sampler, int fraglen, int re
 		++oplen;
 		
 		if (opchr == 'M') {
-			if (hasQual) {
+			if (refpos >= reflen) return -1; // failed
+
+			if (stats & 1) {
 				qval = (qval < 0 ? qd->simulate(sampler) : qd->simulate(sampler, qval));
 				qual.push_back(qval2char(qval));
-				readseq.push_back(qprofile->simulate(sampler, qval, refseq->baseCodeAt(dir, pos)));
+				readseq.push_back(qpro->simulate(sampler, qval, refseq.baseCodeAt(dir, refpos)));
 			}
-			else readseq.push_back(profile->simulate(sampler, readpos, refseq->baseCodeAt(dir, pos)));
-			--readlen; --fraglen;
+			else readseq.push_back(pro->simulate(sampler, readpos, refseq.baseCodeAt(dir, refpos)));
+
+			++refpos; ++readpos;
 		}
 		else if (opchr == 'S' || opchr == 'I') {
-			if (hasQual) {
+			if (status & 1) {
 				qval = (qval < 0 ? qd->simulate(sampler) : qd->simulate(sampler, qval));
 				qual.push_back(qval2char(qval));
 			}
 			readseq.push_back(markov->simulateBase(sampler, curr_state));
-			--readlen;
+			++readpos;
 		}
 		else {
 			assert(opchr == 'D');
-			--fraglen;
+			if (refpos >= reflen) return -1;
+			++refpos;
 		}
-	} while (readlen > 0 && fraglen > 0); 
+	} while (readpos < readlen); 
+
+	if (non_s_opchr != 'M') return -1;
 
 	if (oplen > 0) push_cigar_operation(cigar, curr_opchr, oplen);
 
-	// If has S2, the rest sequence are generated as S2 state
-	if (readlen > 0 && markov->hasS2()) {
-		push_cigar_operation(cigar, 'S', readlen);
-		for (int i = 0; i < readlen; ++i) {
-			if (hasQual) {
-				qval = (qval < 0 ? qd->simulate(sampler) : qd->simulate(sampler, qval));
-				qual.push_back(qval2char(qval));
-			}
-			readseq.push_back(markov->simulateBase(sampler, Markov::S2));
-		}
-	}	
+	return refpos - pos;
 }
 
-#endif
+#endif /*IlluminaSequenceModel*/

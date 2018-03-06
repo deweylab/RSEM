@@ -34,12 +34,12 @@ public:
 	QualDist(int mode);
 	~QualDist();
 	
-	void update(const QUALstring& qual) {
-		int len = qual.getLen();
+	void update(const QUALstring* qual) {
+		int len = qual->getLen();
 
-		++p_init[qual.qualAt(0)];
+		++p_init[qual->qualAt(0)];
 		for (int i = 1; i < len; ++i) {
-			++p_tran[qual.qualAt(i - 1)][qual.qualAt(i)];
+			++p_tran[qual->qualAt(i - 1)][qual->qualAt(i)];
 		}
 	}
 
@@ -47,13 +47,13 @@ public:
 	void collect(const QualDist* o);
 	void finish();
 	
-	double getLogProb(const QUALstring& qual) const {
-		int len = qual.getLen();
+	double getLogProb(const QUALstring* qual) const {
+		int len = qual->getLen();
 		double log_prob = 0.0;
 		
-		log_prob += log(p_init[qual.qualAt(0)]);
+		log_prob += log(p_init[qual->qualAt(0)]);
 		for (int i = 1; i < len; ++i) {
-			log_prob += log(p_tran[qual.qualAt(i - 1)][qual.qualAt(i)]);
+			log_prob += log(p_tran[qual->qualAt(i - 1)][qual->qualAt(i)]);
 		}
 		
 		return log_prob;

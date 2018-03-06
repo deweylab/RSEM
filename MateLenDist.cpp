@@ -27,8 +27,7 @@
 
 #include "MateLenDist.hpp"
 
-MateLenDist::MateLenDist(int mode, int maxL): mode(mode), pmf(NULL), ss(NULL), cdf(NULL) {
-	lb = 1; ub = maxL; span = ub - lb + 1;
+MateLenDist::MateLenDist(int mode, int lb, int ub): mode(mode), lb(lb), ub(ub), span(ub - lb + 1), pmf(NULL), ss(NULL), cdf(NULL) {
 	pmf = new double[span];
 	if (mode == 0) ss = new double[span];
 }

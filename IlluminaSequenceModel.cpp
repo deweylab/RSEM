@@ -22,71 +22,123 @@
 #include <string>
 #include <fstream>
 
+#include "MateLenDist.hpp"
 #include "Markov.hpp"
 #include "Profile.hpp"
-#include "QualDist.hpp"
 #include "QProfile.hpp"
-#include "SequencingErrorModel.hpp"
+#include "QualDist.hpp"
+#include "NoiseProfile.hpp"
+#include "NoiseQProfile.hpp"
+#include "IlluminaSequenceModel.hpp"
 
-SequencingErrorModel::SequencingErrorModel(bool hasQual, bool to_log_space, int maxL) : hasQual(hasQual) {
-	markov = NULL; profile = NULL; qprofile = NULL; qd = NULL;
+IlluminaSequenceModel::IlluminaSequenceModel(int mode, int status, int min_len, int max_len) : mode(mode), status(status), min_len(min_len), max_len(max_len) {
+	mld = NULL; markov = NULL; pro = NULL; qpro = NULL; qd = NULL; npro = NULL; nqpro = NULL;
 
-	markov = new Markov(to_log_space);
-	if (hasQual) qprofile = new QProfile(to_log_space);
-	else profile = new Profile(to_log_space, maxL);
-}
-
-SequencingErrorModel::~SequencingErrorModel() {
-	if (markov != NULL) delete markov;
-	if (profile != NULL) delete profile;
-	if (qprofile != NULL) delete qprofile;
-}
-
-void SequencingErrorModel::collect(const SequencingErrorModel* o) {
-	markov->collect(o->markov);
-	if (hasQual) qprofile->collect(o->qprofile);
-	else profile->collect(o->profile);
-}
-
-void SequencingErrorModel::finish(int length) {
-	markov->finish();
-	if (hasQual) qprofile->finish();
-	else profile->finish(length);
-}
-
-void SequencingErrorModel::clear() {
-	markov->clear();
-	if (hasQual) qprofile->clear();
-	else profile->clear();
-}
-
-void SequencingErrorModel::read(std::ifstream& fin) {
-	std::string line;
-
-	// When RNASeqModel detects markov, it calls read of SequencingErrorModel
-	markov->read(fin);
-	
-	while (getline(fin, line) && (line.length() == 0 || line[0] != '#'));
-
-	if (hasQual) {
-		assert(line.length() > 5 && line.substr(1, 4) == "qpro");
-		qprofile->read(fin);		
+	if (mode != 1) mld = new MateLenDist(mode, min_len, max_len);
+	markov = new Markov(mode);
+	if (status & 1) {
+		if (mode != 1) qd = new QualDist(mode);
+		qpro = new QProfile(mode);
+		nqpro = new NoiseQProfile(mode);
 	}
 	else {
-		assert(line.length() > 4 && line.substr(1, 3) == "pro");
-		profile->read(fin);
+		pro = new Profile(mode, maxL);
+		npro = new NoiseProfile(mode, maxL);
 	}
 }
 
-void SequencingErrorModel::write(std::ofstream& fout, bool isProb) {
-	markov->write(fout, isProb);
-	if (hasQual) qprofile->write(fout, isProb);
-	else profile->write(fout, isProb);
+IlluminaSequenceModel::~IlluminaSequenceModel() {
+	if (mode != 1) delete mld;
+	delete markov;
+	if (status & 1) {
+		if (mode != 1) delete qd;
+		delete qpro;
+		delete nqpro;
+	}
+	else {
+		delete pro;
+		delete npro;
+	}
 }
 
-void SequencingErrorModel::prepare_for_simulation(QualDist* qd) {
-	this->qd = qd;
-	markov->prepare_for_simulation();
-	if (hasQual) qprofile->prepare_for_simulation();
-	else profile->prepare_for_simulation();
+void IlluminaSequenceModel::clear() {
+	if (mode == 0 && (status & 2)) mld->clear();
+	markov->clear();
+	if (status & 1) {
+		if (mode == 0 && (status & 2)) qd->clear();
+		qpro->clear();
+		nqpro->clear();
+	}
+	else {
+		pro->clear();
+		npro->clear();
+	}
+}
+
+void IlluminaSequenceModel::collect(const IlluminaSequenceModel* o) {
+	markov->collect(o->markov);
+	if (status & 1) {
+		qpro->collect(o->qpro);
+		nqpro->collect(o->nqpro);
+	}
+	else {
+		pro->collect(o->pro);
+		npro->collect(o->npro);
+	}
+}
+
+void IlluminaSequenceModel::finish() {
+	if (mode == 0 && (status & 2)) mld->finish();
+	markov->finish();
+	if (status & 1) {
+		if (mode == 0 && (status & 2)) qd->finish();
+		qpro->finish();
+		nqpro->finish();
+	}
+	else {
+		pro->finish();
+		npro->finish();
+	}
+}
+
+void IlluminaSequenceModel::read(std::ifstream& fin, int choice) {
+	std::string line;
+
+	fin>> line;
+	assert(line == "#IlluminaSequenceModel:");
+	getline(fin, line);
+
+	if (choice < 2) {
+		mld->read(fin, choice);
+		markov->read(fin, choice);
+		if (status & 1) {
+			qd->read(fin, choice);
+			qpro->read(fin, choice);
+		}
+		else pro->read(fin, choice);
+	}
+
+	if (status & 1) nqpro->read(fin, choice);
+	else npro->read(fin, choice);
+}
+
+void IlluminaSequenceModel::write(std::ofstream& fout, int choice) {
+	fout<< "#IlluminaSequenceModel:";
+
+	if (choice < 2) {
+		mld->write(fout, choice); fout<< "\tMateLenDist";
+		markov->write(fout, choice); fout<< "\tMarkov";
+		if (status & 1) {
+			qd->write(fout, choice); fout<< "\tQualDist";
+			qpro->write(fout, choice); fout<< "\tQProfile";
+		}
+		else {
+			pro->write(fout, choice); fout<< "\tProfile";
+		}
+	}
+
+	if (status & 1) { nqpro->write(fout, choice); fout<< "\tNoiseQProfile"; }
+	else { npro->write(fout, choice); fout<< "\tNoiseProfile"; }
+
+	fout<< std::endl;
 }

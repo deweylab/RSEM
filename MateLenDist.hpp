@@ -27,7 +27,7 @@
 
 class MateLenDist {
 public:
-	MateLenDist(int mode, int maxL);
+	MateLenDist(int mode, int lb, int ub);
 	~MateLenDist();
 
 	void findBoundaries();
