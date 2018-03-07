@@ -490,7 +490,9 @@ void writeToDisk(char* refName) {
 
 	sprintf(tiF, "%s.ti", refName);
 	transcripts.writeTo(tiF);
-	if (verbose) printf("Transcript information file is generated.\n");
+	sprintf(transListF, "%s.translist", refName);
+	transcripts.writeTransListTo(transListF);
+	if (verbose) printf("Transcript information files are generated.\n");
 
 	if (rmdup && nDup > 0) {
 		sprintf(tiF, "%s.dup.ti", refName);
@@ -515,9 +517,6 @@ void writeToDisk(char* refName) {
 
 	sprintf(refFastaF, "%s.idx.fa", refName);
 	refs.writeTo(refFastaF);
-
-	sprintf(transListF, "%s.translist", refName);
-	refs.writeTransListTo(transListF);
 
 	if (n2g_idx) {
 		sprintf(refFastaF, "%s.n2g.idx.fa", refName);

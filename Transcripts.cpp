@@ -51,6 +51,13 @@ void Transcripts::writeTo(const char* outF) {
 	fout.close();
 }
 
+void Transcripts::writeTransListTo(const char* outF) {
+	std::ofstream fout(outF);
+	for (int i = 1; i <= M; ++i)
+		fout<< transcripts[i].getTranscriptID()<< '\t'<< transcripts[i].getLength()<< std::endl;
+	fout.close();
+}
+
 void Transcripts::updateCLens() {
 	for (int i = 1; i <= M; ++i)
 		transcripts[i].updateCLen();

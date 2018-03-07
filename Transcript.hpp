@@ -86,6 +86,7 @@ public:
 
 	const std::string& getLeft() const { return left; }
 
+	// This length should not include poly(A) tail
 	int getLength() const { return length; }
 
 	const std::vector<Interval>& getStructure() const { return structure; }
