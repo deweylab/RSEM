@@ -109,13 +109,15 @@ bool convert_t2g(BamAlignment* ba, int mate, const Transcript& transcript, int& 
 
 	int len;
 	uint32_t value;
-	int op, oplen, residue;
+	int op, oplen, residue, fillin;
 	CIGARstring ci;
+
+	int hang_over_len = ba->getSeqLength(mate);
 
 	is_rev = transcript.getStrand() != ba->getMateDir(mate);
 
 	tpos = transcript.getStrand() == '+' ? ba->getPos(mate) : transcript.getLength() - ba->getPos(mate) - 1;
-	idx = binary_search(structures, tpos);
+	idx = (tpos >= transcript.getLength() ? s : (tpos < 0 ? -1 : binary_search(structures, tpos)));
 
 	ba->getCIGAR(ci, mate);
 	ci.setCurrent();
@@ -124,59 +126,84 @@ bool convert_t2g(BamAlignment* ba, int mate, const Transcript& transcript, int& 
 	ca.n_cigar = 0;
 
 	if (transcript.getStrand() == '+') {
-		pos = structures[idx].start + (tpos - structures[idx].clen);
+		assert(idx >= 0);
+		pos = (idx < s ? structures[idx].start + (tpos - structures[idx].clen) : structures[s - 1].end + 1);
 		endpos = pos - 1;
-		for (int i = 0; i < len; ++i) {
+		for (int i = 0; i < len && idx < s; ++i) {
 			value = ci.valueAt(i);
 			op = bam_cigar_op(value);
 			oplen = bam_cigar_oplen(value);
+
 			if (bam_cigar_type(op) & 2) {
 				if (idx < s - 1 && endpos == structures[idx].end) {
 					ca.cigar[ca.n_cigar++] = bam_cigar_gen((structures[idx + 1].start - 1) - structures[idx].end, BAM_CREF_SKIP);
 					endpos = structures[++idx].start - 1;
 				}
-				endpos += oplen;
+				residue = oplen;
+				endpos += residue;
 				while (idx < s - 1 && endpos > structures[idx].end) {
-					residue = endpos - structures[idx].end;
-					ca.cigar[ca.n_cigar++] = bam_cigar_gen(oplen - residue, op);
+					fillin = residue - (endpos - structures[idx].end);
+					ca.cigar[ca.n_cigar++] = bam_cigar_gen(fillin, op);
 					ca.cigar[ca.n_cigar++] = bam_cigar_gen((structures[idx + 1].start - 1) - structures[idx].end, BAM_CREF_SKIP);
 					cross_junc = true;
-					oplen = residue; 
-					endpos = structures[++idx].start + oplen - 1;
+					residue -= fillin;
+					endpos = structures[++idx].start + residue - 1;
 				}
-				assert(endpos <= structures[idx].end);
-				ca.cigar[ca.n_cigar++] = bam_cigar_gen(oplen, op);
+				fillin = residue;
+				if (endpos > structures[idx].end) {
+					residue = endpos - structures[idx].end;
+					fillin -= residue;
+					oplen -= residue; // adjust consumed oplen
+					assert(idx++ == s - 1);
+				}
+				ca.cigar[ca.n_cigar++] = bam_cigar_gen(fillin, op);
 			}
 			else ca.cigar[ca.n_cigar++] = value;
+
+			if (bam_cigar_type(op) & 1) hang_over_len -= oplen;
 		}
 	}
 	else {
-		endpos = structures[idx].start + (tpos - structures[idx].clen);
+		assert(idx < s);
+		endpos = (idx >= 0 ? structures[idx].start + (tpos - structures[idx].clen) : structures[idx].start - 1);
 		pos = endpos + 1;
-		for (int i = 0; i < len; ++i) {
+		for (int i = 0; i < len && idx >= 0; ++i) {
 			value = ci.valueAt(i);
 			op = bam_cigar_op(value);
 			oplen = bam_cigar_oplen(value);
+
 			if (bam_cigar_type(op) & 2) {
 				if (idx > 0 && pos == structures[idx].start) {
 					ca.cigar[ca.n_cigar++] = bam_cigar_gen((structures[idx].start - 1) - structures[idx - 1].end, BAM_CREF_SKIP);
 					pos = structures[--idx].end + 1;
 				}
-				pos -= oplen;
+				residue = oplen;
+				pos -= residue;
 				while (idx > 0 && pos < structures[idx].start) {
-					residue = structures[idx].start - pos;
-					ca.cigar[ca.n_cigar++] = bam_cigar_gen(oplen - residue, op);
+					fillin = residue - (structures[idx].start - pos);
+					ca.cigar[ca.n_cigar++] = bam_cigar_gen(fillin, op);
 					ca.cigar[ca.n_cigar++] = bam_cigar_gen((structures[idx].start - 1) - structures[idx - 1].end, BAM_CREF_SKIP);
 					cross_junc = true;
-					oplen = residue;
-					pos = structures[--idx].end - oplen + 1;
+					residue -= fillin;
+					pos = structures[--idx].end - residue + 1;
 				}
-				assert(pos >= structures[idx].start);
-				ca.cigar[ca.n_cigar++] = bam_cigar_gen(oplen, op);		
+				fillin = residue;
+				if (pos < structures[idx].start) {
+					residue = structures[idx].start - pos;
+					fillin -= residue;
+					oplen -= residue;
+					assert(idx-- == 0);
+				}
+				ca.cigar[ca.n_cigar++] = bam_cigar_gen(fillin, op);		
 			}
 			else ca.cigar[ca.n_cigar++] = value;
+
+			if (bam_cigar_type(op) & 1) hang_over_len -= oplen;
 		}
 	}
+
+	if (hang_over_len > 0) printf("fail\n");
+	if (hang_over_len > 0) ca.cigar[ca.n_cigar++] = bam_cigar_gen(hang_over_len, BAM_CSOFT_CLIP); // poly(A) tail as soft clips
 
 	--pos; // switch to 0-based coordinate
 	if (ba->getMateDir(mate) == '-') ca.flip();
@@ -215,7 +242,7 @@ int main(int argc, char* argv[]) {
 	cigar_array ca;
 	double frac;
 	char strand1, strand2;
-
+	
 	while (ag.read(parser)) {
 		if (ag.isAligned()) {
 			for (int i = 0; i < ag.size(); ++i) {
