@@ -68,8 +68,9 @@ public:
 		std::sort(transcripts.begin(), transcripts.end());
 	}
 
-	void readFrom(const char*);
-	void writeTo(const char*);
+	void readFrom(const char* inpF);
+	void writeTo(const char* outF);
+	void writeTransListTo(const char* outF);
 
 	void updateCLens(); // update clen for each transcript record
 	

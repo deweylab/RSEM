@@ -21,7 +21,6 @@
 #ifndef MDSTRING_H_
 #define MDSTRING_H_
 
-#include <cstdio>
 #include <cctype>
 #include <cassert>
 

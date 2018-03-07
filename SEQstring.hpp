@@ -51,6 +51,9 @@ public:
 		}
 	}
 
+	// return current seq string
+	void setCurrent() { return_current = true; }
+
 	int getLen() const { return len; }
 
 	char baseAt(int pos) const {

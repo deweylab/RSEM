@@ -22,13 +22,15 @@
 #define REFSEQ_H_
 
 #include <cctype>
+#include <cstdint>
 #include <fstream>
 #include <string>
 
-#include <stdint.h>
-
 #include "utils.h"
 #include "my_assert.h"
+#include "CIGARstring.hpp"
+#include "MDstring.hpp"
+#include "SEQstring.hpp"
 
 class RefSeq {
 public:
@@ -39,6 +41,9 @@ public:
 		this->name = name; this->seq = seq;
 		len = seq.length(); assert(len > 0);
 	}
+
+	// get reference sequence fragment from MD tags
+	void set(CIGARstring& cigar, MDstring& mdstr, SEQstring& seq); 
 
 	void appendPolyATail(int polyALen) { 
 		len += polyALen;
@@ -67,5 +72,44 @@ private:
 	std::string name; // the tag
 	std::string seq; // the sequence, in the forward strand	
 };
+
+/*
+	@function constructing RefSeq based on MD filed
+	@param   cigar   CIGAR string
+	@param   mdstr   MD string
+	@param   seqstr  SEQ string
+ */
+inline void RefSeq::set(CIGARstring& cigar, MDstring& mdstr, SEQstring& seqstr) {
+	len = 0; name.clear(); seq.clear();
+
+	char old_dir = cigar.getDir();
+	assert(old_dir == seqstr.getDir());
+
+	cigar.setCurrent();
+	seqstr.setCurrent();
+	
+	int pos = -1, cigar_len = cigar.getLen();
+	int oplen, optype;
+	char ref_base;
+	
+	for (int i = 0; i < cigar_len; ++i) {
+		oplen = cigar.oplenAt(i);
+		optype = cigar.optypeAt(i);
+		for (int j = 0; j < oplen; ++j) {
+			if (optype & 1) ++pos;
+			if (optype & 2) {
+				ref_base = mdstr.next();
+				assert(ref_base >= 0);
+				if (ref_base == 0) ref_base = seqstr.baseAt(pos);
+				seq.push_back(ref_base);
+			}
+		}
+	}
+	name = "temporary_sequence";
+	len = seq.length();
+
+	cigar.setDir(old_dir);
+	seqstr.setDir(old_dir);
+}
 
 #endif

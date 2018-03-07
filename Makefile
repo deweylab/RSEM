@@ -110,10 +110,10 @@ parseIt.o : parseIt.cpp $(SAMHEADERS) sam_utils.h utils.h my_assert.h GroupInfo.
 
 Transcript.o : Transcript.cpp utils.h my_assert.h Transcript.hpp
 Transcripts.o : Transcripts.cpp utils.h my_assert.h Transcript.hpp Transcripts.hpp
-RefSeq.o : RefSeq.cpp utils.h my_assert.h RefSeq.hpp
-Refs.o : Refs.cpp utils.h my_assert.h RefSeq.hpp Refs.hpp
+RefSeq.o : RefSeq.cpp utils.h my_assert.h CIGARstring.hpp MDstring.hpp SEQstring.hpp RefSeq.hpp
+Refs.o : Refs.cpp utils.h my_assert.h CIGARstring.hpp MDstring.hpp SEQstring.hpp RefSeq.hpp Refs.hpp
 GenomeMap.o : GenomeMap.cpp my_assert.h Transcript.hpp Transcripts.hpp GenomeMap.hpp 
-buildRef.o : buildRef.cpp utils.h my_assert.h GTFItem.h Transcript.hpp Transcripts.hpp RefSeq.hpp Refs.hpp GenomeMap.hpp
+buildRef.o : buildRef.cpp utils.h my_assert.h GTFItem.h Transcript.hpp Transcripts.hpp CIGARstring.hpp MDstring.hpp SEQstring.hpp RefSeq.hpp Refs.hpp GenomeMap.hpp
 SEQstring.o : SEQstring.cpp $(SAMHEADERS) SEQstring.hpp
 SamHeaderText.o : SamHeaderText.cpp $(SAMHEADERS) my_assert.h SamHeaderText.hpp
 SamParser.o : SamParser.cpp $(SAMHEADERS) my_assert.h SamHeaderText.hpp SamParser.hpp
@@ -138,8 +138,8 @@ simulation.o : simulation.cpp utils.h Read.h SingleRead.h SingleReadQ.h PairedEn
 
 # Dependencies for header files
 Transcripts.hpp : Transcript.hpp
-RefSeq.hpp : utils.h my_assert.h
-Refs.hpp : utils.h my_assert.h RefSeq.hpp
+RefSeq.hpp : utils.h my_assert.h CIGARstring.hpp MDstring.hpp SEQstring.hpp
+Refs.hpp : utils.h my_assert.h CIGARstring.hpp MDstring.hpp SEQstring.hpp RefSeq.hpp
 SamParser.hpp : $(SAMHEADERS) utils.h
 BamWriter.hpp : $(SAMHEADERS) my_assert.h
 BamAlignment.hpp : $(SAMHEADERS) my_assert.h CIGARstring.hpp SEQstring.hpp QUALstring.hpp MDstring.hpp SamParser.hpp BamWriter.hpp
