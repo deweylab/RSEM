@@ -104,8 +104,7 @@ void IlluminaSequenceModel::finish() {
 void IlluminaSequenceModel::read(std::ifstream& fin, int choice) {
 	std::string line;
 
-	fin>> line;
-	assert(line == "#IlluminaSequenceModel:");
+	assert((fin>> line) && (line == "#IlluminaSequenceModel:"));
 	getline(fin, line);
 
 	if (choice < 2) {

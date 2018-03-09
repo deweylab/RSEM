@@ -36,9 +36,15 @@ public:
 	int getMaxL() const { return ub; }
 	
 
-	double getLogProb(int len) const { return pmf[len - lb]; }
+	double getLogProb(int len) const { 
+		if (len >= lb && len <= ub) return pmf[len - lb]; 
+		if (len < lb) return pmf[0];
+		return pmf[span - 1];
+	}
 	
-	void update(int len) { ++pmf[len - lb]; }
+	void update(int len) { 
+		if (len >= lb && len <= ub) ++pmf[len - lb]; 
+	}
 	
 	void clear();
 	void collect(const MateLenDist* o);

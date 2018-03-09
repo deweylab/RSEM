@@ -1,6 +1,6 @@
-/* Copyright (c) 2016
-   Bo Li (University of California, Berkeley)
-   bli25@berkeley.edu
+/* Copyright (c) 2017
+   Bo Li (The Broad Institute of MIT and Harvard)
+   libo@broadinstitute.org
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -24,10 +24,8 @@
 #include "SEQstring.hpp"
 #include "QUALstring.hpp"
 
-#include "MateLenDist.hpp"
-#include "NoiseProfile.hpp"
-#include "QualDist.hpp"
-#include "NoiseQProfile.hpp"
+#include "Orientation.hpp"
+#include "IlluminaSequenceModel.hpp"
 
 #include "BamAlignment.hpp"
 #include "AlignmentGroup.hpp"
@@ -78,14 +76,12 @@ private:
 	int model_type;
 	int frag_min, frag_max; // minimum and maximum fragment length seen for paired-end reads
 	
-	MateLenDist *mld1, *mld2; // mate length distribution 1 & 2
-	QualDist *qd;
-	NoiseProfile *npro;
-	NoiseQProfile *nqpro;
+	IlluminaSequenceModel *mate1, *mate2;
+
 
 	SEQstring readseq;
 	QUALstring qual;
 };
 
-#endif
+#endif /* RNASEQMODEL_H_ */
 

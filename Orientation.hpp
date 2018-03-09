@@ -1,6 +1,6 @@
-/* Copyright (c) 2016
-   Bo Li (University of California, Berkeley)
-   bli25@berkeley.edu
+/* Copyright (c) 2017
+   Bo Li (The Broad Institute of MIT and Harvard)
+   libo@broadinstitute.org
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU General Public License as
@@ -21,66 +21,44 @@
 #ifndef ORIENTATION_H_
 #define ORIENTATION_H_
 
-#include <cstring>
-#include <cassert>
-#include <string>
 #include <fstream>
 
 #include "sampling.hpp"
 
 class Orientation {
  public:
-	Orientation(double probF = 0.5) {
-		prob[0] = probF;
-		prob[1] = 1.0 - probF;
+	Orientation(int mode);
+	~Orientation();
 
-		ss[0] = ss[1] = 0.0;
-	}
-	
 	//dir : +/-
 	double getProb(char dir) { return prob[dir == '+' ? 0 : 1]; }
-	
+
+	double getEstimatedProb(char dir) { return ss[dir == '+' ? 0 : 1] / (ss[0] + ss[1]); }
+
+	double getLogProb(char dir) { return logprob[dir == '+' ? 0 : 1]; }
+
+	void setProb(double probF) {
+		prob[0] = probF; prob[1] = 1.0 - probF;
+		p2logp();
+	}
+
 	//dir must be either + or -
 	void update(char dir) { ++ss[dir == '+' ? 0 : 1]; }
 
-	void collect(const Orientation* o) {
-		ss[0] += o->ss[0];
-		ss[1] += o->ss[1];
-	}
+	void clear();
+	void collect(const Orientation* o);
+	void finish(); // Only used if we want to estimate orientation from data
 
-	// Only used if we want to estimate it from data
-	void finish() {
-		double sum = ss[0] + ss[1];
-		prob[0] = ss[0] / sum;
-		prob[1] = ss[1] / sum;
-	}
+	void read(std::ifstream& fin, int choice); // choice, 0 prob; 1 ss
+	void write(std::ofstream& fout, int choice);
 
-	void clear() { ss[0] = ss[1] = 0.0; }
-
-	void read(std::ifstream& fin) {
-		assert(fin>> prob[0]); 
-		getline(fin, line);
-		prob[1] = 1.0 - prob[0];
-	}
-	
-	void write(std::ofstream& fout, bool isProb) {
-		if (isProb) {
-			fout<< "#ori 3 Orientation, format: forward probability"<< std::endl;
-			fout<< prob[0]<< std::endl;
-		}
-		else {
-			fout<< "#ori 3 Orientation, format: ss[0], ss[1], estimated_forward_probability"<< std::endl;
-			fout<< ss[0]<< ss[1]<< ss[0] / (ss[0] + ss[1])<< std::endl;
-		}
-
-		fout<< std::endl<< std::endl;
-	}
-	
 	char simulate(Sampler* sampler) { return (sampler->random() < prob[0] ? '+' : '-'); }
 	
- private:  
-	double prob[2]; // 0 + 1 -
-	double ss[2]; // sufficient statistics
+ private:
+ 	int mode; // 0 master; 1 child; 2 simulation
+ 	double *prob, *logprob, *ss;
+
+ 	void p2logp();
 };
 
 #endif /* ORIENTATION_H_ */

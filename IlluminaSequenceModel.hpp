@@ -103,7 +103,7 @@ public:
 private:
 	int mode; // 0, master; 1, child; 2, simulation
 	int status; // 2 bits, bit 1: has qual, bit 2: is first pass
-	int min_len, max_len;
+	int min_len, max_len; // if min_len == max_len, MateLenDist will ignore any length that is out of the range (maybe due to adaptor trimming)
 
 	MateLenDist *mld;
 	Markov *markov;
