@@ -30,7 +30,7 @@
 
 class NoiseProfile {
 public:
-	NoiseProfile(int mode, int maxL); 
+	NoiseProfile(model_mode_type mode, int maxL); 
 	~NoiseProfile();
 
 	void update(const SEQstring& readseq, bool is_aligned, double frac = 1.0) {
@@ -40,7 +40,7 @@ public:
 			else c[i][readseq.baseCodeAt(i)] += frac;
 	}
 
-	void setMaxL(int maxL) { this->maxL = maxL; } // set maxL, only used in parseAlignments
+	void setMaxL(int maxL) { this->maxL = maxL; } // set maxL, only used in FIRST_PASS
 
 	void clear();
 	void collect(const NoiseProfile* o);
@@ -70,14 +70,16 @@ public:
 	}
 	
 private:
-	int mode; // 0, master; 1, child; 2, simulation
+	model_mode_type mode;
 	int maxL; // profile length
 	double (*p)[NCODES], (*c)[NCODES], (*ss)[NCODES]; // p, probability in log space; c, counts from unaligned reads; ss, sufficient statistics	
+
+	void init(); // set initial parameters
+	void prepare_for_simulation();
 
 	void calc_ss(); // calculate sufficient statistics
 	void ss2p(); // from sufficient statistics to probabilities
 	void p2logp(); // convert to log space
-	void prepare_for_simulation();
 };
 
 #endif /* NOISEPROFILE_H_ */

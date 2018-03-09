@@ -28,13 +28,14 @@
 #include "utils.h"
 #include "NoiseProfile.hpp"
 
-NoiseProfile::NoiseProfile(int mode, int maxL) : mode(mode), maxL(maxL), p(NULL), c(NULL), ss(NULL) {
+NoiseProfile::NoiseProfile(model_mode_type mode, int maxL) : mode(mode), maxL(maxL), p(NULL), c(NULL), ss(NULL) {
 	assert(maxL > 0);
 	p = new double[maxL][NCODES];
-	if (mode == 0) {
+	if (mode == FIRST_PASS || mode == MASTER) {
 		c = new double[maxL][NCODES];
 		ss = new double[maxL][NCODES];
 	}
+	if (mode == INIT) init();
 }
 
 NoiseProfile::~NoiseProfile() {
@@ -54,9 +55,9 @@ void NoiseProfile::collect(const NoiseProfile* o) {
 }
 
 void NoiseProfile::finish() {
-	calc_ss() // calculate sufficient statistics	
+	calc_ss(); // calculate sufficient statistics	
 	ss2p(); // calculate p
-	p2logp(); // convert to log space
+	if (mode == MASTER) p2logp(); // convert to log space
 }
 
 double NoiseProfile::calcLogP() const {
@@ -80,21 +81,23 @@ void NoiseProfile::read(std::ifstream& fin, int choice) {
 		case 2: in = c;
 	}
 
+	assert((fin>> line) && (line == "#npro"));
+	assert(getline(fin, line));
 	assert((fin>> tmp_maxl>> tmp_ncodes) && (tmp_maxl == maxL) && (tmp_ncodes == NCODES));
 	for (int i = 0; i < maxL; ++i)
 		for (int j = 0; j < NCODES; ++j)
 			assert(fin>> in[i][j]);
-	getline(fin, line);
+	assert(getline(fin, line));
 
-	if (mode == 0 && choice == 0) p2logp();
-	if (mode == 2) prepare_for_simulation();
+	if (mode == MASTER && choice == 0) p2logp();
+	if (mode == SIMULATION) prepare_for_simulation();
 }
 
 void NoiseProfile::write(std::ofstream& fout, int choice) {
 	double (*out)[NCODES] = NULL;
 
 	switch(choice) {
-		case 0: ss2p(); out = p; break;
+		case 0: if (mode == MASTER) ss2p(); out = p; break;
 		case 1: out = ss; break;
 		case 2: out = c;
 	}
@@ -108,6 +111,19 @@ void NoiseProfile::write(std::ofstream& fout, int choice) {
 	fout<< std::endl<< std::endl;
 }
 
+void NoiseProfile::init() {
+	for (int i = 0; i < maxL; ++i)
+		for (int j = 0; j < NCODES; ++j)
+			p[i][j] = prior_noise[j];
+	p2logp();	
+}
+
+void NoiseProfile::prepare_for_simulation() {
+	for (int i = 0; i < maxL; ++i)
+		for (int j = 1; j < NCODES; ++j)
+			p[i][j] += p[i][j - 1];
+}
+
 void NoiseProfile::calc_ss() {
 	for (int i = 0; i < maxL; ++i)
 		for (int j = 0; j < NCODES; ++j) 
@@ -119,7 +135,7 @@ void NoiseProfile::ss2p() {
 	for (int i = 0; i < maxL; ++i) {
 		sum = 0.0;
 		for (int j = 0; j < NCODES; ++j) {
-			p[i][j] = ss[i][j] + pseudoC[j];
+			p[i][j] = ss[i][j] + pseudo_count * prior_noise[j];
 			sum += p[i][j];
 		}
 		for (int j = 0; j < NCODES; ++j)
@@ -131,10 +147,4 @@ void NoiseProfile::p2logp() {
 	for (int i = 0; i < maxL; ++i)
 		for (int j = 0; j < NCODES; ++j)
 			p[i][j] = log(p[i][j]);
-}
-
-void NoiseProfile::prepare_for_simulation() {
-	for (int i = 0; i < maxL; ++i)
-		for (int j = 1; j < NCODES; ++j)
-			p[i][j] += p[i][j - 1];
 }

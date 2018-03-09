@@ -23,11 +23,12 @@
 
 #include <fstream>
 
+#include "utils.h"
 #include "sampling.hpp"
 
 class Orientation {
  public:
-	Orientation(int mode);
+	Orientation(model_mode_type mode, double probF = 0.5);
 	~Orientation();
 
 	//dir : +/-
@@ -36,11 +37,6 @@ class Orientation {
 	double getEstimatedProb(char dir) { return ss[dir == '+' ? 0 : 1] / (ss[0] + ss[1]); }
 
 	double getLogProb(char dir) { return logprob[dir == '+' ? 0 : 1]; }
-
-	void setProb(double probF) {
-		prob[0] = probF; prob[1] = 1.0 - probF;
-		p2logp();
-	}
 
 	//dir must be either + or -
 	void update(char dir) { ++ss[dir == '+' ? 0 : 1]; }
@@ -55,7 +51,7 @@ class Orientation {
 	char simulate(Sampler* sampler) { return (sampler->random() < prob[0] ? '+' : '-'); }
 	
  private:
- 	int mode; // 0 master; 1 child; 2 simulation
+ 	model_mode_type mode;
  	double *prob, *logprob, *ss;
 
  	void p2logp();

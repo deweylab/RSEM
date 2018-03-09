@@ -31,7 +31,7 @@
 
 class NoiseQProfile {
 public:
-	NoiseQProfile(int mode); 
+	NoiseQProfile(model_mode_type mode); 
 	~NoiseQProfile();
 
 	void update(const QUALstring& qual, const SEQstring& readseq, bool is_aligned, double frac = 1.0) {
@@ -68,13 +68,15 @@ public:
 	}
 
 private:
-	int mode; // 0, master; 1, child; 2, simulation
+	model_mode_type mode;
 	double (*p)[NCODES], (*c)[NCODES], (*ss)[NCODES]; // p, probability in log space; c, counts from unaligned reads; ss, sufficient statistics	
+
+	void init();
+	void prepare_for_simulation();
 
 	void calc_ss(); // calculate sufficient statistics
 	void ss2p(); // from sufficient statistics to probabilities
 	void p2logp(); // convert to log space
-	void prepare_for_simulation();
 };
 
 #endif /* NOISEQPROFILE_H_ */

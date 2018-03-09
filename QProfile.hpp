@@ -28,7 +28,7 @@
 
 class QProfile {
 public:
-	QProfile(int mode);
+	QProfile(model_mode_type mode);
 	~QProfile();
 	
 	// qual starts from 0, 33 is already deducted
@@ -52,12 +52,14 @@ public:
 	}
 	
 private:
-	int mode; // 0, master; 1, child; 2, simulation	
+	model_mode_type mode;
 	double (*p)[NCODES][NCODES], (*ss)[NCODES][NCODES]; // p[q][r][c] = p(c|r,q), if mode == 0, p is in log space; ss, sufficient statistics
+
+	void init();
+	void prepare_for_simulation();
 
 	void ss2p(); // from sufficient statistics to p
 	void p2logp(); // convert to log space
-	void prepare_for_simulation();
 };
 
 #endif /* QPROFILE_H_ */

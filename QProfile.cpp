@@ -28,9 +28,10 @@
 #include "utils.h"
 #include "QProfile.hpp"
 
-QProfile::QProfile(int mode) : mode(mode), p(NULL), ss(NULL) {
+QProfile::QProfile(model_mode_type mode) : mode(mode), p(NULL), ss(NULL) {
 	p = new double[QSIZE][NCODES][NCODES];
-	if (mode == 0) ss = new double[QSIZE][NCODES][NCODES];
+	if (mode == FIRST_PASS || mode == MASTER) ss = new double[QSIZE][NCODES][NCODES];
+	if (mode == INIT) init();
 }
 
 QProfile::~QProfile() {
@@ -52,7 +53,7 @@ void QProfile::collect(const QProfile* o) {
 void QProfile::finish() {
 	memcpy(ss, p, sizeof(double) * QSIZE * NCODES * NCODES);
 	ss2p(); // calculate p
-	p2logp(); // convert to log space
+	if (mode == MASTER) p2logp(); // convert to log space
 }
 
 void QProfile::read(std::ifstream& fin, int choice) {
@@ -65,22 +66,24 @@ void QProfile::read(std::ifstream& fin, int choice) {
 		case 1: in = ss;
 	}
 
+	assert((fin>> line) && (line == "#qpro"));
+	assert(getline(fin, line));
 	assert((fin>> tmp_qsize>> tmp_ncodes) && (tmp_qsize == QSIZE) && (tmp_ncodes == NCODES));
 	for (int i = 0; i < QSIZE; ++i)
 		for (int j = 0; j < NCODES; ++j)
 			for (int k = 0; k < NCODES; ++k)
 				assert(fin>> in[i][j][k]);
-	getline(fin, line);
+	assert(getline(fin, line));
 
-	if (mode == 0 && choice == 0) p2logp();
-	if (mode == 2) prepare_for_simulation();
+	if (mode == MASTER && choice == 0) p2logp();
+	if (mode == SIMULATION) prepare_for_simulation();
 }
 
 void QProfile::write(std::ofstream& fout, int choice) {
 	double (*out)[NCODES][NCODES] = NULL;
 
 	switch(choice) {
-		case 0: ss2p(); out = p; break;
+		case 0: if (mode == MASTER) ss2p(); out = p; break;
 		case 1: out = ss;
 	}
 
@@ -97,13 +100,28 @@ void QProfile::write(std::ofstream& fout, int choice) {
 	fout<< std::endl;
 }
 
+void QProfile::init() {
+	for (int i = 0; i < QSIZE; ++i)
+		for (int j = 0; j < NCODES; ++j)
+			for (int k = 0; k < NCODES; ++k)
+				p[i][j][k] = (j < NCODES - 1 ? (j == k ? prior_aligned[0] : (k < NCODES - 1 ? prior_aligned[1] : prior_aligned[2])): prior_aligned[3]);
+	p2logp();
+}
+
+void QProfile::prepare_for_simulation() {
+	for (int i = 0; i < QSIZE; ++i)
+		for (int j = 0; j < NCODES; ++j)
+			for (int k = 1; k < NCODES; ++k)
+				p[i][j][k] += p[i][j][k - 1];
+}
+
 void QProfile::ss2p() {
 	double sum;
 	for (int i = 0; i < QSIZE; ++i) 
 		for (int j = 0; j < NCODES; ++j) {
 			sum = 0.0;
 			for (int k = 0; k < NCODES; ++k) {
-				p[i][j][k] = ss[i][j][k] + pseudoC[k];
+				p[i][j][k] = ss[i][j][k] + pseudo_count * (j < NCODES - 1 ? (j == k ? prior_aligned[0] : (k < NCODES - 1 ? prior_aligned[1] : prior_aligned[2])): prior_aligned[3]);
 				sum += p[i][j][k];
 			}
 			for (int k = 0; k < NCODES; ++k)
@@ -116,11 +134,4 @@ void QProfile::p2logp() {
 		for (int j = 0; j < NCODES; ++j)
 			for (int k = 0; k < NCODES; ++k)
 				p[i][j][k] = log(p[i][j][k]);
-}
-
-void QProfile::prepare_for_simulation() {
-	for (int i = 0; i < QSIZE; ++i)
-		for (int j = 0; j < NCODES; ++j)
-			for (int k = 1; k < NCODES; ++k)
-				p[i][j][k] += p[i][j][k - 1];
 }

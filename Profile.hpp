@@ -28,7 +28,7 @@
 
 class Profile {
 public:
-	Profile(int mode, int maxL);
+	Profile(model_mode_type mode, int maxL);
 	~Profile();
 
 	double getLogProb(int pos, int ref_base, int read_base) const {
@@ -53,13 +53,15 @@ public:
 	}
 	
 private:
-	int mode; // 0, master; 1, child; 2, simulation
+	model_mode_type mode;
 	int maxL; // profile length
 	double (*p)[NCODES][NCODES], (*ss)[NCODES][NCODES]; // p, probability in log space; ss, sufficient statistics
 
+	void init();
+	void prepare_for_simulation();
+
 	void ss2p(); // from sufficient statistics to probabilities
 	void p2logp(); // convert to log space
-	void prepare_for_simulation();
 };
 
 #endif /* PROFILE_H_ */

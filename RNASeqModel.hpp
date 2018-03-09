@@ -73,9 +73,14 @@ public:
 	void write(const char* ssF, const char* paramF);
 	
 private:
-	int model_type;
+	int mode; // 0, master; 1, child; 2, simulation
+	int model_type; // 0, SE; 1, SEQ; 2 PE; 3 PEQ (Q: quality score)
+
 	int frag_min, frag_max; // minimum and maximum fragment length seen for paired-end reads
 	
+	double *theta; // fraction of reads from each transcript; transcript 0 describes background noise
+	Orientation *ori;
+	FragLenDist *fld;
 	IlluminaSequenceModel *mate1, *mate2;
 
 

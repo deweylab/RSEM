@@ -36,13 +36,14 @@ const int Markov::offset[Markov::NSTATES] = {1, 1, 2, 2, 2, 5};
 
 const int Markov::s2pos[Markov::NSTATES] = {-1, 0, -1, 1, -1, 2};
 
-Markov::Markov(int mode) : mode(mode), P(NULL), ss_P(NULL), probB(NULL), ss_probB(NULL) {
+Markov::Markov(model_mode_type mode) : mode(mode), P(NULL), ss_P(NULL), probB(NULL), ss_probB(NULL) {
 	P = new double[NSTATES][NSTATES];
-	probB = new double[3][NSTATES];
-	if (mode == 0) {
+	probB = new double[3][NCODES];
+	if (mode == FIRST_PASS || mode == MASTER) {
 		ss_P = new double[NSTATES][NSTATES];
-		ss_probB = new double[3][NSTATES];
+		ss_probB = new double[3][NCODES];
 	}
+	if (mode == INIT) init();
 }
 
 Markov::~Markov() {
@@ -54,7 +55,7 @@ Markov::~Markov() {
 
 void Markov::clear() {
 	memset(P, 0, sizeof(double) * NSTATES * NSTATES);
-	memset(probB, 0, sizeof(double) * 3 * NSTATES);
+	memset(probB, 0, sizeof(double) * 3 * NCODES);
 }
 
 void Markov::collect(const Markov* o) {
@@ -68,9 +69,9 @@ void Markov::collect(const Markov* o) {
 
 void Markov::finish() {
 	memcpy(ss_P, P, sizeof(double) * NSTATES * NSTATES);
-	memcpy(ss_probB, probB, sizeof(double) * 3 * NSTATES);
+	memcpy(ss_probB, probB, sizeof(double) * 3 * NCODES);
   	ss2p();
-  	p2logp();
+  	if (mode == MASTER) p2logp();
 }
 
 void Markov::read(std::ifstream& fin, int choice) {
@@ -83,6 +84,8 @@ void Markov::read(std::ifstream& fin, int choice) {
 		case 1: in_P = ss_P; in_probB = ss_probB;
 	}
 
+	assert((fin>> line) && (line == "#markov"));
+	assert(getline(fin, line));
 	assert((fin>> tmp_nstates>> tmp_ncodes) && (tmp_nstates == NSTATES) && (tmp_ncodes == NCODES));
 	for (int i = 0; i < NSTATES; ++i)
 		for (int j = 0; j < NSTATES; ++j)
@@ -90,17 +93,17 @@ void Markov::read(std::ifstream& fin, int choice) {
 	for (int i = 0; i < 3; ++i)
 		for (int j = 0; j < NCODES; ++j)
 			assert(fin>> in_probB[i][j]);
-	getline(fin, line);
+	assert(getline(fin, line));
 
-	if (mode == 0 && choice == 0) p2logp();
-	if (mode == 2) prepare_for_simulation();
+	if (mode == MASTER && choice == 0) p2logp();
+	if (mode == SIMULATION) prepare_for_simulation();
 }
 
 void Markov::write(std::ofstream& fout, int choice) {
 	double (*out_P)[NSTATES] = NULL, (*out_probB)[NCODES] = NULL;
 
 	switch(choice) {
-		case 0: ss2p(); out_P = P; out_probB = probB; break;
+		case 0: if (mode == MASTER) ss2p(); out_P = P; out_probB = probB; break;
 		case 1: out_P = ss_P; out_probB = ss_probB;
 	}
 
@@ -108,7 +111,7 @@ void Markov::write(std::ofstream& fout, int choice) {
 	fout<< NSTATES<< '\t'<< NCODES<< std::endl;
 	for (int i = 0; i < NSTATES; ++i) {
 		for (int j = 0; j < NSTATES - 1; ++j) fout<< out_P[i][j]<< '\t';
-			fout<< out_P[i][NSTATES － 1]<< std::endl;
+			fout<< out_P[i][NSTATES - 1]<< std::endl;
 	}
 	fout<< std::endl;
 	for (int i = 0; i < 3; ++i) {
@@ -116,6 +119,20 @@ void Markov::write(std::ofstream& fout, int choice) {
 		fout<< out_probB[i][NCODES - 1]<< std::endl;
 	}
 	fout<< std::endl<< std::endl;
+}
+
+void Markov::init() {
+	memset(P, 0, sizeof(double) * NSTATES * NSTATES);
+	P[Begin][0] = 0.9; P[Begin][1] = 0.1;
+	P[S1][0] = 0.1; P[S1][1] = 0.9;
+	P[M][0] = 0.7; P[M][1] = P[M][2] = P[M][3] = 0.1;
+	P[I][0] = 0.8; P[I][1] = 0.15; P[I][2] = 0.05;
+	P[D][0] = 0.8; P[D][1] = 0.05; P[D][2] = 0.15;
+	P[S2][0] = 1.0;
+	for (int i = 0; i < 3; ++i) 
+		for (int j = 0; j < NCODES; ++j)
+			probB[i][j] = prior_noise[j];
+	p2logp();
 }
 
 void Markov::prepare_for_simulation() {

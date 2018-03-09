@@ -29,11 +29,11 @@
 #include "utils.h"
 #include "QualDist.hpp"
 
-QualDist::QualDist(int mode) : mode(mode), p_init(NULL), ss_init(NULL), p_tran(NULL), ss_tran(NULL) {
+QualDist::QualDist(model_mode_type mode) : mode(mode), p_init(NULL), ss_init(NULL), p_tran(NULL), ss_tran(NULL) {
 	p_init = new double[QSIZE];
 	p_tran = new double[QSIZE][QSIZE];
 
-	if (mode == 0) {
+	if (mode == FIRST_PASS || mode == MASTER) {
 		ss_init = new double[QSIZE];
 		ss_tran = new double[QSIZE][QSIZE];		
 	}
@@ -61,7 +61,7 @@ void QualDist::finish() {
 	memcpy(ss_init, p_init, sizeof(double) * QSIZE);
 	memcpy(ss_tran, p_tran, sizeof(double) * QSIZE * QSIZE);
 	ss2p();
-	p2logp();
+	if (mode == MASTER) p2logp();
 }
 
 double QualDist::calcLogP() const {
@@ -87,21 +87,23 @@ void QualDist::read(std::ifstream& fin, int choice) {
 		case 1: in_init = ss_init; in_tran = ss_tran;
 	}
 
+	assert((fin>> line) && (line == "#qd"));
+	assert(getline(fin, line));
 	assert((fin>> tmp_qsize) && (tmp_qsize == QSIZE));
 	for (int i = 0; i < QSIZE; ++i) assert(fin>> in_init[i]);
 	for (int i = 0; i < QSIZE; ++i) 
 		for (int j = 0; j < QSIZE; ++j) assert(fin>> in_tran[i][j]);
-	getline(fin, line);
+	assert(getline(fin, line));
 
-	if (mode == 0 && choice == 0) p2logp();
-	if (mode == 2) prepare_for_simulation();
+	if (mode == MASTER && choice == 0) p2logp();
+	if (mode == SIMULATION) prepare_for_simulation();
 }
 
 void QualDist::write(std::ofstream& fout, int choice) {
 	double *out_init = NULL, (*out_tran)[QSIZE] = NULL;
 
 	switch(choice) {
-		case 0: ss2p(); out_init = p_init; out_tran = p_tran; break;
+		case 0: if (mode == MASTER) ss2p(); out_init = p_init; out_tran = p_tran; break;
 		case 1: out_init = ss_init; out_tran = ss_tran;
 	}
 
@@ -114,6 +116,13 @@ void QualDist::write(std::ofstream& fout, int choice) {
 		fout<< out_tran[i][QSIZE - 1]<< std::endl;
 	}
 	fout<< std::endl<< std::endl;
+}
+
+void QualDist::prepare_for_simulation() {
+	for (int i = 1; i < QSIZE; ++i) p_init[i] += p_init[i - 1];
+	for (int i = 0; i < QSIZE; ++i)
+		for (int j = 1; j < QSIZE; ++j) 
+			p_tran[i][j] += p_tran[i][j - 1];
 }
 
 void QualDist::ss2p() {
@@ -136,11 +145,4 @@ void QualDist::p2logp() {
 	for (int i = 0; i < QSIZE; ++i)
 		for (int j = 0; j < QSIZE; ++j)
 			p_tran[i][j] = (p_tran[i][j] > 0.0 ? log(p_tran[i][j]) : -std::numeric_limits<double>::infinity());	
-}
-
-void QualDist::prepare_for_simulation() {
-	for (int i = 1; i < QSIZE; ++i) p_init[i] += p_init[i - 1];
-	for (int i = 0; i < QSIZE; ++i)
-		for (int j = 1; j < QSIZE; ++j) 
-			p_tran[i][j] += p_tran[i][j - 1];
 }

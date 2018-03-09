@@ -30,6 +30,10 @@
 typedef uint64_t HIT_INT_TYPE;
 typedef uint64_t READ_INT_TYPE;
 
+// define mode of sequencing model: INIT, preset parameters; FIRST_PASS, first pass of data; MASTER, master model in the EM; CHILD: child model for collecting sufficient statistics; SIMULATION: model used for simulation only
+enum model_mode_type {INIT, FIRST_PASS, MASTER, CHILD, SIMULATION};
+
+
 extern bool verbose; // show detail intermediate outputs
 
 const std::string VERSION = "2.0";
@@ -80,9 +84,9 @@ inline std::string generateCommand(int argc, char* argv[]) {
 }
 
 
-
-static const double pseudoC[NCODES] = {1.0, 1.0, 1.0, 1.0, 0.1}; // pseudo count for A/C/G/T/N
-static const double initP[4] = {0.9, 0.03, 0.01, 0.2}; // 0, ref_base == read_base; 1, ref_base != read_base & read_base != 'N'; 2, read_base == 'N'; 3, ref_base == 'N', uniform
+static const double pseudo_count = 4.0;
+static const double prior_noise[NCODES] = {0.2475, 0.2475, 0.2475, 0.2475, 0.01}; // prior for A/C/G/T/N
+static const double prior_aligned[5] = {0.9, 0.03, 0.01, 0.2}; // prior for alignable reads: 0, ref_base == read_base; 1, ref_base != read_base & read_base != 'N'; 2, read_base == 'N'; 3, ref_base == 'N', uniform
 
 static const char code2base[] = "ACGTN";
 

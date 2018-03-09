@@ -31,7 +31,7 @@
 //from 33 to 126 to encode 0 to 93
 class QualDist {
 public:
-	QualDist(int mode);
+	QualDist(model_mode_type mode);
 	~QualDist();
 	
 	void update(const QUALstring* qual) {
@@ -86,13 +86,14 @@ public:
 	}
 	
 private:
-	int mode; // 0, master; 1, child; 2, simulation	
+	model_mode_type mode;
 	double *p_init, *ss_init;
 	double (*p_tran)[QSIZE], (*ss_tran)[QSIZE]; //p_tran[a][b] = p(b|a)
 
+	void prepare_for_simulation();
+
 	void ss2p(); // from sufficient statistics to p
 	void p2logp();
-	void prepare_for_simulation();
 };
 
 #endif /* QUALDIST_H_ */

@@ -28,12 +28,13 @@
 #include "utils.h"
 #include "NoiseQProfile.hpp"
 
-NoiseQProfile::NoiseQProfile(int mode) : mode(mode), p(NULL), c(NULL), ss(NULL) {
+NoiseQProfile::NoiseQProfile(model_mode_type mode) : mode(mode), p(NULL), c(NULL), ss(NULL) {
 	p = new double[QSIZE][NCODES];
-	if (mode == 0) {
+	if (mode == FIRST_PASS || mode == MASTER) {
 		c = new double[QSIZE][NCODES];
 		ss = new double[QSIZE][NCODES];
 	}
+	if (mode == INIT) init();
 }
 
 NoiseQProfile::~NoiseQProfile() {
@@ -53,9 +54,9 @@ void NoiseQProfile::collect(const NoiseQProfile* o) {
 }
 
 void NoiseQProfile::finish() {
-	calc_ss() // calculate sufficient statistics	
+	calc_ss(); // calculate sufficient statistics	
 	ss2p(); // calculate p
-	p2logp(); // convert to log space
+	if (mode == MASTER) p2logp(); // convert to log space
 }
 
 double NoiseQProfile::calcLogP() const {
@@ -79,21 +80,23 @@ void NoiseQProfile::read(std::ifstream& fin, int choice) {
 		case 2: in = c;
 	}
 
+	assert((fin>> line) && (line == "#nqpro"));
+	assert(getline(fin, line));
 	assert((fin>> tmp_qsize>> tmp_ncodes) && (tmp_qsize = QSIZE) && (tmp_ncodes == NCODES));
 	for (int i = 0; i < QSIZE; ++i)
 		for (int j = 0; j < NCODES; ++j)
 			assert(fin>> in[i][j]);
-	getline(fin, line);
+	assert(getline(fin, line));
 
-	if (mode == 0 && choice == 0) p2logp();
-	if (mode == 2) prepare_for_simulation();
+	if (mode == MASTER && choice == 0) p2logp();
+	if (mode == SIMULATION) prepare_for_simulation();
 }
 
 void NoiseQProfile::write(std::ofstream& fout, int choice) {
 	double (*out)[NCODES] = NULL;
 
 	switch(choice) {
-		case 0: ss2p(); out = p; break;
+		case 0: if (mode == MASTER) ss2p(); out = p; break;
 		case 1: out = ss; break;
 		case 2: out = c;
 	}
@@ -102,9 +105,22 @@ void NoiseQProfile::write(std::ofstream& fout, int choice) {
 	fout<< QSIZE<< '\t'<< NCODES<< std::endl;
 	for (int i = 0; i < QSIZE; ++i) {
 		for (int j = 0; j < NCODES - 1; ++j) fout<< out[i][j]<< '\t';
-		fout<< out[i][j]<< std::endl;
+		fout<< out[i][NCODES - 1]<< std::endl;
 	}
 	fout<< std::endl<< std::endl;
+}
+
+void NoiseQProfile::init() {
+	for (int i = 0; i < QSIZE; ++i)
+		for (int j = 0; j < NCODES; ++j)
+			p[i][j] = prior_noise[j];
+	p2logp();
+}
+
+void NoiseQProfile::prepare_for_simulation() {
+	for (int i = 0; i < QSIZE; ++i) 
+		for (int j = 1; j < NCODES; ++j)
+			p[i][j] += p[i][j - 1];
 }
 
 void NoiseQProfile::calc_ss() {
@@ -118,7 +134,7 @@ void NoiseQProfile::ss2p() {
 	for (int i = 0; i < QSIZE; ++i) {
 		sum = 0.0;
 		for (int j = 0; j < NCODES; ++j) {
-			p[i][j] = ss[i][j] + pseudoC[j];
+			p[i][j] = ss[i][j] + pseudo_count * prior_noise[j];
 			sum += p[i][j];
 		}
 		for (int j = 0; j < NCODES; ++j)
@@ -130,10 +146,4 @@ void NoiseQProfile::p2logp() {
 	for (int i = 0; i < QSIZE; ++i)
 		for (int j = 0; j < NCODES; ++j)
 			p[i][j] = log(p[i][j]);
-}
-
-void NoiseQProfile::prepare_for_simulation() {
-	for (int i = 0; i < QSIZE; ++i) 
-		for (int j = 1; j < NCODES; ++j)
-			p[i][j] += p[i][j - 1];
 }

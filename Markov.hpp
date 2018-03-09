@@ -43,7 +43,7 @@ public:
 	
 	static char getOpChr(int state) { return state2char[state]; }
 	
-	Markov(int mode);
+	Markov(model_mode_type mode);
 	~Markov();
 
 	// probabilities are in log space
@@ -85,13 +85,15 @@ private:
 	static const int offset[NSTATES]; // offsets, pos + offset points to the state	
 	static const int s2pos[NSTATES]; // state to row position in probB
 	
-	int mode; // 0, master; 1, child; 2, simulation
+	model_mode_type mode;
 	double (*P)[NSTATES], (*ss_P)[NSTATES]; // transition matrix
 	double (*probB)[NCODES], (*ss_probB)[NCODES]; // probability of generating bases given state S1, I/I2, S2
 
+	void init();
+	void prepare_for_simulation();
+
 	void ss2p(); // from sufficient statistics to probabilities
 	void p2logp(); // convert to log space
-	void prepare_for_simulation();
 };
 
 #endif

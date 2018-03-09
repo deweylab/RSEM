@@ -25,12 +25,17 @@
 #include <string>
 #include <fstream>
 
+#include "utils.h"
 #include "Orientation.hpp"
 
-Orientation::Orientation(int mode) : mode(mode), prob(NULL), logprob(NULL), ss(NULL) {
-	if (mode != 1) prob = new double[2];
-	if (mode == 0) logprob = new double[2];
-	if (mode != 2) ss = new double[2];
+Orientation::Orientation(model_mode_type mode, double probF) : mode(mode), prob(NULL), logprob(NULL), ss(NULL) {
+	if (mode != CHILD) prob = new double[2];
+	if (mode != CHILD && mode != SIMULATION) logprob = new double[2];
+	if (mode != INIT && mode != SIMULATION) ss = new double[2];
+	if (mode == INIT || mode == FIRST_PASS) {
+		prob[0] = probF; prob[1] = 1.0 - probF;
+		p2logp();		
+	}
 }
 
 Orientation::~Orientation() {
@@ -52,10 +57,10 @@ void Orientation::finish() {
 	double sum = ss[0] + ss[1];
 	prob[0] = ss[0] / sum;
 	prob[1] = ss[1] / sum;
-	p2logp();
+	if (mode == MASTER) p2logp();
 }
 
-void read(std::ifstream& fin, int choice) {
+void Orientation::read(std::ifstream& fin, int choice) {
 	std::string line;
 	double *in = NULL;
 
@@ -68,10 +73,10 @@ void read(std::ifstream& fin, int choice) {
 	getline(fin, line);
 	assert(fin>> in[0]>> in[1]);
 
-	if (mode == 0 && choice == 0) p2logp();
+	if (mode == MASTER && choice == 0) p2logp();
 }
 
-void write(std::ofstream& fout, int choice) {
+void Orientation::write(std::ofstream& fout, int choice) {
 	double *out = NULL;
 
 	switch(choice) {
