@@ -127,6 +127,8 @@ Profile.o : Profile.cpp utils.h $(BOOST)/random.hpp sampling.hpp Profile.hpp
 QProfile.o : QProfile.cpp utils.h $(BOOST)/random.hpp sampling.hpp QProfile.hpp
 QualDist.o : QualDist.cpp utils.h $(BOOST)/random.hpp sampling.hpp QUALstring.hpp QualDist.hpp
 Markov.o : Markov.cpp utils.h $(BOOST)/random.hpp sampling.hpp Markov.hpp
+MateLenDist.o : MateLenDist.cpp utils.h $(BOOST)/random.hpp sampling.hpp MateLenDist.hpp
+IlluminaSequenceModel.o: IlluminaSequenceModel.cpp utils.h my_assert.h $(BOOST)/random.hpp sampling.hpp CIGARstring.hpp MDstring.hpp SEQstring.hpp QUALstring.hpp MateLenDist.hpp Markov.hpp Profile.hpp QProfile.hpp QualDist.hpp NoiseProfile.hpp NoiseQProfile.hpp IlluminaSequenceModel.hpp
 # wiggle.o: wiggle.cpp $(SAMHEADERS) sam_utils.h utils.h my_assert.h wiggle.h
 # bam2wig.o : bam2wig.cpp utils.h my_assert.h wiggle.h
 # bam2readdepth.o : bam2readdepth.cpp utils.h my_assert.h wiggle.h
@@ -157,7 +159,8 @@ Profile.hpp: utils.h sampling.hpp
 QProfile.hpp: utils.h sampling.hpp
 QualDist.hpp: utils.h sampling.hpp QUALstring.hpp
 Markov.hpp: utils.h sampling.hpp
-
+MateLenDist.hpp : utils.h sampling.hpp
+IlluminaSequenceModel.hpp : utils.h sampling.hpp RefSeq.hpp CIGARstring.hpp QUALstring.hpp SEQstring.hpp MateLenDist.hpp Markov.hpp Profile.hpp QProfile.hpp QualDist.hpp NoiseProfile.hpp NoiseQProfile.hpp
 # WriteResults.h : utils.h my_assert.h GroupInfo.h Transcript.h Transcripts.h RefSeq.h Refs.h Model.h SingleModel.h SingleQModel.h PairedEndModel.h PairedEndQModel.h
 
 # Compile EBSeq

@@ -23,9 +23,8 @@
 
 #include <cassert>
 #include <string>
-#include <ostream>
 #include <fstream>
-#include <sstream>
+#include <algorithm>
 
 #include "utils.h"
 #include "sampling.hpp"
@@ -46,11 +45,21 @@
 
 class IlluminaSequenceModel {
 public:
-	// mode: 0, master; 1, child; 2 simulation
-	// status: 2 bits, bit 1: has qual, bit 2: is first pass
+	// mode: model mode
+	// has_qual: if contains quality scores
 	// min_len: minimum read length; max_len: maximum read length; 
-	IlluminaSequenceModel(int mode, int status, int min_len, int max_len); 
+	IlluminaSequenceModel(model_mode_type mode, bool has_qual, int min_len, int max_len); 
 	~IlluminaSequenceModel();
+	
+	int getMinL() const {
+		assert(mld != NULL);
+		return mld->getMinL();
+	}
+
+	int getMaxL() const { 
+		assert(mld != NULL);
+		return mld->getMaxL();
+	}
 	
 	/*
 		@param   dir             strand information
@@ -63,9 +72,9 @@ public:
 	*/
 	double getLogProb(char dir, int pos, const RefSeq& refseq, const CIGARstring& cigar, const SEQstring& seq, const QUALstring& qual) const;
 
-	// for noise reads, no QD
+	// for noise reads, no MLD and QD probs
 	double getLogProb(const SEQstring& seq, const QUALstring& qual) const {
-		return mld->getLobProb(seq.getLen()) + ((status & 1) ? nqpro->getLogProb(qual, seq) : npro->getLogProb(seq));
+		return (has_qual ? nqpro->getLogProb(qual, seq) : npro->getLogProb(seq));
 	}
 
 	/*
@@ -82,11 +91,11 @@ public:
 
 	// Important, must call for each read, update MLD, QD, NQPRO and NPRO	
 	void update(double frac, bool is_aligned, const SEQstring& seq, const QUALstring& qual) {
-		if (mode == 0 && (status & 2)) {
+		if (mode == FIRST_PASS) {
 			mld->update(seq.getLen());
-			if (status & 1) qd->update(qual);
+			if (has_qual) qd->update(qual);
 		}
-		if (status & 1) nqpro->update(qual, seq, is_aligned, frac);
+		if (has_qual) nqpro->update(qual, seq, is_aligned, frac);
 		else npro->update(seq, is_aligned, frac);
 	}
 
@@ -98,12 +107,11 @@ public:
 	void write(std::ofstream& fout, int choice);
 
 	// return number of mapped bases, -1 means failed
-	int simulate(Sampler* sampler, char dir, int pos, const RefSeq& refseq, std::string& cigar, std::string& readseq, std::string& qual);
+	int simulate(Sampler* sampler, int frag_len, char dir, int pos, const RefSeq& refseq, std::string& cigar, std::string& readseq, std::string& qual);
 
 private:
-	int mode; // 0, master; 1, child; 2, simulation
-	int status; // 2 bits, bit 1: has qual, bit 2: is first pass
-	int min_len, max_len; // if min_len == max_len, MateLenDist will ignore any length that is out of the range (maybe due to adaptor trimming)
+	model_mode_type mode; 
+	bool has_qual;
 
 	MateLenDist *mld;
 	Markov *markov;
@@ -123,9 +131,9 @@ private:
 	}
 };
 
-// No QualDist prob because it is the same for all alignments of the same read
+// No MateLenDist and QualDist probs because they are the same for all alignments of the same read
 inline double IlluminaSequenceModel::getLogProb(char dir, int pos, const RefSeq& refseq, const CIGARstring& cigar, const SEQstring& seq, const QUALstring& qual) const {
-	double log_prob = mld->getLogProb(seq.getLen());
+	double log_prob = 0.0;
 	int len = cigar.getLen();
 	int readpos = 0;
 
@@ -147,7 +155,7 @@ inline double IlluminaSequenceModel::getLogProb(char dir, int pos, const RefSeq&
 			for (int j = 0; j < oplen; ++j) {
 				ref_base = refseq.baseCodeAt(dir, pos);
 				read_base = seq.baseCodeAt(readpos);
-				log_prob += ((status & 1) ? qpro->getLogProb(qual.qualAt(readpos), ref_base, read_base) : pro->getLogProb(readpos, ref_base, read_base));
+				log_prob += (has_qual ? qpro->getLogProb(qual.qualAt(readpos), ref_base, read_base) : pro->getLogProb(readpos, ref_base, read_base));
 				++pos; ++readpos;
 			}
 		}
@@ -199,7 +207,7 @@ inline void IlluminaSequenceModel::update(double frac, char dir, int pos, const 
 			for (int j = 0; j < oplen; ++j) {
 				ref_base = refseq.baseCodeAt(dir, pos);
 				read_base = seq.baseCodeAt(readpos);
-				if (status & 1) qpro->update(qual.qualAt(readpos), ref_base, read_base, frac);
+				if (has_qual) qpro->update(qual.qualAt(readpos), ref_base, read_base, frac);
 				else pro->update(readpos, ref_base, read_base, frac);
 				++pos; ++readpos;
 			}
@@ -229,7 +237,7 @@ inline void IlluminaSequenceModel::update(double frac, char dir, int pos, const 
 }
 
 // assume pos is valid
-inline int IlluminaSequenceModel::simulate(Sampler* sampler, char dir, int pos, const RefSeq& refseq, std::string& cigar, std::string& readseq, std::string& qual) {
+inline int IlluminaSequenceModel::simulate(Sampler* sampler, int frag_len, char dir, int pos, const RefSeq& refseq, std::string& cigar, std::string& readseq, std::string& qual) {
 	int curr_state; // current Markov states
 	int qval, refpos, readpos, reflen, readlen;
 	
@@ -239,7 +247,7 @@ inline int IlluminaSequenceModel::simulate(Sampler* sampler, char dir, int pos, 
 	qval = -1; 
 	refpos = pos; readpos = 0;
 	reflen = refseq.getLen();
-	readlen = mld->simulate(sampler); // simulate read length
+	readlen = std::min(mld->simulate(sampler), frag_len); // simulate read length
 	curr_opchr = 0; oplen = 0; non_s_opchr = 0;
 	cigar = readseq = qual = "";
 
@@ -259,7 +267,7 @@ inline int IlluminaSequenceModel::simulate(Sampler* sampler, char dir, int pos, 
 		if (opchr == 'M') {
 			if (refpos >= reflen) return -1; // failed
 
-			if (stats & 1) {
+			if (has_qual) {
 				qval = (qval < 0 ? qd->simulate(sampler) : qd->simulate(sampler, qval));
 				qual.push_back(qval2char(qval));
 				readseq.push_back(qpro->simulate(sampler, qval, refseq.baseCodeAt(dir, refpos)));
@@ -269,7 +277,7 @@ inline int IlluminaSequenceModel::simulate(Sampler* sampler, char dir, int pos, 
 			++refpos; ++readpos;
 		}
 		else if (opchr == 'S' || opchr == 'I') {
-			if (status & 1) {
+			if (has_qual) {
 				qval = (qval < 0 ? qd->simulate(sampler) : qd->simulate(sampler, qval));
 				qual.push_back(qval2char(qval));
 			}

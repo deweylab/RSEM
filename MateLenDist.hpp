@@ -21,13 +21,15 @@
 #ifndef MATELENDIST_H_
 #define MATELENDIST_H_
 
+#include <cassert>
 #include <fstream>
 
+#include "utils.h"
 #include "sampling.hpp"
 
 class MateLenDist {
 public:
-	MateLenDist(int mode, int lb, int ub);
+	MateLenDist(model_mode_type mode, int lb, int ub);
 	~MateLenDist();
 
 	void findBoundaries();
@@ -35,15 +37,14 @@ public:
 	int getMinL() const { return lb; }
 	int getMaxL() const { return ub; }
 	
-
 	double getLogProb(int len) const { 
-		if (len >= lb && len <= ub) return pmf[len - lb]; 
-		if (len < lb) return pmf[0];
-		return pmf[span - 1];
+		assert(len <= ub);
+		return (len >= lb ? pmf[len - lb] : pmf[0]);
 	}
 	
 	void update(int len) { 
-		if (len >= lb && len <= ub) ++pmf[len - lb]; 
+		assert(len <= ub);
+		if (len >= lb) ++pmf[len - lb];
 	}
 	
 	void clear();
@@ -60,13 +61,14 @@ public:
 	}
 
 private:
-	int mode; // 0, master; 1, child; 2, simulation	
+	model_mode_type mode;
 	int lb, ub, span; // [lb, ub], span = ub - lb + 1
 	double *pmf, *ss, *cdf; // probability mass function, sufficiant statistics, and cumulative density function
 
+	void prepare_for_simulation();
+
 	void ss2p(); // from sufficient statistics to pmf
 	void p2logp(); // convert to log space
-	void prepare_for_simulation();
 };
 
 #endif /* MATELENDIST_H_ */
