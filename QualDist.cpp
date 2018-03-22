@@ -20,7 +20,6 @@
 
 #include <new>
 #include <cmath>
-#include <limits>
 #include <cstring>
 #include <cassert>
 #include <string>
@@ -141,8 +140,8 @@ void QualDist::ss2p() {
 }
 
 void QualDist::p2logp() {
-	for (int i = 0; i < QSIZE; ++i) p_init[i] = (p_init[i] > 0.0 ? log(p_init[i]) : -std::numeric_limits<double>::infinity());
+	for (int i = 0; i < QSIZE; ++i) p_init[i] = (p_init[i] > 0.0 ? log(p_init[i]) : NEGINF);
 	for (int i = 0; i < QSIZE; ++i)
 		for (int j = 0; j < QSIZE; ++j)
-			p_tran[i][j] = (p_tran[i][j] > 0.0 ? log(p_tran[i][j]) : -std::numeric_limits<double>::infinity());	
+			p_tran[i][j] = (p_tran[i][j] > 0.0 ? log(p_tran[i][j]) : NEGINF);	
 }

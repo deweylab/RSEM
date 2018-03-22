@@ -20,7 +20,7 @@
 
 #include <new>
 #include <cmath>
-#include <limits>
+#include <cstring>
 #include <cassert>
 #include <string>
 #include <fstream>
@@ -120,5 +120,5 @@ void MateLenDist::ss2p() {
 }
 
 void MateLenDist::p2logp() {
-	for (int i = 0; i < span; ++i) pmf[i] = (pmf[i] > 0.0 ? log(pmf[i]) : -std::numeric_limits<double>::infinity());
+	for (int i = 0; i < span; ++i) pmf[i] = (pmf[i] > 0.0 ? log(pmf[i]) : NEGINF);
 }

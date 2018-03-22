@@ -18,30 +18,46 @@
    USA
 */
 
+#include <new>
 #include <cmath>
-#include <cstdio>
 #include <cstdlib>
 #include <cassert>
 #include <vector>
 #include <algorithm>
 
+#include "utils.h"
 #include "FragLenDist.hpp"
 
 const double FragLenDist::max_step_size = 1.0;
 const double FragLenDist::alpha = 0.3;
 const double FragLenDist::beta = 0.5;
 
-FragLenDist::FragLenDist(int minL, int maxL) {
-	lb = minL - 1;
-	ub = maxL;
-	span = ub - lb;
-
-	hasSE = hasPE = false;
-	countUpper.assign(span + 1, 0.0);
-	countFrags.assign(span + 1, 0.0);
-
-	M = 0; lens = NULL; efflens = NULL; countTrans = NULL;
+FragLenDist::FragLenDist(model_mode_type mode, int lb, int ub) : mode(mode), lb(lb), ub(ub), span(ub - lb + 1), pmf(NULL), ss(NULL), cdf(NULL) {
+	pmf = new double[span];
+	if (mode == FIRST_PASS || mode == MASTER) ss = new double[span];
+	if (mode == SIMULATION) cdf = new double[span];
 }
+
+FragLenDist::~FragLenDist() {
+	if (pmf != NULL) delete pmf;
+	if (ss != NULL) delete ss;
+	if (cdf != NULL) delete cdf;
+}
+
+void FragLenDist::findBoundaries() {
+	while (span > 0 && pmf[span - 1] == 0.0) --span;
+	assert(span > 0);
+	ub = lb + span - 1;
+
+	int pos = 0;
+	while (pos < span && pmf[pos] == 0.0) ++pos;
+	lb += pos;
+	span -= pos;
+
+	if (pos > 0) memmove(pmf, pmf + pos, sizeof(double) * span);
+}
+
+
 
 void FragLenDist::setUpTrans(int M, int *lens, double *efflens, double *countTrans) {
 	this->M = M;

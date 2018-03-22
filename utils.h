@@ -26,6 +26,7 @@
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <limits>
 
 typedef uint64_t HIT_INT_TYPE;
 typedef uint64_t READ_INT_TYPE;
@@ -37,20 +38,27 @@ enum model_mode_type {INIT, FIRST_PASS, MASTER, CHILD, SIMULATION};
 extern bool verbose; // show detail intermediate outputs
 
 const std::string VERSION = "2.0";
+const double NEGINF = -std::numeric_limits<double>::infinity(); // negative infinity
 
 const int STRLEN = 10005 ;
-const double EPSILON = 1e-300;
 const int MAX_WARNS = 50; // Display at most 50 warnings of the same type
 
+
+const double EPSILON = 1e-300;
 const double MINEEL = 1.0;
 const double ORIVALVE = 0.1;
 const int RANGE = 201;
-const int OLEN = 25; // overlap length, number of bases must not be in poly(A) tails
-const int NBITS = 32; // use unsigned int, 32 bits per variable
-const int MASK_LEN = 24; // the last MASK_LEN bp of a sequence cannot be aligned if poly(A) tail is added
 
 const int NCODES = 5; // A, C, G, T, N
 const int QSIZE = 100; // quality score range, from 0 to QSIZE - 1
+
+// Model priors
+const double pseudo_count = 4.0;
+const double prior_noise[NCODES] = {0.2475, 0.2475, 0.2475, 0.2475, 0.01}; // prior for A/C/G/T/N
+const double prior_aligned[5] = {0.9, 0.03, 0.01, 0.2}; // prior for alignable reads: 0, ref_base == read_base; 1, ref_base != read_base & read_base != 'N'; 2, read_base == 'N'; 3, ref_base == 'N', uniform
+const double pseudo_count_FSPD = 1.0; // pseudo count for FSPD foreground/background model
+
+
 
 inline char qval2char(int qval) { return char(qval + 33); }
 inline int char2qval(int c) { return c - 33; }  
@@ -82,11 +90,6 @@ inline std::string generateCommand(int argc, char* argv[]) {
 
 	return command;
 }
-
-
-static const double pseudo_count = 4.0;
-static const double prior_noise[NCODES] = {0.2475, 0.2475, 0.2475, 0.2475, 0.01}; // prior for A/C/G/T/N
-static const double prior_aligned[5] = {0.9, 0.03, 0.01, 0.2}; // prior for alignable reads: 0, ref_base == read_base; 1, ref_base != read_base & read_base != 'N'; 2, read_base == 'N'; 3, ref_base == 'N', uniform
 
 static const char code2base[] = "ACGTN";
 

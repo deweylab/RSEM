@@ -21,6 +21,8 @@
 #ifndef RNASEQMODEL_H_
 #define RNASEQMODEL_H_
 
+#include "utils.h"
+
 #include "SEQstring.hpp"
 #include "QUALstring.hpp"
 
@@ -73,8 +75,8 @@ public:
 	void write(const char* ssF, const char* paramF);
 	
 private:
-	int mode; // 0, master; 1, child; 2, simulation
-	int model_type; // 0, SE; 1, SEQ; 2 PE; 3 PEQ (Q: quality score)
+	model_mode_type mode; // 0, master; 1, child; 2, simulation
+	bool is_paired, has_qual;
 
 	int frag_min, frag_max; // minimum and maximum fragment length seen for paired-end reads
 	

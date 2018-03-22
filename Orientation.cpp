@@ -20,7 +20,6 @@
 
 #include <new>
 #include <cmath>
-#include <limits>
 #include <cassert>
 #include <string>
 #include <fstream>
@@ -89,6 +88,6 @@ void Orientation::write(std::ofstream& fout, int choice) {
 }
 
 void Orientation::p2logp() {
-	logprob[0] = (prob[0] > 0.0 ? log(prob[0]) : -std::numeric_limits<double>::infinity());
-	logprob[1] = (prob[1] > 0.0 ? log(prob[1]) : -std::numeric_limits<double>::infinity());
+	logprob[0] = (prob[0] > 0.0 ? log(prob[0]) : NEGINF);
+	logprob[1] = (prob[1] > 0.0 ? log(prob[1]) : NEGINF);
 }

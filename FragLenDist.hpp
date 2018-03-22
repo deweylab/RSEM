@@ -23,15 +23,25 @@
 
 #include <vector>
 
+#include "utils.h"
+
 class FragLenDist {
 public:
-	FragLenDist(int minL, int maxL);
+	FragLenDist(model_mode_type mode, int lb, int ub);
+	~FragLenDist();
 
-	void setUpCounts();
-	void setUpTrans(int M, int *lens, double *efflens, double *countTrans);
-	
-	int getMinL() const { return lb + 1; }
+	void findBoundaries();
+
+	int getMinL() const { return lb; }
 	int getMaxL() const { return ub; }
+
+
+	void clear();
+	void collect(const MateLenDist* o);
+	void finish();
+
+	void read(std::ifstream& fin, int choice); // choice: 0 -> p; 1 -> ss
+	void write(std::ofstream& fout, int choice);
 
 	// (len - ub) * cdf[span] because when we perform projection gradient, cdf[span] is not necessarily 1.
 	double getEffLen(int len) const { return (len <= lb ? 0 : (len <= ub ? psum[len - lb] : psum[span] + (len - ub) * cdf[span])); }
@@ -41,9 +51,15 @@ public:
 	bool operator() (int a, int b) const {
 		return pmf[a] < pmf[b];
 	}
-	
+
+	void setUpCounts();
+	void setUpTrans(int M, int *lens, double *efflens, double *countTrans);
+
 private:
-	int lb, ub, span; // (lb, ub], span = ub - lb
+	model_mode_type mode;
+	int lb, ub, span; // [lb, ub], span = ub - lb + 1
+	double *pmf, *ss, *cdf; // probability mass function, sufficiant statistics, and cumulative density function
+
 	std::vector<double> pmf, cdf, psum; // pmf, probability mass function; cdf, cumulative density function; psum[i] = \sum_{j=1}^{i} (i - j + 1) pmf[j]
 
 	static const double max_step_size, alpha, beta;
@@ -81,6 +97,4 @@ private:
 	
 };
 
-
-
-#endif
+#endif /* FRAGLENDIST_H_ */

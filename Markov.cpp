@@ -20,7 +20,6 @@
 
 #include <new>
 #include <cmath>
-#include <limits>
 #include <cstring>
 #include <cassert>
 #include <string>
@@ -170,8 +169,8 @@ void Markov::ss2p() {
 void Markov::p2logp() {
 	for (int i = 0; i < NSTATES; ++i)
 		for (int j = 0; j < NSTATES; ++j)
-				P[i][j] = (P[i][j] > 0.0 ? log(P[i][j]) : -std::numeric_limits<double>::infinity());
+				P[i][j] = (P[i][j] > 0.0 ? log(P[i][j]) : NEGINF);
 	for (int i = 0; i < 3; ++i)
 		for (int j = 0; j < NCODES; ++j)
-			probB[i][j] = (probB[i][j] > 0.0 ? log(probB[i][j]) : -std::numeric_limits<double>::infinity());
+			probB[i][j] = (probB[i][j] > 0.0 ? log(probB[i][j]) : NEGINF);
 }
