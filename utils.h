@@ -52,6 +52,8 @@ const int RANGE = 201;
 const int NCODES = 5; // A, C, G, T, N
 const int QSIZE = 100; // quality score range, from 0 to QSIZE - 1
 
+const int MAXL_FSPD = 10000; // maximum length in FSPD category, if l >= 10000, add the count to bin of 10000
+
 // Model priors
 const double pseudo_count = 4.0;
 const double prior_noise[NCODES] = {0.2475, 0.2475, 0.2475, 0.2475, 0.01}; // prior for A/C/G/T/N

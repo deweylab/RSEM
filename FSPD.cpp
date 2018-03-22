@@ -31,8 +31,9 @@ FSPD::FSPD(model_mode_type mode, int number_of_categories, int number_of_bins) :
 	catUpper = NULL;
 	foreground = background = pmf = cdf = NULL;
 
-	if (mode == INIT) { nCat = nB = 0; return; }
-	catUpper = new int[nCat];
+	if (mode == INIT) { nCat = nB = 0; }
+	if (nCat == 0) return;
+	if (nCat > 1) catUpper = new int[nCat - 1];
 	create(pmf);
 	create(cdf);
 	if (mode == MASTER || mode == CHILD) {
@@ -47,6 +48,25 @@ FSPD::FSPD(model_mode_type mode, int number_of_categories, int number_of_bins) :
 	if (background != NULL) release(background);
 	if (pmf != NULL) release(pmf);
 	if (cdf != NULL) release(cdf);
+}
+
+void FSPD::calcCatUpper(const double* weights) {
+	int pos;
+	double sum = 0.0, one_slice, expected;
+
+	for (int i = 1; i <= MAXL_FSPD; ++i) sum += weights[i];
+	one_slice = sum / nCat;
+
+	pos = 0;
+	expected = sum = 0.0;
+	for (int i = 0; i < nCat - 1; ++i) {
+		expected += one_slice;
+		do {
+			sum += weights[++pos]; 
+		} while (sum < expected && pos <= MAXL_FSPD - (nCat - 1 - i));
+		if (sum >= expected && (expected - (sum - weights[pos])) < (sum - expected)) sum -= weights[pos--];
+		catUpper[i] = pos;
+	}
 }
 
 void FSPD::clear() {

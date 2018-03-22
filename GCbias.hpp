@@ -26,11 +26,11 @@
 
 #include "utils.h"
 
-class FSPD {
+class GCbias {
 public:
 	// if mode == INIT, do not estimate FSPD
-	FSPD(model_mode_type mode, int number_of_categories = 5, int number_of_bins = 10);
-	~FSPD();
+	GCbias(model_mode_type mode, int number_of_bins = 10);
+	~GCbias();
 	
 	// efflen = reflen - fragment_length + 1
 	double getProb(int leftmost_pos, int efflen) {
@@ -68,27 +68,15 @@ public:
 
 private:
 	model_mode_type mode;
-	int nCat, nB; // number of categories and number of bins
+	int nB; // number of bins
 
-	int *catUpper; // catUpper[i] is the maximum length for category i
-	double **foreground, **background, **pmf, **cdf; // pmf = foreground / background; cdf is partial sum of pmf
-
-
+	double *gcUpper; // upper bound for GC portions for each bin, [gcUpper[i - 1], gcUpper[i])
+	double **foreground, **background, **pmf; // pmf = foreground / background
 
 	int locateCategory(int efflen) {
 		for (int i = 0; i < nCat; ++i) if (catUpper[i] >= efflen) return i;
 		assert(false);
 	}
-
-	double evalCDF(int leftmost_pos, int efflen, int cat) {
-		double val = double(leftmost_pos) * nB / efflen;
-		int i = int(val - 1e-8); // assume no efflen > 1e7
-	
-		return cdf[cat][i] + (val - i - 1) * pmf[cat][i];
-	}
-
-	void create(double**& arr);
-	void release(double** arr);
 };
 
 

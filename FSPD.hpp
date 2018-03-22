@@ -28,7 +28,7 @@
 
 class FSPD {
 public:
-	// if mode == INIT, do not estimate FSPD
+	// if mode == INIT or number_of_categories == 0, do not estimate FSPD
 	FSPD(model_mode_type mode, int number_of_categories = 5, int number_of_bins = 10);
 	~FSPD();
 	
@@ -59,6 +59,9 @@ public:
 		foreground[i] += (b - a) * efflen * frac;
 	}
 
+	// weights, length of MAXL_FSPD + 1
+	void calcCatUpper(const double* weights);
+
 	void clear();
 	void collect(const FSPD* o, bool is_foreground);
 	void finish();
@@ -70,14 +73,14 @@ private:
 	model_mode_type mode;
 	int nCat, nB; // number of categories and number of bins
 
-	int *catUpper; // catUpper[i] is the maximum length for category i
+	int *catUpper; // catUpper[i] is the maximum length for category i; [catUpper[i - 1] + 1, catUpper[i]]
 	double **foreground, **background, **pmf, **cdf; // pmf = foreground / background; cdf is partial sum of pmf
 
 
 
 	int locateCategory(int efflen) {
-		for (int i = 0; i < nCat; ++i) if (catUpper[i] >= efflen) return i;
-		assert(false);
+		for (int i = nCat - 2; i >= 0; --i) if (efflen > catUpper[i]) return i + 1;
+		return 0;
 	}
 
 	double evalCDF(int leftmost_pos, int efflen, int cat) {
