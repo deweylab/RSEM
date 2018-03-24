@@ -33,31 +33,16 @@ public:
 	~FSPD();
 	
 	// efflen = reflen - fragment_length + 1
-	double getProb(int leftmost_pos, int efflen) {
-		if (mode == INIT) return 1.0 / efflen;
+	double getFactor(int leftmost_pos, int efflen) {
+		if (mode == INIT) return 1.0;
 		int cat = catMap[(efflen < MAXL_FSPD ? efflen / INTERVAL : NUM_CAT - 1)];
-		return evalCDF(leftmost_pos + 1, efflen, cat) - evalCDF(leftmost_pos, efflen, cat);
+		return factor[cat][int(double(leftmost_pos) * nB / efflen)];
 	}
 
 	void udpate(int leftmost_pos, int efflen, double frac, bool is_forestat) {
 		int cat = (efflen < MAXL_FSPD ? efflen / INTERVAL : NUM_CAT - 1);
 		double **stat = (is_forestat ? forestat : backstat);
-		int fr, to;
-		double a, b;
-
-		assert(stat != NULL);
-
-		a = double(leftmost_pos) / efflen;
-		fr = leftmost_pos * nB / efflen;
-		to = ((leftmost_pos + 1) * nB - 1) / efflen;
-
-		for (int i = fr; i < to; ++i) {
-			b = double(i) / nB;
-			stat[cat][i] += (b - a) * efflen * frac;
-			a = b;
-		}
-		b = (leftmost_pos + 1.0) / efflen;
-		stat[cat][i] += (b - a) * efflen * frac;
+		stat[cat][int(double(leftmost_pos) * nB / efflen)] += frac;
 	}
 
 	void clear();
@@ -80,18 +65,13 @@ private:
 	int *catMap; // category map, from NUM_CAT to naCat
 
 	double **forestat, **backstat; // forestat, backstat, NUM_CAT x nB, [i * INTERVAL, (i + 1) * INTERVAL)
-	double **foreground, **background, **pmf, **cdf; // pmf = foreground / background; cdf is partial sum of pmf
+	double **foreground, **background, **factor; // factor = foreground / background;
 
-	double evalCDF(int leftmost_pos, int efflen, int cat) {
-		double val = double(leftmost_pos) * nB / efflen;
-		int i = int(val - 1e-8); // assume no efflen > 1e7
-	
-		return cdf[cat][i] + (val - i - 1) * pmf[cat][i];
-	}
 
 	void create(double**& arr, int num);
 	void release(double** arr, int num);
 	void aggregate(); // from refined NUM_CAT to nCat, automatically adjust cat size based on data
+	void collectSS();
 };
 
 

@@ -37,7 +37,7 @@ FSPD::FSPD(model_mode_type mode, double hint, int nCat, int nB) : mode(mode), hi
 
 	int maxCat = (mode == SIMULATION ? nCat : int(1.0 / hint + 1e-8));
 
-	if (mode != CHILD) { catUpper = new int[maxCat]; catMap = new int[NUM_CAT]; create(pmf, maxCat); create(cdf, maxCat); }
+	if (mode != CHILD) { catUpper = new int[maxCat]; catMap = new int[NUM_CAT]; create(factor, maxCat); }
 	if (mode == FIRST_PASS || mode == MASTER) { create(foreground, maxCat); create(background, maxCat); }
 	if (mode == MASTER || mode == CHILD) { create(forestat, NUM_CAT); create(backstat, NUM_CAT); }
 }
@@ -49,8 +49,7 @@ FSPD::FSPD(model_mode_type mode, double hint, int nCat, int nB) : mode(mode), hi
 	if (backstat != NULL) release(backstat, NUM_CAT);
 	if (foreground != NULL) release(foreground, nCat);
 	if (background != NULL) release(background, nCat);
-	if (pmf != NULL) release(pmf, nCat);
-	if (cdf != NULL) release(cdf, nCat);
+	if (factor != NULL) release(factor, nCat);
 }
 
 void FSPD::clear() {
@@ -69,24 +68,24 @@ void FSPD::collect(const FSPD* o, bool is_forestat) {
 
 void FSPD::finish() {
 	if (mode == FIRST_PASS || mode == MASTER) aggregate(); // could change it to only FIRST_PASS
-
+	collectSS();
 	// compute catMap
 	int fr = 0;
 	for (int i = 0; i < nCat; ++i) 
 		while (fr < catUpper[i]) catMap[fr++] = i;
-	// calculate pmf and cdf
-	for (int i = 0; i < nCat; ++i) {
+	// calculate factor
+	double denom, foresum, backsum;
+	foresum = backsum = 0.0;
+	for (int i = 0; i < nCat; ++i) 
 		for (int j = 0; j < nB; ++j) {
-			pmf[i][j] = (foreground[i][j] + pseudo_count_FSPD) / (background[i][j] + pseudo_count_FSPD);
-			cdf[i][j] = pmf[i][j];
-			if (j > 0) cdf[i][j] += cdf[i][j - 1];
+			foresum += foreground[i][j] + pseudo_count_FSPD;
+			backsum += background[i][j] + pseudo_count_FSPD;
+			factor[i][j] = (foreground[i][j] + pseudo_count_FSPD) / (background[i][j] + pseudo_count_FSPD);
 		}
-		// normalization
-		for (int j = 0; j < nB; ++j) {
-			pmf[i][j] /= cdf[i][nB - 1];
-			cdf[i][j] /= cdf[i][nB - 1];
-		}
-	}
+	denom = foresum / backsum;
+	for (int i = 0; i < nCat; ++i)
+		for (int j = 0; j < nB; ++j)
+			factor[i][j] /= denom;
 }
 
 void FSPD::read(std::ifstream& fin, int choice) {
@@ -106,12 +105,7 @@ void FSPD::read(std::ifstream& fin, int choice) {
 			int fr =0 ;
 			for (int i = 0; i < nCat; ++i) {
 				while (fr < catUpper[i]) catMap[fr++] = i;
-				
-				for (int j = 0; j < nB; ++j) {
-					assert(fin>> pmf[i][j]);
-					cdf[i][j] = pmf[i][j];
-					if (j > 0) cdf[i][j] += cdf[i][j - 1];
-				}
+				for (int j = 0; j < nB; ++j) assert(fin>> pmf[i][j]);
 			}
 			break;
 		case 1:
@@ -138,8 +132,8 @@ void FSPD::write(std::ofstream& fout, int choice) {
 			for (int i = 0; i < nCat - 1; ++i) fout<< catUpper[i]<< '\t';
 			fout<< catUpper[nCat - 1]<< std::endl<< std::endl;
 			for (int i = 0; i < nCat; ++i) {
-				for (int j = 0; j < nB - 1; ++j) fout<< pmf[i][j]<< '\t';
-				fout<< pmf[i][nB - 1]<< std::endl;
+				for (int j = 0; j < nB - 1; ++j) fout<< factor[i][j]<< '\t';
+				fout<< factor[i][nB - 1]<< std::endl;
 			}
 			fout<< std::endl<< std::endl;
 			break;
