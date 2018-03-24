@@ -23,67 +23,58 @@
 #include <cassert>
 #include <string>
 #include <fstream>
+#include <algorithm>
 
 #include "utils.h"
 #include "FSPD.hpp"
 
-FSPD::FSPD(model_mode_type mode, int number_of_categories, int number_of_bins) : mode(mode), nCat(number_of_categories), nB(number_of_bins) {
-	catUpper = NULL;
+FSPD::FSPD(model_mode_type mode, double hint, int nCat, int nB) : mode(mode), hint(hint), nCat(nCat), nB(nB) {
+ 	catUpper = catMap = NULL;
+	forestat = backstat = NULL;
 	foreground = background = pmf = cdf = NULL;
 
-	if (mode == INIT) { nCat = nB = 0; }
-	if (nCat == 0) return;
-	if (nCat > 1) catUpper = new int[nCat - 1];
-	create(pmf);
-	create(cdf);
-	if (mode == MASTER || mode == CHILD) {
-		create(foreground);
-		create(background);
-	}
+	if (mode == INIT) return;
+
+	int maxCat = (mode == SIMULATION ? nCat : int(1.0 / hint + 1e-8));
+
+	if (mode != CHILD) { catUpper = new int[maxCat]; catMap = new int[NUM_CAT]; create(pmf, maxCat); create(cdf, maxCat); }
+	if (mode == FIRST_PASS || mode == MASTER) { create(foreground, maxCat); create(background, maxCat); }
+	if (mode == MASTER || mode == CHILD) { create(forestat, NUM_CAT); create(backstat, NUM_CAT); }
 }
 
 ~FSPD::FSPD() {
 	if (catUpper != NULL) delete[] catUpper;
-	if (foreground != NULL) release(foreground);
-	if (background != NULL) release(background);
-	if (pmf != NULL) release(pmf);
-	if (cdf != NULL) release(cdf);
-}
-
-void FSPD::calcCatUpper(const double* weights) {
-	int pos;
-	double sum = 0.0, one_slice, expected;
-
-	for (int i = 1; i <= MAXL_FSPD; ++i) sum += weights[i];
-	one_slice = sum / nCat;
-
-	pos = 0;
-	expected = sum = 0.0;
-	for (int i = 0; i < nCat - 1; ++i) {
-		expected += one_slice;
-		do {
-			sum += weights[++pos]; 
-		} while (sum < expected && pos <= MAXL_FSPD - (nCat - 1 - i));
-		if (sum >= expected && (expected - (sum - weights[pos])) < (sum - expected)) sum -= weights[pos--];
-		catUpper[i] = pos;
-	}
+	if (catMap != NULL) delete[] catMap;
+	if (forestat != NULL) release(forestat, NUM_CAT);
+	if (backstat != NULL) release(backstat, NUM_CAT);
+	if (foreground != NULL) release(foreground, nCat);
+	if (background != NULL) release(background, nCat);
+	if (pmf != NULL) release(pmf, nCat);
+	if (cdf != NULL) release(cdf, nCat);
 }
 
 void FSPD::clear() {
-	for (int i = 0; i < nCat; ++i) {
-		memset(foreground[i], 0, sizeof(double) * nB);
-		memset(background[i], 0, sizeof(double) * nB);
+	for (int i = 0; i < NUM_CAT; ++i) {
+		memset(forestat[i], 0, sizeof(double) * nB);
+		memset(backstat[i], 0, sizeof(double) * nB);
 	}
 }
 
-void FSPD::collect(const FSPD* o, bool is_foreground) {
-	for (int i = 0; i < nCat; ++i)
+void FSPD::collect(const FSPD* o, bool is_forestat) {
+	for (int i = 0; i < NUM_CAT; ++i)
 		for (int j = 0; j < nB; ++j)
-			if (is_foreground) foreground[i][j] += o->foreground[i][j];
-			else background[i][j] += o->background[i][j];
+			if (is_forestat) forestat[i][j] += o->forestat[i][j];
+			else backstat[i][j] += o->backstat[i][j];
 }
 
 void FSPD::finish() {
+	if (mode == FIRST_PASS || mode == MASTER) aggregate(); // could change it to only FIRST_PASS
+
+	// compute catMap
+	int fr = 0;
+	for (int i = 0; i < nCat; ++i) 
+		while (fr < catUpper[i]) catMap[fr++] = i;
+	// calculate pmf and cdf
 	for (int i = 0; i < nCat; ++i) {
 		for (int j = 0; j < nB; ++j) {
 			pmf[i][j] = (foreground[i][j] + pseudo_count_FSPD) / (background[i][j] + pseudo_count_FSPD);
@@ -100,45 +91,50 @@ void FSPD::finish() {
 
 void FSPD::read(std::ifstream& fin, int choice) {
 	std::string line;
+	double tmp_hint;
 	int tmp_ncat, tmp_nb;
 
 	assert((fin>> line) && (line == "#fspd"));
 	assert(getline(fin, line));
-	assert((fin>> tmp_ncat>> tmp_nb) && (tmp_ncat == nCat) && (tmp_nb == nB));
-	if (nCat == 0) return;
+	if (mode == INIT) return;
 
-	for (int i = 0; i < nCat; ++i) assert(fin>> catUpper[i]);		
+	assert((fin>> tmp_ncat>> tmp_nb>> tmp_hint) && (tmp_ncat == nCat) && (tmp_nb == nB) && (tmp_hint == hint));
+	for (int i = 0; i < nCat; ++i) assert(fin>> catUpper[i]);
 
-	if (choice == 0) {
-		for (int i = 0; i < nCat; ++i) 
-			for (int j = 0; j < nB; ++i) {
-				assert(fin>> pmf[i][j]);
-				cdf[i][j] = pmf[i][j];
-				if (j > 0) cdf[i][j] += cdf[i][j - 1];
+	switch(choice) {
+		case 0:
+			int fr =0 ;
+			for (int i = 0; i < nCat; ++i) {
+				while (fr < catUpper[i]) catMap[fr++] = i;
+				
+				for (int j = 0; j < nB; ++j) {
+					assert(fin>> pmf[i][j]);
+					cdf[i][j] = pmf[i][j];
+					if (j > 0) cdf[i][j] += cdf[i][j - 1];
+				}
 			}
-	}
-	else {
-		for (int i = 0; i < nCat; ++i)
-			for (int j = 0; j < nB; ++j)
-				assert(fin>> foreground[i][j]);
-		for (int i = 0; i < nCat; ++i)
-			for (int j = 0; j < nB; ++j)
-				assert(fin>> background[i][j]);
+			break;
+		case 1:
+			for (int i = 0; i < nCat; ++i)
+				for (int j = 0; j < nB; ++j)
+					assert(fin>> foreground[i][j]);
+			for (int i = 0; i < nCat; ++i)
+				for (int j = 0; j < nB; ++j)
+					assert(fin>> background[i][j]);
 	}
 	assert(getline(fin, line));
 }
 
 void FSPD::write(std::ofstream& fout, int choice) {
-	if (nCat == 0) {
-		fout<< "#fspd\tFragment Start Position Distribution\t3\tformat: nCat nB, nCat == 0 means no FSPD estimation"<< std::endl;
-		fout<< nCat<< "\t"<< nB<< std::endl<< std::endl<< std::endl;
+	if (mode == INIT) {
+		fout<< "#fspd\tFragment Start Position Distribution\t2\tno FSPD estimation"<< std::endl<< std::endl<< std::endl;
 		return;
 	}
 
 	switch(choice) {
 		case 0:
-			fout<< "#fspd\tFragment Start Position Distribution\t"<< nCat + 5<< "\tformat: nCat nB; nCat values, category upper bound; nCat x nB values for pmf"<< std::endl;
-			fout<< nCat<< '\t'<< nB<< std::endl;
+			fout<< "#fspd\tFragment Start Position Distribution\t"<< nCat + 5<< "\tformat: nCat nB hint; nCat values, category upper bound; nCat x nB values for pmf"<< std::endl;
+			fout<< nCat<< '\t'<< nB<< '\t'<< hint<< std::endl;
 			for (int i = 0; i < nCat - 1; ++i) fout<< catUpper[i]<< '\t';
 			fout<< catUpper[nCat - 1]<< std::endl<< std::endl;
 			for (int i = 0; i < nCat; ++i) {
@@ -148,8 +144,8 @@ void FSPD::write(std::ofstream& fout, int choice) {
 			fout<< std::endl<< std::endl;
 			break;
 		case 1:
-			fout<< "#fspd\tFragment Start Position Distribution\t"<< nCat * 2 + 6<< "\tformat: nCat nB; nCat values, category upper bound; nCat x nB values for foreground; nCat x nB values for background"<< std::endl;
-			fout<< nCat<< '\t'<< nB<< std::endl;
+			fout<< "#fspd\tFragment Start Position Distribution\t"<< nCat * 2 + 6<< "\tformat: nCat nB hint; nCat values, category upper bound; nCat x nB values for foreground; nCat x nB values for background"<< std::endl;
+			fout<< nCat<< '\t'<< nB<< '\t'<< hint<< std::endl;
 			for (int i = 0; i < nCat - 1; ++i) fout<< catUpper[i]<< '\t';
 			fout<< catUpper[nCat - 1]<< std::endl<< std::endl;
 			for (int i = 0; i < nCat; ++i) {
@@ -165,12 +161,55 @@ void FSPD::write(std::ofstream& fout, int choice) {
 	}
 }
 
-void FSPD::create(double**& arr) {
-	arr = new double*[nCat];
-	for (int i = 0; i < nCat; ++i) arr[i] = new double[nB];
+void FSPD::create(double**& arr, int num) {
+	arr = new double*[num];
+	for (int i = 0; i < num; ++i) arr[i] = new double[nB];
 }
 
-void FSPD::release(double** arr) {
-	for (int i = 0; i < nCat; ++i) delete[] arr[i];
+void FSPD::release(double** arr, int num) {
+	for (int i = 0; i < num; ++i) delete[] arr[i];
 	delete[] arr;
+}
+
+void FSPD::aggregate() {
+	int pos, nzero;
+	double psum[NUM_CAT];
+	double sum, one_slice;
+
+	sum = 0.0;
+	for (int i = 0; i < NUM_CAT; ++i) {
+		psum[i] = 0.0;
+		for (int j = 0; j < nB; ++j) psum[i] += backstat[i][j];
+		sum += psum[i];
+	}
+
+	one_slice = sum * hint;	
+	nCat = 0; pos = 0;
+	while (pos < NUM_CAT) {
+		sum = 0.0;
+		do { 
+			sum += psum[pos++];
+		} while (sum < one_slice && pos < NUM_CAT);
+		nzero = 0;
+		while (pos < NUM_CAT && psum[pos] == 0.0) ++pos, ++nzero;
+		catUpper[nCat++] = pos - nzero / 2;
+	}
+	// if the last category's mass is less than 0.8 one_slice, make it independent, otherwise merge it into the one on the left
+	if (sum < one_slice * 0.8) catUpper[(--nCat) - 1] = pos;
+}
+
+// fill in foreground and background
+void FSPD::collectSS() {
+	int pos = 0;
+	for (int i = 0; i < nCat; ++i) {
+		memset(foreground[i], 0, sizeof(double) * nB);
+		memset(background[i], 0, sizeof(double) * nB);
+		while (pos < catUpper[i]) {
+			for (int j = 0; j < nB; ++j) {
+				foreground[i][j] += forestat[pos][j];
+				background[i][j] += backstat[pos][j];
+			}
+			++pos;
+		}
+	}
 }

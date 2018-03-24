@@ -52,13 +52,12 @@ const int RANGE = 201;
 const int NCODES = 5; // A, C, G, T, N
 const int QSIZE = 100; // quality score range, from 0 to QSIZE - 1
 
-const int MAXL_FSPD = 10000; // maximum length in FSPD category, if l >= 10000, add the count to bin of 10000
-
 // Model priors
 const double pseudo_count = 4.0;
 const double prior_noise[NCODES] = {0.2475, 0.2475, 0.2475, 0.2475, 0.01}; // prior for A/C/G/T/N
 const double prior_aligned[5] = {0.9, 0.03, 0.01, 0.2}; // prior for alignable reads: 0, ref_base == read_base; 1, ref_base != read_base & read_base != 'N'; 2, read_base == 'N'; 3, ref_base == 'N', uniform
 const double pseudo_count_FSPD = 1.0; // pseudo count for FSPD foreground/background model
+const double pseudo_count_GCbias = 1.0; // pseudo count for GCbias foreground/background model
 
 
 

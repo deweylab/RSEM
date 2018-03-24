@@ -26,57 +26,46 @@
 
 #include "utils.h"
 
+// do not estimate GCbias if nB == 0
 class GCbias {
 public:
-	// if mode == INIT, do not estimate FSPD
-	GCbias(model_mode_type mode, int number_of_bins = 10);
+	// if passed mode == INIT, do not estimate GC bias
+	GCbias(model_mode_type mode, double hint = 0.04, int nB = 25);
 	~GCbias();
-	
-	// efflen = reflen - fragment_length + 1
-	double getProb(int leftmost_pos, int efflen) {
-		if (nCat == 0) return 1.0 / efflen;
-		int cat = locateCategory(efflen);
-		return evalCDF(leftmost_pos + 1, efflen, cat) - evalCDF(leftmost_pos, efflen, cat);
+
+	// return the enrichment factor for each gc bin	
+	double getFactor(double gc) {
+		if (mode == INIT) return 1.0;
+		return gcFactor[int(gc * NUM_BIN - 1e-8)];
 	}
 
-	void udpate(int leftmost_pos, int efflen, double frac) {
-		assert(foreground != NULL);
-		int cat = locateCategory(efflen);
-
-		int fr, to;
-		double a, b;
-
-		a = double(leftmost_pos) / efflen;
-		fr = leftmost_pos * nB / efflen;
-		to = ((leftmost_pos + 1) * nB - 1) / efflen;
-
-		for (int i = fr; i < to; ++i) {
-			b = double(i) / nB;
-			foreground[i] += (b - a) * efflen * frac;
-			a = b;
-		}
-		b = (leftmost_pos + 1.0) / efflen;
-		foreground[i] += (b - a) * efflen * frac;
+	void udpate(double gc, double frac, bool is_forestat) {
+		double *stat = (is_forestat ? forestat : backstat);
+		assert(stat != NULL);
+		stat[int(gc * NUM_BIN - 1e-8)] += frac;
 	}
 
 	void clear();
-	void collect(const FSPD* o, bool is_foreground);
+	void collect(const GCbias* o, bool is_forestat);
 	void finish();
 
 	void read(std::ifstream& fin, int choice); // choice: 0 -> pmf; 1 -> foreground, background
 	void write(std::ofstream& fout, int choice);
 
 private:
+	static const int NUM_BIN = 100; // number of GC bins for statistics
+
 	model_mode_type mode;
+	double hint; // minimum fraction of data to become a bin
 	int nB; // number of bins
 
-	double *gcUpper; // upper bound for GC portions for each bin, [gcUpper[i - 1], gcUpper[i])
-	double **foreground, **background, **pmf; // pmf = foreground / background
+	int *gcUpper; // upper bound for GC portions for each bin, [gcUpper[i - 1], gcUpper[i])
 
-	int locateCategory(int efflen) {
-		for (int i = 0; i < nCat; ++i) if (catUpper[i] >= efflen) return i;
-		assert(false);
-	}
+	double *forestat, *backstat, *gcFactor; // forestat, backstat: stat for each of NUM_BINs; gcFactor: factor for each NUM_BINs
+	double *foreground, *background, *factor; // factor = foreground / background
+
+	void aggregate();
+	void collectSS();
 };
 
 

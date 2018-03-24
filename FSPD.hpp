@@ -28,23 +28,24 @@
 
 class FSPD {
 public:
-	// if mode == INIT or number_of_categories == 0, do not estimate FSPD
-	FSPD(model_mode_type mode, int number_of_categories = 5, int number_of_bins = 10);
+	// if passed mode == INIT, no estimation of FSPD
+	FSPD(model_mode_type mode, double hint = 0.2, int nCat = 5, int nB = 10);
 	~FSPD();
 	
 	// efflen = reflen - fragment_length + 1
 	double getProb(int leftmost_pos, int efflen) {
-		if (nCat == 0) return 1.0 / efflen;
-		int cat = locateCategory(efflen);
+		if (mode == INIT) return 1.0 / efflen;
+		int cat = catMap[(efflen < MAXL_FSPD ? efflen / INTERVAL : NUM_CAT - 1)];
 		return evalCDF(leftmost_pos + 1, efflen, cat) - evalCDF(leftmost_pos, efflen, cat);
 	}
 
-	void udpate(int leftmost_pos, int efflen, double frac) {
-		assert(foreground != NULL);
-		int cat = locateCategory(efflen);
-
+	void udpate(int leftmost_pos, int efflen, double frac, bool is_forestat) {
+		int cat = (efflen < MAXL_FSPD ? efflen / INTERVAL : NUM_CAT - 1);
+		double **stat = (is_forestat ? forestat : backstat);
 		int fr, to;
 		double a, b;
+
+		assert(stat != NULL);
 
 		a = double(leftmost_pos) / efflen;
 		fr = leftmost_pos * nB / efflen;
@@ -52,36 +53,34 @@ public:
 
 		for (int i = fr; i < to; ++i) {
 			b = double(i) / nB;
-			foreground[i] += (b - a) * efflen * frac;
+			stat[cat][i] += (b - a) * efflen * frac;
 			a = b;
 		}
 		b = (leftmost_pos + 1.0) / efflen;
-		foreground[i] += (b - a) * efflen * frac;
+		stat[cat][i] += (b - a) * efflen * frac;
 	}
 
-	// weights, length of MAXL_FSPD + 1
-	void calcCatUpper(const double* weights);
-
 	void clear();
-	void collect(const FSPD* o, bool is_foreground);
+	void collect(const FSPD* o, bool is_forestat);
 	void finish();
 
 	void read(std::ifstream& fin, int choice); // choice: 0 -> pmf; 1 -> foreground, background
 	void write(std::ofstream& fout, int choice);
 
 private:
+	static const int MAXL_FSPD = 10000; // maximum length in FSPD category, if l >= 10000, add the count to bin of 10000
+	static const int INTERVAL = 100; // store statistics every 100bp
+	static const int NUM_CAT = 100; // number of categories for statistics
+
 	model_mode_type mode;
+	double hint; // minimum fraction of data to become a separate category
 	int nCat, nB; // number of categories and number of bins
 
-	int *catUpper; // catUpper[i] is the maximum length for category i; [catUpper[i - 1] + 1, catUpper[i]]
+	int *catUpper; // In NUM_CAT intervals, category i contains intervals [catUpper[i - 1], catUpper[i]) 
+	int *catMap; // category map, from NUM_CAT to naCat
+
+	double **forestat, **backstat; // forestat, backstat, NUM_CAT x nB, [i * INTERVAL, (i + 1) * INTERVAL)
 	double **foreground, **background, **pmf, **cdf; // pmf = foreground / background; cdf is partial sum of pmf
-
-
-
-	int locateCategory(int efflen) {
-		for (int i = nCat - 2; i >= 0; --i) if (efflen > catUpper[i]) return i + 1;
-		return 0;
-	}
 
 	double evalCDF(int leftmost_pos, int efflen, int cat) {
 		double val = double(leftmost_pos) * nB / efflen;
@@ -90,8 +89,9 @@ private:
 		return cdf[cat][i] + (val - i - 1) * pmf[cat][i];
 	}
 
-	void create(double**& arr);
-	void release(double** arr);
+	void create(double**& arr, int num);
+	void release(double** arr, int num);
+	void aggregate(); // from refined NUM_CAT to nCat, automatically adjust cat size based on data
 };
 
 
