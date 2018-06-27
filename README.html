@@ -13,6 +13,7 @@
 
 <ul>
 <li><a href="#built">Build RSEM references using RefSeq, Ensembl, or GENCODE annotations</a></li>
+<li><a href="#untypical">Build RSEM references for untypical organisms</a></li>
 </ul></li>
 <li><a href="#example-main">Example</a></li>
 <li><a href="#simulation">Simulation</a></li>
@@ -71,7 +72,7 @@ variable. Alternatively, run</p>
 <p>By default, RSEM executables are installed to <code>/usr/local/bin</code>. You
 can change the installation location by setting <code>DESTDIR</code> and/or
 <code>prefix</code> variables. The RSEM executables will be installed to
-<code>${DESTDIR}${prefix}/bin</code>. The default values of <code>DESTDIR</code> and
+<code>\({DESTDIR}\){prefix}/bin</code>. The default values of <code>DESTDIR</code> and
 <code>prefix</code> are <code>DESTDIR=</code> and <code>prefix=/usr/local</code>. For example,</p>
 
 <pre><code>make install DESTDIR=/home/my_name prefix=/software
@@ -86,7 +87,7 @@ count matrix for differential expression analysis, is installed.</p>
 
 <h3 id="prerequisites">Prerequisites</h3>
 
-<p>C++, Perl and R are required to be installed. </p>
+<p>C++, Perl and R are required to be installed.</p>
 
 <p>To use the <code>--gff3</code> option of <code>rsem-prepare-reference</code>, Python is also
 required to be installed.</p>
@@ -111,7 +112,7 @@ UCSC Genes annotation track, this information can be recovered by
 downloading the knownIsoforms.txt file for the appropriate genome.</p>
 
 <p>To prepare the reference sequences, you should run the
-<code>rsem-prepare-reference</code> program. Run </p>
+<code>rsem-prepare-reference</code> program. Run</p>
 
 <pre><code>rsem-prepare-reference --help
 </code></pre>
@@ -127,7 +128,7 @@ how to build RSEM references using these annotations. Note that it is
 important to pair the genome with the annotation file for each
 annotation source. In addition, we recommend users to use the primary
 assemblies of genomes. Without loss of generality, we use human genome as
-an example and in addition build Bowtie indices. </p>
+an example and in addition build Bowtie indices.</p>
 
 <p>For <strong>RefSeq</strong>, the genome and annotation file in GFF3 format can be found
 at RefSeq genomes FTP:</p>
@@ -155,10 +156,10 @@ assembly, run the following RSEM python script:</p>
 <p>Then type the following command to build RSEM references:</p>
 
 <pre><code>rsem-prepare-reference --gff3 GCF_000001405.31_GRCh38.p5_genomic.gff \
-               --trusted-sources BestRefSeq,Curated\ Genomic \
-               --bowtie \
-               GCF_000001405.31_GRCh38.p5_genomic.primary_assembly.fna \
-               ref/human_refseq
+		       --trusted-sources BestRefSeq,Curated\ Genomic \
+		       --bowtie \
+		       GCF_000001405.31_GRCh38.p5_genomic.primary_assembly.fna \
+		       ref/human_refseq
 </code></pre>
 
 <p>In the above command, <code>--trusted-sources</code> tells RSEM to only extract
@@ -187,9 +188,9 @@ ftp://ftp.ensembl.org/pub/release-83/gtf/homo_sapiens/Homo_sapiens.GRCh38.83.gtf
 <p>Then use the following command to build RSEM references:</p>
 
 <pre><code>rsem-prepare-reference --gtf Homo_sapiens.GRCh38.83.gtf \
-               --bowtie \
-               Homo_sapiens.GRCh38.dna.primary_assembly.fa \
-               ref/human_ensembl
+		       --bowtie \
+		       Homo_sapiens.GRCh38.dna.primary_assembly.fa \
+		       ref/human_ensembl
 </code></pre>
 
 <p>If you want to use GFF3 file instead, which is unnecessary and not
@@ -197,8 +198,8 @@ recommended, you should add option <code>--gff3-RNA-patterns transcript</code>
 because <code>mRNA</code> is replaced by <code>transcript</code> in Ensembl GFF3 files.</p>
 
 <p><strong>GENCODE</strong> only provides human and mouse annotations. The genome and
- annotation files can be found from <a href="http://www.gencodegenes.org/">GENCODE
- website</a>.</p>
+annotation files can be found from <a href="http://www.gencodegenes.org/">GENCODE
+website</a>.</p>
 
 <p>Download and decompress the human genome and GTF files:</p>
 
@@ -209,18 +210,31 @@ ftp://ftp.sanger.ac.uk/pub/gencode/Gencode_human/release_24/gencode.v24.annotati
 <p>Then type the following command:</p>
 
 <pre><code>rsem-prepare-reference --gtf gencode.v24.annotation.gtf \
-               --bowtie \
-               GRCh38.primary_assembly.genome.fa \
-               ref/human_gencode
+		       --bowtie \
+		       GRCh38.primary_assembly.genome.fa \
+		       ref/human_gencode
 </code></pre>
 
 <p>Similar to Ensembl annotation, if you want to use GFF3 files (not
 recommended), add option <code>--gff3-RNA-patterns transcript</code>.</p>
 
+<h4 id="anameuntypicalabuildrsemreferencesforuntypicalorganisms"><a name="untypical"></a> Build RSEM references for untypical organisms</h4>
+
+<p>For untypical organisms, such as viruses, you may only have a GFF3 file that containing only genes but not any transcripts. You need to turn on <code>--gff3-genes-as-transcripts</code> so that RSEM will make each gene as a unique transcript.</p>
+
+<p>Here is an example command:</p>
+
+<pre><code>rsem-prepare-reference --gff3 virus.gff \
+               --gff3-genes-as-transcripts \
+               --bowtie \
+               virus.genome.fa \
+               ref/virus
+</code></pre>
+
 <h3 id="ii.calculatingexpressionvalues">II. Calculating Expression Values</h3>
 
 <p>To calculate expression values, you should run the
-<code>rsem-calculate-expression</code> program. Run </p>
+<code>rsem-calculate-expression</code> program. Run</p>
 
 <pre><code>rsem-calculate-expression --help
 </code></pre>
@@ -311,9 +325,9 @@ pipeline.</p>
 <pre><code>rsem-tbam2gbam reference_name unsorted_transcript_bam_input genome_bam_output
 </code></pre>
 
-<p>reference_name : The name of reference built by <code>rsem-prepare-reference</code><br/>
-unsorted_transcript_bam_input : This file should satisfy: 1) the alignments of a same read are grouped together, 2) for any paired-end alignment, the two mates should be adjacent to each other, 3) this file should not be sorted by samtools
-genome_bam_output : The output genomic coordinate BAM file&#8217;s name</p>
+<p>reference_name	 		 : The name of reference built by <code>rsem-prepare-reference</code>				
+unsorted_transcript_bam_input	 : This file should satisfy: 1) the alignments of a same read are grouped together, 2) for any paired-end alignment, the two mates should be adjacent to each other, 3) this file should not be sorted by samtools
+genome_bam_output		 : The output genomic coordinate BAM file&#8217;s name</p>
 
 <h4 id="bgeneratingawigglefile">b) Generating a Wiggle file</h4>
 
@@ -323,14 +337,14 @@ sorted genome/transcript BAM file output. To generate the wiggle
 plot, run the <code>rsem-bam2wig</code> program on the
 <code>sample_name.genome.sorted.bam</code>/<code>sample_name.transcript.sorted.bam</code> file.</p>
 
-<p>Usage: </p>
+<p>Usage:</p>
 
 <pre><code>rsem-bam2wig sorted_bam_input wig_output wiggle_name [--no-fractional-weight]
 </code></pre>
 
-<p>sorted_bam_input : Input BAM format file, must be sorted<br/>
-wig_output : Output wiggle file&#8217;s name, e.g. output.wig<br/>
-wiggle_name : The name of this wiggle plot<br/>
+<p>sorted_bam_input  : Input BAM format file, must be sorted<br />
+wig_output    : Output wiggle file&#8217;s name, e.g. output.wig<br />
+wiggle_name    : The name of this wiggle plot<br />
 &#8211;no-fractional-weight : If this is set, RSEM will not look for &#8220;ZW&#8221; tag and each alignment appeared in the BAM file has weight 1. Set this if your BAM file is not generated by RSEM. Please note that this option must be at the end of the command line</p>
 
 <h4 id="cloadingabamandorwigglefileintotheucscgenomebrowserorintegrativegenomicsviewerigv">c) Loading a BAM and/or Wiggle file into the UCSC Genome Browser or Integrative Genomics Viewer(IGV)</h4>
@@ -341,7 +355,7 @@ wiggle_name : The name of this wiggle plot<br/>
 
 <p>Here are some guidance for visualizing transcript coordinate files using IGV:</p>
 
-<p>1) Import the transcript sequences as a genome </p>
+<p>1) Import the transcript sequences as a genome</p>
 
 <p>Select File -&gt; Import Genome, then fill in ID, Name and Fasta file. Fasta file should be <code>reference_name.idx.fa</code>. After that, click Save button. Suppose ID is filled as <code>reference_name</code>, a file called <code>reference_name.genome</code> will be generated. Next time, we can use: File -&gt; Load Genome, then select <code>reference_name.genome</code>.</p>
 
@@ -355,7 +369,7 @@ wiggle_name : The name of this wiggle plot<br/>
 <h4 id="dgeneratingtranscriptwiggleplots">d) Generating Transcript Wiggle Plots</h4>
 
 <p>To generate transcript wiggle plots, you should run the
-<code>rsem-plot-transcript-wiggles</code> program. Run </p>
+<code>rsem-plot-transcript-wiggles</code> program. Run</p>
 
 <pre><code>rsem-plot-transcript-wiggles --help
 </code></pre>
@@ -372,8 +386,8 @@ documentation page</a>.</p>
 <pre><code>rsem-plot-model sample_name output_plot_file
 </code></pre>
 
-<p>sample_name: the name of the sample analyzed<br/>
-output_plot_file: the file name for plots generated from the model. It is a pdf file </p>
+<p>sample_name: the name of the sample analyzed<br />
+output_plot_file: the file name for plots generated from the model. It is a pdf file</p>
 
 <p>The plots generated depends on read type and user configuration. It
 may include fragment length distribution, mate length distribution,
@@ -383,13 +397,13 @@ error given a reference base and alignment statistics.</p>
 
 <p>fragment length distribution and mate length distribution: x-axis is fragment/mate length, y axis is the probability of generating a fragment/mate with the associated length</p>
 
-<p>RSPD: Read Start Position Distribution. x-axis is bin number, y-axis is the probability of each bin. RSPD can be used as an indicator of 3&#8217; bias</p>
+<p>RSPD: Read Start Position Distribution. x-axis is bin number, y-axis is the probability of each bin. RSPD can be used as an indicator of 3' bias</p>
 
-<p>Quality score vs. observed quality given a reference base: x-axis is Phred quality scores associated with data, y-axis is the &#8220;observed quality&#8221;, Phred quality scores learned by RSEM from the data. Q = &#8211;10log_10(P), where Q is Phred quality score and P is the probability of sequencing error for a particular base</p>
+<p>Quality score vs. observed quality given a reference base: x-axis is Phred quality scores associated with data, y-axis is the &#8220;observed quality&#8221;, Phred quality scores learned by RSEM from the data. Q = -10log_10(P), where Q is Phred quality score and P is the probability of sequencing error for a particular base</p>
 
 <p>Position vs. percentage sequencing error given a reference base: x-axis is position and y-axis is percentage sequencing error</p>
 
-<p>Alignment statistics: It includes a histogram and a pie chart. For the histogram, x-axis shows the number of <strong>isoform-level</strong> alignments a read has and y-axis provides the number of reads with that many alignments. The inf in x-axis means number of reads filtered due to too many alignments. For the pie chart, four categories of reads &#8212; unalignable, unique, <strong>isoform-level</strong>multi-mapping, filtered &#8211; are plotted and their percentages are noted. In both the histogram and the piechart, numbers belong to unalignable, unique, multi-mapping, and filtered are colored as green, blue, gray and red. </p>
+<p>Alignment statistics: It includes a histogram and a pie chart. For the histogram, x-axis shows the number of <strong>isoform-level</strong> alignments a read has and y-axis provides the number of reads with that many alignments. The inf in x-axis means number of reads filtered due to too many alignments. For the pie chart, four categories of reads &#8212; unalignable, unique, <strong>isoform-level</strong>multi-mapping, filtered &#8211; are plotted and their percentages are noted. In both the histogram and the piechart, numbers belong to unalignable, unique, multi-mapping, and filtered are colored as green, blue, gray and red.</p>
 
 <h2 id="anameexample-mainaexample"><a name="example-main"></a> Example</h2>
 
@@ -405,9 +419,7 @@ credibility intervals in addition to maximum likelihood estimates.
 RSEM will be allowed 1G of memory for the credibility interval
 calculation. We will visualize the probabilistic read mappings
 generated by RSEM on UCSC genome browser. We will generate a list of
-genes<code>transcript wiggle plots in</code>output.pdf<code>. The list is
-</code>gene_ids.txt<code>. We will visualize the models learned in
-</code>mmliver_single_quals.models.pdf`</p>
+genes<code>transcript wiggle plots in</code>output.pdf<code>. The list is</code>gene_ids.txt<code>. We will visualize the models learned in</code>mmliver_single_quals.models.pdf`</p>
 
 <p>The commands for this scenario are as follows:</p>
 
@@ -432,32 +444,32 @@ rsem-plot-model mmliver_single_quals mmliver_single_quals.models.pdf
 <pre><code>rsem-simulate-reads reference_name estimated_model_file estimated_isoform_results theta0 N output_name [-q]
 </code></pre>
 
-<p><strong>reference_name:</strong> The name of RSEM references, which should be already generated by <code>rsem-prepare-reference</code> </p>
+<p><strong>reference_name:</strong> The name of RSEM references, which should be already generated by <code>rsem-prepare-reference</code> 	</p>
 
-<p><strong>estimated_model_file:</strong> This file describes how the RNA-Seq reads will be sequenced given the expression levels. It determines what kind of reads will be simulated (single-end/paired-end, w/o quality score) and includes parameters for fragment length distribution, read start position distribution, sequencing error models, etc. Normally, this file should be learned from real data using <code>rsem-calculate-expression</code>. The file can be found under the <code>sample_name.stat</code> folder with the name of <code>sample_name.model</code>. <code>model_file_description.txt</code> provides the format and meanings of this file. </p>
+<p><strong>estimated_model_file:</strong> This file describes how the RNA-Seq reads will be sequenced given the expression levels. It determines what kind of reads will be simulated (single-end/paired-end, w/o quality score) and includes parameters for fragment length distribution, read start position distribution, sequencing error models, etc. Normally, this file should be learned from real data using <code>rsem-calculate-expression</code>. The file can be found under the <code>sample_name.stat</code> folder with the name of <code>sample_name.model</code>. <code>model_file_description.txt</code> provides the format and meanings of this file.</p>
 
-<p><strong>estimated_isoform_results:</strong> This file contains expression levels for all isoforms recorded in the reference. It can be learned using <code>rsem-calculate-expression</code> from real data. The corresponding file users want to use is <code>sample_name.isoforms.results</code>. If simulating from user-designed expression profile is desired, start from a learned <code>sample_name.isoforms.results</code> file and only modify the <code>TPM</code> column. The simulator only reads the TPM column. But keeping the file format the same is required. If the RSEM references built are aware of allele-specific transcripts, <code>sample_name.alleles.results</code> should be used instead. </p>
+<p><strong>estimated_isoform_results:</strong> This file contains expression levels for all isoforms recorded in the reference. It can be learned using <code>rsem-calculate-expression</code> from real data. The corresponding file users want to use is <code>sample_name.isoforms.results</code>. If simulating from user-designed expression profile is desired, start from a learned <code>sample_name.isoforms.results</code> file and only modify the <code>TPM</code> column. The simulator only reads the TPM column. But keeping the file format the same is required. If the RSEM references built are aware of allele-specific transcripts, <code>sample_name.alleles.results</code> should be used instead.</p>
 
-<p><strong>theta0:</strong> This parameter determines the fraction of reads that are coming from background &#8220;noise&#8221; (instead of from a transcript). It can also be estimated using <code>rsem-calculate-expression</code> from real data. Users can find it as the first value of the third line of the file <code>sample_name.stat/sample_name.theta</code>. </p>
+<p><strong>theta0:</strong> This parameter determines the fraction of reads that are coming from background &#8220;noise&#8221; (instead of from a transcript). It can also be estimated using <code>rsem-calculate-expression</code> from real data. Users can find it as the first value of the third line of the file <code>sample_name.stat/sample_name.theta</code>.</p>
 
-<p><strong>N:</strong> The total number of reads to be simulated. If <code>rsem-calculate-expression</code> is executed on a real data set, the total number of reads can be found as the 4th number of the first line of the file <code>sample_name.stat/sample_name.cnt</code>. </p>
+<p><strong>N:</strong> The total number of reads to be simulated. If <code>rsem-calculate-expression</code> is executed on a real data set, the total number of reads can be found as the 4th number of the first line of the file <code>sample_name.stat/sample_name.cnt</code>.</p>
 
-<p><strong>output_name:</strong> Prefix for all output files. </p>
+<p><strong>output_name:</strong> Prefix for all output files.</p>
 
 <p><strong>&#8211;seed seed:</strong> Set seed for the random number generator used in simulation. The seed should be a 32-bit unsigned integer.</p>
 
-<p><strong>-q:</strong> Set it will stop outputting intermediate information. </p>
+<p><strong>-q:</strong> Set it will stop outputting intermediate information.</p>
 
 <h3 id="outputs:">Outputs:</h3>
 
 <p>output_name.sim.isoforms.results, output_name.sim.genes.results: Expression levels estimated by counting where each simulated read comes from.
 output_name.sim.alleles.results: Allele-specific expression levels estimated by counting where each simulated read comes from.</p>
 
-<p>output_name.fa if single-end without quality score;<br/>
-output_name.fq if single-end with quality score;<br/>
+<p>output_name.fa if single-end without quality score;<br />
+output_name.fq if single-end with quality score;<br />
 output_name_1.fa &amp; output_name_2.fa if paired-end without quality
-score;<br/>
-output_name_1.fq &amp; output_name_2.fq if paired-end with quality score. </p>
+score;<br />
+output_name_1.fq &amp; output_name_2.fq if paired-end with quality score.</p>
 
 <p><strong>Format of the header line</strong>: Each simulated read&#8217;s header line encodes where it comes from. The header line has the format:</p>
 
@@ -466,15 +478,15 @@ output_name_1.fq &amp; output_name_2.fq if paired-end with quality score. </p>
 
 <p><strong>{&gt;/@}:</strong> Either &#8216;&gt;&#8217; or &#8216;@&#8217; must appear. &#8216;&gt;&#8217; appears if FASTA files are generated and &#8216;@&#8217; appears if FASTQ files are generated</p>
 
-<p><strong>rid:</strong> Simulated read&#8217;s index, numbered from 0 </p>
+<p><strong>rid:</strong> Simulated read&#8217;s index, numbered from 0</p>
 
-<p><strong>dir:</strong> The direction of the simulated read. 0 refers to forward strand (&#8216;+&#8217;) and 1 refers to reverse strand (&#8216;-&#8217;) </p>
+<p><strong>dir:</strong> The direction of the simulated read. 0 refers to forward strand (&#8216;+&#8217;) and 1 refers to reverse strand (&#8216;-&#8217;)</p>
 
-<p><strong>sid:</strong> Represent which transcript this read is simulated from. It ranges between 0 and M, where M is the total number of transcripts. If sid=0, the read is simulated from the background noise. Otherwise, the read is simulated from a transcript with index sid. Transcript sid&#8217;s transcript name can be found in the <code>transcript_id</code> column of the <code>sample_name.isoforms.results</code> file (at line sid + 1, line 1 is for column names) </p>
+<p><strong>sid:</strong> Represent which transcript this read is simulated from. It ranges between 0 and M, where M is the total number of transcripts. If sid=0, the read is simulated from the background noise. Otherwise, the read is simulated from a transcript with index sid. Transcript sid&#8217;s transcript name can be found in the <code>transcript_id</code> column of the <code>sample_name.isoforms.results</code> file (at line sid + 1, line 1 is for column names)</p>
 
-<p><strong>pos:</strong> The start position of the simulated read in strand dir of transcript sid. It is numbered from 0 </p>
+<p><strong>pos:</strong> The start position of the simulated read in strand dir of transcript sid. It is numbered from 0</p>
 
-<p><strong>insertL:</strong> Only appear for paired-end reads. It gives the insert length of the simulated read. </p>
+<p><strong>insertL:</strong> Only appear for paired-end reads. It gives the insert length of the simulated read.</p>
 
 <h3 id="example:">Example:</h3>
 
@@ -492,8 +504,8 @@ output_name_1.fq &amp; output_name_2.fq if paired-end with quality score. </p>
 <pre><code>extract-transcript-to-gene-map-from-trinity trinity_fasta_file map_file
 </code></pre>
 
-<p>trinity_fasta_file: the fasta file produced by trinity, which contains all transcripts assembled.<br/>
-map_file: transcript-to-gene-map file&#8217;s name. </p>
+<p>trinity_fasta_file: the fasta file produced by trinity, which contains all transcripts assembled.<br />
+map_file: transcript-to-gene-map file&#8217;s name.</p>
 
 <h2 id="anamedeadifferentialexpressionanalysis"><a name="de"></a> Differential Expression Analysis</h2>
 
@@ -515,7 +527,7 @@ website</a>.</p>
 <pre><code>make ebseq
 </code></pre>
 
-<p>to compile the EBSeq related codes. </p>
+<p>to compile the EBSeq related codes.</p>
 
 <p>EBSeq requires gene-isoform relationship for its isoform DE
 detection. However, for de novo assembled transcriptome, it is hard to
@@ -529,11 +541,13 @@ mers of this transcript, where k is a parameter. Then, Ng vector is
 generated by applying Kmeans algorithm to the &#8216;unmappability&#8217; values
 with number of clusters set as 3. This program will make sure the mean
 &#8216;unmappability&#8217; scores for clusters are in ascending order. All
-transcripts whose lengths are less than k are assigned to cluster
-3. Run</p>
+transcripts whose lengths are less than k are assigned to cluster</p>
 
-<pre><code>rsem-generate-ngvector --help
-</code></pre>
+<ol>
+<li>Run
+
+rsem-generate-ngvector &#8211;help</li>
+</ol>
 
 <p>to get usage information or visit the <a href="rsem-generate-ngvector.html">rsem-generate-ngvector
 documentation
@@ -541,7 +555,7 @@ page</a>.</p>
 
 <p>If your reference is a de novo assembled transcript set, you should
 run <code>rsem-generate-ngvector</code> first. Then load the resulting
-<code>output_name.ngvec</code> into R. For example, you can use </p>
+<code>output_name.ngvec</code> into R. For example, you can use</p>
 
 <pre><code>NgVec &lt;- scan(file=&quot;output_name.ngvec&quot;, what=0, sep=&quot;\n&quot;)
 </code></pre>
@@ -549,7 +563,7 @@ run <code>rsem-generate-ngvector</code> first. Then load the resulting
 <p>. After that, set &#8220;NgVector = NgVec&#8221; for your differential expression
 test (either <code>EBTest</code> or <code>EBMultiTest</code>).</p>
 
-<p>For users&#8217; convenience, RSEM also provides a script
+<p>For users' convenience, RSEM also provides a script
 <code>rsem-generate-data-matrix</code> to extract input matrix from expression
 results:</p>
 
@@ -567,14 +581,14 @@ all isoform level results. You can load the matrix into R by</p>
 <p>Lastly, RSEM provides two scripts, <code>rsem-run-ebseq</code> and
 <code>rsem-control-fdr</code>, to help users find differential expressed
 genes/transcripts. First, <code>rsem-run-ebseq</code> calls EBSeq to calculate related statistics
-for all genes/transcripts. Run </p>
+for all genes/transcripts. Run</p>
 
 <pre><code>rsem-run-ebseq --help
 </code></pre>
 
 <p>to get usage information or visit the <a href="rsem-run-ebseq.html">rsem-run-ebseq documentation
 page</a>. Second,
-<code>rsem-control-fdr</code> takes <code>rsem-run-ebseq</code> &#8217;s result and reports called
+<code>rsem-control-fdr</code> takes <code>rsem-run-ebseq</code> 's result and reports called
 differentially expressed genes/transcripts by controlling the false
 discovery rate. Run</p>
 
@@ -598,7 +612,7 @@ be sent to <a href="mailto:nleng@wisc.edu">Ning Leng</a>.</p>
 
 <h3 id="i.overview">I. Overview</h3>
 
-<p><a href="https://deweylab.github.io/pRSEM/">Prior-enhanced RSEM (pRSEM)</a> uses complementary information (e.g. ChIP-seq data) to allocate RNA-seq multi-mapping fragments. We included pRSEM code in the subfolder <code>pRSEM/</code> as well as in RSEM&#8217;s scripts <code>rsem-prepare-reference</code> and <code>rsem-calculate-expression</code>. </p>
+<p><a href="https://deweylab.github.io/pRSEM/">Prior-enhanced RSEM (pRSEM)</a> uses complementary information (e.g. ChIP-seq data) to allocate RNA-seq multi-mapping fragments. We included pRSEM code in the subfolder <code>pRSEM/</code> as well as in RSEM&#8217;s scripts <code>rsem-prepare-reference</code> and <code>rsem-calculate-expression</code>.</p>
 
 <h3 id="ii.demo">II. Demo</h3>
 
@@ -615,13 +629,16 @@ be sent to <a href="mailto:nleng@wisc.edu">Ning Leng</a>.</p>
 
 <h3 id="iv.example">IV. Example</h3>
 
-<p>To run pRSEM on the <a href="#example-main">RSEM example above</a>, you need to provide:
-- <strong>ChIP-seq sequencing file(s) in FASTQ format</strong> or <strong>a ChIP-seq peak file in BED format</strong>. They will be used by pRSEM to obtain complementatry information for allocating RNA-seq multi-mapping fragments.
-- <strong>a genome mappability file in bigWig format</strong> to let pRSEM build a training
- set of isoforms to learn prior. Mappability can be obtained from UCSC&#8217;s
- ENCODE composite track for <a href="http://hgdownload.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeMapability/wgEncodeCrgMapabilityAlign36mer.bigWig">human hg19</a>
- and <a href="http://hgdownload.cse.ucsc.edu/goldenPath/mm9/encodeDCC/wgEncodeMapability/wgEncodeCrgMapabilityAlign36mer.bigWig">mouse mm9</a>. For other genomes, you
- can generate the mappability file by following <a href="http://wiki.bits.vib.be/index.php/Create_a_mappability_track#Install_and_run_the_GEM_library_tools">this tutorial</a>.</p>
+<p>To run pRSEM on the <a href="#example-main">RSEM example above</a>, you need to provide:</p>
+
+<ul>
+<li><strong>ChIP-seq sequencing file(s) in FASTQ format</strong> or <strong>a ChIP-seq peak file in BED format</strong>. They will be used by pRSEM to obtain complementatry information for allocating RNA-seq multi-mapping fragments.</li>
+<li><strong>a genome mappability file in bigWig format</strong> to let pRSEM build a training
+set of isoforms to learn prior. Mappability can be obtained from UCSC&#8217;s
+ENCODE composite track for <a href="http://hgdownload.cse.ucsc.edu/goldenPath/hg19/encodeDCC/wgEncodeMapability/wgEncodeCrgMapabilityAlign36mer.bigWig">human hg19</a>
+and <a href="http://hgdownload.cse.ucsc.edu/goldenPath/mm9/encodeDCC/wgEncodeMapability/wgEncodeCrgMapabilityAlign36mer.bigWig">mouse mm9</a>. For other genomes, you
+can generate the mappability file by following [this tutorial] (http://wiki.bits.vib.be/index.php/Create_a_mappability_track#Install_and_run_the_GEM_library_tools).</li>
+</ul>
 
 <p>Assuming you would like to use RNA Pol II&#8217;s ChIP-seq sequencing files <code>/data/mmliver_PolIIRep1.fq.gz</code> and <code>/data/mmliver_PolIIRep2.fq.gz</code>, with ChIP-seq control <code>/data/mmliver_ChIPseqCtrl.fq.gz</code>. Also, assuming the mappability file for mouse genome is <code>/data/mm9.bigWig</code> and you prefer to use STAR located at <code>/sw/STAR</code> to align RNA-seq fragments and use Bowtie to align ChIP-seq reads. Then, you can use the following commands to run pRSEM:</p>
 
@@ -634,7 +651,7 @@ be sent to <a href="mailto:nleng@wisc.edu">Ning Leng</a>.</p>
                        --mappability-bigwig-file /data/mm9.bigWig \
                        /data/mm9 \
                        /ref/mouse_0
-
+  
 rsem-calculate-expression --star \
                           --star-path /sw/STAR \
                           --calc-pme \
@@ -653,7 +670,7 @@ rsem-calculate-expression --star \
 <pre><code>rsem-prepare-reference --help
 </code></pre>
 
-<p>and </p>
+<p>and</p>
 
 <pre><code>rsem-calculate-expression --help
 </code></pre>
@@ -670,15 +687,18 @@ rsem-calculate-expression --star \
 
 <h3 id="vi.requiredexternalpackages">VI. Required External Packages</h3>
 
-<p>All the following packages will be automatically installed when compiling pRSEM.
-- <a href="https://cran.r-project.org/web/packages/data.table/index.html">data.table 1.9.6</a>: an extension of R&#8217;s data.frame, heavily used by pRSEM.
-- <a href="https://bioconductor.org/packages/release/bioc/html/GenomicRanges.html">GenomicRanges 1.24.3</a>: efficient representing and manipulating genomic intervals, heavily used by pRSEM.
-- <a href="https://bioconductor.org/packages/release/bioc/html/ShortRead.html">ShortRead 1.30.0</a>: guessing the encoding of ChIP-seq FASTQ file&#8217;s quality score.
-- <a href="https://cran.r-project.org/web/packages/caTools/index.html">caTools 1.17.1</a>: used for SPP Peak Caller.
-- <a href="https://code.google.com/archive/p/phantompeakqualtools/">SPP Peak Caller</a>:
- ChIP-seq peak caller. Source code was slightly modified in terms of included headers in order to be compiled under R v3.3.1.
-- <a href="https://sites.google.com/site/anshulkundaje/projects/idr/idrCode.tar.gz?attredirects=0">IDR</a>:
- calculating Irreproducible Discovery Rate to call peaks from multiple ChIP-seq replicates.</p>
+<p>All the following packages will be automatically installed when compiling pRSEM.</p>
+
+<ul>
+<li><a href="https://cran.r-project.org/web/packages/data.table/index.html">data.table 1.9.6</a>: an extension of R&#8217;s data.frame, heavily used by pRSEM.</li>
+<li><a href="https://bioconductor.org/packages/release/bioc/html/GenomicRanges.html">GenomicRanges 1.24.3</a>: efficient representing and manipulating genomic intervals, heavily used by pRSEM.</li>
+<li><a href="https://bioconductor.org/packages/release/bioc/html/ShortRead.html">ShortRead 1.30.0</a>: guessing the encoding of ChIP-seq FASTQ file&#8217;s quality score.</li>
+<li><a href="https://cran.r-project.org/web/packages/caTools/index.html">caTools 1.17.1</a>: used for SPP Peak Caller.</li>
+<li><a href="https://code.google.com/archive/p/phantompeakqualtools/">SPP Peak Caller</a>:
+ChIP-seq peak caller. Source code was slightly modified in terms of included headers in order to be compiled under R v3.3.1.</li>
+<li><a href="https://sites.google.com/site/anshulkundaje/projects/idr/idrCode.tar.gz?attredirects=0">IDR</a>:
+calculating Irreproducible Discovery Rate to call peaks from multiple ChIP-seq replicates.</li>
+</ul>
 
 <h2 id="anameauthorsaauthors"><a name="authors"></a> Authors</h2>
 
@@ -699,10 +719,10 @@ Malcolm Cook, Christina Wells, Uro&#353; &#352;ipeti&#263;,
 outpaddling, rekado, and Josh Richer for suggesting possible fixes.</p>
 
 <p><strong>Note</strong> that <code>bam_sort.c</code> of SAMtools is slightly modified so that
- <code>samtools sort -n</code> will not move the two mates of paired-end
- alignments apart. In addition, we turn on the <code>--without-curses</code>
- option when configuring SAMtools and thus SAMtools&#8217; curses-based
- <code>tview</code> subcommand is not built.</p>
+<code>samtools sort -n</code> will not move the two mates of paired-end
+alignments apart. In addition, we turn on the <code>--without-curses</code>
+option when configuring SAMtools and thus SAMtools' curses-based
+<code>tview</code> subcommand is not built.</p>
 
 <h2 id="anamelicensealicense"><a name="license"></a> License</h2>
 

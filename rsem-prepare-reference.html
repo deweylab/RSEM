@@ -4,16 +4,15 @@
 <head>
 <title>rsem-prepare-reference</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:root@osx219.apple.com" />
+<link rev="made" href="mailto:travis@traviss-mac-380.local" />
 </head>
 
-<body style="background-color: white">
+<body>
 
 
 
 <ul id="index">
   <li><a href="#NAME">NAME</a></li>
-  <li><a href="#PURPOSE">PURPOSE</a></li>
   <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
   <li><a href="#ARGUMENTS">ARGUMENTS</a></li>
   <li><a href="#OPTIONS">OPTIONS</a></li>
@@ -25,11 +24,7 @@
 
 <h1 id="NAME">NAME</h1>
 
-<p>rsem-prepare-reference</p>
-
-<h1 id="PURPOSE">PURPOSE</h1>
-
-<p>Prepare transcript references for RSEM and optionally build BOWTIE/BOWTIE2/STAR indices.</p>
+<p>rsem-prepare-reference - Prepare transcript references for RSEM and optionally build BOWTIE/BOWTIE2/STAR indices.</p>
 
 <h1 id="SYNOPSIS">SYNOPSIS</h1>
 
@@ -77,6 +72,12 @@
 <dd>
 
 <p>&lt;pattern&gt; is a comma-separated list of transcript categories, e.g. &quot;mRNA,rRNA&quot;. Only transcripts that match the &lt;pattern&gt; will be extracted. (Default: &quot;mRNA&quot;)</p>
+
+</dd>
+<dt id="gff3-genes-as-transcripts"><b>--gff3-genes-as-transcripts</b></dt>
+<dd>
+
+<p>This option is designed for untypical organisms, such as viruses, whose GFF3 files only contain genes. RSEM will assume each gene as a unique transcript when it converts the GFF3 file into GTF format.</p>
 
 </dd>
 <dt id="trusted-sources-sources"><b>--trusted-sources</b> &lt;sources&gt;</dt>
@@ -166,7 +167,7 @@
 <dt id="star-path-path"><b>--star-path</b> &lt;path&gt;</dt>
 <dd>
 
-<p>The path to STAR&#39;s executable. (Default: the path to STAR executable is assumed to be in user&#39;s PATH environment varaible)</p>
+<p>The path to STAR&#39;s executable. (Default: the path to STAR executable is assumed to be in user&#39;s PATH environment variable)</p>
 
 </dd>
 <dt id="star-sjdboverhang-int"><b>--star-sjdboverhang</b> &lt;int&gt;</dt>
