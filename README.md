@@ -12,6 +12,7 @@ Table of Contents
 * [Compilation & Installation](#compilation)
 * [Usage](#usage)
     * [Build RSEM references using RefSeq, Ensembl, or GENCODE annotations](#built)
+    * [Build RSEM references for untypical organisms](#untypical)
 * [Example](#example-main)
 * [Simulation](#simulation)
 * [Generate Transcript-to-Gene-Map from Trinity Output](#gen_trinity)
@@ -215,6 +216,20 @@ rsem-prepare-reference --gtf gencode.v24.annotation.gtf \
 
 Similar to Ensembl annotation, if you want to use GFF3 files (not
 recommended), add option `--gff3-RNA-patterns transcript`.
+
+#### <a name="untypical"></a> Build RSEM references for untypical organisms
+
+For untypical organisms, such as viruses, you may only have a GFF3 file that containing only genes but not any transcripts. You need to turn on `--gff3-genes-as-transcripts` so that RSEM will make each gene as a unique transcript.
+
+Here is an example command:
+
+```
+rsem-prepare-reference --gff3 virus.gff \
+               --gff3-genes-as-transcripts \
+               --bowtie \
+               virus.genome.fa \
+               ref/virus
+```
 
 ### II. Calculating Expression Values
 

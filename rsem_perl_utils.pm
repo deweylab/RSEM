@@ -9,7 +9,7 @@ our @ISA = qw(Exporter);
 our @EXPORT = qw(runCommand);
 our @EXPORT_OK = qw(runCommand collectResults showVersionInfo getSAMTOOLS hasPolyA);
 
-my $version = "RSEM v1.3.0"; # Update version info here
+my $version = "RSEM v1.3.1"; # Update version info here
 my $samtools = "samtools-1.3"; # If update to another version of SAMtools, need to change this
 
 # command, {err_msg}
