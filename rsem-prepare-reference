@@ -18,6 +18,7 @@ my $status;
 my $gtfF = "";
 my $gff3F = "";
 my $gff3_RNA_patterns = "";
+my $gff3_genes_as_transcripts = 0;
 my $gtf_sources = "None";
 my $mappingF = "";
 my $polyAChoice = 1; # 0, --polyA, add polyA tails for all isoforms; 1, default, no polyA tails; 2, --no-polyA-subset
@@ -43,6 +44,7 @@ my $star_sjdboverhang = 100;
 GetOptions("gtf=s" => \$gtfF,
 	   "gff3=s" => \$gff3F,
 	   "gff3-RNA-patterns=s" => \$gff3_RNA_patterns,
+     "gff3-genes-as-transcripts" => \$gff3_genes_as_transcripts,
 	   "trusted-sources=s" => \$gtf_sources,
 	   "transcript-to-gene-map=s" => \$mappingF,
 	   "allele-to-gene-map=s" => \$alleleMappingF,
@@ -115,6 +117,9 @@ if ($gff3F ne "") {
     $command = "rsem-gff3-to-gtf";
     if ($gff3_RNA_patterns ne "") {
 	$command .= " --RNA-patterns $gff3_RNA_patterns";
+    }
+    if ($gff3_genes_as_transcripts) {
+      $command .= " --make-genes-as-transcripts";
     }
     $command .= " $gff3F $gtfF";
     &runCommand($command)
@@ -259,6 +264,10 @@ The annotation file is in GFF3 format instead of GTF format. RSEM will first con
 =item B<--gff3-RNA-patterns> <pattern>
 
 <pattern> is a comma-separated list of transcript categories, e.g. "mRNA,rRNA". Only transcripts that match the <pattern> will be extracted. (Default: "mRNA")
+
+=item B<--gff3-genes-as-transcripts>
+
+This option is designed for untypical organisms, such as viruses, whose GFF3 files only contain genes. RSEM will assume each gene as a unique transcript when it converts the GFF3 file into GTF format.
 
 =item B<--trusted-sources> <sources>
 

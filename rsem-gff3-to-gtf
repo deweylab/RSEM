@@ -153,7 +153,7 @@ class Transcript:
 		self.index = 0
 		return self
 
-	def next(self):
+	def __next__(self):
 		if self.index == len(self.results):
 			raise StopIteration
 		interval = self.results[self.index]
@@ -217,6 +217,7 @@ def flush_out(fout):
 parser = HelpOnErrorParser(formatter_class = argparse.ArgumentDefaultsHelpFormatter, description = "Convert GFF3 files to GTF files.")
 parser.add_argument("input_GFF3_file", help = "Input GFF3 file.")
 parser.add_argument("output_GTF_file", help = "Output GTF file.")
+parser.add_argument("--make-genes-as-transcripts", help = "GFF3 file does not contain transcripts, make each gene as a transcript.", action = "store_true")
 parser.add_argument("--RNA-patterns", help = "Types of RNAs to be extracted, e.g. mRNA,rRNA", metavar = "<patterns>")
 parser.add_argument("--extract-sequences", help = "If GFF3 file contains reference sequences, extract them to the specified file", metavar = "<output.fa>")
 args = parser.parse_args()
@@ -274,11 +275,16 @@ with open(args.input_GFF3_file) as fin:
 			my_assert(gid not in gid2gname, 
 				"Gene {0} appears multiple times! Last occurrence is at line {1}:\n{2}".format(gid, feature.line_no, feature.line))
 			gid2gname[gid] = feature.getAttribute("Name")
-		elif feature.feature_type == "transcript":
+
+			if args.make_genes_as_transcripts:
+				feature.feature_type = feature.original_type = "transcript"
+				feature.attribute_dict["Parent"] = [feature.attribute_dict["ID"]]
+
+		if feature.feature_type == "transcript":
 			transcript = getTranscript(feature.getAttribute("ID", True), feature)
 			transcript.setTranscript(feature)
-		else:
-			assert feature.feature_type == "exon"
+
+		if feature.feature_type == "exon":
 			for parent in feature.getAttribute("Parent", True):
 				transcript = getTranscript(parent, feature)
 				transcript.addExon(feature)
