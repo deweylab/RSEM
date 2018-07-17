@@ -12,7 +12,7 @@ BOOST = boost
 
 # Compilation variables
 CXX = g++
-CXXFLAGS = -std=gnu++98 -Wall -I. 
+CXXFLAGS = -std=gnu++11 -Wall -I. 
 CPPFLAGS = -I$(BOOST) -I$(SAMTOOLS)/$(HTSLIB)
 
 LDFLAGS =
