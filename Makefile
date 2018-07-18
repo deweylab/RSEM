@@ -80,7 +80,7 @@ $(PROGS1) :
 	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 $(PROGS2) :
-	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS) -lbz2 -lz -lcurl -llzma
+	$(CXX) $(LDFLAGS) -o $@ $^ $(LDLIBS) -lbz2 -llzma -lcurl -lcrypto -lm -lz -lpthread
 
 $(PROGS3) :
 	$(CXX) $(LDFLAGS) -pthread -o $@ $^ $(LDLIBS)
