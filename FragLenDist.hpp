@@ -10,7 +10,7 @@
    This program is distributed in the hope that it will be useful, but
    WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-   General Public License for more details.   
+   General Public License for more details.
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
@@ -21,80 +21,66 @@
 #ifndef FRAGLENDIST_H_
 #define FRAGLENDIST_H_
 
-#include <vector>
+#include <cassert>
+#include <fstream>
+
+#include "boost/math/distributions/normal.hpp"
 
 #include "utils.h"
+#include "sampling.hpp"
 
 class FragLenDist {
 public:
 	FragLenDist(model_mode_type mode, int lb, int ub);
 	~FragLenDist();
 
+	// Set normal  N(mean, sd^2) in range [mean - range, mean + range]
+	void setDist(double mean, double sd, int range = 200);
+
 	void findBoundaries();
 
 	int getMinL() const { return lb; }
 	int getMaxL() const { return ub; }
-
-
-	void clear();
-	void collect(const MateLenDist* o);
-	void finish();
-
-	void read(std::ifstream& fin, int choice); // choice: 0 -> p; 1 -> ss
-	void write(std::ofstream& fout, int choice);
-
-	// (len - ub) * cdf[span] because when we perform projection gradient, cdf[span] is not necessarily 1.
-	double getEffLen(int len) const { return (len <= lb ? 0 : (len <= ub ? psum[len - lb] : psum[span] + (len - ub) * cdf[span])); }
-
-	void optimize();
-
-	bool operator() (int a, int b) const {
-		return pmf[a] < pmf[b];
+	
+	double getLogProb(int len) const { 
+		assert(len <= ub);
+		return (len >= lb ? pmf[len - lb] : NEGINF);
 	}
 
-	void setUpCounts();
-	void setUpTrans(int M, int *lens, double *efflens, double *countTrans);
+	// ccdf : complementary cdf
+	double getLogCcdf(int len) const {
+		assert(len <= ub);
+		return (len >= lb ? ccdf[len - lb] : 0.0);
+	}
+
+	// if trans_len < ub, should update pmf[trans_len - lb] ... pmf[ub - lb] by optimizing, which is not implemented here.	
+	void update(int len, double frac) { 
+		assert(len <= ub);
+		if (len >= lb) pmf[len - lb] += frac;
+	}
+	
+	void clear();
+	void collect(const FragLenDist* o);
+	void finish();
+	
+	double calcLogP() const;
+	
+	void read(std::ifstream& fin, int choice); // choice: 0 -> p; 1 -> ss
+	void write(std::ofstream& fout, int choice);
+	
+	int simulate(Sampler* sampler) {
+		return lb + sampler->sample(cdf, span);
+	}
 
 private:
 	model_mode_type mode;
 	int lb, ub, span; // [lb, ub], span = ub - lb + 1
-	double *pmf, *ss, *cdf; // probability mass function, sufficiant statistics, and cumulative density function
+	double *pmf, *ss, *cdf; // probability mass function, sufficiant statistics, and cumulative density function; cdf in log scale refers to log(1 - cdf[i - 1]), i.e. log ccdf
 
-	std::vector<double> pmf, cdf, psum; // pmf, probability mass function; cdf, cumulative density function; psum[i] = \sum_{j=1}^{i} (i - j + 1) pmf[j]
+	void prepare_for_simulation();
 
-	static const double max_step_size, alpha, beta;
-	double t;
-	std::vector<double> pmf_orig; // temporary vector used to store the original pmf vector during back tracking
-	
-	int l_lower_SE; // the mininum fragment length - 1 - lb allowed for single-end reads
-	bool hasSE, hasPE;
-	std::vector<double> countUpper; // for single-end reads, count the number of reads by their maximum fragment lengths; 
-	std::vector<double> countFrags; // for paired-end reads, count the number of reads falling into each fragment length bin
-
-	std::vector<double> gd, gd_buffer; // gd, gradient; gd_buffer, buffer for calculating gradient with the efflens
-	std::vector<int> ids;
-	
-	int M;
-	int* lens; // each transcript's length
-	double* efflens; // each transcript's effective length
-	double* countTrans; // number of reads falling into each transcript
-	
-	void updateAux();
-
-	/*
-		@return   the log likelihood function
-	*/
-	double calc_f();
-
-	/*
-		@return   ||the gradient||^2_2
-	*/
-	double calc_g(std::vector<double>& gd);
-
-	void backtracking();
-	
-	void projection();
-	
+	void ss2p(); // from sufficient statistics to pmf
+	void p2logp(); // convert to log space
 };
 
 #endif /* FRAGLENDIST_H_ */

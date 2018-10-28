@@ -27,6 +27,7 @@
 #include "QUALstring.hpp"
 
 #include "Orientation.hpp"
+#include "FragLenDist.hpp"
 #include "IlluminaSequenceModel.hpp"
 
 #include "BamAlignment.hpp"

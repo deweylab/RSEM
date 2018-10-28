@@ -38,11 +38,7 @@ RNASeqModel::RNASeqModel(int model_type) : model_type(model_type) {
 }
 
 RNASeqModel::~RNASeqModel() {
-	if (mld1 != NULL) delete mld1;
-	if (mld2 != NULL) delete mld2;
-	if (npro != NULL) delete npro;
-	if (qd != NULL) delete qd;
-	if (nqpro != NULL) delete nqpro;
+	
 }
 
 // ssF: model_type \n mld1 \n mld2 \n qd \n nqpro \n pro

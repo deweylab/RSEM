@@ -33,14 +33,11 @@ my $star_path = '';
 my $star_sjdboverhang = 100;
 my $hisat2 = 0;
 my $hisat2_path = "";
-my $hisat2_genome = 0;
+my $hisat2_transcriptome = 0;
 my $nThreads = 1;
 my $remove_duplicates = 0;
 my $quiet = 0;
 my $help = 0;
-
-my $prep_prsem = 0; ## if prepare reference for pRSEM
-my $mappability_bigwig_file  = '';
 
 
 
@@ -61,7 +58,7 @@ GetOptions("gtf=s" => \$gtfF,
 		   "star-sjdboverhang=i" => \$star_sjdboverhang,
 		   "hisat2" => \$hisat2,
 		   "hisat2-path=s" => \$hisat2_path,
-		   "hisat2-genome" => \$hisat2_genome,
+		   "hisat2-transcriptome" => \$hisat2_transcriptome,
 		   "p|num-threads=i" => \$nThreads,
 		   "remove-duplicates" => \$remove_duplicates,
 		   "prep-pRSEM" => \$prep_prsem, ## bool if prepare reference for pRSEM
@@ -76,20 +73,7 @@ pod2usage(-msg => "--gtf/--gff3 and --allele-to-gene-map are mutually exclusive!
 pod2usage(-msg => "Invalid number of arguments!", -exitval => 2, -verbose => 2) if (scalar(@ARGV) != 2);
 pod2usage(-msg => "No poly(A) tail should be added if --star or --hisat2-genome is set!", -exitval => 2, -verbose => 2) if (($star || $hisat2_genome) && $polyALen > 0);
 
-if ( $prep_prsem ) {
-	my $msg = '';
-	if ($bowtie_path eq '' ) {
-		$msg = "--bowtie-path <path> needs to be specified for preparing pRSEM references\n";
-	}
 
-	if ($mappability_bigwig_file eq '') {
-		$msg = "--mappability-bigwig-file <string> needs to be specified for preparing pRSEM references\n";
-	}
-
-	if ( $msg ne '' ) {
-		pod2usage(-msg => $msg, -exitval => 2, -verbose => 1 );
-	}
-}
 
 if (!$bowtie && ($bowtie_path ne "")) { print "Warning: If Bowtie is not used, no need to set --bowtie-path option!\n"; }
 if (!$bowtie2 && ($bowtie2_path ne "")) { print "Warning: If Bowtie 2 is not used, no need to set --bowtie2-path option!\n"; }
@@ -128,11 +112,11 @@ if ($gff3F ne "") {
 
 $command = "rsem-build-reference $ARGV[1]";
 if ($gtfF ne "") {
-  $command .= " --gtf $gtfF";
-  if ($gtf_sources ne "") { 
-    $gtf_sources =~ s/ /\\ /g;
-    $command .= " --trusted-sources $gtf_sources";
-  }
+	$command .= " --gtf $gtfF";
+	if ($gtf_sources ne "") { 
+		$gtf_sources =~ s/ /\\ /g;
+		$command .= " --trusted-sources $gtf_sources";
+	}
 }
 if ($mappingF ne "") { $command .= " --mapping $mappingF"; }
 if ($alleleMappingF ne "") { $command .= " --mapping $alleleMappingF --allele-specific"; }
@@ -140,8 +124,8 @@ if ($remove_duplicates) { $command .= " --remove-duplicates"; }
 
 $polyALen = max(0, $polyALen - 20);
 if ($polyALen > 0) {
-  $command .= " --polyA-length $polyALen";
-  if ($polyAExcludeF ne "") { $command .= " --no-polyA-subset $polyAExcludeF"; }
+	$command .= " --polyA-length $polyALen";
+	if ($polyAExcludeF ne "") { $command .= " --no-polyA-subset $polyAExcludeF"; }
 }
 if ($bowtie) { $command .= " --n2g-index"; }
 if ($quiet) { $command .= " -q"; }
@@ -151,6 +135,7 @@ $command .= " --files $size @list";
 
 if ($bowtie) {
 	$command = $bowtie_path."bowtie-build -f";
+	if ($nThreads > 1) { $command .= " --threads $nTHreads"}
 	if ($quiet) { $command .= " -q"; }
 	$command .= " $ARGV[1].n2g.idx.fa $ARGV[1]";
 
@@ -182,7 +167,15 @@ if ($star) {
 }
 
 if ($hisat2) {
-	if ($hisat2_genome) {
+	if ($hisat2_transcriptome) {
+		# Build hisat2 transcriptome indices
+		$command = $hisat2_path."hisat2-build";
+		if ($nThreads > 1) { $command .= " -p $nThreads"; }
+		if ($quiet) { $command .= " -q"; }
+		$command .= " $ARGV[1].idx.fa $ARGV[1]";
+		&runCommand($command);
+	}
+	else {
 		# Build hisat2 genome indices
 		pod2usage(-msg => "GTF file must be provided if --hisat2-genome is set.", -exitval => 2, -verbose => 2) if ($gtfF eq "");
 		$command = $hisat2_path."hisat2_extract_splice_sites.py $gtfF > $ARGV[1].hisat2.ss";
@@ -196,52 +189,6 @@ if ($hisat2) {
 		$command .= " @list $ARGV[1]_genome";
 		&runCommand($command); 
 	}
-
-	# Build hisat2 transcriptome indices
-	$command = $hisat2_path."hisat2-build";
-	if ($nThreads > 1) { $command .= " -p $nThreads"; }
-	if ($quiet) { $command .= " -q"; }
-	$command .= " $ARGV[1].idx.fa $ARGV[1]";
-
-	&runCommand($command);
-}
-
-if ( $prep_prsem ) {
-	$command = "$FindBin::RealBin/pRSEM/prsem-prepare-reference " .
-			   " --num-threads $nThreads " .
-			   " --bowtie-path $bowtie_path " .
-			   " --mappability-bigwig-file $mappability_bigwig_file";
-
-	if ( $quiet ) {
-		$command .= ' --quiet ';
-	}
- 
-	## prepare reference only for chromosomes listed in GTF file, rather than 
-	## all chromosomes in the genome directory, because that's where we want to 
-	## call peaks and derive priors. This is different from RNA-seq, because 
-	## where peaks called totally depends on reference, there's no option to
-	## control it later.
-	#my $ref_fas = join(',', @list);
-	my %chrom2exists = ();
-	open(IN, "<$gtfF") or die "cannot open $gtfF: $!\n";
-	while(my $line = <IN>){
-		my @words = split(/\t/, $line);
-		$chrom2exists{$words[0]} = 1;
-	}
-	close IN;
-
-	my @reflist = ();
-	my @suffixlist = ('.fa', '.fasta');
-	foreach my $fullname (@list) {
-		my $basename = basename($fullname, @suffixlist); 
-		if ( exists $chrom2exists{$basename} ) {
-			push @reflist, $fullname;
-		}
-	}
-	my $ref_fas = join(',', @reflist);
-
-	$command .= " $ref_fas $ARGV[1]";
-	&runCommand($command);
 }
 
 __END__
@@ -364,13 +311,17 @@ Build Hisat 2 indices. (Default: off)
 
 The path to the Hisat 2 executables. (Default: the path to Hisat 2 executables is assumed to be in the user's PATH environment variable)
 
+=item B<--hisat2-transcriptome>
+
+Build Hisat 2 indices for transcript sequences instead. (Default: off)
+
 =item B<--remove-duplicates>
 
 Remove transcript sequences that are identical to previous sequences. (Default: off)
 
 =item B<-p/--num-threads> <int>
 
-Number of threads to use for building Bowtie2/Hisat2/STAR indices. If you want to use this option for Bowtie 2, please make sure your Bowtie 2 version is at least 2.2.7. (Default: 1)
+Number of threads to use for building Bowtie/Bowtie2/Hisat2/STAR indices. Please make sure that you have the latest aligner installed. (Default: 1)
 
 =item B<-q/--quiet>
 
@@ -382,23 +333,9 @@ Show help information.
 
 =back
 
-=head1 PRIOR-ENHANCED RSEM OPTIONS
-
-=over
-
-=item B<--prep-pRSEM>
-
-A Boolean indicating whether to prepare reference files for pRSEM, including building Bowtie indices for a genome and selecting training set isoforms. The index files will be used for aligning ChIP-seq reads in prior-enhanced RSEM and the training set isoforms will be used for learning prior. A path to Bowtie executables and a mappability file in bigWig format are required when this option is on. Currently, Bowtie2 is not supported for prior-enhanced RSEM. (Default: off)
-
-=item B<--mappability-bigwig-file> <string>
-
-Full path to a whole-genome mappability file in bigWig format. This file is required for running prior-enhanced RSEM. It is used for selecting a training set of isoforms for prior-learning. This file can be either downloaded from UCSC Genome Browser or generated by GEM (Derrien et al., 2012, PLoS One). (Default: "")
-
-=back 
-
 =head1 DESCRIPTION
 
-This program extracts/preprocesses the reference sequences for RSEM and prior-enhanced RSEM. It can optionally build Bowtie indices (with '--bowtie' option) and/or Bowtie 2 indices (with '--bowtie2' option) using their default parameters. It can also optionally build STAR indices (with '--star' option) using parameters from ENCODE3's STAR-RSEM pipeline. For prior-enhanced RSEM, it can build Bowtie genomic indices and select training set isoforms (with options '--prep-pRSEM' and '--mappability-bigwig-file <string>'). If an alternative aligner is to be used, indices for that particular aligner can be built from either 'reference_name.idx.fa' or 'reference_name.n2g.idx.fa' (see OUTPUT for details). This program is used in conjunction with the 'rsem-calculate-expression' program.
+This program extracts/preprocesses the reference sequences for RSEM. It can optionally build Bowtie indices (with '--bowtie' option), Bowtie 2 indices (with '--bowtie2' option), STAR indices (with '--star' option), and HISAT2 indices (with '--hisat2' option) using their default parameters. It can also optionally build STAR indices (with '--star' option) using parameters from ENCODE3's STAR-RSEM pipeline. For prior-enhanced RSEM, it can build Bowtie genomic indices and select training set isoforms (with options '--prep-pRSEM' and '--mappability-bigwig-file <string>'). If an alternative aligner is to be used, indices for that particular aligner can be built from either 'reference_name.idx.fa' or 'reference_name.n2g.idx.fa' (see OUTPUT for details). Please make sure that you have the latest verion of aligner installed. This program is used in conjunction with the 'rsem-calculate-expression' program.
 
 =head1 OUTPUT
 
@@ -470,35 +407,7 @@ OR
 
 STAR genome index files will be saved under '/ref/'. 
 
-4) Suppose we want to prepare references for prior-enhanced RSEM in the above example. In this scenario, both STAR and Bowtie are required to build genomic indices - STAR for RNA-seq reads and Bowtie for ChIP-seq reads. Assuming their executables are under '/sw/STAR' and '/sw/Bowtie', respectively. Also, assuming the mappability file for mouse genome is '/data/mm9.bigWig'. The command will be:
-
- rsem-prepare-reference --gtf mm9.gtf \
-						--transcript-to-gene-map knownIsoforms.txt \
-						--star \
-						--star-path /sw/STAR \
-						-p 8 \
-						--prep-pRSEM \
-						--bowtie-path /sw/Bowtie \
-						--mappability-bigwig-file /data/mm9.bigWig \
-						/data/mm9/chr1.fa,/data/mm9/chr2.fa,...,/data/mm9/chrM.fa \
-						/ref/mouse_0
-
-OR
-
- rsem-prepare-reference --gtf mm9.gtf \
-						--transcript-to-gene-map knownIsoforms.txt \
-						--star \
-						--star-path /sw/STAR \
-						-p 8 \
-						--prep-pRSEM \
-						--bowtie-path /sw/Bowtie \
-						--mappability-bigwig-file /data/mm9.bigWig \
-						/data/mm9
-						/ref/mouse_0
-
-Both STAR and Bowtie's index files will be saved under '/ref/'. Bowtie files will have name prefix 'mouse_0_prsem'
-
-5) Suppose we only have transcripts from EST tags stored in 'mm9.fasta' and isoform-gene information stored in 'mapping.txt'. We want to add 125bp long poly(A) tails to all transcripts. The reference_name is set as 'mouse_125'. In addition, we do not want to build Bowtie/Bowtie 2 indices, and will use an alternative aligner to align reads against either 'mouse_125.idx.fa' or 'mouse_125.idx.n2g.fa':
+4) Suppose we only have transcripts from EST tags stored in 'mm9.fasta' and isoform-gene information stored in 'mapping.txt'. We want to add 125bp long poly(A) tails to all transcripts. The reference_name is set as 'mouse_125'. In addition, we do not want to build Bowtie/Bowtie 2 indices, and will use an alternative aligner to align reads against either 'mouse_125.idx.fa' or 'mouse_125.idx.n2g.fa':
 
  rsem-prepare-reference --transcript-to-gene-map mapping.txt \
 						--polyA
