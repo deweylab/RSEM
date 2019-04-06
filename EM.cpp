@@ -612,35 +612,52 @@ int main(int argc, char* argv[]) {
 	fin>>N0>>N1>>N2>>N_tot;
 	fin.close();
 
-	general_assert(N1 > 0, "There are no alignable reads!");
+	if (N1 == 0) {
+		printf("Warning: There are no alignable reads!\n");
+		theta.resize(M + 1, 0.0);
+		eel.resize(M + 1, 0.0);
+		for (int i = 1; i <= M; ++i) eel[i] = transcripts.getTranscriptAt(i).getLength();
+		double *countv = new double[M + 1];
+		memset(countv, 0, sizeof(double) * (M + 1));
+		writeResultsEM(M, refName, imdName, transcripts, theta, eel, countv, appendNames);
+		if (genBamF) {
+			sprintf(outBamF, "%s.transcript.bam", outName);
+			char command[1005];
+			sprintf(command, "cp %s %s", inpSamF, outBamF);
+			printf("%s\n", command);
+			system(command);
+		}
+		delete[] countv;
+	}
+	else {
+		if ((READ_INT_TYPE)nThreads > N1) nThreads = N1;
 
-	if ((READ_INT_TYPE)nThreads > N1) nThreads = N1;
+		//set model parameters
+		mparams.M = M;
+		mparams.N[0] = N0; mparams.N[1] = N1; mparams.N[2] = N2;
+		mparams.refs = &refs;
 
-	//set model parameters
-	mparams.M = M;
-	mparams.N[0] = N0; mparams.N[1] = N1; mparams.N[2] = N2;
-	mparams.refs = &refs;
+		sprintf(mparamsF, "%s.mparams", imdName);
+		fin.open(mparamsF);
 
-	sprintf(mparamsF, "%s.mparams", imdName);
-	fin.open(mparamsF);
+		general_assert(fin.is_open(), "Cannot open " + cstrtos(mparamsF) + "It may not exist.");
 
-	general_assert(fin.is_open(), "Cannot open " + cstrtos(mparamsF) + "It may not exist.");
+		fin>> mparams.minL>> mparams.maxL>> mparams.probF;
+		int val; // 0 or 1 , for estRSPD
+		fin>>val;
+		mparams.estRSPD = (val != 0);
+		fin>> mparams.B>> mparams.mate_minL>> mparams.mate_maxL>> mparams.mean>> mparams.sd;
+		fin>> mparams.seedLen;
+		fin.close();
 
-	fin>> mparams.minL>> mparams.maxL>> mparams.probF;
-	int val; // 0 or 1 , for estRSPD
-	fin>>val;
-	mparams.estRSPD = (val != 0);
-	fin>> mparams.B>> mparams.mate_minL>> mparams.mate_maxL>> mparams.mean>> mparams.sd;
-	fin>> mparams.seedLen;
-	fin.close();
-
-	//run EM
-	switch(read_type) {
-	case 0 : EM<SingleRead, SingleHit, SingleModel>(); break;
-	case 1 : EM<SingleReadQ, SingleHit, SingleQModel>(); break;
-	case 2 : EM<PairedEndRead, PairedEndHit, PairedEndModel>(); break;
-	case 3 : EM<PairedEndReadQ, PairedEndHit, PairedEndQModel>(); break;
-	default : fprintf(stderr, "Unknown Read Type!\n"); exit(-1);
+		//run EM
+		switch(read_type) {
+		case 0 : EM<SingleRead, SingleHit, SingleModel>(); break;
+		case 1 : EM<SingleReadQ, SingleHit, SingleQModel>(); break;
+		case 2 : EM<PairedEndRead, PairedEndHit, PairedEndModel>(); break;
+		case 3 : EM<PairedEndReadQ, PairedEndHit, PairedEndQModel>(); break;
+		default : fprintf(stderr, "Unknown Read Type!\n"); exit(-1);
+		}		
 	}
 
 	time_t b = time(NULL);

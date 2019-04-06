@@ -417,25 +417,11 @@ if (!$is_alignment) {
 	               " --outFileNamePrefix $imdName ";
 	               ##
 	
-#<<<<<<< HEAD
-	 #if ( $gzipped_read_file ) {
-	 #  $command .= ' --readFilesCommand zcat ';
-	 #} elsif ( $bzipped_read_file ) {
-	 #  $command .= ' --readFilesCommand bzcat ';
-	 #}
-	
-	 #if ( $read_type == 0 || $read_type == 1 ) {
-	 #  $command .= " --readFilesIn $mate1_list ";
-	 #} else {
-	 #  $command .= " --readFilesIn $mate1_list $mate2_list";
-	 #}
-#=======
 	    if ( $star_gzipped_read_file ) {
 		$command .= ' --readFilesCommand zcat ';
 	    } elsif ( $star_bzipped_read_file ) {
 		$command .= ' --readFilesCommand bzip2 -c ';
 	    }
-#>>>>>>> master
 	
 	    if ( $read_type == 0 || $read_type == 1 ) {
 		$command .= " --readFilesIn $mate1_list ";
@@ -552,13 +538,24 @@ if ($quiet) { $command .= " -q"; }
 
 &runCommand($command);
 
-$command = "rsem-build-read-index $gap"; 
-if ($read_type == 0) { $command .= " 0 $quiet $imdName\_alignable.fa"; }
-elsif ($read_type == 1) { $command .= " 1 $quiet $imdName\_alignable.fq"; }
-elsif ($read_type == 2) { $command .= " 0 $quiet $imdName\_alignable_1.fa $imdName\_alignable_2.fa"; }
-elsif ($read_type == 3) { $command .= " 1 $quiet $imdName\_alignable_1.fq $imdName\_alignable_2.fq"; }
-else { print "Impossible! read_type is not in [1,2,3,4]!\n"; exit(-1); }
-&runCommand($command);
+my $inpCntF = "$statName.cnt";
+my $local_status = open(INPUT, $inpCntF);
+if ($local_status == 0) { print "Fail to open file $inpF!\n"; exit(-1); }
+my $line = <INPUT>;
+chomp($line);
+my @Ns = split(/ /, $line);
+close(INPUT);
+my $no_aligned = ($Ns[1] == 0);
+
+if (!$no_aligned) {
+  $command = "rsem-build-read-index $gap"; 
+  if ($read_type == 0) { $command .= " 0 $quiet $imdName\_alignable.fa"; }
+  elsif ($read_type == 1) { $command .= " 1 $quiet $imdName\_alignable.fq"; }
+  elsif ($read_type == 2) { $command .= " 0 $quiet $imdName\_alignable_1.fa $imdName\_alignable_2.fa"; }
+  elsif ($read_type == 3) { $command .= " 1 $quiet $imdName\_alignable_1.fq $imdName\_alignable_2.fq"; }
+  else { print "Impossible! read_type is not in [1,2,3,4]!\n"; exit(-1); }
+  &runCommand($command);  
+}
 
 my $doesOpen = open(OUTPUT, ">$imdName.mparams");
 if ($doesOpen == 0) { print "Cannot generate $imdName.mparams!\n"; exit(-1); }
@@ -627,6 +624,11 @@ if ($genBamF) {
 if ($mTime) { $time_end = time(); $time_rsem = $time_end - $time_start; }
 
 if ($mTime) { $time_start = time(); }
+
+if ($no_aligned) { 
+  print "Since no aligned reads, further steps will not be performed!\n";
+  exit(0); 
+}
 
 if ($calcPME || $calcCI ) {
     $command = "rsem-run-gibbs $refName $imdName $statName $BURNIN $NCV $SAMPLEGAP";

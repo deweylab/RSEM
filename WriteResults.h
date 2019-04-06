@@ -86,7 +86,8 @@ void calcExpressionValues(int M, const std::vector<double>& theta, const std::ve
 	    frac[i] = theta[i];
 	    denom += frac[i];
 	  }
-	general_assert(denom >= EPSILON, "No alignable reads?!");
+	// general_assert(denom >= EPSILON, "No alignable reads?!");
+	if (denom < EPSILON) denom = 1.0;
 	for (int i = 1; i <= M; i++) frac[i] /= denom;
   
 	//calculate FPKM
@@ -98,6 +99,7 @@ void calcExpressionValues(int M, const std::vector<double>& theta, const std::ve
 	tpm.assign(M + 1, 0.0);
 	denom = 0.0;
 	for (int i = 1; i <= M; i++) denom += fpkm[i];
+	if (denom < EPSILON) denom = 1.0;
 	for (int i = 1; i <= M; i++) tpm[i] = fpkm[i] / denom * 1e6;  
 }
 
@@ -173,7 +175,7 @@ void writeResultsEM(int M, const char* refName, const char* imdName, Transcripts
 		}
 		else {
 			for (int j = b; j < e; j++) {
-				isopct[j] = tpm[j] / gene_tpm[i];
+				isopct[j] = gene_tpm[i] > EPSILON ? tpm[j] / gene_tpm[i] : 0.0;
 				glens[i] += tlens[j] * isopct[j];
 				gene_eels[i] += eel[j] * isopct[j];
 			}
@@ -203,7 +205,7 @@ void writeResultsEM(int M, const char* refName, const char* imdName, Transcripts
 		}
 		else {
 			for (int j = b; j < e; j++) {
-				ta_pct[j] = tpm[j] / trans_tpm[i];
+				ta_pct[j] = trans_tpm[i] > EPSILON ? tpm[j] / trans_tpm[i] : 0.0;
 				trans_lens[i] += tlens[j] * ta_pct[j];
 				trans_eels[i] += eel[j] * ta_pct[j];
 			}
@@ -214,7 +216,7 @@ void writeResultsEM(int M, const char* refName, const char* imdName, Transcripts
 	  for (int i = 0; i < m; i++) 
 	    if (gene_tpm[i] >= EPSILON) {
 	      int b = gt.spAt(i), e = gt.spAt(i + 1);
-	      for (int j = b; j < e; j++) gt_pct[j] = trans_tpm[j] / gene_tpm[i];
+	      for (int j = b; j < e; j++) gt_pct[j] = gene_tpm[i] > EPSILON ? trans_tpm[j] / gene_tpm[i] : 0.0;
 	    }
 	}
 
