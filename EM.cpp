@@ -615,6 +615,13 @@ int main(int argc, char* argv[]) {
 	if (N1 == 0) {
 		printf("Warning: There are no alignable reads!\n");
 		theta.resize(M + 1, 0.0);
+		FILE *fo = NULL;
+		sprintf(thetaF, "%s.theta", statName);
+		fo = fopen(thetaF, "w");
+		fclose(fo);
+		sprintf(modelF, "%s.model", statName);
+		fo = fopen(modelF, "w");
+		fclose(fo);
 		eel.resize(M + 1, 0.0);
 		for (int i = 1; i <= M; ++i) eel[i] = transcripts.getTranscriptAt(i).getLength();
 		double *countv = new double[M + 1];
