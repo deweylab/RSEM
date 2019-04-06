@@ -627,6 +627,15 @@ if ($mTime) { $time_start = time(); }
 
 if ($no_aligned) { 
   print "Since no aligned reads, further steps will not be performed!\n";
+  if (!$keep_intermediate_files) {
+      &runCommand("rm -rf $temp_dir", "Fail to delete the temporary folder!");
+  }
+  if ($mTime) { 
+      open(OUTPUT, ">$sampleName.time");
+      print OUTPUT "Aligning reads: $time_alignment s.\n";
+      print OUTPUT "Estimating expression levels: $time_rsem s.\n";
+      close(OUTPUT);
+  }
   exit(0); 
 }
 
