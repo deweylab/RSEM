@@ -398,7 +398,7 @@ if (!$is_alignment) {
 	
 	               ## different than ENCODE3 pipeline 
 	               ## do not allow using shared memory
-	               ' --genomeLoad NoSharedMemory ' .
+	               ' --genomeLoad LoadAndRemove ' .
 	               ##
 	
 	               ## different than ENCODE3 pipeline, which sorts output BAM
