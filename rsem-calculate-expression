@@ -4,6 +4,7 @@ use Getopt::Long qw(:config no_auto_abbrev);
 use Pod::Usage;
 use File::Basename;
 use File::Temp qw(tempdir);
+use File::Copy;
 use FindBin;
 use lib $FindBin::RealBin;
 use rsem_perl_utils qw(runCommand collectResults showVersionInfo getSAMTOOLS hasPolyA);
@@ -500,20 +501,19 @@ if (!$is_alignment) {
 
 	$inpF = "$imdName.bam";
 
-	if ( $star ) {
-	    my $star_tr_bam = $imdName . 'Aligned.toTranscriptome.out.bam';
-	    rename $star_tr_bam, $inpF
-		or die "can't rename $star_tr_bam to $inpF: $!\n";
-	    rmdir $imdName . "_STARtmp/";
-	    my $star_genome_bam = $imdName . "Aligned.out.bam";
-	    my $rsem_star_genome_bam = $sampleName.'.STAR.genome.bam';
-	    if ( $star_output_genome_bam ) {
-		rename $star_genome_bam, $rsem_star_genome_bam or die 
-		    "can't move $star_genome_bam to $rsem_star_genome_bam: $!\n";
-	    } else {
-		unlink $star_genome_bam or die "can't remove $star_genome_bam: $!\n";
-	    }
-	}
+    if ( $star ) {
+        my $star_tr_bam = $imdName . 'Aligned.toTranscriptome.out.bam';
+        move($star_tr_bam, $inpF) or die "can't move $star_tr_bam to $inpF: $!\n";
+        rmdir $imdName . "_STARtmp/";
+
+        my $star_genome_bam = $imdName . "Aligned.out.bam";
+        my $rsem_star_genome_bam = $sampleName.'.STAR.genome.bam';
+        if ( $star_output_genome_bam ) {
+            move($star_genome_bam, $rsem_star_genome_bam) or die "can't move $star_genome_bam to $rsem_star_genome_bam: $!\n";
+        } else {
+            unlink $star_genome_bam or die "can't remove $star_genome_bam: $!\n";
+        }
+    }
 }
 
 if ( $sort_bam_by_read_name ) {
@@ -645,16 +645,16 @@ if ($calcPME || $calcCI ) {
 
 if ($calcPME || $calcCI) {
     if ($alleleS) {
-	system("mv $sampleName.alleles.results $imdName.alleles.results.bak1");
-	system("mv $sampleName.isoforms.results $imdName.isoforms.results.bak1");
-	system("mv $sampleName.genes.results $imdName.genes.results.bak1");
+	move("$sampleName.alleles.results", "$imdName.alleles.results.bak1");
+	move("$sampleName.isoforms.results", "$imdName.isoforms.results.bak1");
+	move("$sampleName.genes.results", "$imdName.genes.results.bak1");
 	&collectResults("allele", "$imdName.allele_res", "$sampleName.alleles.results"); # allele level
 	&collectResults("isoform", "$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
 	&collectResults("gene", "$imdName.gene_res", "$sampleName.genes.results"); # gene level
     }
     else {
-	system("mv $sampleName.isoforms.results $imdName.isoforms.results.bak1");
-	system("mv $sampleName.genes.results $imdName.genes.results.bak1");
+	move("$sampleName.isoforms.results", "$imdName.isoforms.results.bak1");
+	move("$sampleName.genes.results", "$imdName.genes.results.bak1");
 	&collectResults("isoform", "$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
 	&collectResults("gene", "$imdName.gene_res", "$sampleName.genes.results"); # gene level
     }
@@ -669,16 +669,16 @@ if ($calcCI) {
     &runCommand($command);
 
     if ($alleleS) {
-	system("mv $sampleName.alleles.results $imdName.alleles.results.bak2");
-	system("mv $sampleName.isoforms.results $imdName.isoforms.results.bak2");
-	system("mv $sampleName.genes.results $imdName.genes.results.bak2");
+	move("$sampleName.alleles.results", "$imdName.alleles.results.bak2");
+	move("$sampleName.isoforms.results", "$imdName.isoforms.results.bak2");
+	move("$sampleName.genes.results", "$imdName.genes.results.bak2");
 	&collectResults("allele", "$imdName.allele_res", "$sampleName.alleles.results"); # allele level
 	&collectResults("isoform", "$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
 	&collectResults("gene", "$imdName.gene_res", "$sampleName.genes.results"); # gene level
     }
     else {
-	system("mv $sampleName.isoforms.results $imdName.isoforms.results.bak2");
-	system("mv $sampleName.genes.results $imdName.genes.results.bak2");
+	move("$sampleName.isoforms.results", "$imdName.isoforms.results.bak2");
+	move("$sampleName.genes.results", "$imdName.genes.results.bak2");
 	&collectResults("isoform", "$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
 	&collectResults("gene", "$imdName.gene_res", "$sampleName.genes.results"); # gene level
     }
@@ -749,12 +749,10 @@ if ( $run_prsem ) {
   my $fiso_results  = "${sampleName}.isoforms.results";
   my $fgene_results = "${sampleName}.genes.results";
 
-  rename $fiso_results, $fstat_iso_results or die 
-    "can't rename $fiso_results to $fstat_iso_results: $!\n";
-  
-  rename $fgene_results, $fstat_gene_results or die 
-    "can't rename $fgene_results to $fstat_gene_results: $!\n";
-  
+  move($fiso_results, $fstat_iso_results) or die "can't move $fiso_results to $fstat_iso_results: $!\n";
+
+  move($fgene_results, $fstat_gene_results) or die "can't move $fgene_results to $fstat_gene_results: $!\n";
+
   collectResults("isoform", $fprsem_iso_res,  $fiso_results);
   collectResults("gene",    $fprsem_gene_res, $fgene_results);
 }
