@@ -357,7 +357,7 @@ my $pos = rindex($sampleName, '/');
 if ($pos < 0) { $sampleToken = $sampleName; }
 else { $sampleToken = substr($sampleName, $pos + 1); }
 
-$temp_dir = tempdir(CLEANUP => 1);
+$temp_dir = tempdir('rsem-calculate-expression-XXXXXXXXXX', TMPDIR => 1, CLEANUP => 1);
 $stat_dir = "$sampleName.stat";
 
 if (!(-d $stat_dir) && !mkdir($stat_dir)) { print "Fail to create folder $stat_dir.\n"; exit(-1); }
