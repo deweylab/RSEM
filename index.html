@@ -20,13 +20,13 @@
 <h2>RSEM (RNA-Seq by Expectation-Maximization)</h2>
 <hr>
 <p><strong>Updates</strong></p>
+<p>Apr 6, 2019 &nbsp; RSEM v1.3.2 is online now. Prevent RSEM from crashing when there is 0 aligned reads. Output theta and model files even there is no aligned reads.</p>
 <p>Jun 27, 2018 &nbsp; RSEM v1.3.1 is online now. Added `--gff3-genes-as-transcripts` option for `rsem-prepare-reference`. This option will allow RSEM to treat genes as transcripts.</p>
 <p>Oct 3, 2016 &nbsp; RSEM v1.3.0 is online now. Added Prior-Enhanced RSEM (pRSEM) as a submodule. Introduced `--strandedness &lt;none|forward|reverse&gt;` option, `--strand-specific` and `--forward-prob` are deprecated (but still supported). Revised documentation for `rsem-plot-model`, maked it clear that in alignment statistics, isoform-level (instead of genome-level) multi-mapping reads are shown. Significantly improved the output information of `rsem-sam-validator`: if indels/clippings/skips are detected in alignments or alignments exceed transcript boundaries, `rsem-sam-validator` will report them instead of telling you the input is valid. Updated the warning message to ask users to make sure that they align their reads agains a set of transcripts instead of genome when RSEM finds less sequences in the BAM file than RSEM's indices.</p>
-<p>Jun 4, 2016 &nbsp; RSEM v1.2.31 is online now. Rewrote 'rsem-gff3-to-gtf' to handle a more general set of GFF3 files. Added safety checks to make sure poly(A) tails are not added to the reference when '--star' is set.</p>
 <p>Click <a href="updates.html">here</a> for full update information. </p>
 <p><strong>Source Code</strong></p>
 <ul>
-<li><a href="https://github.com/deweylab/RSEM/archive/v1.3.1.tar.gz" onclick="ga('send', 'event', { eventCategory: 'download', eventAction: 'click', eventLabel: 'latest source codes', nonIteraction: true });">Latest version</a>
+<li><a href="https://github.com/deweylab/RSEM/archive/v1.3.2.tar.gz" onclick="ga('send', 'event', { eventCategory: 'download', eventAction: 'click', eventLabel: 'latest source codes', nonIteraction: true });">Latest version</a>
 <li><a href="https://github.com/deweylab/RSEM/archive/v1.1.17.tar.gz">Version used by RSEM Galaxy Wrapper (RSEM v1.1.17)</a>
 <li><a href="https://github.com/deweylab/RSEM/releases">Archive of older versions</a>
 <li><a href="https://github.com/deweylab/RSEM">RSEM GitHub
@@ -38,7 +38,7 @@
   <li><a href="https://github.com/bli25broad/RSEM_tutorial">Tutorial</a>
 </ul>
 <p><strong>Authors</strong></p>
-<p><a href="http://bli25ucb.github.io/">Bo Li</a> and <a href="https://www.biostat.wisc.edu/~cdewey/">Colin Dewey</a> designed the RSEM algorithm. <a href="http://bli25ucb.github.io/">Bo Li</a> implemented the RSEM software. <a href="https://www.biostat.wisc.edu/~cdewey/group.html">Peng Liu</a> contributed the STAR aligner options.</p>
+<p><a href="https://lilab-bcb.github.io/">Bo Li</a> and <a href="https://www.biostat.wisc.edu/~cdewey/">Colin Dewey</a> designed the RSEM algorithm. <a href="https://lilab-bcb.github.io/">Bo Li</a> implemented the RSEM software. <a href="https://biostat.wiscweb.wisc.edu/staff/liu-peng/">Peng Liu</a> contributed the STAR aligner options and pRSEM.</p>
 <p><strong>License</strong></p>
 <p>RSEM is under the <a href="http://www.gnu.org/copyleft/gpl.html">GNU General Public License</a></p>
 <p><strong>Prebuilt RSEM Indices (RSEM v1.1.17) for Galaxy Wrapper</strong></p>
@@ -89,6 +89,6 @@ Only mature RNAs. In addition, 125bp Poly(A) tails are added at the end of each 
 </td></tr>
 </table>
 <hr>
-<p>(last modified on Jun 27, 2018)</p>
+<p>(last modified on Feb 3, 2020)</p>
 </body>
 </html>
