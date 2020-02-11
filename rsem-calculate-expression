@@ -32,7 +32,7 @@ my $strandedness = "none"; # none, forward, reverse
 my $probF = undef; # deprecated 
 my $strand_specific = undef; # deprecated
 
-
+my $bowtie = 0; # Bowtie is on if !$is_alignment and !$bowtie2 and !$star and !$hicat2_hca
 my $bowtie_path = "";
 my $C = 2;
 my $E = 99999999;
@@ -76,11 +76,22 @@ my $paired_end = 0;
 my $no_qual = 0;
 my $keep_intermediate_files = 0;
 
+
 my $bowtie2 = 0;
 my $bowtie2_path = "";
 my $bowtie2_mismatch_rate = 0.1;
 my $bowtie2_k = 200;
 my $bowtie2_sensitivity_level = "sensitive"; # must be one of "very_fast", "fast", "sensitive", "very_sensitive"
+
+my $star = 0;
+my $star_path = "";
+my $star_gzipped_read_file = 0;
+my $star_bzipped_read_file = 0;
+my $star_output_genome_bam = 0;
+
+my $hisat2_hca = 0;
+my $hisat2_path = "";
+
 
 my $seed = "NULL";
 
@@ -100,12 +111,6 @@ my $gap = 32;
 
 my $alleleS = 0;
 
-my $star = 0;
-my $star_path  = '';
-my $star_gzipped_read_file = 0;
-my $star_bzipped_read_file = 0;
-my $star_output_genome_bam = 0;
-
 # pRSEM options
 my $run_prsem = 0;
 my $chipseq_target_read_files  = '';
@@ -122,80 +127,82 @@ my $n_max_stacked_chipseq_reads = 5; ## as above
 
 
 GetOptions("keep-intermediate-files" => \$keep_intermediate_files,
-	   "temporary-folder=s" => \$temp_dir,
-	   "no-qualities" => \$no_qual,
-	   "paired-end" => \$paired_end,
-     "strandedness=s" => \$strandedness,
-	   "alignments" => \$is_alignment,
-	   "fai=s" => \$faiF,
-	   "tag=s" => \$tagName,
-	   "seed-length=i" => \$L,
-	   "bowtie-path=s" => \$bowtie_path,
-	   "bowtie-n=i" => \$C,
-	   "bowtie-e=i" => \$E,
-	   "bowtie-m=i" => \$maxHits,
-	   "bowtie-chunkmbs=i" => \$chunkMbs,
-	   "phred33-quals" => \$phred33,
-	   "phred64-quals" => \$phred64, #solexa1.3-quals" => \$phred64,
-	   "solexa-quals" => \$solexa,
-	   "bowtie2" => \$bowtie2,
-	   "bowtie2-path=s" => \$bowtie2_path,
-	   "bowtie2-mismatch-rate=f" => \$bowtie2_mismatch_rate,
-	   "bowtie2-k=i" => \$bowtie2_k,
-	   "bowtie2-sensitivity-level=s" => \$bowtie2_sensitivity_level,
-	   "fragment-length-min=i" => \$minL,
-	   "fragment-length-max=i" => \$maxL,
-	   "fragment-length-mean=f" => \$mean,
-	   "fragment-length-sd=f" => \$sd,
-	   "estimate-rspd" => \$estRSPD,
-	   "num-rspd-bins=i" => \$B,
-	   "p|num-threads=i" => \$nThreads,
-	   "append-names" => \$appendNames,
-	   "sampling-for-bam" => \$sampling,
-	   "no-bam-output" => sub { $genBamF = 0; },
-	   "output-genome-bam" => \$genGenomeBamF,
-	   "sort-bam-by-coordinate" => \$sort_bam_by_coordinate,
-	   "sort-bam-by-read-name" => \$sort_bam_by_read_name,
-	   "sort-bam-memory-per-thread=s" => \$sort_bam_memory,
-	   "single-cell-prior" => \$single_cell_prior,
-	   "calc-pme" => \$calcPME,
-	   "gibbs-burnin=i" => \$BURNIN,
-	   "gibbs-number-of-samples=i" => \$NCV,
-	   "gibbs-sampling-gap=i", \$SAMPLEGAP,
-	   "calc-ci" => \$calcCI,
-	   "ci-credibility-level=f" => \$CONFIDENCE,
-	   "ci-memory=i" => \$NMB,
-	   "ci-number-of-samples-per-count-vector=i" => \$NSPC,
-	   'star' => \$star,
-	   'star-path=s' => \$star_path,
-	   "star-gzipped-read-file" => \$star_gzipped_read_file,
-	   "star-bzipped-read-file" => \$star_bzipped_read_file,
-	   "star-output-genome-bam" => \$star_output_genome_bam,	   
-	   "seed=i" => \$seed,
-	   'run-pRSEM' => \$run_prsem,
-	   'chipseq-target-read-files=s' => \$chipseq_target_read_files, 
-	                                      ## delimited by comma if more than one
-	   'chipseq-control-read-files=s' => \$chipseq_control_read_files, 
-	                                      ## delimited by comma if more than one
-     'chipseq-read-files-multi-targets=s' => \$chipseq_read_files_multi_targets,
-                                          ## delimited by comma
-     'chipseq-bed-files-multi-targets=s' => \$chipseq_bed_files_multi_targets,
-                                         ## delimited by comma
-     'cap-stacked-chipseq-reads' => \$cap_stacked_chipseq_reads,
-     'n-max-stacked-chipseq-reads=i' => \$n_max_stacked_chipseq_reads,
-	   'chipseq-peak-file=s' => \$chipseq_peak_file,
-	   'partition-model=s' => \$partition_model,
-	   "time" => \$mTime,
+    "temporary-folder=s" => \$temp_dir,
+    "no-qualities" => \$no_qual,
+    "paired-end" => \$paired_end,
+    "strandedness=s" => \$strandedness,
+    "alignments" => \$is_alignment,
+    "fai=s" => \$faiF,
+    "tag=s" => \$tagName,
+    "seed-length=i" => \$L,
+    "bowtie-path=s" => \$bowtie_path,
+    "bowtie-n=i" => \$C,
+    "bowtie-e=i" => \$E,
+    "bowtie-m=i" => \$maxHits,
+    "bowtie-chunkmbs=i" => \$chunkMbs,
+    "phred33-quals" => \$phred33,
+    "phred64-quals" => \$phred64, #solexa1.3-quals" => \$phred64,
+    "solexa-quals" => \$solexa,
+    "bowtie2" => \$bowtie2,
+    "bowtie2-path=s" => \$bowtie2_path,
+    "bowtie2-mismatch-rate=f" => \$bowtie2_mismatch_rate,
+    "bowtie2-k=i" => \$bowtie2_k,
+    "bowtie2-sensitivity-level=s" => \$bowtie2_sensitivity_level,
+    "star" => \$star,
+    "star-path=s" => \$star_path,
+    "star-gzipped-read-file" => \$star_gzipped_read_file,
+    "star-bzipped-read-file" => \$star_bzipped_read_file,
+    "star-output-genome-bam" => \$star_output_genome_bam,      
+    "hisat2-hca" => \$hisat2_hca,
+    "hisat2-path=s" => \$hisat2_path,
+    "fragment-length-min=i" => \$minL,
+    "fragment-length-max=i" => \$maxL,
+    "fragment-length-mean=f" => \$mean,
+    "fragment-length-sd=f" => \$sd,
+    "estimate-rspd" => \$estRSPD,
+    "num-rspd-bins=i" => \$B,
+    "p|num-threads=i" => \$nThreads,
+    "append-names" => \$appendNames,
+    "sampling-for-bam" => \$sampling,
+    "no-bam-output" => sub { $genBamF = 0; },
+    "output-genome-bam" => \$genGenomeBamF,
+    "sort-bam-by-coordinate" => \$sort_bam_by_coordinate,
+    "sort-bam-by-read-name" => \$sort_bam_by_read_name,
+    "sort-bam-memory-per-thread=s" => \$sort_bam_memory,
+    "single-cell-prior" => \$single_cell_prior,
+    "calc-pme" => \$calcPME,
+    "gibbs-burnin=i" => \$BURNIN,
+    "gibbs-number-of-samples=i" => \$NCV,
+    "gibbs-sampling-gap=i", \$SAMPLEGAP,
+    "calc-ci" => \$calcCI,
+    "ci-credibility-level=f" => \$CONFIDENCE,
+    "ci-memory=i" => \$NMB,
+    "ci-number-of-samples-per-count-vector=i" => \$NSPC,
+    "seed=i" => \$seed,
+    "run-pRSEM" => \$run_prsem,
+    "chipseq-target-read-files=s" => \$chipseq_target_read_files, 
+                                      ## delimited by comma if more than one
+    "chipseq-control-read-files=s" => \$chipseq_control_read_files, 
+                                      ## delimited by comma if more than one
+    "chipseq-read-files-multi-targets=s" => \$chipseq_read_files_multi_targets,
+                                      ## delimited by comma
+    "chipseq-bed-files-multi-targets=s" => \$chipseq_bed_files_multi_targets,
+                                     ## delimited by comma
+    "cap-stacked-chipseq-reads" => \$cap_stacked_chipseq_reads,
+    "n-max-stacked-chipseq-reads=i" => \$n_max_stacked_chipseq_reads,
+    "chipseq-peak-file=s" => \$chipseq_peak_file,
+    "partition-model=s" => \$partition_model,
+    "time" => \$mTime,
 
-     # deprecated
-     "strand-specific" => \$strand_specific,
-     "forward-prob=f" => \$probF,
-     "sam|bam" => \$is_alignment,
+    # deprecated
+    "strand-specific" => \$strand_specific,
+    "forward-prob=f" => \$probF,
+    "sam|bam" => \$is_alignment,
 
-     # help
-	   "version" => \$version,
-	   "q|quiet" => \$quiet,
-	   "h|help" => \$help) or pod2usage(-exitval => 2, -verbose => 2);
+    # help
+    "version" => \$version,
+    "q|quiet" => \$quiet,
+    "h|help" => \$help) or pod2usage(-exitval => 2, -verbose => 2);
 
 pod2usage(-verbose => 2) if ($help == 1);
 &showVersionInfo($FindBin::RealBin) if ($version == 1);
@@ -207,13 +214,18 @@ if ($is_alignment) {
     pod2usage(-msg => "--bowtie-path, --bowtie-n, --bowtie-e, --bowtie-m, --phred33-quals, --phred64-quals, --solexa-quals, --bowtie2, --bowtie2-path, --bowtie2-mismatch-rate, --bowtie2-k, --bowtie2-sensitivity-level, --star, --star-path, and --star-output-genome-bam cannot be set if input is SAM/BAM/CRAM format!", -exitval => 2, -verbose => 2) if ($bowtie_path ne "" || $C != 2 || $E != 99999999 || $maxHits != 200 || $phred33 || $phred64 || $solexa || $bowtie2 || $bowtie2_path ne "" || $bowtie2_mismatch_rate != 0.1 || $bowtie2_k != 200 || $bowtie2_sensitivity_level ne "sensitive" || $star || $star_path ne "" || $star_output_genome_bam);
 }
 else {
+    if (!$bowtie2 && !$star && !$hisat2_hca) { $bowtie = 1; }
+
     pod2usage(-msg => "Invalid number of arguments!", -exitval => 2, -verbose => 2) if (!$paired_end && scalar(@ARGV) != 3 || $paired_end && scalar(@ARGV) != 4);    
     pod2usage(-msg => "If --no-qualities is set, neither --phred33-quals, --phred64-quals or --solexa-quals can be active!", -exitval => 2, -verbose => 2) if ($no_qual && ($phred33 + $phred64 + $solexa > 0));
     pod2usage(-msg => "Only one of --phred33-quals, --phred64-quals, and --solexa-quals can be active!", -exitval => 2, -verbose => 2) if ($phred33 + $phred64 + $solexa > 1);    
-    pod2usage(-msg => "--bowtie2-path, --bowtie2-mismatch-rate, --bowtie2-k and --bowtie2-sensitivity-level cannot be set if bowtie aligner is used!", -exitval => 2, -verbose => 2) if (!$bowtie2 && ($bowtie2_path ne "" || $bowtie2_mismatch_rate != 0.1 || $bowtie2_k != 200 || $bowtie2_sensitivity_level ne "sensitive"));
-    pod2usage(-msg => "--bowtie-path, --bowtie-n, --bowtie-e, --bowtie-m cannot be set if bowtie2 aligner is used!", -exitval => 2, -verbose => 2) if ($bowtie2 && ($bowtie_path ne "" || $C != 2 || $E != 99999999 || $maxHits != 200));
+    pod2usage(-msg => "--bowtie-path, --bowtie-n, --bowtie-e, --bowtie-m cannot be set if bowtie aligner is not used!", -exitval => 2, -verbose => 2) if (!$bowtie && ($bowtie_path ne "" || $C != 2 || $E != 99999999 || $maxHits != 200));
+    pod2usage(-msg => "--bowtie2-path, --bowtie2-mismatch-rate, --bowtie2-k and --bowtie2-sensitivity-level cannot be set if bowtie2 aligner is not used!", -exitval => 2, -verbose => 2) if (!$bowtie2 && ($bowtie2_path ne "" || $bowtie2_mismatch_rate != 0.1 || $bowtie2_k != 200 || $bowtie2_sensitivity_level ne "sensitive"));
+    pod2usage(-msg => "--star-path, --star-gzipped-read-file, --star-bzipped-read-file and --star-output-genome-bam cannot be set if STAR aligner is not used!", -exitval => 2, -verbose => 2) if (!$star && ($star_path ne "" || !$star_gzipped_read_file || !$star_bzipped_read_file || !$star_output_genome_bam));
+    pod2usage(-msg => "--hisat2-path cannot be set if HISAT2 aligner is not used!", -exitval => 2, -verbose => 2) if (!$hisat2_hca && ($hisat2_path ne ""));
     pod2usage(-msg => "Mismatch rate must be within [0, 1]!", -exitval => 2, -verbose => 2) if ($bowtie2 && ($bowtie2_mismatch_rate < 0.0 || $bowtie2_mismatch_rate > 1.0));
     pod2usage(-msg => "Sensitivity level must be one of \"very_fast\", \"fast\", \"sensitive\", and \"very_sensitive\"!", -exitval => 2, -verbose => 2) if ($bowtie2 && (($bowtie2_sensitivity_level ne "very_fast") && ($bowtie2_sensitivity_level ne "fast") && ($bowtie2_sensitivity_level ne "sensitive") && ($bowtie2_sensitivity_level ne "very_sensitive")));
+    
     if ($faiF ne "") { print "Warning: There is no need to set --fai if you ask RSEM to align reads for you.\n" }
 }
 
@@ -226,12 +238,11 @@ pod2usage(-msg => "--sampling-for-bam cannot be specified if --no-bam-output is 
 pod2usage(-msg => "--output-genome-bam cannot be specified if --no-bam-output is specified!\n", -exitval => 2, -verbose => 2) if ($genGenomeBamF && !$genBamF);
 pod2usage(-msg => "The seed for random number generator must be a non-negative 32bit integer!\n", -exitval => 2, -verbose => 2) if (($seed ne "NULL") && ($seed < 0 || $seed > 0xffffffff));
 pod2usage(-msg => "The credibility level should be within (0, 1)!\n", -exitval => 2, -verbose => 2) if ($CONFIDENCE <= 0.0 || $CONFIDENCE >= 1.0);
-pod2usage(-msg => "Gzipped read files can only be used for aligner STAR\n", -exitval=>2, -verbose =>2) if ( ( $star == 0 ) && ( $star_gzipped_read_file != 0));
-pod2usage(-msg => "Bzipped read files can only be used for aligner STAR\n", -exitval=>2, -verbose =>2) if ( ( $star == 0 ) && ( $star_bzipped_read_file != 0));
+
 
 if ( $run_prsem ) {
-  my $msg = '';
-  if ( ( $chipseq_peak_file eq '' ) && 
+    my $msg = '';
+    if ( ( $chipseq_peak_file eq '' ) && 
        ( ( $chipseq_target_read_files eq ''  ) || 
          ( $chipseq_control_read_files eq '' ) || 
          ( $bowtie_path eq '' ) ) && 
@@ -247,25 +258,25 @@ if ( $run_prsem ) {
            "3. --chipseq-read-files-multi-targets <string> and\n" .
            "   --bowtie-path <path>\n" .
            "4. --chipseq-bed-files-multi-targets <string>\n";
-  }
+    }
 
-  my @prsem_partition_models = ( 
-     'pk', 'pk_lgtnopk', 
-     'lm3', 'lm4', 'lm5', 'lm6',
-     'nopk_lm2pk', 'nopk_lm3pk', 'nopk_lm4pk', 'nopk_lm5pk',
-     'pk_lm2nopk', 'pk_lm3nopk', 'pk_lm4nopk', 'pk_lm5nopk',
-     'cmb_lgt'
-  );
+    my @prsem_partition_models = ( 
+        'pk', 'pk_lgtnopk', 
+        'lm3', 'lm4', 'lm5', 'lm6',
+        'nopk_lm2pk', 'nopk_lm3pk', 'nopk_lm4pk', 'nopk_lm5pk',
+        'pk_lm2nopk', 'pk_lm3nopk', 'pk_lm4nopk', 'pk_lm5nopk',
+        'cmb_lgt'
+    );
 
-  my %prtmdl2one = ();
-  foreach my $prtmdl (@prsem_partition_models) {
-    $prtmdl2one{$prtmdl} = 1;
-  }
+    my %prtmdl2one = ();
+    foreach my $prtmdl (@prsem_partition_models) {
+        $prtmdl2one{$prtmdl} = 1;
+    }
 
-  if ( exists $prtmdl2one{$partition_model} ) {
+    if ( exists $prtmdl2one{$partition_model} ) {
     if ( ( $partition_model eq 'cmb_lgt' ) && 
          ( ( $chipseq_read_files_multi_targets eq '' ) &&
-           ( $chipseq_bed_files_multi_targets  eq '' ) ) ){
+           ( $chipseq_bed_files_multi_targets  eq '' ) ) ) {
       $msg = 'either --chipseq-read-files-multi-targets <string> or ' .
              '--chipseq-bed-files-multi-targets <string> needs to be ' .
              "defined for pRSEM's partition model: '$partition_model'";
@@ -273,27 +284,27 @@ if ( $run_prsem ) {
               ( $partition_model ne 'cmb_lgt' ) &&
               ( ( $chipseq_target_read_files eq ''  ) || 
                 ( $chipseq_control_read_files eq '' ) || 
-                ( $bowtie_path eq '' ) ) ){
-      $msg = '--chipseq-target-read-files <string> and ' .
-             '--chipseq-control-read-files <string> and ' .
-             '--bowtie-path <path> need to be defined for ' .
-             "pRSEM's partition model: '$partition_model'";
-    }
-  } else {
-    $msg = '--partition-model <string> must be one of [' .
+                ( $bowtie_path eq '' ) ) ) {
+            $msg = '--chipseq-target-read-files <string> and ' .
+                 '--chipseq-control-read-files <string> and ' .
+                 '--bowtie-path <path> need to be defined for ' .
+                 "pRSEM's partition model: '$partition_model'";
+        }
+    } else {
+        $msg = '--partition-model <string> must be one of [' .
            join(', ', @prsem_partition_models) . "]";
-  }
+    }
 
-  if ( $msg ne '' ) {
-    pod2usage(-msg => "$msg\n", -exitval => 2, -verbose => 2);
-  }
+    if ( $msg ne '' ) {
+        pod2usage(-msg => "$msg\n", -exitval => 2, -verbose => 2);
+    }
 
-  if ( ( $partition_model ne 'cmb_lgt' ) && 
+    if ( ( $partition_model ne 'cmb_lgt' ) && 
        ( ( $chipseq_read_files_multi_targets ne '' ) || 
          ( $chipseq_bed_files_multi_targets  ne '' ) ) ) {
-    print "\nCombining signals from multiple sources, partition model is set to 'cmb_lgt'\n\n";
-    $partition_model = 'cmb_lgt';
-  }
+        print "\nCombining signals from multiple sources, partition model is set to 'cmb_lgt'\n\n";
+        $partition_model = 'cmb_lgt';
+    }
 }
 
 
@@ -301,15 +312,15 @@ if ($L < 25) { print "Warning: the seed length set is less than 25! This is only
 
 # strandedness
 if (!defined($probF)) {
-  if ($strandedness eq "forward" || ($strandedness eq "none" && defined($strand_specific))) {
-    $probF = 1.0;
-  }
-  elsif ($strandedness eq "reverse") {
-    $probF = 0.0;
-  }
-  else {
-    $probF = 0.5;
-  }
+    if ($strandedness eq "forward" || ($strandedness eq "none" && defined($strand_specific))) {
+        $probF = 1.0;
+    }
+    elsif ($strandedness eq "reverse") {
+        $probF = 0.0;
+    }
+    else {
+        $probF = 0.5;
+    }
 }
 
 pod2usage(-msg => "Forward probability should be in [0, 1]!", -exitval => 2, -verbose => 2) if ($probF < 0 || $probF > 1);
@@ -372,150 +383,182 @@ my ($mate_minL, $mate_maxL) = (1, $maxL);
 
 if ($bowtie_path ne "") { $bowtie_path .= "/"; }
 if ($bowtie2_path ne "") { $bowtie2_path .= "/"; }
-if ($star_path ne '') { $star_path .= '/'; }
+if ($star_path ne '') { $star_path .= "/"; }
+if ($hisat2_path ne '') { $hisat2_path .= "/"; }
 
 my $command = "";
 
 if (!$is_alignment) {
-	if ( $star ) {
-	    ## align reads by STAR
-	    my $star_genome_path = dirname($refName);
-	    $command = "$star_path"."STAR" . 
-	               ## ENCODE3 pipeline parameters
-	               " --genomeDir $star_genome_path " .
-	               ' --outSAMunmapped Within ' .
-	               ' --outFilterType BySJout ' .
-	               ' --outSAMattributes NH HI AS NM MD ' .
-	               ' --outFilterMultimapNmax 20 ' .
-	               ' --outFilterMismatchNmax 999 ' .
-	               ' --outFilterMismatchNoverLmax 0.04 ' .
-	               ' --alignIntronMin 20 ' .
-	               ' --alignIntronMax 1000000 ' .
-	               ' --alignMatesGapMax 1000000 ' .
-	               ' --alignSJoverhangMin 8 ' .
-	               ' --alignSJDBoverhangMin 1 ' .
-	               ' --sjdbScore 1 ' .
-	               " --runThreadN $nThreads " .
-	               ##
-	
-	               ## different than ENCODE3 pipeline 
-	               ## do not allow using shared memory
-	               ' --genomeLoad NoSharedMemory ' .
-	               ##
-	
-	               ## different than ENCODE3 pipeline, which sorts output BAM
-	               ## no need to do it here to save time and memory 
-	               ' --outSAMtype BAM Unsorted ' .
-	               ##
-	
-	               ## unlike ENCODE3, we don't output bedGraph files
-	
-	               ' --quantMode TranscriptomeSAM '.
-	               ' --outSAMheaderHD \@HD VN:1.4 SO:unsorted '.
-	
-	               ## define output file prefix
-	               " --outFileNamePrefix $imdName ";
-	               ##
-	
-	    if ( $star_gzipped_read_file ) {
-		$command .= ' --readFilesCommand zcat ';
-	    } elsif ( $star_bzipped_read_file ) {
-		$command .= ' --readFilesCommand bzip2 -c ';
-	    }
-	
-	    if ( $read_type == 0 || $read_type == 1 ) {
-		$command .= " --readFilesIn $mate1_list ";
-	    } else {
-		$command .= " --readFilesIn $mate1_list $mate2_list";
-	    }
-	} elsif (!$bowtie2) {
-	    $command = $bowtie_path."bowtie";
-	    if ($no_qual) { $command .= " -f"; }
-	    else { $command .= " -q"; }
-	    
-	    if ($phred33) { $command .= " --phred33-quals"; }
-	    elsif ($phred64) { $command .= " --phred64-quals"; }
-	    elsif ($solexa) { $command .= " --solexa-quals"; }
-    
-	    $command .= " -n $C -e $E -l $L";
-	    if ($read_type == 2 || $read_type == 3) { $command .= " -I $minL -X $maxL"; }
-	    if ($chunkMbs > 0) { $command .= " --chunkmbs $chunkMbs"; }
-	
-	    if ($probF == 1.0) { $command .= " --norc"; }
-	    elsif ($probF == 0.0) { $command .= " --nofw"; }
-	
-	    $command .= " -p $nThreads -a -m $maxHits -S";
-	    if ($quiet) { $command .= " --quiet"; }    
-	    
-	    $command .= " $refName";
-	    if ($read_type == 0 || $read_type == 1) {
-		$command .= " $mate1_list"; 
-	    }
-	    else {
-		$command .= " -1 $mate1_list -2 $mate2_list";
-	    }
-	    
-	    # pipe to samtools to generate a BAM file
-	    $command .= " | samtools view -S -b -o $imdName.bam -";
-	}
-	else {
-	    $command = $bowtie2_path."bowtie2";
-	    if ($no_qual) { $command .= " -f"; }
-	    else { $command .= " -q"; }
-	    
-	    if ($phred33) { $command .= " --phred33"; }
-	    elsif ($phred64) { $command .= " --phred64"; }
-	    elsif ($solexa) { $command .= " --solexa-quals"; }
-	    
-	    if ($bowtie2_sensitivity_level eq "very_fast") { $command .= " --very-fast"; }
-	    elsif ($bowtie2_sensitivity_level eq "fast") { $command .= " --fast"; }
-	    elsif ($bowtie2_sensitivity_level eq "sensitive") { $command .= " --sensitive"; }
-	    else { $command .= " --very-sensitive"; }
-	    
-	    $command .= " --dpad 0 --gbar 99999999 --mp 1,1 --np 1 --score-min L,0,-$bowtie2_mismatch_rate";  
-	    
-	    if ($read_type == 2 || $read_type == 3) { $command .= " -I $minL -X $maxL --no-mixed --no-discordant"; }
-	    
-	    if ($probF == 1.0) { $command .= " --norc"; }
-	    elsif ($probF == 0.0) { $command .= " --nofw"; }
-	    
-	    $command .= " -p $nThreads -k $bowtie2_k";
-	    if ($quiet) { $command .= " --quiet"; }    
-	    
-	    $command .= " -x $refName";
-	    if ($read_type == 0 || $read_type == 1) {
-		$command .= " -U $mate1_list"; 
-	    }
-	    else {
-		$command .= " -1 $mate1_list -2 $mate2_list";
-	    }
+    if ($bowtie) {
+        $command = $bowtie_path."bowtie";
+        if ($no_qual) { $command .= " -f"; }
+        else { $command .= " -q"; }
+        
+        if ($phred33) { $command .= " --phred33-quals"; }
+        elsif ($phred64) { $command .= " --phred64-quals"; }
+        elsif ($solexa) { $command .= " --solexa-quals"; }
 
-	    # pipe to samtools to generate a BAM file
-	    $command .= " | samtools view -S -b -o $imdName.bam -";
-	}
-	
-	if ($mTime) { $time_start = time(); }
+        $command .= " -n $C -e $E -l $L";
+        if ($read_type == 2 || $read_type == 3) { $command .= " -I $minL -X $maxL"; }
+        if ($chunkMbs > 0) { $command .= " --chunkmbs $chunkMbs"; }
 
-	&runCommand($command);
-	
-	if ($mTime) { $time_end = time(); $time_alignment = $time_end - $time_start; }
+        if ($probF == 1.0) { $command .= " --norc"; }
+        elsif ($probF == 0.0) { $command .= " --nofw"; }
 
-	$inpF = "$imdName.bam";
+        $command .= " -p $nThreads -a -m $maxHits -S";
+        if ($quiet) { $command .= " --quiet"; }    
+        
+        $command .= " $refName";
+        if ($read_type == 0 || $read_type == 1) {
+            $command .= " $mate1_list"; 
+        }
+        else {
+            $command .= " -1 $mate1_list -2 $mate2_list";
+        }
+        
+        # pipe to samtools to generate a BAM file
+        $command .= " | samtools view -b -o $imdName.bam -";
+    } elsif ($bowtie2) {
+        $command = $bowtie2_path."bowtie2";
+        if ($no_qual) { $command .= " -f"; }
+        else { $command .= " -q"; }
+        
+        if ($phred33) { $command .= " --phred33"; }
+        elsif ($phred64) { $command .= " --phred64"; }
+        elsif ($solexa) { $command .= " --solexa-quals"; }
+        
+        if ($bowtie2_sensitivity_level eq "very_fast") { $command .= " --very-fast"; }
+        elsif ($bowtie2_sensitivity_level eq "fast") { $command .= " --fast"; }
+        elsif ($bowtie2_sensitivity_level eq "sensitive") { $command .= " --sensitive"; }
+        else { $command .= " --very-sensitive"; }
+        
+        $command .= " --dpad 0 --gbar 99999999 --mp 1,1 --np 1 --score-min L,0,-$bowtie2_mismatch_rate";  
+        
+        if ($read_type == 2 || $read_type == 3) { $command .= " -I $minL -X $maxL --no-mixed --no-discordant"; }
+        
+        if ($probF == 1.0) { $command .= " --norc"; }
+        elsif ($probF == 0.0) { $command .= " --nofw"; }
+        
+        $command .= " -p $nThreads -k $bowtie2_k";
+        if ($quiet) { $command .= " --quiet"; }    
+        
+        $command .= " -x $refName";
+        if ($read_type == 0 || $read_type == 1) {
+            $command .= " -U $mate1_list"; 
+        }
+        else {
+            $command .= " -1 $mate1_list -2 $mate2_list";
+        }
 
-	if ( $star ) {
-	    my $star_tr_bam = $imdName . 'Aligned.toTranscriptome.out.bam';
-	    rename $star_tr_bam, $inpF
-		or die "can't rename $star_tr_bam to $inpF: $!\n";
-	    rmdir $imdName . "_STARtmp/";
-	    my $star_genome_bam = $imdName . "Aligned.out.bam";
-	    my $rsem_star_genome_bam = $sampleName.'.STAR.genome.bam';
-	    if ( $star_output_genome_bam ) {
-		rename $star_genome_bam, $rsem_star_genome_bam or die 
-		    "can't move $star_genome_bam to $rsem_star_genome_bam: $!\n";
-	    } else {
-		unlink $star_genome_bam or die "can't remove $star_genome_bam: $!\n";
-	    }
-	}
+        # pipe to samtools to generate a BAM file
+        $command .= " | samtools view -b -o $imdName.bam -";
+    } elsif ($star) {
+        ## align reads by STAR
+        my $star_genome_path = dirname($refName);
+        $command = "$star_path"."STAR" . 
+                   ## ENCODE3 pipeline parameters
+                   " --genomeDir $star_genome_path " .
+                   ' --outSAMunmapped Within ' .
+                   ' --outFilterType BySJout ' .
+                   ' --outSAMattributes NH HI AS NM MD ' .
+                   ' --outFilterMultimapNmax 20 ' .
+                   ' --outFilterMismatchNmax 999 ' .
+                   ' --outFilterMismatchNoverLmax 0.04 ' .
+                   ' --alignIntronMin 20 ' .
+                   ' --alignIntronMax 1000000 ' .
+                   ' --alignMatesGapMax 1000000 ' .
+                   ' --alignSJoverhangMin 8 ' .
+                   ' --alignSJDBoverhangMin 1 ' .
+                   ' --sjdbScore 1 ' .
+                   " --runThreadN $nThreads " .
+                   ##
+
+                   ## different than ENCODE3 pipeline 
+                   ## do not allow using shared memory
+                   ' --genomeLoad NoSharedMemory ' .
+                   ##
+
+                   ## different than ENCODE3 pipeline, which sorts output BAM
+                   ## no need to do it here to save time and memory 
+                   ' --outSAMtype BAM Unsorted ' .
+                   ##
+
+                   ## unlike ENCODE3, we don't output bedGraph files
+
+                   ' --quantMode TranscriptomeSAM '.
+                   ' --outSAMheaderHD \@HD VN:1.4 SO:unsorted '.
+
+                   ## define output file prefix
+                   " --outFileNamePrefix $imdName ";
+                   ##
+
+        if ( $star_gzipped_read_file ) {
+            $command .= ' --readFilesCommand zcat ';
+        } elsif ( $star_bzipped_read_file ) {
+            $command .= ' --readFilesCommand bzip2 -c ';
+        }
+
+        if ( $read_type == 0 || $read_type == 1 ) {
+            $command .= " --readFilesIn $mate1_list ";
+        } else {
+            $command .= " --readFilesIn $mate1_list $mate2_list";
+        }
+
+    } elsif ($hisat2_hca) {
+        $command = $hisat2_path."hisat2";
+        if ($no_qual) { $command .= " -f"; }
+        else { $command .= " -q"; }
+
+        if ($phred33) { $command .= " --phred33"; }
+        elsif ($phred64) { $command .= " --phred64"; }
+        elsif ($solexa) { $command .= " --solexa-quals"; }
+
+        $command .= " --rg-id=$sampleToken --rg SM:$sampleToken --rg LB:$sampleToken --rg PL:ILLUMINA --rg PU:$sampleToken --new-summary --summary-file $sampleName.log --met-file $sampleName.hisat2.met.txt --met 5 \
+                      --mp 1,1 --np 1 --score-min L,0,-0.1 --rdg 99999999,99999999 --rfg 99999999,99999999 --no-spliced-alignment --no-softclip --seed 12345 ";
+
+        if ($read_type == 2 || $read_type == 3) { $command .= " --no-mixed --no-discordant"; }
+
+        if ($probF == 1.0) { $command .= " --norc"; }
+        elsif ($probF == 0.0) { $command .= " --nofw"; }
+
+        if ($quiet) { $command .= " --quiet"; }
+
+        $command .= " -p $nThreads -k 10 --secondary";
+
+        $command .= " -x $refName";
+        if ($read_type == 0 || $read_type == 1) {
+            $command .= " -U $mate1_list"; 
+        }
+        else {
+            $command .= " -1 $mate1_list -2 $mate2_list";
+        }
+
+        # pipe to samtools to generate a BAM file
+        $command .= " | samtools view -b -o $imdName.bam -";
+    } else { 
+        print "Impossible --- unknown aligner!!!\n"; exit(-1);
+    }
+
+    if ($mTime) { $time_start = time(); }
+
+    &runCommand($command);
+
+    if ($mTime) { $time_end = time(); $time_alignment = $time_end - $time_start; }
+
+    $inpF = "$imdName.bam";
+
+    if ( $star ) {
+        my $star_tr_bam = $imdName . 'Aligned.toTranscriptome.out.bam';
+        rename $star_tr_bam, $inpF or die "can't rename $star_tr_bam to $inpF: $!\n";
+        rmdir $imdName . "_STARtmp/";
+        my $star_genome_bam = $imdName . "Aligned.out.bam";
+        my $rsem_star_genome_bam = $sampleName.'.STAR.genome.bam';
+        if ( $star_output_genome_bam ) {
+            rename $star_genome_bam, $rsem_star_genome_bam or die "can't move $star_genome_bam to $rsem_star_genome_bam: $!\n";
+        } else {
+            unlink $star_genome_bam or die "can't remove $star_genome_bam: $!\n";
+        }
+    }
 }
 
 if ( $sort_bam_by_read_name ) {
@@ -523,8 +566,8 @@ if ( $sort_bam_by_read_name ) {
     $command = "samtools sort -n -@ $nThreads -m $sort_bam_memory -o $sorted_bam $inpF";
     &runCommand($command);
     if (!$is_alignment) {
-	$command = "rm -f $inpF";
-	&runCommand($command);
+        $command = "rm -f $inpF";
+        &runCommand($command);
     }
     $inpF = $sorted_bam;
 }
@@ -548,13 +591,13 @@ close(INPUT);
 my $no_aligned = ($Ns[1] == 0);
 
 if (!$no_aligned) {
-  $command = "rsem-build-read-index $gap"; 
-  if ($read_type == 0) { $command .= " 0 $quiet $imdName\_alignable.fa"; }
-  elsif ($read_type == 1) { $command .= " 1 $quiet $imdName\_alignable.fq"; }
-  elsif ($read_type == 2) { $command .= " 0 $quiet $imdName\_alignable_1.fa $imdName\_alignable_2.fa"; }
-  elsif ($read_type == 3) { $command .= " 1 $quiet $imdName\_alignable_1.fq $imdName\_alignable_2.fq"; }
-  else { print "Impossible! read_type is not in [1,2,3,4]!\n"; exit(-1); }
-  &runCommand($command);  
+    $command = "rsem-build-read-index $gap"; 
+    if ($read_type == 0) { $command .= " 0 $quiet $imdName\_alignable.fa"; }
+    elsif ($read_type == 1) { $command .= " 1 $quiet $imdName\_alignable.fq"; }
+    elsif ($read_type == 2) { $command .= " 0 $quiet $imdName\_alignable_1.fa $imdName\_alignable_2.fa"; }
+    elsif ($read_type == 3) { $command .= " 1 $quiet $imdName\_alignable_1.fq $imdName\_alignable_2.fq"; }
+    else { print "Impossible! read_type is not in [1,2,3,4]!\n"; exit(-1); }
+    &runCommand($command);  
 }
 
 my $doesOpen = open(OUTPUT, ">$imdName.mparams");
@@ -572,7 +615,7 @@ my @seeds = ();
 if ($seed ne "NULL") { 
     srand($seed); 
     for (my $i = 0; $i < 3; $i++) {
-	push(@seeds, int(rand(1 << 32))); 
+    push(@seeds, int(rand(1 << 32))); 
     }
 }
 
@@ -602,22 +645,22 @@ else {
 
 if ($genBamF) {
     if ($genGenomeBamF) {
-	$command = "rsem-tbam2gbam $refName $sampleName.transcript.bam $sampleName.genome.bam";
-	&runCommand($command);
+        $command = "rsem-tbam2gbam $refName $sampleName.transcript.bam $sampleName.genome.bam";
+        &runCommand($command);
     }
     
     if ($sort_bam_by_coordinate) {
-	$command = "samtools sort -@ $nThreads -m $sort_bam_memory -o $sampleName.transcript.sorted.bam $sampleName.transcript.bam";
-	&runCommand($command);
-	$command = "samtools index $sampleName.transcript.sorted.bam";
-	&runCommand($command);
+        $command = "samtools sort -@ $nThreads -m $sort_bam_memory -o $sampleName.transcript.sorted.bam $sampleName.transcript.bam";
+        &runCommand($command);
+        $command = "samtools index $sampleName.transcript.sorted.bam";
+        &runCommand($command);
 
-	if ($genGenomeBamF) {
-	    $command = "samtools sort -@ $nThreads -m $sort_bam_memory -o $sampleName.genome.sorted.bam $sampleName.genome.bam";
-	    &runCommand($command);
-	    $command = "samtools index $sampleName.genome.sorted.bam";
-	    &runCommand($command);
-	}
+        if ($genGenomeBamF) {
+            $command = "samtools sort -@ $nThreads -m $sort_bam_memory -o $sampleName.genome.sorted.bam $sampleName.genome.bam";
+            &runCommand($command);
+            $command = "samtools index $sampleName.genome.sorted.bam";
+            &runCommand($command);
+        }
     }
 }
 
@@ -626,17 +669,17 @@ if ($mTime) { $time_end = time(); $time_rsem = $time_end - $time_start; }
 if ($mTime) { $time_start = time(); }
 
 if ($no_aligned) { 
-  print "Since no aligned reads, further steps will not be performed!\n";
-  if (!$keep_intermediate_files) {
-      &runCommand("rm -rf $temp_dir", "Fail to delete the temporary folder!");
-  }
-  if ($mTime) { 
-      open(OUTPUT, ">$sampleName.time");
-      print OUTPUT "Aligning reads: $time_alignment s.\n";
-      print OUTPUT "Estimating expression levels: $time_rsem s.\n";
-      close(OUTPUT);
-  }
-  exit(0); 
+    print "Since no aligned reads, further steps will not be performed!\n";
+    if (!$keep_intermediate_files) {
+        &runCommand("rm -rf $temp_dir", "Fail to delete the temporary folder!");
+    }
+    if ($mTime) { 
+        open(OUTPUT, ">$sampleName.time");
+        print OUTPUT "Aligning reads: $time_alignment s.\n";
+        print OUTPUT "Estimating expression levels: $time_rsem s.\n";
+        close(OUTPUT);
+    }
+    exit(0); 
 }
 
 if ($calcPME || $calcCI ) {
@@ -650,18 +693,18 @@ if ($calcPME || $calcCI ) {
 
 if ($calcPME || $calcCI) {
     if ($alleleS) {
-	system("mv $sampleName.alleles.results $imdName.alleles.results.bak1");
-	system("mv $sampleName.isoforms.results $imdName.isoforms.results.bak1");
-	system("mv $sampleName.genes.results $imdName.genes.results.bak1");
-	&collectResults("allele", "$imdName.allele_res", "$sampleName.alleles.results"); # allele level
-	&collectResults("isoform", "$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
-	&collectResults("gene", "$imdName.gene_res", "$sampleName.genes.results"); # gene level
+        system("mv $sampleName.alleles.results $imdName.alleles.results.bak1");
+        system("mv $sampleName.isoforms.results $imdName.isoforms.results.bak1");
+        system("mv $sampleName.genes.results $imdName.genes.results.bak1");
+        &collectResults("allele", "$imdName.allele_res", "$sampleName.alleles.results"); # allele level
+        &collectResults("isoform", "$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
+        &collectResults("gene", "$imdName.gene_res", "$sampleName.genes.results"); # gene level
     }
     else {
-	system("mv $sampleName.isoforms.results $imdName.isoforms.results.bak1");
-	system("mv $sampleName.genes.results $imdName.genes.results.bak1");
-	&collectResults("isoform", "$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
-	&collectResults("gene", "$imdName.gene_res", "$sampleName.genes.results"); # gene level
+        system("mv $sampleName.isoforms.results $imdName.isoforms.results.bak1");
+        system("mv $sampleName.genes.results $imdName.genes.results.bak1");
+        &collectResults("isoform", "$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
+        &collectResults("gene", "$imdName.gene_res", "$sampleName.genes.results"); # gene level
     }
 }
 
@@ -674,18 +717,18 @@ if ($calcCI) {
     &runCommand($command);
 
     if ($alleleS) {
-	system("mv $sampleName.alleles.results $imdName.alleles.results.bak2");
-	system("mv $sampleName.isoforms.results $imdName.isoforms.results.bak2");
-	system("mv $sampleName.genes.results $imdName.genes.results.bak2");
-	&collectResults("allele", "$imdName.allele_res", "$sampleName.alleles.results"); # allele level
-	&collectResults("isoform", "$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
-	&collectResults("gene", "$imdName.gene_res", "$sampleName.genes.results"); # gene level
+        system("mv $sampleName.alleles.results $imdName.alleles.results.bak2");
+        system("mv $sampleName.isoforms.results $imdName.isoforms.results.bak2");
+        system("mv $sampleName.genes.results $imdName.genes.results.bak2");
+        &collectResults("allele", "$imdName.allele_res", "$sampleName.alleles.results"); # allele level
+        &collectResults("isoform", "$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
+        &collectResults("gene", "$imdName.gene_res", "$sampleName.genes.results"); # gene level
     }
     else {
-	system("mv $sampleName.isoforms.results $imdName.isoforms.results.bak2");
-	system("mv $sampleName.genes.results $imdName.genes.results.bak2");
-	&collectResults("isoform", "$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
-	&collectResults("gene", "$imdName.gene_res", "$sampleName.genes.results"); # gene level
+        system("mv $sampleName.isoforms.results $imdName.isoforms.results.bak2");
+        system("mv $sampleName.genes.results $imdName.genes.results.bak2");
+        &collectResults("isoform", "$imdName.iso_res", "$sampleName.isoforms.results"); # isoform level
+        &collectResults("gene", "$imdName.gene_res", "$sampleName.genes.results"); # gene level
     }
 }
 
@@ -695,73 +738,73 @@ if ($mTime) { $time_start = time(); }
 
 ## To-do: only run gibbs sampling once, either for pRSEM or uniform prior 1
 if ( $run_prsem ) {
-  $command = "$FindBin::RealBin/pRSEM/prsem-calculate-expression " .
+    $command = "$FindBin::RealBin/pRSEM/prsem-calculate-expression " .
              " --num-threads $nThreads " .
              " --partition-model $partition_model " .
              " --gibbs-burnin $BURNIN " .
              " --gibbs-number-of-samples $NCV " .
              " --gibbs-sampling-gap $SAMPLEGAP ";
-  ####
-
-  ##  ChIP-seq peak file from single source
-  if ( $chipseq_peak_file ne '') { ## only for partition model pk
+    ####
+    
+    ##  ChIP-seq peak file from single source
+    if ( $chipseq_peak_file ne '') { ## only for partition model pk
                                    ## need to add sanity check!!
-    $command .= " --chipseq-peak-file $chipseq_peak_file";
-  } elsif ( $partition_model eq 'cmb_lgt' ) {  ## multi-sources
-    if ( $chipseq_bed_files_multi_targets ne '' ) { ## use bed over read
-      $command .= ' --chipseq-bed-files-multi-targets ' . 
-                    $chipseq_bed_files_multi_targets;
-    } elsif ( $chipseq_read_files_multi_targets ne '' ) { 
-      $command .= ' --chipseq-read-files-multi-targets ' .
-                    $chipseq_read_files_multi_targets .
-                  " --bowtie-path $bowtie_path" ;
+        $command .= " --chipseq-peak-file $chipseq_peak_file";
+    } elsif ( $partition_model eq 'cmb_lgt' ) {  ## multi-sources
+        if ( $chipseq_bed_files_multi_targets ne '' ) { ## use bed over read
+            $command .= ' --chipseq-bed-files-multi-targets ' . 
+                        $chipseq_bed_files_multi_targets;
+        } elsif ( $chipseq_read_files_multi_targets ne '' ) { 
+            $command .= ' --chipseq-read-files-multi-targets ' .
+                        $chipseq_read_files_multi_targets .
+                      " --bowtie-path $bowtie_path" ;
+        }
+        if ( $cap_stacked_chipseq_reads ) {
+            $command .= ' --cap-stacked-chipseq-reads ' .
+                      " --n-max-stacked-chipseq-reads $n_max_stacked_chipseq_reads";
+        }
+        } else { ## ChIP-seq reads files from single source
+            $command .= " --chipseq-target-read-files $chipseq_target_read_files " .
+                        " --bowtie-path $bowtie_path" ;
+            if ( $chipseq_control_read_files ne '' ) {
+                $command .= " --chipseq-control-read-files $chipseq_control_read_files";
+            }
+        }
+
+    if ( $quiet ) {
+        $command .= ' --quiet ';
     }
-    if ( $cap_stacked_chipseq_reads ) {
-      $command .= ' --cap-stacked-chipseq-reads ' .
-                  " --n-max-stacked-chipseq-reads $n_max_stacked_chipseq_reads";
-    }
-  } else { ## ChIP-seq reads files from single source
-    $command .= " --chipseq-target-read-files $chipseq_target_read_files " .
-                " --bowtie-path $bowtie_path" ;
-    if ( $chipseq_control_read_files ne '' ) {
-     $command .= " --chipseq-control-read-files $chipseq_control_read_files";
-    }
-  }
 
-  if ( $quiet ) {
-      $command .= ' --quiet ';
-  }
+    $command .= " $refName $sampleName $statName $imdName";
+    &runCommand($command);
 
-  $command .= " $refName $sampleName $statName $imdName";
-  &runCommand($command);
+    ## collect pRSEM results
+    my $fiso_res  = "$imdName.iso_res";
+    my $fgene_res = "$imdName.gene_res";
 
-  ## collect pRSEM results
-  my $fiso_res  = "$imdName.iso_res";
-  my $fgene_res = "$imdName.gene_res";
-  
-  my $fprsem_iso_res  = "${imdName}_prsem.iso_res";
-  my $fprsem_gene_res = "${imdName}_prsem.gene_res";
-  
-  system("head -8 $fiso_res  > $fprsem_iso_res" );
-  system("tail -5 $fiso_res >> $fprsem_iso_res" );
-  
-  system("head -7 $fgene_res  > $fprsem_gene_res");
-  system("tail -4 $fgene_res >> $fprsem_gene_res");
+    my $fprsem_iso_res  = "${imdName}_prsem.iso_res";
+    my $fprsem_gene_res = "${imdName}_prsem.gene_res";
 
-  my $fstat_iso_results  = "${statName}_uniform_prior_1.isoforms.results";
-  my $fstat_gene_results = "${statName}_uniform_prior_1.genes.results";
-  
-  my $fiso_results  = "${sampleName}.isoforms.results";
-  my $fgene_results = "${sampleName}.genes.results";
+    system("head -8 $fiso_res  > $fprsem_iso_res" );
+    system("tail -5 $fiso_res >> $fprsem_iso_res" );
 
-  rename $fiso_results, $fstat_iso_results or die 
+    system("head -7 $fgene_res  > $fprsem_gene_res");
+    system("tail -4 $fgene_res >> $fprsem_gene_res");
+
+    my $fstat_iso_results  = "${statName}_uniform_prior_1.isoforms.results";
+    my $fstat_gene_results = "${statName}_uniform_prior_1.genes.results";
+
+    my $fiso_results  = "${sampleName}.isoforms.results";
+    my $fgene_results = "${sampleName}.genes.results";
+
+    rename $fiso_results, $fstat_iso_results or die 
     "can't rename $fiso_results to $fstat_iso_results: $!\n";
-  
-  rename $fgene_results, $fstat_gene_results or die 
+
+    rename $fgene_results, $fstat_gene_results or die 
     "can't rename $fgene_results to $fstat_gene_results: $!\n";
-  
-  collectResults("isoform", $fprsem_iso_res,  $fiso_results);
-  collectResults("gene",    $fprsem_gene_res, $fgene_results);
+
+    collectResults("isoform", $fprsem_iso_res,  $fiso_results);
+    collectResults("gene",    $fprsem_gene_res, $fgene_results);
 }
 
 
@@ -855,6 +898,10 @@ Use Bowtie 2 instead of Bowtie to align reads. Since currently RSEM does not han
 
 Use STAR to align reads. Alignment parameters are from ENCODE3's STAR-RSEM pipeline. To save computational time and memory resources, STAR's Output BAM file is unsorted. It is stored in RSEM's temporary directory with name as 'sample_name.bam'. Each STAR job will have its own private copy of the genome in memory. (Default: off) 
 
+=item B<--hisat2-hca>
+
+Use HISAT2 to align reads to the transcriptome according to Human Cell Atlast SMART-Seq2 pipeline. In particular, we use HISAT parameters "-k 10 --secondary --rg-id=$sampleToken --rg SM:$sampleToken --rg LB:$sampleToken --rg PL:ILLUMINA --rg PU:$sampleToken --new-summary --summary-file $sampleName.log --met-file $sampleName.hisat2.met.txt --met 5 --mp 1,1 --np 1 --score-min L,0,-0.1 --rdg 99999999,99999999 --rfg 99999999,99999999 --no-spliced-alignment --no-softclip --seed 12345". If inputs are paired-end reads, we additionally use parameters "--no-mixed --no-discordant". (Default: off) 
+
 =item B<--append-names>
 
 If gene_name/transcript_name is available, append it to the end of gene_id/transcript_id (separated by '_') in files 'sample_name.isoforms.results' and 'sample_name.genes.results'. (Default: off)
@@ -929,15 +976,15 @@ Seed length used by the read aligner.  Providing the correct value is important 
 
 =item B<--phred33-quals>
 
-Input quality scores are encoded as Phred+33. (Default: on)
+Input quality scores are encoded as Phred+33. This option is used by Bowtie, Bowtie 2 and HISAT2. (Default: on)
 
 =item B<--phred64-quals>
 
-Input quality scores are encoded as Phred+64 (default for GA Pipeline ver. >= 1.3). (Default: off)
+Input quality scores are encoded as Phred+64 (default for GA Pipeline ver. >= 1.3). This option is used by Bowtie, Bowtie 2 and HISAT2. (Default: off)
 
 =item B<--solexa-quals>
 
-Input quality scores are solexa encoded (from GA Pipeline ver. < 1.3). (Default: off)
+Input quality scores are solexa encoded (from GA Pipeline ver. < 1.3). This option is used by Bowtie, Bowtie 2 and HISAT2. (Default: off)
 
 =item B<--bowtie-path> <path>
 
@@ -990,6 +1037,10 @@ The path to STAR's executable. (Default: the path to STAR executable is assumed 
 =item B<--star-output-genome-bam>
 
 (STAR parameter) Save the BAM file from STAR alignment under genomic coordinate to 'sample_name.STAR.genome.bam'. This file is NOT sorted by genomic coordinate. In this file, according to STAR's manual, 'paired ends of an alignment are always adjacent, and multiple alignments of a read are adjacent as well'. (Default: off)
+
+=item B<--hisat2-path> <path>
+
+The path to HISAT2's executable. (Default: the path to HISAT2 executable is assumed to be in user's PATH environment variable)
 
 =back
 
