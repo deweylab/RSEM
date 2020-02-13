@@ -200,6 +200,7 @@ if ($hisat2_hca) {
     if ($nthreads > 1) { $command .= " -p $nthreads"; }
     if ($quiet) { $command .= " -q"; }
     $command .= " $ARGV[1].idx.fa $ARGV[1]";
+    &runCommand($command);
 }
 
 if ( $prep_prsem ) {
