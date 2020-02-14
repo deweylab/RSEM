@@ -20,13 +20,13 @@
 <h2>RSEM (RNA-Seq by Expectation-Maximization)</h2>
 <hr>
 <p><strong>Updates</strong></p>
-<p>Apr 6, 2019 &nbsp; RSEM v1.3.2 is online now. Prevent RSEM from crashing when there is 0 aligned reads. Output theta and model files even there is no aligned reads.</p>
+<p>Feb 14, 2020 &nbsp; RSEM v1.3.3 is online now. Added HISAT2 option (--hisat2-hca) using Human Cell Atlas SMART-Seq2 pipeline parameters. Fixed a bug in RSEM simulator. </p>
+<p>Apr 6, 2019 &nbsp; RSEM v1.3.2 is online now. Prevented RSEM from crashing when there is 0 aligned reads. Outputted theta and model files even there is no aligned reads.</p>
 <p>Jun 27, 2018 &nbsp; RSEM v1.3.1 is online now. Added `--gff3-genes-as-transcripts` option for `rsem-prepare-reference`. This option will allow RSEM to treat genes as transcripts.</p>
-<p>Oct 3, 2016 &nbsp; RSEM v1.3.0 is online now. Added Prior-Enhanced RSEM (pRSEM) as a submodule. Introduced `--strandedness &lt;none|forward|reverse&gt;` option, `--strand-specific` and `--forward-prob` are deprecated (but still supported). Revised documentation for `rsem-plot-model`, maked it clear that in alignment statistics, isoform-level (instead of genome-level) multi-mapping reads are shown. Significantly improved the output information of `rsem-sam-validator`: if indels/clippings/skips are detected in alignments or alignments exceed transcript boundaries, `rsem-sam-validator` will report them instead of telling you the input is valid. Updated the warning message to ask users to make sure that they align their reads agains a set of transcripts instead of genome when RSEM finds less sequences in the BAM file than RSEM's indices.</p>
 <p>Click <a href="updates.html">here</a> for full update information. </p>
 <p><strong>Source Code</strong></p>
 <ul>
-<li><a href="https://github.com/deweylab/RSEM/archive/v1.3.2.tar.gz" onclick="ga('send', 'event', { eventCategory: 'download', eventAction: 'click', eventLabel: 'latest source codes', nonIteraction: true });">Latest version</a>
+<li><a href="https://github.com/deweylab/RSEM/archive/v1.3.3.tar.gz" onclick="ga('send', 'event', { eventCategory: 'download', eventAction: 'click', eventLabel: 'latest source codes', nonIteraction: true });">Latest version</a>
 <li><a href="https://github.com/deweylab/RSEM/archive/v1.1.17.tar.gz">Version used by RSEM Galaxy Wrapper (RSEM v1.1.17)</a>
 <li><a href="https://github.com/deweylab/RSEM/releases">Archive of older versions</a>
 <li><a href="https://github.com/deweylab/RSEM">RSEM GitHub
@@ -89,6 +89,6 @@ Only mature RNAs. In addition, 125bp Poly(A) tails are added at the end of each 
 </td></tr>
 </table>
 <hr>
-<p>(last modified on Feb 3, 2020)</p>
+<p>(last modified on Feb 14, 2020)</p>
 </body>
 </html>
