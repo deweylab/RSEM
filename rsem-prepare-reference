@@ -192,8 +192,6 @@ if ($star) {
                         " --sjdbGTFfile $gtfF " .
                         " --sjdbOverhang $star_sjdboverhang " .
                         " --outFileNamePrefix $ARGV[1]";
-        $command .= " --limitGenomeGenerateRAM $star_limit_ram";
-    }
     &runCommand($command);
 }
 
