@@ -197,11 +197,11 @@ if ($star) {
     if ($star_limit_ram ne '') {
         my $unit = chop($star_limit_ram);
         if ($unit eq 'G' or $unit eq 'g') {
-            $star_limit_ram = int($star_limit_ram * 1024 * 1024 * 1024);
+            $star_limit_ram = int($star_limit_ram * 1000000000);
         } elsif ($unit eq 'M' or $unit eq 'm') {
-            $star_limit_ram = int($star_limit_ram * 1024 * 1024);
+            $star_limit_ram = int($star_limit_ram * 1000000);
         } elsif ($unit eq 'K' or $unit eq 'k') {
-            $star_limit_ram = int($star_limit_ram * 1024);
+            $star_limit_ram = int($star_limit_ram * 1000);
         }
         $command .= " --limitGenomeGenerateRAM $star_limit_ram";
     }
