@@ -417,7 +417,7 @@ if (!$is_alignment) {
         }
         
         # pipe to samtools to generate a BAM file
-        $command .= " | samtools view -b -o $imdName.bam -";
+        $command .= " 2> $sampleName.log | samtools view -b -o $imdName.bam -";
     } elsif ($bowtie2) {
         $command = $bowtie2_path."bowtie2";
         if ($no_qual) { $command .= " -f"; }
@@ -550,7 +550,7 @@ if (!$is_alignment) {
     $inpF = "$imdName.bam";
 
     if ( $star ) {
-        my $star_tr_bam = $imdName . 'Aligned.toTranscriptome.out.bam';
+        my $star_tr_bam = $imdName . "Aligned.toTranscriptome.out.bam";
         rename $star_tr_bam, $inpF or die "can't rename $star_tr_bam to $inpF: $!\n";
         rmdir $imdName . "_STARtmp/";
         my $star_genome_bam = $imdName . "Aligned.out.bam";
@@ -560,6 +560,7 @@ if (!$is_alignment) {
         } else {
             unlink $star_genome_bam or die "can't remove $star_genome_bam: $!\n";
         }
+        rename $imdName."Log.final.out", $sampleName.".log" or die "Cannot rename ${imdName}Log.final.out to $sampleName.log: $!\n";
     }
 }
 
