@@ -85,9 +85,8 @@ To use the `--gff3` option of `rsem-prepare-reference`, Python is also
 required to be installed.
 
 To take advantage of RSEM's built-in support for the Bowtie/Bowtie
-2/STAR alignment program, you must have
-[Bowtie](http://bowtie-bio.sourceforge.net)/[Bowtie
-2](http://bowtie-bio.sourceforge.net/bowtie2)/[STAR](https://github.com/alexdobin/STAR)
+2/STAR/HISAT2 alignment program, you must have
+[Bowtie](http://bowtie-bio.sourceforge.net)/[Bowtie2](http://bowtie-bio.sourceforge.net/bowtie2)/[STAR](https://github.com/alexdobin/STAR)/[HISAT2](https://ccb.jhu.edu/software/hisat2/manual.shtml)
 installed.
 
 ## <a name="usage"></a> Usage
