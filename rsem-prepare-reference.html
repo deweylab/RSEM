@@ -4,10 +4,10 @@
 <head>
 <title>rsem-prepare-reference</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:travis@traviss-mac-380.local" />
+<link rev="made" href="mailto:root@osx316.apple.com" />
 </head>
 
-<body>
+<body style="background-color: white">
 
 
 
@@ -24,7 +24,7 @@
 
 <h1 id="NAME">NAME</h1>
 
-<p>rsem-prepare-reference - Prepare transcript references for RSEM and optionally build BOWTIE/BOWTIE2/STAR indices.</p>
+<p>rsem-prepare-reference - Prepare transcript references for RSEM and optionally build BOWTIE/BOWTIE2/STAR/HISAT2(transcriptome) indices.</p>
 
 <h1 id="SYNOPSIS">SYNOPSIS</h1>
 
@@ -152,7 +152,7 @@
 <p>Build Bowtie 2 indices. (Default: off)</p>
 
 </dd>
-<dt id="bowtie2-path"><b>--bowtie2-path</b></dt>
+<dt id="bowtie2-path-path"><b>--bowtie2-path</b> &lt;path&gt;</dt>
 <dd>
 
 <p>The path to the Bowtie 2 executables. (Default: the path to Bowtie 2 executables is assumed to be in the user&#39;s PATH environment variable)</p>
@@ -173,7 +173,19 @@
 <dt id="star-sjdboverhang-int"><b>--star-sjdboverhang</b> &lt;int&gt;</dt>
 <dd>
 
-<p>Length of the genomic sequence around annotated junction. It is only used for STAT to build splice junctions database and not needed for Bowtie or Bowtie2. It will be passed as the --sjdbOverhang option to STAR. According to STAR&#39;s manual, its ideal value is max(ReadLength)-1, e.g. for 2x101 paired-end reads, the ideal value is 101-1=100. In most cases, the default value of 100 will work as well as the ideal value. (Default: 100)</p>
+<p>Length of the genomic sequence around annotated junction. It is only used for STAR to build splice junctions database and not needed for Bowtie or Bowtie2. It will be passed as the --sjdbOverhang option to STAR. According to STAR&#39;s manual, its ideal value is max(ReadLength)-1, e.g. for 2x101 paired-end reads, the ideal value is 101-1=100. In most cases, the default value of 100 will work as well as the ideal value. (Default: 100)</p>
+
+</dd>
+<dt id="hisat2-hca"><b>--hisat2-hca</b></dt>
+<dd>
+
+<p>Build HISAT2 indices on the transcriptome according to Human Cell Atlas (HCA) SMART-Seq2 pipeline. (Default: off)</p>
+
+</dd>
+<dt id="hisat2-path-path"><b>--hisat2-path</b> &lt;path&gt;</dt>
+<dd>
+
+<p>The path to the HISAT2 executables. (Default: the path to HISAT2 executables is assumed to be in the user&#39;s PATH environment variable)</p>
 
 </dd>
 <dt id="p---num-threads-int"><b>-p/--num-threads</b> &lt;int&gt;</dt>
