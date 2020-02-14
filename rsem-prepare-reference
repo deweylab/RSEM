@@ -43,7 +43,6 @@ my $bowtie2_path = "";
 my $star = 0;
 my $star_path = '';
 my $star_sjdboverhang = 100;
-my $star_limit_ram = '';
 
 my $hisat2_hca = 0;
 my $hisat2_path = '';
@@ -67,7 +66,6 @@ GetOptions("gtf=s" => \$gtfF,
     "star" => \$star,
     "star-path=s" => \$star_path,
     "star-sjdboverhang=i" => \$star_sjdboverhang,
-    "star-limit-ram=s", \$star_limit_ram,
     "hisat2-hca" =>\$hisat2_hca,
     "hisat2-path=s" => \$hisat2_path,
     "p|num-threads=i" => \$nthreads,
@@ -194,15 +192,6 @@ if ($star) {
                         " --sjdbGTFfile $gtfF " .
                         " --sjdbOverhang $star_sjdboverhang " .
                         " --outFileNamePrefix $ARGV[1]";
-    if ($star_limit_ram ne '') {
-        my $unit = chop($star_limit_ram);
-        if ($unit eq 'G' or $unit eq 'g') {
-            $star_limit_ram = int($star_limit_ram * 1000000000);
-        } elsif ($unit eq 'M' or $unit eq 'm') {
-            $star_limit_ram = int($star_limit_ram * 1000000);
-        } elsif ($unit eq 'K' or $unit eq 'k') {
-            $star_limit_ram = int($star_limit_ram * 1000);
-        }
         $command .= " --limitGenomeGenerateRAM $star_limit_ram";
     }
     &runCommand($command);
@@ -373,10 +362,6 @@ The path to STAR's executable. (Default: the path to STAR executable is assumed 
 =item B<--star-sjdboverhang> <int>
 
 Length of the genomic sequence around annotated junction. It is only used for STAR to build splice junctions database and not needed for Bowtie or Bowtie2. It will be passed as the --sjdbOverhang option to STAR. According to STAR's manual, its ideal value is max(ReadLength)-1, e.g. for 2x101 paired-end reads, the ideal value is 101-1=100. In most cases, the default value of 100 will work as well as the ideal value. (Default: 100)
-
-=item B<--star-limit-ram> <string>
-
-Memory used to build star indices, accept strings such as '30G', '20M', '10933K'. (Default: STAR default)
 
 =item B<--hisat2-hca>
 
