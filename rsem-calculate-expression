@@ -221,11 +221,11 @@ else {
     pod2usage(-msg => "Only one of --phred33-quals, --phred64-quals, and --solexa-quals can be active!", -exitval => 2, -verbose => 2) if ($phred33 + $phred64 + $solexa > 1);    
     pod2usage(-msg => "--bowtie-path, --bowtie-n, --bowtie-e, --bowtie-m cannot be set if bowtie aligner is not used!", -exitval => 2, -verbose => 2) if (!$bowtie && ($bowtie_path ne "" || $C != 2 || $E != 99999999 || $maxHits != 200));
     pod2usage(-msg => "--bowtie2-path, --bowtie2-mismatch-rate, --bowtie2-k and --bowtie2-sensitivity-level cannot be set if bowtie2 aligner is not used!", -exitval => 2, -verbose => 2) if (!$bowtie2 && ($bowtie2_path ne "" || $bowtie2_mismatch_rate != 0.1 || $bowtie2_k != 200 || $bowtie2_sensitivity_level ne "sensitive"));
-    pod2usage(-msg => "--star-path, --star-gzipped-read-file, --star-bzipped-read-file and --star-output-genome-bam cannot be set if STAR aligner is not used!", -exitval => 2, -verbose => 2) if (!$star && ($star_path ne "" || !$star_gzipped_read_file || !$star_bzipped_read_file || !$star_output_genome_bam));
+    pod2usage(-msg => "--star-path, --star-gzipped-read-file, --star-bzipped-read-file and --star-output-genome-bam cannot be set if STAR aligner is not used!", -exitval => 2, -verbose => 2) if (!$star && ($star_path ne "" || $star_gzipped_read_file || $star_bzipped_read_file || $star_output_genome_bam));
     pod2usage(-msg => "--hisat2-path cannot be set if HISAT2 aligner is not used!", -exitval => 2, -verbose => 2) if (!$hisat2_hca && ($hisat2_path ne ""));
     pod2usage(-msg => "Mismatch rate must be within [0, 1]!", -exitval => 2, -verbose => 2) if ($bowtie2 && ($bowtie2_mismatch_rate < 0.0 || $bowtie2_mismatch_rate > 1.0));
     pod2usage(-msg => "Sensitivity level must be one of \"very_fast\", \"fast\", \"sensitive\", and \"very_sensitive\"!", -exitval => 2, -verbose => 2) if ($bowtie2 && (($bowtie2_sensitivity_level ne "very_fast") && ($bowtie2_sensitivity_level ne "fast") && ($bowtie2_sensitivity_level ne "sensitive") && ($bowtie2_sensitivity_level ne "very_sensitive")));
-    
+
     if ($faiF ne "") { print "Warning: There is no need to set --fai if you ask RSEM to align reads for you.\n" }
 }
 
@@ -451,51 +451,51 @@ if (!$is_alignment) {
         }
 
         # pipe to samtools to generate a BAM file
-        $command .= " | samtools view -b -o $imdName.bam -";
+        $command .= " 2> $sampleName.log | samtools view -b -o $imdName.bam -";
     } elsif ($star) {
         ## align reads by STAR
         my $star_genome_path = dirname($refName);
         $command = "$star_path"."STAR" . 
                    ## ENCODE3 pipeline parameters
                    " --genomeDir $star_genome_path " .
-                   ' --outSAMunmapped Within ' .
-                   ' --outFilterType BySJout ' .
-                   ' --outSAMattributes NH HI AS NM MD ' .
-                   ' --outFilterMultimapNmax 20 ' .
-                   ' --outFilterMismatchNmax 999 ' .
-                   ' --outFilterMismatchNoverLmax 0.04 ' .
-                   ' --alignIntronMin 20 ' .
-                   ' --alignIntronMax 1000000 ' .
-                   ' --alignMatesGapMax 1000000 ' .
-                   ' --alignSJoverhangMin 8 ' .
-                   ' --alignSJDBoverhangMin 1 ' .
-                   ' --sjdbScore 1 ' .
+                   " --outSAMunmapped Within " .
+                   " --outFilterType BySJout " .
+                   " --outSAMattributes NH HI AS NM MD " .
+                   " --outFilterMultimapNmax 20 " .
+                   " --outFilterMismatchNmax 999 " .
+                   " --outFilterMismatchNoverLmax 0.04 " .
+                   " --alignIntronMin 20 " .
+                   " --alignIntronMax 1000000 " .
+                   " --alignMatesGapMax 1000000 " .
+                   " --alignSJoverhangMin 8 " .
+                   " --alignSJDBoverhangMin 1 " .
+                   " --sjdbScore 1 " .
                    " --runThreadN $nThreads " .
                    ##
 
                    ## different than ENCODE3 pipeline 
                    ## do not allow using shared memory
-                   ' --genomeLoad NoSharedMemory ' .
+                   " --genomeLoad NoSharedMemory " .
                    ##
 
                    ## different than ENCODE3 pipeline, which sorts output BAM
                    ## no need to do it here to save time and memory 
-                   ' --outSAMtype BAM Unsorted ' .
+                   " --outSAMtype BAM Unsorted " .
                    ##
 
-                   ## unlike ENCODE3, we don't output bedGraph files
+                   ## unlike ENCODE3, we don"t output bedGraph files
 
-                   ' --quantMode TranscriptomeSAM '.
-                   ' --outSAMheaderHD \@HD VN:1.4 SO:unsorted '.
+                   " --quantMode TranscriptomeSAM ".
+                   " --outSAMheaderHD \@HD VN:1.4 SO:unsorted ".
 
                    ## define output file prefix
                    " --outFileNamePrefix $imdName ";
                    ##
 
         if ( $star_gzipped_read_file ) {
-            $command .= ' --readFilesCommand zcat ';
+            $command .= " --readFilesCommand zcat ";
         } elsif ( $star_bzipped_read_file ) {
-            $command .= ' --readFilesCommand bzip2 -c ';
+            $command .= " --readFilesCommand bzip2 -c ";
         }
 
         if ( $read_type == 0 || $read_type == 1 ) {
@@ -513,8 +513,10 @@ if (!$is_alignment) {
         elsif ($phred64) { $command .= " --phred64"; }
         elsif ($solexa) { $command .= " --solexa-quals"; }
 
-        $command .= " --rg-id=$sampleToken --rg SM:$sampleToken --rg LB:$sampleToken --rg PL:ILLUMINA --rg PU:$sampleToken --new-summary --summary-file $sampleName.log --met-file $sampleName.hisat2.met.txt --met 5 \
-                      --mp 1,1 --np 1 --score-min L,0,-0.1 --rdg 99999999,99999999 --rfg 99999999,99999999 --no-spliced-alignment --no-softclip --seed 12345 ";
+        $command .= " --rg-id=$sampleToken --rg SM:$sampleToken --rg LB:$sampleToken --rg PL:ILLUMINA --rg PU:$sampleToken" .
+                    " --new-summary --summary-file $sampleName.log --met-file $sampleName.hisat2.met.txt --met 5" .
+                    " --mp 1,1 --np 1 --score-min L,0,-0.1 --rdg 99999999,99999999 --rfg 99999999,99999999" .
+                    " --no-spliced-alignment --no-softclip --seed 12345";
 
         if ($read_type == 2 || $read_type == 3) { $command .= " --no-mixed --no-discordant"; }
 

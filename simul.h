@@ -26,8 +26,10 @@ public:
 	    else r = mid - 1;
 	  }
 
-	  if (l >= len) { printf("%d %lf %lf\n", len, arr[len - 1], prb); }
-	  assert(l < len);
+	  if (l >= len) {
+	  	assert(arr[len - 1] == 0.0); 
+	  	l = int(random() * len);
+	  }
 
 	  return l;
 	}
