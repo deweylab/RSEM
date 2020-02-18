@@ -47,7 +47,7 @@ public:
 		case 1 : return 0;
 		case 2 : iter = exceptionList.find(transcript_id);
 				 return (iter == exceptionList.end() ? polyALen : 0);
-		default : assert(false);
+                default : abort();
 		}
 	}
 

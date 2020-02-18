@@ -22,7 +22,7 @@
 
 // In order to avoid circular dependencies with Boost.TR1
 // we make sure that our include of <memory> doesn't try to
-// pull in the TR1 headers: that's why we use this header 
+// pull in the TR1 headers: that's why we use this header
 // rather than including <memory> directly:
 #include <boost/config/no_tr1/memory.hpp>  // std::auto_ptr
 
@@ -244,10 +244,10 @@ template< class T, class R > struct sp_enable_if_auto_ptr
 {
 };
 
-template< class T, class R > struct sp_enable_if_auto_ptr< std::auto_ptr< T >, R >
+template< class T, class R > struct sp_enable_if_auto_ptr< std::unique_ptr< T >, R >
 {
     typedef R type;
-}; 
+};
 
 #endif
 
@@ -443,7 +443,7 @@ public:
 #ifndef BOOST_NO_AUTO_PTR
 
     template<class Y>
-    explicit shared_ptr( std::auto_ptr<Y> & r ): px(r.get()), pn()
+    explicit shared_ptr( std::unique_ptr<Y> & r ): px(r.get()), pn()
     {
         boost::detail::sp_assert_convertible< Y, T >();
 
@@ -456,7 +456,7 @@ public:
 #if !defined( BOOST_NO_CXX11_RVALUE_REFERENCES )
 
     template<class Y>
-    shared_ptr( std::auto_ptr<Y> && r ): px(r.get()), pn()
+    shared_ptr( std::unique_ptr<Y> && r ): px(r.get()), pn()
     {
         boost::detail::sp_assert_convertible< Y, T >();
 
@@ -522,7 +522,7 @@ public:
 #ifndef BOOST_NO_AUTO_PTR
 
     template<class Y>
-    shared_ptr & operator=( std::auto_ptr<Y> & r )
+    shared_ptr & operator=( std::unique_ptr<Y> & r )
     {
         this_type( r ).swap( *this );
         return *this;
@@ -531,9 +531,9 @@ public:
 #if !defined( BOOST_NO_CXX11_RVALUE_REFERENCES )
 
     template<class Y>
-    shared_ptr & operator=( std::auto_ptr<Y> && r )
+    shared_ptr & operator=( std::unique_ptr<Y> && r )
     {
-        this_type( static_cast< std::auto_ptr<Y> && >( r ) ).swap( *this );
+        this_type( static_cast< std::unique_ptr<Y> && >( r ) ).swap( *this );
         return *this;
     }
 
@@ -639,21 +639,21 @@ public:
     {
         this_type( r, p ).swap( *this );
     }
-    
+
     // never throws (but has a BOOST_ASSERT in it, so not marked with BOOST_NOEXCEPT)
     typename boost::detail::sp_dereference< T >::type operator* () const
     {
         BOOST_ASSERT( px != 0 );
         return *px;
     }
-    
+
     // never throws (but has a BOOST_ASSERT in it, so not marked with BOOST_NOEXCEPT)
-    typename boost::detail::sp_member_access< T >::type operator-> () const 
+    typename boost::detail::sp_member_access< T >::type operator-> () const
     {
         BOOST_ASSERT( px != 0 );
         return px;
     }
-    
+
     // never throws (but has a BOOST_ASSERT in it, so not marked with BOOST_NOEXCEPT)
     typename boost::detail::sp_array_access< T >::type operator[] ( std::ptrdiff_t i ) const
     {
