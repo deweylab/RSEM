@@ -43,7 +43,7 @@ protected:
 
 bool SingleHit::read(std::istream& in) {
 	conprb = 0.0;
-	return (in>>sid>>pos);
+	return static_cast<bool>(in>>sid>>pos);
 }
 
 void SingleHit::write(std::ostream& out) {

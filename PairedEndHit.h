@@ -26,7 +26,7 @@ private:
 
 bool PairedEndHit::read(std::istream& in) {
 	conprb = 0.0;
-    return (in>>sid>>pos>>insertL);
+    return static_cast<bool>(in>>sid>>pos>>insertL);
 }
 
 void PairedEndHit::write(std::ostream& out) {

@@ -37,15 +37,15 @@ void buildIndex(char* readF, int gap, bool hasQ) {
 		streampos pos = fin.tellg();
 		success = true;
 
-		success = (getline(fin, line));
+		success = static_cast<bool>(getline(fin, line));
 		if (!success) continue;
-		success = (getline(fin, line));
+		success = static_cast<bool>(getline(fin, line));
 		if (!success) continue;
 
 		if (hasQ) {
-			success = (getline(fin, line));
+			success = static_cast<bool>(getline(fin, line));
 			if (!success) continue;
-			success = (getline(fin, line));
+			success = static_cast<bool>(getline(fin, line));
 			if (!success) continue;
 		}
 
