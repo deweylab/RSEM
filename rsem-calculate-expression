@@ -506,6 +506,10 @@ if (!$is_alignment) {
         my $rsem_star_final_log = $sampleName . "Log.final.out";
         move($star_final_log, $rsem_star_final_log) or die "can't move $star_final_log to $rsem_star_final_log: $!\n";
 
+        my $star_sj = $imdName . "SJ.out.tab";
+        my $rsem_star_sj = $sampleName . "SJ.out.tab";
+        move($star_sj, $rsem_star_sj) or die "can't move $star_sj to $rsem_star_sj: $!\n";
+
         my $star_tr_bam = $imdName . 'Aligned.toTranscriptome.out.bam';
         move($star_tr_bam, $inpF) or die "can't move $star_tr_bam to $inpF: $!\n";
         rmdir $imdName . "_STARtmp/";
