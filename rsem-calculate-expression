@@ -397,6 +397,13 @@ if (!$is_alignment) {
 	               " --runThreadN $nThreads " .
 	               ##
 	
+	               ## some datasets are terribly slow otherwise
+	               # ' --seedPerWindowNmax 30 ' .
+
+	               ## some datasets require very large SJ buffer
+	               # ' --limitOutSJcollapsed  10000000 ' .
+	               # ' --limitIObufferSize  1000000000 ' .
+
 	               ## different than ENCODE3 pipeline 
 	               ## do not allow using shared memory
 	               ' --genomeLoad LoadAndRemove ' .
