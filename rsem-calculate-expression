@@ -1527,7 +1527,7 @@ Assume the path to the bowtie executables is in the user's PATH environment vari
  rsem-calculate-expression --paired-end \
                            --star \
                            --star-path /sw/STAR \
-                           --gzipped-read-file \
+                           --star-gzipped-read-file \
                            --paired-end \
                            -p 8 \
                            /data/mmliver_1.fq.gz \
@@ -1540,7 +1540,7 @@ Assume the path to the bowtie executables is in the user's PATH environment vari
 
  rsem-calculate-expression --star \
                            --star-path /sw/STAR \
-                           --gzipped-read-file \
+                           --star-gzipped-read-file \
                            --paired-end \
                            --calc-pme \
                            --run-pRSEM \
@@ -1555,7 +1555,7 @@ Assume the path to the bowtie executables is in the user's PATH environment vari
 
  rsem-calculate-expression --star \
                            --star-path /sw/STAR \
-                           --gzipped-read-file \
+                           --star-gzipped-read-file \
                            --paired-end \
                            --calc-pme \
                            --run-pRSEM \
@@ -1573,7 +1573,7 @@ Assume the path to the bowtie executables is in the user's PATH environment vari
 
  rsem-calculate-expression --star \
                            --star-path /sw/STAR \
-                           --gzipped-read-file \
+                           --star-gzipped-read-file \
                            --paired-end \
                            --calc-pme \
                            --run-pRSEM \
