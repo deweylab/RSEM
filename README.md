@@ -86,7 +86,7 @@ required to be installed.
 
 To take advantage of RSEM's built-in support for the Bowtie/Bowtie
 2/STAR/HISAT2 alignment program, you must have
-[Bowtie](http://bowtie-bio.sourceforge.net)/[Bowtie2](http://bowtie-bio.sourceforge.net/bowtie2)/[STAR](https://github.com/alexdobin/STAR)/[HISAT2](https://ccb.jhu.edu/software/hisat2/manual.shtml)
+[Bowtie](http://bowtie-bio.sourceforge.net)/[Bowtie2](http://bowtie-bio.sourceforge.net/bowtie2)/[STAR](https://github.com/alexdobin/STAR)/[HISAT2](http://daehwankimlab.github.io/hisat2/)
 installed.
 
 ## <a name="usage"></a> Usage
@@ -108,7 +108,7 @@ To prepare the reference sequences, you should run the
     rsem-prepare-reference --help
 
 to get usage information or visit the [rsem-prepare-reference
-documentation page](rsem-prepare-reference.html).
+documentation page](http://deweylab.github.io/RSEM/rsem-prepare-reference.html).
 
 #### <a name="built"></a> Build RSEM references using RefSeq, Ensembl, or GENCODE annotations
 
@@ -238,7 +238,7 @@ To calculate expression values, you should run the
     rsem-calculate-expression --help
 
 to get usage information or visit the [rsem-calculate-expression
-documentation page](rsem-calculate-expression.html).
+documentation page](http://deweylab.github.io/RSEM/rsem-calculate-expression.html).
 
 #### Calculating expression values from single-end data
 
@@ -369,7 +369,7 @@ To generate transcript wiggle plots, you should run the
     rsem-plot-transcript-wiggles --help
 
 to get usage information or visit the [rsem-plot-transcript-wiggles
-documentation page](rsem-plot-transcript-wiggles.html).
+documentation page](http://deweylab.github.io/RSEM/rsem-plot-transcript-wiggles.html).
 
 #### e) Visualize the model learned by RSEM
 
@@ -537,7 +537,7 @@ transcripts whose lengths are less than k are assigned to cluster
 
 to get usage information or visit the [rsem-generate-ngvector
 documentation
-page](rsem-generate-ngvector.html).
+page](http://deweylab.github.io/RSEM/rsem-generate-ngvector.html).
 
 If your reference is a de novo assembled transcript set, you should
 run `rsem-generate-ngvector` first. Then load the resulting
@@ -570,7 +570,7 @@ for all genes/transcripts. Run
     rsem-run-ebseq --help
 
 to get usage information or visit the [rsem-run-ebseq documentation
-page](rsem-run-ebseq.html). Second,
+page](http://deweylab.github.io/RSEM/rsem-run-ebseq.html). Second,
 `rsem-control-fdr` takes `rsem-run-ebseq` 's result and reports called
 differentially expressed genes/transcripts by controlling the false
 discovery rate. Run
@@ -578,7 +578,7 @@ discovery rate. Run
     rsem-control-fdr --help
 
 to get usage information or visit the [rsem-control-fdr documentation
-page](rsem-control-fdr.html). These
+page](http://deweylab.github.io/RSEM/rsem-control-fdr.html). These
 two scripts can perform DE analysis on either 2 conditions or multiple
 conditions.
 
