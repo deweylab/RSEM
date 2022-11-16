@@ -285,7 +285,7 @@ process. Run
 
 to get usage information or visit the [convert-sam-for-rsem
 documentation
-page](convert-sam-for-rsem.html).
+page](http://deweylab.github.io/RSEM/convert-sam-for-rsem.html).
 
 Note that RSEM does ** not ** support gapped alignments. So make sure
 that your aligner does not produce alignments with
