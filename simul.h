@@ -18,6 +18,10 @@ public:
 	  int l, r, mid;
 	  double prb = random() * arr[len - 1];
 
+    // if the final value is zero, pick a random index from the array.
+    if (arr[len - 1] == 0.0) {
+      return random() * (len - 1);
+    }
 
 	  l = 0; r = len - 1;
 	  while (l <= r) {
@@ -42,4 +46,3 @@ private:
 };
 
 #endif /* SIMUL_H_ */
-
