@@ -29,9 +29,11 @@ samtools-*/version.h
 samtools-*/test
 samtools-*/misc
 samtools-*/config.h
+samtools-*/config.log
 samtools-*/config.mk
 samtools-*/config.status
 samtools-*/htslib-*/config.h
+samtools-*/htslib-*/config.log
 samtools-*/htslib-*/config.mk
 samtools-*/htslib-*/config.status
 samtools-*/htslib-*/version.h
