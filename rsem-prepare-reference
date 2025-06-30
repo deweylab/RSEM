@@ -68,8 +68,8 @@ GetOptions("gtf=s" => \$gtfF,
     "star" => \$star,
     "star-path=s" => \$star_path,
     "star-sjdboverhang=i" => \$star_sjdboverhang,
-    "star-ramlimit=i" => \$star_ramlimit, ## for STAR, the limit of RAM to use for building genome indices, in bytes
-    "star-genomeSAindexNbases=i", ## for STAR, the number of bases in SA index, default is 14, which is enough for most genomes
+    "star-ramlimit=i" => \$star_ramlimit,
+    "star-genomeSAindexNbases=i" => \$star_genomeSAindexNbases,
     "hisat2-hca" =>\$hisat2_hca,
     "hisat2-path=s" => \$hisat2_path,
     "p|num-threads=i" => \$nthreads,
@@ -192,6 +192,7 @@ if ($star) {
         $star_ramlimit = '31000000000';
     }
     
+    # Ensure star_sjdboverhang is set to default if not provided by user
     if (!defined($star_genomeSAindexNbases) || $star_genomeSAindexNbases eq '' || $star_genomeSAindexNbases !~ /^\d+$/) {
         $star_genomeSAindexNbases = '14';
     }
@@ -379,6 +380,10 @@ Maximum available RAM (bytes) for STAR index generation. (Default: 31000000000)
 =item B<--star-sjdboverhang> <int>
 
 Length of the genomic sequence around annotated junction. It is only used for STAR to build splice junctions database and not needed for Bowtie or Bowtie2. It will be passed as the --sjdbOverhang option to STAR. According to STAR's manual, its ideal value is max(ReadLength)-1, e.g. for 2x101 paired-end reads, the ideal value is 101-1=100. In most cases, the default value of 100 will work as well as the ideal value. (Default: 100)
+
+=item B<--star-genomeSAindexNbases> <int>
+
+Length (bases) of the SA pre-indexing string. Typically between 10 and 15. Longer strings will use much more memory, but allow faster searches. For small genomes, the parameter must be scaled down to min(14, log2(GenomeLength)/2 - 1).
 
 =item B<--hisat2-hca>
 
