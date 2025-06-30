@@ -44,6 +44,7 @@ my $star = 0;
 my $star_path = '';
 my $star_sjdboverhang = 100;
 my $star_ramlimit = ''; ## for STAR, the limit of RAM to use for building genome indices, in bytes. Default is 31GB, set below which is enough for most genomes.
+my $star_genomeSAindexNbases = ''; ## for STAR, the number of bases in SA index, default is 14, which is enough for most genomes
 
 my $hisat2_hca = 0;
 my $hisat2_path = '';
@@ -68,6 +69,7 @@ GetOptions("gtf=s" => \$gtfF,
     "star-path=s" => \$star_path,
     "star-sjdboverhang=i" => \$star_sjdboverhang,
     "star-ramlimit=i" => \$star_ramlimit, ## for STAR, the limit of RAM to use for building genome indices, in bytes
+    "star-genomeSAindexNbases=i", ## for STAR, the number of bases in SA index, default is 14, which is enough for most genomes
     "hisat2-hca" =>\$hisat2_hca,
     "hisat2-path=s" => \$hisat2_path,
     "p|num-threads=i" => \$nthreads,
@@ -189,6 +191,10 @@ if ($star) {
     if (!defined($star_ramlimit) || $star_ramlimit eq '' || $star_ramlimit !~ /^\d+$/) {
         $star_ramlimit = '31000000000';
     }
+    
+    if (!defined($star_genomeSAindexNbases) || $star_genomeSAindexNbases eq '' || $star_genomeSAindexNbases !~ /^\d+$/) {
+        $star_genomeSAindexNbases = '14';
+    }
 
     my $out_star_genome_path = dirname($ARGV[1]);
     $command = $star_path . "STAR " .
@@ -198,6 +204,7 @@ if ($star) {
                         " --genomeFastaFiles @list " .
                         " --sjdbGTFfile $gtfF " .
                         " --limitGenomeGenerateRAM $star_ramlimit " .
+                        " --genomeSAindexNbases $star_genomeSAindexNbases " .
                         " --sjdbOverhang $star_sjdboverhang " .
                         " --outFileNamePrefix $ARGV[1]";
     &runCommand($command);
