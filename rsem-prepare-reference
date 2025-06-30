@@ -67,7 +67,7 @@ GetOptions("gtf=s" => \$gtfF,
     "star" => \$star,
     "star-path=s" => \$star_path,
     "star-sjdboverhang=i" => \$star_sjdboverhang,
-    "star-ramlimit" => \$star_ramlimit, ## for STAR, the limit of RAM to use for building genome indices, in bytes
+    "star-ramlimit=i" => \$star_ramlimit, ## for STAR, the limit of RAM to use for building genome indices, in bytes
     "hisat2-hca" =>\$hisat2_hca,
     "hisat2-path=s" => \$hisat2_path,
     "p|num-threads=i" => \$nthreads,
