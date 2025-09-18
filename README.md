@@ -1,3 +1,7 @@
+# FORWARD for RSEM-DOCKER
+
+> you can fetch the rsem docker image, which also has bowtie, bowtie2 and STAR built, here: `docker://daylilyinformatics/rsem:1.3.3.5`.
+
 README for RSEM
 ===============
 

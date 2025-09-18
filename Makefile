@@ -11,8 +11,11 @@ endif
 BOOST = .
 
 # Compilation variables
+# Use x86-64-v4/"native" tuning to leverage AVX-512/FMA capabilities reported by
+# the target Intel(R) Xeon(R) Platinum 8488C (see provided lscpu output).
 CXX = g++
-CXXFLAGS = -std=gnu++98 -Wall -I. -I$(BOOST) -I$(SAMTOOLS)/$(HTSLIB)
+CXXFLAGS = -std=gnu++98 -Wall -I. -I$(BOOST) -I$(SAMTOOLS)/$(HTSLIB) \
+           -march=x86-64-v4 -mtune=native
 CPPFLAGS =
 
 LDFLAGS =
