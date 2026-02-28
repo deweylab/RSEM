@@ -1,14 +1,13 @@
 #ifndef SIMUL_H_
 #define SIMUL_H_
 
-#include<cassert>
-
-#include "boost/random.hpp"
+#include <cassert>
+#include <random>
 
 class simul {
 public:
 
- simul(unsigned int seed) : engine(seed), rg(engine, boost::random::uniform_01<>()) {
+ simul(unsigned int seed) : engine(seed), dist(0.0, 1.0) {
   }
 
 	// interval : [,)
@@ -34,11 +33,11 @@ public:
 	  return l;
 	}
 
-	double random() { return rg(); };
+	double random() { return dist(engine); }
 
 private:
-	boost::random::mt19937 engine;
-	boost::random::variate_generator<boost::random::mt19937&, boost::random::uniform_01<> > rg;
+	std::mt19937 engine;
+	std::uniform_real_distribution<double> dist;
 };
 
 #endif /* SIMUL_H_ */

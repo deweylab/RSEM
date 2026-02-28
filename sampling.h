@@ -1,24 +1,34 @@
 #ifndef SAMPLING
 #define SAMPLING
 
-#include<ctime>
-#include<cstdio>
-#include<cassert>
-#include<vector>
-#include<set>
-
-#include "boost/random.hpp"
+#include <ctime>
+#include <cstdio>
+#include <cassert>
+#include <vector>
+#include <set>
+#include <random>
 
 typedef unsigned int seedType;
-typedef boost::random::mt19937 engine_type;
-typedef boost::random::uniform_01<> uniform_01_dist;
-typedef boost::random::gamma_distribution<> gamma_dist;
-typedef boost::random::variate_generator<engine_type&, uniform_01_dist> uniform_01_generator;
-typedef boost::random::variate_generator<engine_type&, gamma_dist> gamma_generator;
+typedef std::mt19937 engine_type;
+typedef std::uniform_real_distribution<double> uniform_01_dist;
+typedef std::gamma_distribution<> gamma_dist;
+
+// Wrapper to provide variate_generator-like interface (callable with operator())
+template<typename Engine, typename Dist>
+class variate_generator {
+	Engine& engine;
+	Dist dist;
+public:
+	variate_generator(Engine& e, const Dist& d) : engine(e), dist(d) {}
+	typename Dist::result_type operator()() { return dist(engine); }
+};
+
+typedef variate_generator<engine_type, uniform_01_dist> uniform_01_generator;
+typedef variate_generator<engine_type, gamma_dist> gamma_generator;
 
 class engineFactory {
 public:
-  static void init() { seedEngine = new engine_type(time(NULL)); }
+  static void init() { seedEngine = new engine_type(static_cast<engine_type::result_type>(time(NULL))); }
   static void init(seedType seed) { seedEngine = new engine_type(seed); }
 
   static void finish() { if (seedEngine != NULL) delete seedEngine; }
