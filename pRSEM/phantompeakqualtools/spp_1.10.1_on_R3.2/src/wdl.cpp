@@ -11,8 +11,7 @@ extern "C" {
 #include "Rdefines.h"
 }
 
-using namespace std;
-using namespace __gnu_cxx; 
+using namespace std; 
 
 //#define DEBUG 1
 

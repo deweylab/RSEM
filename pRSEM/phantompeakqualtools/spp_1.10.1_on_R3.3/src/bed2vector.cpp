@@ -10,8 +10,7 @@
 #include <string>
 #include <functional>
 #include <utility>
-#include <ext/hash_map>
-#include <boost/tokenizer.hpp>
+#include "string_utils.h"
 
 #ifdef HAVE_LIBBZ2
 #include <bzlib.h>
@@ -26,8 +25,7 @@ extern "C" {
 #include "Rdefines.h"
 }
 
-using namespace std;
-using namespace __gnu_cxx; 
+using namespace std; 
 
 
 class lessAbsoluteValue {
@@ -111,12 +109,8 @@ SEXP read_bed_ends(SEXP filename) {
   vector< vector<int> > pos;
 
   // chromosome map
-  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
+  std::unordered_map<string, int> cind_map;
   vector<string> cnames;
-
-  typedef boost::tokenizer<boost::char_separator<char> >  tokType;
-  boost::char_separator<char> sep(" \t");
-
 
   ifstream bed_file(fname);
 
@@ -137,26 +131,23 @@ SEXP read_bed_ends(SEXP filename) {
 #endif
 
 
-    tokType tok(line, sep);
-    tokType::iterator sit=tok.begin();
-    if(sit!=tok.end()) {
-      string chr=*sit++; //chr=chr.substr(3,strlen(chr.c_str()));
-      string str_start=*sit++;
+    vector<string> tokens = split(line, " \t");
+    if(tokens.size() >= 3) {
+      string chr = tokens[0];
+      string str_start = tokens[1];
+      string str_end = tokens[2];
       int fstart=atoi(str_start.c_str());
-      string str_end=*sit++;
       int fend=atoi(str_end.c_str());
       int fpos=fstart;
-      if(sit!=tok.end()) {
-         string u0=*sit++;
-         string nfield=*sit++;
-         string strand=*sit++;
+      if(tokens.size() >= 6) {
+         string strand = tokens[5];
          if(strand=="-") { 
 	   fpos=-1*fend;
          }
       }
 
       // determine the chromosome index
-      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      std::unordered_map<string, int>::const_iterator li=cind_map.find(chr);
       int cind=-1;
       if(li==cind_map.end()) {
 	// register new chromosome
@@ -247,13 +238,8 @@ SEXP read_meland_old(SEXP filename) {
   vector< vector<int> > poslen; // length
 
   // chromosome map
-  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
+  std::unordered_map<string, int> cind_map;
   vector<string> cnames;
-  
-
-  typedef boost::tokenizer<boost::char_separator<char> >  tokType;
-  boost::char_separator<char> sep(" \t");
-
 
   ifstream bed_file(fname);
 
@@ -269,27 +255,23 @@ SEXP read_meland_old(SEXP filename) {
     Rprintf("line: %s\n",line.c_str());
 #endif
 
-
-    tokType tok(line, sep);
-    tokType::iterator sit=tok.begin();
-    if(sit!=tok.end()) {
-      sit++; sit++; 
-      string str_nm=*sit++;
+    vector<string> tokens = split(line, " \t");
+    if(tokens.size() >= 9) {
+      string str_nm = tokens[2];
       int nm=0;
       if(str_nm[0]=='U') {
 	nm=atoi((str_nm.c_str()+1));
       } else {
 	continue;
       }
-      sit++; sit++; sit++;
-      string str_len=*sit++;
+      string str_len = tokens[6];
       int len=atoi(str_len.c_str());
-      string chr=*sit++; chr=chr.substr(3,strlen(chr.c_str()));
-      string str_pos=*sit++;
+      string chr = tokens[7]; chr=chr.substr(3,strlen(chr.c_str()));
+      string str_pos = tokens[8];
       int fpos=atoi(str_pos.c_str());
       
       // determine the chromosome index
-      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      std::unordered_map<string, int>::const_iterator li=cind_map.find(chr);
       int cind=-1;
       if(li==cind_map.end()) {
 	// register new chromosome
@@ -425,19 +407,13 @@ SEXP read_meland_old(SEXP filename) {
   vector< vector<string> > tagnames;
 
   // chromosome map
-  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
+  std::unordered_map<string, int> cind_map;
   vector<string> cnames;
-  
 
-  typedef boost::tokenizer<boost::char_separator<char> >  tokType;
-  boost::char_separator<char> sep(" \t");
-
-  
   FILE *f=fopen(fname,"rb");
   if (!f)  { cout<<"can't open input file \""<<fname<<"\"\n"; }
   
   Rprintf("opened %s\n",fname);
-
 
   // read in bed line
   string line;
@@ -448,28 +424,24 @@ SEXP read_meland_old(SEXP filename) {
     Rprintf("line: %s\n",line.c_str());
 #endif
 
-
-    tokType tok(line, sep);
-    tokType::iterator sit=tok.begin();
-    if(sit!=tok.end()) {
-      string tagname=*sit++;
-      sit++; 
-      string str_nm=*sit++;
+    vector<string> tokens = split(line, " \t");
+    if(tokens.size() >= 9) {
+      string tagname = tokens[0];
+      string str_nm = tokens[2];
       int nm=0;
       if(str_nm[0]=='U') {
 	nm=atoi((str_nm.c_str()+1));
       } else {
 	continue;
       }
-      sit++; sit++; sit++;
-      string str_len=*sit++;
+      string str_len = tokens[6];
       int len=atoi(str_len.c_str());
-      string chr=*sit++; chr=chr.substr(3,strlen(chr.c_str()));
-      string str_pos=*sit++;
+      string chr = tokens[7]; chr=chr.substr(3,strlen(chr.c_str()));
+      string str_pos = tokens[8];
       int fpos=atoi(str_pos.c_str());
       
       // determine the chromosome index
-      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      std::unordered_map<string, int>::const_iterator li=cind_map.find(chr);
       int cind=-1;
       if(li==cind_map.end()) {
 	// register new chromosome
@@ -617,14 +589,10 @@ SEXP read_eland_mismatches(SEXP filename) {
   vector< vector<int> > mm2; // position of the second mismatch
 
   // chromosome map
-  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
+  std::unordered_map<string, int> cind_map;
   vector<string> cnames;
   
 
-  typedef boost::tokenizer<boost::char_separator<char> >  tokType;
-  boost::char_separator<char> sep("\t","",boost::keep_empty_tokens);
-
-  
   FILE *f=fopen(fname,"rb");
   if (!f)  { cout<<"can't open input file \""<<fname<<"\"\n"; }
 
@@ -639,53 +607,46 @@ SEXP read_eland_mismatches(SEXP filename) {
     Rprintf("line: %s\n",line.c_str());
 #endif
 
-
-    tokType tok(line, sep);
-    tokType::iterator sit=tok.begin();
-    if(sit!=tok.end()) {
-      sit++; 
-      string seq=*sit++; 
-      string str_nm=*sit++;
+    vector<string> tokens = split(line, "\t", true);
+    if(tokens.size() >= 9) {
+      string seq = tokens[1]; 
+      string str_nm = tokens[2];
       int nm=0;
       if(str_nm[0]=='U') {
 	nm=atoi((str_nm.c_str()+1));
       } else {
 	continue;
       }
-      sit++; sit++; sit++;
-      string chr=*sit++; 
+      string chr = tokens[6]; 
       // extract chromosome name from this
       int chrp=chr.find("chr");
       int pp=chr.find('.');
       chr=chr.substr(chrp+3,pp-chrp-3);
       
-      string str_pos=*sit++;
+      string str_pos = tokens[7];
       int fpos=atoi(str_pos.c_str());
 
-
-      string strand=*sit++;
+      string strand = tokens[8];
       int nstrand=0;
       if(strand=="R") { 
 	fpos=-1*(fpos+seq.size()-1);
 	nstrand=1;
       }
-
-      sit++;
       
       int nm1=0; int nm2=0;
-      if(sit!=tok.end()) {
-	string nms=*sit++;
+      if(tokens.size() >= 10) {
+	string nms = tokens[9];
 	nm1=atoi(nms.substr(0,nms.size()-1).c_str());
 	if(nstrand) { nm1=seq.size()-nm1+1; }
       }
-      if(sit!=tok.end()) {
-	string nms=*sit++;
+      if(tokens.size() >= 11) {
+	string nms = tokens[10];
 	nm2=atoi(nms.substr(0,nms.size()-1).c_str());
 	if(nstrand) { nm2=seq.size()-nm2+1; }
       }
       
       // determine the chromosome index
-      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      std::unordered_map<string, int>::const_iterator li=cind_map.find(chr);
       int cind=-1;
       if(li==cind_map.end()) {
 	// register new chromosome
@@ -810,14 +771,10 @@ SEXP read_eland_mismatches(SEXP filename) {
   vector< vector<string> > tagnames;
 
   // chromosome map
-  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
+  std::unordered_map<string, int> cind_map;
   vector<string> cnames;
   
 
-  typedef boost::tokenizer<boost::char_separator<char> >  tokType;
-  boost::char_separator<char> sep("\t","",boost::keep_empty_tokens);
-
-  
   FILE *f=fopen(fname,"rb");
   if (!f)  { cout<<"can't open input file \""<<fname<<"\"\n"; }
   else {
@@ -832,36 +789,33 @@ SEXP read_eland_mismatches(SEXP filename) {
     Rprintf("line: %s\n",line.c_str());
 #endif
 
-
-    tokType tok(line, sep);
-    tokType::iterator sit=tok.begin();
-    if(sit!=tok.end()) {
-      string tagname=*sit++;
-      string sequence=*sit++;
+    vector<string> tokens = split(line, "\t", true);
+    if(tokens.size() >= 9) {
+      string tagname = tokens[0];
+      string sequence = tokens[1];
       int len=sequence.size();
       // adjust probe length if eland length limit was specified
       if(eland_tag_length>0 && len>eland_tag_length) {
 	len=eland_tag_length;
       }
-      string str_nm=*sit++;
+      string str_nm = tokens[2];
       int nm=0;
       if(str_nm[0]=='U') {
 	nm=atoi((str_nm.c_str()+1));
       } else {
 	continue;
       }
-      sit++; sit++; sit++;
-      string chr=*sit++; 
-      string str_pos=*sit++;
+      string chr = tokens[6]; 
+      string str_pos = tokens[7];
       int fpos=atoi(str_pos.c_str());
-      string str_strand=*sit++;
+      string str_strand = tokens[8];
 
       if(str_strand[0]=='R') {
 	fpos=-1*(fpos+len-1);
       }
       
       // determine the chromosome index
-      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      std::unordered_map<string, int>::const_iterator li=cind_map.find(chr);
       int cind=-1;
       if(li==cind_map.end()) {
 	// register new chromosome
@@ -997,14 +951,10 @@ SEXP read_eland_mismatches(SEXP filename) {
   vector< vector<string> > tagnames;
 
   // chromosome map
-  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
+  std::unordered_map<string, int> cind_map;
   vector<string> cnames;
   
 
-  typedef boost::tokenizer<boost::char_separator<char> >  tokType;
-  boost::char_separator<char> sep("\t","",boost::keep_empty_tokens);
-
-  
   FILE *f=fopen(fname,"rb");
   if (!f)  { cout<<"can't open input file \""<<fname<<"\"\n"; }
   else {
@@ -1019,51 +969,29 @@ SEXP read_eland_mismatches(SEXP filename) {
     Rprintf("line: %s\n",line.c_str());
 #endif
 
-
-    tokType tok(line, sep);
-    tokType::iterator sit=tok.begin();
-    if(sit!=tok.end()) {
-      string machinename=*sit++;
-      string runnumber=*sit++;
-      string lanenumber=*sit++;
-      *sit++;
-      
-      string str_x=*sit++;
-      string str_y=*sit++;
-
-      string tagname=machinename+"."+runnumber+"."+lanenumber+"."+str_x+"."+str_y;
-
-      
-
-      *sit++;
-      *sit++;
-
-      
-      string sequence=*sit++;
-      *sit++;
-      
-      string chr=*sit++; 
-      string contig=*sit++; 
-      chr=chr+contig;
-      
+    vector<string> tokens = split(line, "\t", true);
+    if(tokens.size() >= 15) {
+      string machinename = tokens[0];
+      string runnumber = tokens[1];
+      string lanenumber = tokens[2];
+      string str_x = tokens[4];
+      string str_y = tokens[5];
+      string tagname = machinename+"."+runnumber+"."+lanenumber+"."+str_x+"."+str_y;
+      string sequence = tokens[8];
+      string chr = tokens[10] + tokens[11];
       int len=sequence.size();
       // adjust probe length if eland length limit was specified
       if(eland_tag_length>0 && len>eland_tag_length) {
 	len=eland_tag_length;
       }
-
-
-      
-      string str_pos=*sit++;
+      string str_pos = tokens[12];
       if(str_pos.size()<1) { continue; }
       int fpos=atoi(str_pos.c_str());
-      string str_strand=*sit++;
-
+      string str_strand = tokens[13];
       if(str_strand[0]=='R') {
 	fpos=-1*(fpos+len-1);
       }
-
-      string str_nm=*sit++;
+      string str_nm = tokens[14];
       // count non-digit characters
       int nm=0;
       for(int i=0;i<str_nm.size();i++) {
@@ -1071,7 +999,7 @@ SEXP read_eland_mismatches(SEXP filename) {
       }
       
       // determine the chromosome index
-      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      std::unordered_map<string, int>::const_iterator li=cind_map.find(chr);
       int cind=-1;
       if(li==cind_map.end()) {
 	// register new chromosome
@@ -1206,16 +1134,10 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
   vector< vector<string> > tagnames;
 
   // chromosome map
-  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
+  std::unordered_map<string, int> cind_map;
   vector<string> cnames;
   
 
-  typedef boost::tokenizer<boost::char_separator<char> >  tokType;
-  boost::char_separator<char> sep(" \t","");
-  boost::char_separator<char> comsep(",","",boost::keep_empty_tokens);
-  boost::char_separator<char> colsep(":","",boost::keep_empty_tokens);
-  
-  
   FILE *f=fopen(fname,"rb");
   if (!f)  { cout<<"can't open input file \""<<fname<<"\"\n"; }
   else {
@@ -1236,12 +1158,11 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
     Rprintf("line %d: %s\n",nline,line.c_str());
 #endif
 
-    tokType tok(line, sep);
-    tokType::iterator sit=tok.begin();
-    if(sit!=tok.end()) {
-      string tagname=*sit++;
-      string sequence=*sit++;
-      string mspec=*sit++;
+    vector<string> tokens = split(line, " \t");
+    if(tokens.size() >= 4) {
+      string tagname = tokens[0];
+      string sequence = tokens[1];
+      string mspec = tokens[2];
       // parse out match spec
       
       if(mspec=="NM" || mspec=="QC") { continue; }
@@ -1249,9 +1170,9 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
       Rprintf("parsing out spec \"%s\" : ",mspec.c_str());
 #endif
       
-      tokType stok(mspec, colsep);
-      tokType::iterator ssit=stok.begin();
-      string str_nm0=*ssit++;
+      vector<string> stok = split(mspec, ":", true);
+      if(stok.empty()) { continue; }
+      string str_nm0 = stok[0];
       
       int nm=0;
       int nm0=atoi(str_nm0.c_str());
@@ -1262,7 +1183,8 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
 	continue; 
       }
       if(nm0==0) {
-	string str_nm1=*ssit++;
+	if(stok.size() < 2) { continue; }
+	string str_nm1 = stok[1];
 	int nm1=atoi(str_nm1.c_str());
 	if(nm1>1) { 
 #ifdef DEBUG  
@@ -1271,7 +1193,8 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
 	  continue; 
 	}
 	if(nm1==0) {
-	  string str_nm2=*ssit++;
+	  if(stok.size() < 3) { continue; }
+	  string str_nm2 = stok[2];
 	  int nm2=atoi(str_nm2.c_str());
 	  if(nm2>1) { 
 #ifdef DEBUG  
@@ -1289,13 +1212,13 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
       Rprintf("accepted (nm=%d)\n",nm);
 #endif
       int npos=0;
-      string mpos=*sit++;
+      string mpos = tokens[3];
       vector<string> mposc;
       vector<int> mposp;
-      tokType ptok(mpos, comsep);
+      vector<string> ptok = split(mpos, ",", true);
       string prevchr;
-      for(tokType::iterator psit=ptok.begin();psit!=ptok.end();psit++) {
-	string cpos=*psit;
+      for(size_t psi = 0; psi < ptok.size(); psi++) {
+	string cpos = ptok[psi];
 	npos++;
 	int strand=1;
 	if(cpos.size()<5) {
@@ -1359,7 +1282,7 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
       }
       
       // determine the chromosome index
-      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      std::unordered_map<string, int>::const_iterator li=cind_map.find(chr);
       int cind=-1;
       if(li==cind_map.end()) {
 	// register new chromosome
@@ -1493,15 +1416,10 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
   vector< vector<string> > tagnames;
 
   // chromosome map
-  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
+  std::unordered_map<string, int> cind_map;
   vector<string> cnames;
   
 
-  typedef boost::tokenizer<boost::char_separator<char> >  tokType;
-  boost::char_separator<char> sep("\t","",boost::keep_empty_tokens);
-  boost::char_separator<char> sep2(",");
-
-  
   FILE *f=fopen(fname,"rb");
   if (!f)  { cout<<"can't open input file \""<<fname<<"\"\n"; 
   } else {
@@ -1532,20 +1450,15 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
     Rprintf("line: %s\n",line.c_str());
 #endif
 
-
-    tokType tok(line, sep);
-    tokType::iterator sit=tok.begin();
-    if(sit!=tok.end()) {
-      string tagname=*sit++;
-      string str_strand=*sit++;
-      string chr=*sit++; 
-
-      string str_pos=*sit++;
+    vector<string> tokens = split(line, "\t", true);
+    if(tokens.size() >= 8) {
+      string tagname = tokens[0];
+      string str_strand = tokens[1];
+      string chr = tokens[2];
+      string str_pos = tokens[3];
       int fpos=atoi(str_pos.c_str());
-
-      string sequence=*sit++;
-      sit++; sit++;
-      string mm=*sit++;
+      string sequence = tokens[4];
+      string mm = tokens[7];
 
       int len=sequence.size();
       if(str_strand[0]=='-') {
@@ -1568,7 +1481,7 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
 
       
       // determine the chromosome index
-      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      std::unordered_map<string, int>::const_iterator li=cind_map.find(chr);
       int cind=-1;
       if(li==cind_map.end()) {
 	// register new chromosome
@@ -1707,15 +1620,10 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
   vector< vector<string> > tagnames;
 
   // chromosome map
-  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
+  std::unordered_map<string, int> cind_map;
   vector<string> cnames;
   
 
-  typedef boost::tokenizer<boost::char_separator<char> >  tokType;
-  boost::char_separator<char> sep("\t","",boost::keep_empty_tokens);
-  boost::char_separator<char> sep2(",");
-
-  
   FILE *f=fopen(fname,"rb");
   if (!f)  { cout<<"can't open input file \""<<fname<<"\"\n"; 
   } else {
@@ -1756,24 +1664,19 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
       continue; 
     }
 
-    tokType tok(line, sep);
-    tokType::iterator sit=tok.begin();
-    if(sit!=tok.end()) {
-      string chr=*sit++; 
-      string tagname=*sit++;
-      string str_startpos=*sit++;
-      string str_endpos=*sit++;
-
-      string str_tstart=*sit++;
-      string str_tend=*sit++;
+    vector<string> tokens = split(line, "\t", true);
+    if(tokens.size() >= 12) {
+      string chr = tokens[0];
+      string tagname = tokens[1];
+      string str_startpos = tokens[2];
+      string str_endpos = tokens[3];
+      string str_tstart = tokens[4];
+      string str_tend = tokens[5];
       int len=atoi(str_tend.c_str())-atoi(str_tstart.c_str());
-
-      sit++; sit++;
-      string str_ndel=*sit++;
-      string str_nins=*sit++;
-      string str_nsub=*sit++;
-      
-      string str_strand=*sit++;
+      string str_ndel = tokens[8];
+      string str_nins = tokens[9];
+      string str_nsub = tokens[10];
+      string str_strand = tokens[11];
       int fpos;
       if(str_strand[0]=='-') {
 	fpos=-1*atoi(str_endpos.c_str()); 
@@ -1785,7 +1688,7 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
       int nm=atoi(str_ndel.c_str())+atoi(str_nins.c_str())+atoi(str_nsub.c_str());
       
       // determine the chromosome index
-      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      std::unordered_map<string, int>::const_iterator li=cind_map.find(chr);
       int cind=-1;
       if(li==cind_map.end()) {
 	// register new chromosome
@@ -1934,14 +1837,10 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
   vector< vector<string> > tagnames;
 
   // chromosome map
-  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
+  std::unordered_map<string, int> cind_map;
   vector<string> cnames;
   
 
-  typedef boost::tokenizer<boost::char_separator<char> >  tokType;
-  boost::char_separator<char> sep("\t","",boost::keep_empty_tokens);
-
-  
   FILE *f=fopen(fname,"rb");
   if (!f)  { cout<<"can't open input file \""<<fname<<"\"\n"; }
   else {
@@ -1956,19 +1855,15 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
     Rprintf("line: %s\n",line.c_str());
 #endif
 
-
-    tokType tok(line, sep);
-    tokType::iterator sit=tok.begin();
-    if(sit!=tok.end()) {
-      string tagname=*sit++;
-      string chr=*sit++;
-      string str_pos=*sit++;
+    vector<string> tokens = split(line, "\t", true);
+    if(tokens.size() >= 12) {
+      string tagname = tokens[0];
+      string chr = tokens[1];
+      string str_pos = tokens[2];
       int fpos=atoi(str_pos.c_str());
-      string str_strand=*sit++;
-      sit++; sit++; sit++; sit++; sit++; 
-      string str_nm=*sit++;
-      sit++; sit++; sit++; 
-      string str_len=*sit++;
+      string str_strand = tokens[3];
+      string str_nm = tokens[10];
+      string str_len = tokens[11];
       int nm=atoi(str_nm.c_str());
       int len=atoi(str_len.c_str());
 
@@ -1977,7 +1872,7 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
       }
 
       // determine the chromosome index
-      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      std::unordered_map<string, int>::const_iterator li=cind_map.find(chr);
       int cind=-1;
       if(li==cind_map.end()) {
 	// register new chromosome
@@ -2112,14 +2007,9 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
   vector< vector<int> > posnm; // number of mismatches
 
   // chromosome map
-  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
+  std::unordered_map<string, int> cind_map;
   vector<string> cnames;
-  
 
-  typedef boost::tokenizer<boost::char_separator<char> >  tokType;
-  boost::char_separator<char> sep(" \t");
-
-  
   FILE *f=fopen(fname,"rb");
   if (!f)  { cout<<"can't open input file \""<<fname<<"\"\n"; }
   else {
@@ -2134,16 +2024,13 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
     Rprintf("line: %s\n",line.c_str());
 #endif
 
-
-    tokType tok(line, sep);
-    tokType::iterator sit=tok.begin();
-    if(sit!=tok.end()) {
-      string chr=*sit++;
-      string str_spos=*sit++;
-      string str_epos=*sit++;
-      sit++; 
-      string str_qual=*sit++;
-      string str_strand=*sit;
+    vector<string> tokens = split(line, " \t");
+    if(tokens.size() >= 6) {
+      string chr = tokens[0];
+      string str_spos = tokens[1];
+      string str_epos = tokens[2];
+      string str_qual = tokens[4];
+      string str_strand = tokens[5];
 
       int fpos;
       if(str_strand[0]=='+') {
@@ -2154,7 +2041,7 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
       int nm=atoi(str_qual.c_str());
       
       // determine the chromosome index
-      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      std::unordered_map<string, int>::const_iterator li=cind_map.find(chr);
       int cind=-1;
       if(li==cind_map.end()) {
 	// register new chromosome
@@ -2263,16 +2150,8 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
   vector< vector<int> > posnm; // number of mismatches
 
   // chromosome map
-  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
+  std::unordered_map<string, int> cind_map;
   vector<string> cnames;
-  
-
-  typedef boost::tokenizer<boost::char_separator<char> >  tokType;
-  boost::char_separator<char> sep(" \t");
-
-  
-
-
 
   FILE *f=fopen(fname,"rb");
   if (!f)  { cout<<"can't open input file \""<<fname<<"\"\n"; }
@@ -2290,7 +2169,6 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
     }
 #endif
 
-
   Rprintf("opened %s\n",fname);
 
   // read in bed line
@@ -2306,23 +2184,20 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
     Rprintf("line: %s\n",line.c_str());
 #endif
 
-
-    tokType tok(line, sep);
-    tokType::iterator sit=tok.begin();
-    if(sit!=tok.end()) {
-      string chr=*sit++;
-      string str_spos=*sit++;
+    vector<string> tokens = split(line, " \t");
+    if(tokens.size() >= 2) {
+      string chr = tokens[0];
+      string str_spos = tokens[1];
       int nm=0;
-      if(sit!=tok.end()) {
-	string str_mm=*sit;
+      if(tokens.size() >= 3) {
+	string str_mm = tokens[2];
 	nm=atoi(str_mm.c_str());
       }
-      
-      int fpos=atoi(str_spos.c_str());;
+      int fpos=atoi(str_spos.c_str());
       
       
       // determine the chromosome index
-      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      std::unordered_map<string, int>::const_iterator li=cind_map.find(chr);
       int cind=-1;
       if(li==cind_map.end()) {
 	// register new chromosome
@@ -2434,16 +2309,8 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
   vector< vector<int> > poslen; // length of the match
 
   // chromosome map
-  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
+  std::unordered_map<string, int> cind_map;
   vector<string> cnames;
-  
-
-  typedef boost::tokenizer<boost::char_separator<char> >  tokType;
-  boost::char_separator<char> sep(" \t");
-
-  
-
-
 
   FILE *f=fopen(fname,"rb");
   if (!f)  { cout<<"can't open input file \""<<fname<<"\"\n"; }
@@ -2461,7 +2328,6 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
     }
 #endif
 
-
   Rprintf("opened %s\n",fname);
 
   // read in bed line
@@ -2477,18 +2343,14 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
     Rprintf("line: %s\n",line.c_str());
 #endif
 
-
-    tokType tok(line, sep);
-    tokType::iterator sit=tok.begin();
-    if(sit!=tok.end()) {
-      string query=*sit++;
+    vector<string> tokens = split(line, " \t");
+    if(tokens.size() >= 11) {
+      string query = tokens[0];
       if(query!="QUERY") { continue; }
-      *sit++; *sit++; *sit++; *sit++; 
-      string str_strand=*sit++;
-      string chr=*sit++;
-      string str_startpos=*sit++;
-      string str_endpos=*sit++;
-      
+      string str_strand = tokens[5];
+      string chr = tokens[6];
+      string str_startpos = tokens[7];
+      string str_endpos = tokens[8];
       int fpos;
       if(str_strand[0]=='1') {
 	fpos=-1*atoi(str_endpos.c_str()); 
@@ -2498,20 +2360,22 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
 #ifdef DEBUG  
       Rprintf("chr=%s, fpos=%d\n",chr.c_str(),fpos);
 #endif
-      *sit++;
-      string str_nblocks=*sit++;
+      string str_nblocks = tokens[10];
       int nblocks=atoi(str_nblocks.c_str());
 #ifdef DEBUG  
       Rprintf("nblocks=%d\n",nblocks);
 #endif
       // tally up the read length and the number of mismatches for all blocks
       int len=0; int nm=0;
+      int base_idx = 11;
+      if(tokens.size() < (size_t)(base_idx + nblocks * 3)) { continue; }
       for(int i=0;i<nblocks;i++) {
-	string str_sgs=*sit++;
+	int idx = base_idx + i * 3;
+	string str_sgs = tokens[idx];
 	int sgs=atoi(str_sgs.c_str());
-	string str_slen=*sit++;
+	string str_slen = tokens[idx+1];
 	int slen=atoi(str_slen.c_str());
-	string str_snm=*sit++;
+	string str_snm = tokens[idx+2];
 	int snm=atoi(str_snm.c_str());
 #ifdef DEBUG  
 	Rprintf("sgs=%d, slen=%d, snm=%d\n",sgs,slen,snm);
@@ -2523,7 +2387,7 @@ SEXP read_eland_multi(SEXP filename,SEXP read_tag_names_R,SEXP eland_tag_length_
       
       
       // determine the chromosome index
-      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      std::unordered_map<string, int>::const_iterator li=cind_map.find(chr);
       int cind=-1;
       if(li==cind_map.end()) {
 	// register new chromosome
