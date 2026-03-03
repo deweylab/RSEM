@@ -8,10 +8,25 @@
 #include <set>
 #include <random>
 
+#include "boost_compat.h"
+
 typedef unsigned int seedType;
 typedef std::mt19937 engine_type;
-typedef std::uniform_real_distribution<double> uniform_01_dist;
-typedef std::gamma_distribution<> gamma_dist;
+
+// Boost-compatible distributions (match Boost.Random for reproducible results)
+struct uniform_01_dist {
+	typedef double result_type;
+	template<typename Engine>
+	result_type operator()(Engine& eng) const { return boost_uniform_01(eng); }
+};
+
+struct gamma_dist {
+	typedef double result_type;
+	double alpha_, beta_;
+	explicit gamma_dist(double alpha = 1.0, double beta = 1.0) : alpha_(alpha), beta_(beta) {}
+	template<typename Engine>
+	result_type operator()(Engine& eng) const { return boost_gamma(eng, alpha_, beta_); }
+};
 
 // Wrapper to provide variate_generator-like interface (callable with operator())
 template<typename Engine, typename Dist>

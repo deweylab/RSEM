@@ -4,10 +4,12 @@
 #include <cassert>
 #include <random>
 
+#include "boost_compat.h"
+
 class simul {
 public:
 
- simul(unsigned int seed) : engine(seed), dist(0.0, 1.0) {
+ simul(unsigned int seed) : engine(seed) {
   }
 
 	// interval : [,)
@@ -33,12 +35,10 @@ public:
 	  return l;
 	}
 
-	double random() { return dist(engine); }
+	double random() { return boost_uniform_01(engine); }
 
 private:
 	std::mt19937 engine;
-	std::uniform_real_distribution<double> dist;
 };
 
 #endif /* SIMUL_H_ */
-
