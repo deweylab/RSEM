@@ -174,3 +174,102 @@ clean :
 	cd $(SAMTOOLS) && $(MAKE) clean-all
 	cd EBSeq && $(MAKE) clean
 	cd pRSEM && $(MAKE) clean
+
+# ===================================================================
+# ---- Test targets -------------------------------------------------
+# ===================================================================
+
+TEST_TARGETS := \
+	test-prepare-reference \
+	test-calculate-expression \
+	test-simulate-reads
+
+.PHONY: test test-all generate-gold $(TEST_TARGETS)
+
+# Default: fail fast. Depends on 'all' to ensure binaries are built first.
+test: all $(TEST_TARGETS)
+
+# CI / full signal: keep going
+test-all: all
+	$(MAKE) -k test
+
+# Generate gold standard: run pipeline and copy output to tests/gold
+generate-gold: all
+	@echo "==> Generating gold standard (TEST_THREADS=$(TEST_THREADS), TEST_SEED=$(TEST_SEED))"
+	rm -rf $(TEST_OUTPUT) $(GOLD)
+	mkdir -p $(TEST_OUTPUT)/reference $(TEST_OUTPUT)/expression $(GOLD)/reference $(GOLD)/expression/my_sample.stat $(GOLD)/simulated
+	./rsem-prepare-reference --gtf $(TEST_GTF) --bowtie2 -p $(TEST_THREADS) $(TEST_GENOME) $(TEST_OUTPUT)/reference/$(REF_NAME)
+	cp $(TEST_OUTPUT)/reference/$(REF_NAME).grp $(TEST_OUTPUT)/reference/$(REF_NAME).ti $(GOLD)/reference/
+	./rsem-calculate-expression --bowtie2 -p $(TEST_THREADS) --seed $(TEST_SEED) $(TEST_READS) $(TEST_OUTPUT)/reference/$(REF_NAME) $(TEST_OUTPUT)/expression/$(SAMPLE_NAME)
+	cp $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).genes.results $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).isoforms.results $(GOLD)/expression/
+	cp $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta $(GOLD)/expression/my_sample.stat/
+	@theta0=$$(awk 'NR==3 {print $$1}' $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta) && \
+	./rsem-simulate-reads $(TEST_OUTPUT)/reference/$(REF_NAME) $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).isoforms.results "$$theta0" 1000 $(TEST_OUTPUT)/simulated/$(SAMPLE_NAME).simulated --seed $(TEST_SEED) && \
+	cp $(TEST_OUTPUT)/simulated/$(SAMPLE_NAME).simulated.fq $(TEST_OUTPUT)/simulated/$(SAMPLE_NAME).simulated.sim.isoforms.results $(TEST_OUTPUT)/simulated/$(SAMPLE_NAME).simulated.sim.genes.results $(GOLD)/simulated/
+	@echo "==> Gold standard generated in $(GOLD)"
+
+# ---- Paths --------------------------------------------------------
+
+TEST_DATA   := tests/data
+TEST_OUTPUT := tests/output
+GOLD        := tests/gold
+REF_NAME    := my_ref
+SAMPLE_NAME := my_sample
+
+# Reproducibility: same thread count and seed for all test commands
+TEST_THREADS := 4
+TEST_SEED    := 0
+
+# Input files (SARS-CoV-2 reference data)
+TEST_GENOME  := $(TEST_DATA)/sarscov2.fasta
+TEST_GTF     := $(TEST_DATA)/sarscov2.gtf
+TEST_READS   := $(TEST_DATA)/reads.fastq
+
+# ---- Individual tests --------------------------------------------
+
+test-prepare-reference:
+	@echo "==> Testing rsem-prepare-reference"
+	rm -rf $(TEST_OUTPUT)/reference
+	mkdir -p $(TEST_OUTPUT)/reference
+	./rsem-prepare-reference \
+		--gtf $(TEST_GTF) \
+		--bowtie2 \
+		-p $(TEST_THREADS) \
+		$(TEST_GENOME) \
+		$(TEST_OUTPUT)/reference/$(REF_NAME)
+	diff $(TEST_OUTPUT)/reference/$(REF_NAME).grp $(GOLD)/reference/$(REF_NAME).grp
+	diff $(TEST_OUTPUT)/reference/$(REF_NAME).ti $(GOLD)/reference/$(REF_NAME).ti
+
+test-calculate-expression: test-prepare-reference
+	@echo "==> Testing rsem-calculate-expression"
+	rm -rf $(TEST_OUTPUT)/expression
+	mkdir -p $(TEST_OUTPUT)/expression
+	./rsem-calculate-expression \
+		--bowtie2 \
+		-p $(TEST_THREADS) \
+		--seed $(TEST_SEED) \
+		$(TEST_READS) \
+		$(TEST_OUTPUT)/reference/$(REF_NAME) \
+		$(TEST_OUTPUT)/expression/$(SAMPLE_NAME)
+	diff $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).genes.results $(GOLD)/expression/$(SAMPLE_NAME).genes.results
+	diff $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).isoforms.results $(GOLD)/expression/$(SAMPLE_NAME).isoforms.results
+	diff $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt $(GOLD)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt
+	diff $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model $(GOLD)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model
+	diff $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta $(GOLD)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta
+
+test-simulate-reads: test-calculate-expression
+	@echo "==> Testing rsem-simulate-reads"
+	rm -rf $(TEST_OUTPUT)/simulated
+	mkdir -p $(TEST_OUTPUT)/simulated
+	@theta0=$$(awk 'NR==3 {print $$1}' $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta) && \
+	./rsem-simulate-reads \
+		$(TEST_OUTPUT)/reference/$(REF_NAME) \
+		$(TEST_OUTPUT)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model \
+		$(TEST_OUTPUT)/expression/$(SAMPLE_NAME).isoforms.results \
+		$$theta0 \
+		1000 \
+		$(TEST_OUTPUT)/simulated/$(SAMPLE_NAME).simulated \
+		--seed $(TEST_SEED)
+	diff $(TEST_OUTPUT)/simulated/$(SAMPLE_NAME).simulated.fq $(GOLD)/simulated/$(SAMPLE_NAME).simulated.fq
+	diff $(TEST_OUTPUT)/simulated/$(SAMPLE_NAME).simulated.sim.isoforms.results $(GOLD)/simulated/$(SAMPLE_NAME).simulated.sim.isoforms.results
+	diff $(TEST_OUTPUT)/simulated/$(SAMPLE_NAME).simulated.sim.genes.results $(GOLD)/simulated/$(SAMPLE_NAME).simulated.sim.genes.results
