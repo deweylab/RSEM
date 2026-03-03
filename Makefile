@@ -197,7 +197,7 @@ test-all: all
 generate-gold: all
 	@echo "==> Generating gold standard (TEST_THREADS=$(TEST_THREADS), TEST_SEED=$(TEST_SEED))"
 	rm -rf $(TEST_OUTPUT) $(GOLD)
-	mkdir -p $(TEST_OUTPUT)/reference $(TEST_OUTPUT)/expression $(GOLD)/reference $(GOLD)/expression/my_sample.stat $(GOLD)/simulated
+	mkdir -p $(TEST_OUTPUT)/reference $(TEST_OUTPUT)/expression $(TEST_OUTPUT)/simulated $(GOLD)/reference $(GOLD)/expression/my_sample.stat $(GOLD)/simulated
 	./rsem-prepare-reference --gtf $(TEST_GTF) --bowtie2 -p $(TEST_THREADS) $(TEST_GENOME) $(TEST_OUTPUT)/reference/$(REF_NAME)
 	cp $(TEST_OUTPUT)/reference/$(REF_NAME).grp $(TEST_OUTPUT)/reference/$(REF_NAME).ti $(GOLD)/reference/
 	./rsem-calculate-expression --bowtie2 -p $(TEST_THREADS) --seed $(TEST_SEED) $(TEST_READS) $(TEST_OUTPUT)/reference/$(REF_NAME) $(TEST_OUTPUT)/expression/$(SAMPLE_NAME)
