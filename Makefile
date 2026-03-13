@@ -182,9 +182,11 @@ clean :
 TEST_TARGETS := \
 	test-prepare-reference \
 	test-calculate-expression \
+	test-calculate-expression-ci \
 	test-simulate-reads
 
-.PHONY: test test-all generate-gold $(TEST_TARGETS)
+.PHONY: test test-all generate-gold generate-gold-ci $(TEST_TARGETS)
+# generate-gold runs both; generate-gold-ci alone requires gold reference from prior generate-gold
 
 # Default: fail fast. Depends on 'all' to ensure binaries are built first.
 test: all $(TEST_TARGETS)
@@ -206,7 +208,20 @@ generate-gold: all
 	@theta0=$$(awk 'NR==3 {print $$1}' $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta) && \
 	./rsem-simulate-reads $(TEST_OUTPUT)/reference/$(REF_NAME) $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).isoforms.results "$$theta0" 1000 $(TEST_OUTPUT)/simulated/$(SAMPLE_NAME).simulated --seed $(TEST_SEED) && \
 	cp $(TEST_OUTPUT)/simulated/$(SAMPLE_NAME).simulated.fq $(TEST_OUTPUT)/simulated/$(SAMPLE_NAME).simulated.sim.isoforms.results $(TEST_OUTPUT)/simulated/$(SAMPLE_NAME).simulated.sim.genes.results $(GOLD)/simulated/
+	@$(MAKE) generate-gold-ci
 	@echo "==> Gold standard generated in $(GOLD)"
+
+# Generate gold for credibility intervals (called by generate-gold; or run alone after generate-gold)
+generate-gold-ci: all
+	@echo "==> Generating gold standard for calc-ci (TEST_THREADS=$(TEST_THREADS), TEST_SEED=$(TEST_SEED))"
+	@test -d $(GOLD)/reference || { echo "Run 'make generate-gold' first to create reference"; exit 1; }
+	rm -rf $(TEST_OUTPUT)/expression_ci $(GOLD)/expression_ci
+	mkdir -p $(TEST_OUTPUT)/expression_ci $(GOLD)/expression_ci $(GOLD)/expression_ci/$(SAMPLE_NAME_CI).stat
+	./rsem-calculate-expression --bowtie2 -p $(TEST_THREADS) --seed $(TEST_SEED) --calc-ci \
+		$(TEST_READS) $(GOLD)/reference/$(REF_NAME) $(TEST_OUTPUT)/expression_ci/$(SAMPLE_NAME_CI)
+	cp $(TEST_OUTPUT)/expression_ci/$(SAMPLE_NAME_CI).genes.results $(TEST_OUTPUT)/expression_ci/$(SAMPLE_NAME_CI).isoforms.results $(GOLD)/expression_ci/
+	cp $(TEST_OUTPUT)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).cnt $(TEST_OUTPUT)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).model $(TEST_OUTPUT)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).theta $(GOLD)/expression_ci/$(SAMPLE_NAME_CI).stat/
+	@echo "==> Gold standard for calc-ci generated in $(GOLD)/expression_ci"
 
 # ---- Paths --------------------------------------------------------
 
@@ -215,9 +230,10 @@ TEST_OUTPUT := tests/output
 GOLD        := tests/gold
 REF_NAME    := my_ref
 SAMPLE_NAME := my_sample
+SAMPLE_NAME_CI := my_sample_ci
 
-# Reproducibility: same thread count and seed for all test commands
-TEST_THREADS := 4
+# Reproducibility: same thread count and seed for all test commands (single thread for deterministic Gibbs/calcCI)
+TEST_THREADS := 1
 TEST_SEED    := 0
 
 # Input files (SARS-CoV-2 reference data)
@@ -258,6 +274,24 @@ test-calculate-expression: test-prepare-reference
 	diff $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt $(GOLD)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt
 	diff $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model $(GOLD)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model
 	diff $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta $(GOLD)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta
+
+test-calculate-expression-ci: test-prepare-reference
+	@echo "==> Testing rsem-calculate-expression with --calc-ci"
+	rm -rf $(TEST_OUTPUT)/expression_ci
+	mkdir -p $(TEST_OUTPUT)/expression_ci
+	./rsem-calculate-expression \
+		--bowtie2 \
+		-p $(TEST_THREADS) \
+		--seed $(TEST_SEED) \
+		--calc-ci \
+		$(TEST_READS) \
+		$(GOLD)/reference/$(REF_NAME) \
+		$(TEST_OUTPUT)/expression_ci/$(SAMPLE_NAME_CI)
+	diff $(TEST_OUTPUT)/expression_ci/$(SAMPLE_NAME_CI).genes.results $(GOLD)/expression_ci/$(SAMPLE_NAME_CI).genes.results
+	diff $(TEST_OUTPUT)/expression_ci/$(SAMPLE_NAME_CI).isoforms.results $(GOLD)/expression_ci/$(SAMPLE_NAME_CI).isoforms.results
+	diff $(TEST_OUTPUT)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).cnt $(GOLD)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).cnt
+	diff $(TEST_OUTPUT)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).model $(GOLD)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).model
+	diff $(TEST_OUTPUT)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).theta $(GOLD)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).theta
 
 test-simulate-reads: test-calculate-expression
 	@echo "==> Testing rsem-simulate-reads"
