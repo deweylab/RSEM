@@ -199,7 +199,7 @@ generate-gold: all
 	rm -rf $(TEST_OUTPUT) $(GOLD)
 	mkdir -p $(TEST_OUTPUT)/reference $(TEST_OUTPUT)/expression $(TEST_OUTPUT)/simulated $(GOLD)/reference $(GOLD)/expression/my_sample.stat $(GOLD)/simulated
 	./rsem-prepare-reference --gtf $(TEST_GTF) --bowtie2 -p $(TEST_THREADS) $(TEST_GENOME) $(TEST_OUTPUT)/reference/$(REF_NAME)
-	cp $(TEST_OUTPUT)/reference/$(REF_NAME).grp $(TEST_OUTPUT)/reference/$(REF_NAME).ti $(GOLD)/reference/
+	cp $(TEST_OUTPUT)/reference/$(REF_NAME).* $(GOLD)/reference/
 	./rsem-calculate-expression --bowtie2 -p $(TEST_THREADS) --seed $(TEST_SEED) $(TEST_READS) $(TEST_OUTPUT)/reference/$(REF_NAME) $(TEST_OUTPUT)/expression/$(SAMPLE_NAME)
 	cp $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).genes.results $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).isoforms.results $(GOLD)/expression/
 	cp $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta $(GOLD)/expression/my_sample.stat/
@@ -237,8 +237,10 @@ test-prepare-reference:
 		-p $(TEST_THREADS) \
 		$(TEST_GENOME) \
 		$(TEST_OUTPUT)/reference/$(REF_NAME)
-	diff $(TEST_OUTPUT)/reference/$(REF_NAME).grp $(GOLD)/reference/$(REF_NAME).grp
-	diff $(TEST_OUTPUT)/reference/$(REF_NAME).ti $(GOLD)/reference/$(REF_NAME).ti
+	@for f in $(GOLD)/reference/$(REF_NAME).*; do \
+		bf=$$(basename $$f); \
+		diff $(TEST_OUTPUT)/reference/$$bf $$f; \
+	done
 
 test-calculate-expression: test-prepare-reference
 	@echo "==> Testing rsem-calculate-expression"
