@@ -251,7 +251,7 @@ test-calculate-expression: test-prepare-reference
 		-p $(TEST_THREADS) \
 		--seed $(TEST_SEED) \
 		$(TEST_READS) \
-		$(TEST_OUTPUT)/reference/$(REF_NAME) \
+		$(GOLD)/reference/$(REF_NAME) \
 		$(TEST_OUTPUT)/expression/$(SAMPLE_NAME)
 	diff $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).genes.results $(GOLD)/expression/$(SAMPLE_NAME).genes.results
 	diff $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).isoforms.results $(GOLD)/expression/$(SAMPLE_NAME).isoforms.results
