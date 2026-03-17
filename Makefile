@@ -185,8 +185,7 @@ TEST_TARGETS := \
 	test-calculate-expression-ci \
 	test-simulate-reads
 
-.PHONY: test test-all generate-gold generate-gold-ci $(TEST_TARGETS)
-# generate-gold runs both; generate-gold-ci alone requires gold reference from prior generate-gold
+.PHONY: test test-all generate-gold $(TEST_TARGETS)
 
 # Default: fail fast. Depends on 'all' to ensure binaries are built first.
 test: all $(TEST_TARGETS)
@@ -199,7 +198,7 @@ test-all: all
 generate-gold: all
 	@echo "==> Generating gold standard (TEST_THREADS=$(TEST_THREADS), TEST_SEED=$(TEST_SEED))"
 	rm -rf $(TEST_OUTPUT) $(GOLD)
-	mkdir -p $(TEST_OUTPUT)/reference $(TEST_OUTPUT)/expression $(TEST_OUTPUT)/simulated $(GOLD)/reference $(GOLD)/expression/my_sample.stat $(GOLD)/simulated
+	mkdir -p $(TEST_OUTPUT)/reference $(TEST_OUTPUT)/expression $(TEST_OUTPUT)/simulated $(TEST_OUTPUT)/expression_ci $(GOLD)/reference $(GOLD)/expression/my_sample.stat $(GOLD)/simulated $(GOLD)/expression_ci/$(SAMPLE_NAME_CI).stat
 	./rsem-prepare-reference --gtf $(TEST_GTF) --bowtie2 -p $(TEST_THREADS) $(TEST_GENOME) $(TEST_OUTPUT)/reference/$(REF_NAME)
 	cp $(TEST_OUTPUT)/reference/$(REF_NAME).* $(GOLD)/reference/
 	./rsem-calculate-expression --bowtie2 -p $(TEST_THREADS) --seed $(TEST_SEED) $(TEST_READS) $(TEST_OUTPUT)/reference/$(REF_NAME) $(TEST_OUTPUT)/expression/$(SAMPLE_NAME)
@@ -208,20 +207,11 @@ generate-gold: all
 	@theta0=$$(awk 'NR==3 {print $$1}' $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta) && \
 	./rsem-simulate-reads $(TEST_OUTPUT)/reference/$(REF_NAME) $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).isoforms.results "$$theta0" 1000 $(TEST_OUTPUT)/simulated/$(SAMPLE_NAME).simulated --seed $(TEST_SEED) && \
 	cp $(TEST_OUTPUT)/simulated/$(SAMPLE_NAME).simulated.fq $(TEST_OUTPUT)/simulated/$(SAMPLE_NAME).simulated.sim.isoforms.results $(TEST_OUTPUT)/simulated/$(SAMPLE_NAME).simulated.sim.genes.results $(GOLD)/simulated/
-	@$(MAKE) generate-gold-ci
-	@echo "==> Gold standard generated in $(GOLD)"
-
-# Generate gold for credibility intervals (called by generate-gold; or run alone after generate-gold)
-generate-gold-ci: all
-	@echo "==> Generating gold standard for calc-ci (TEST_THREADS=$(TEST_THREADS), TEST_SEED=$(TEST_SEED))"
-	@test -d $(GOLD)/reference || { echo "Run 'make generate-gold' first to create reference"; exit 1; }
-	rm -rf $(TEST_OUTPUT)/expression_ci $(GOLD)/expression_ci
-	mkdir -p $(TEST_OUTPUT)/expression_ci $(GOLD)/expression_ci $(GOLD)/expression_ci/$(SAMPLE_NAME_CI).stat
 	./rsem-calculate-expression --bowtie2 -p $(TEST_THREADS) --seed $(TEST_SEED) --calc-ci \
-		$(TEST_READS) $(GOLD)/reference/$(REF_NAME) $(TEST_OUTPUT)/expression_ci/$(SAMPLE_NAME_CI)
+	$(TEST_READS) $(GOLD)/reference/$(REF_NAME) $(TEST_OUTPUT)/expression_ci/$(SAMPLE_NAME_CI)
 	cp $(TEST_OUTPUT)/expression_ci/$(SAMPLE_NAME_CI).genes.results $(TEST_OUTPUT)/expression_ci/$(SAMPLE_NAME_CI).isoforms.results $(GOLD)/expression_ci/
 	cp $(TEST_OUTPUT)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).cnt $(TEST_OUTPUT)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).model $(TEST_OUTPUT)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).theta $(GOLD)/expression_ci/$(SAMPLE_NAME_CI).stat/
-	@echo "==> Gold standard for calc-ci generated in $(GOLD)/expression_ci"
+	@echo "==> Gold standard generated in $(GOLD)"
 
 # ---- Paths --------------------------------------------------------
 
@@ -299,7 +289,7 @@ test-simulate-reads: test-calculate-expression
 	mkdir -p $(TEST_OUTPUT)/simulated
 	@theta0=$$(awk 'NR==3 {print $$1}' $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta) && \
 	./rsem-simulate-reads \
-		$(TEST_OUTPUT)/reference/$(REF_NAME) \
+		$(GOLD)/reference/$(REF_NAME) \
 		$(TEST_OUTPUT)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model \
 		$(TEST_OUTPUT)/expression/$(SAMPLE_NAME).isoforms.results \
 		$$theta0 \
