@@ -1,24 +1,49 @@
 #ifndef SAMPLING
 #define SAMPLING
 
-#include<ctime>
-#include<cstdio>
-#include<cassert>
-#include<vector>
-#include<set>
+#include <ctime>
+#include <cstdio>
+#include <cassert>
+#include <vector>
+#include <set>
+#include <random>
 
-#include "boost/random.hpp"
+#include "boost_compat.h"
 
 typedef unsigned int seedType;
-typedef boost::random::mt19937 engine_type;
-typedef boost::random::uniform_01<> uniform_01_dist;
-typedef boost::random::gamma_distribution<> gamma_dist;
-typedef boost::random::variate_generator<engine_type&, uniform_01_dist> uniform_01_generator;
-typedef boost::random::variate_generator<engine_type&, gamma_dist> gamma_generator;
+typedef std::mt19937 engine_type;
+
+// Boost-compatible distributions (match Boost.Random for reproducible results)
+struct uniform_01_dist {
+	typedef double result_type;
+	template<typename Engine>
+	result_type operator()(Engine& eng) const { return boost_uniform_01(eng); }
+};
+
+struct gamma_dist {
+	typedef double result_type;
+	double alpha_, beta_;
+	explicit gamma_dist(double alpha = 1.0, double beta = 1.0) : alpha_(alpha), beta_(beta) {}
+	template<typename Engine>
+	result_type operator()(Engine& eng) const { return boost_gamma(eng, alpha_, beta_); }
+};
+
+// Wrapper to provide variate_generator-like interface (callable with operator())
+template<typename Engine, typename Dist>
+class variate_generator {
+	Engine& engine;
+	Dist dist;
+public:
+	variate_generator(Engine& e, const Dist& d) : engine(e), dist(d) {}
+	typename Dist::result_type operator()() { return dist(engine); }
+};
+
+typedef variate_generator<engine_type, uniform_01_dist> uniform_01_generator;
+typedef variate_generator<engine_type, gamma_dist> gamma_generator;
 
 class engineFactory {
 public:
-  static void init() { seedEngine = new engine_type(time(NULL)); }
+  static void init() { seedEngine = new engine_type(static_cast<engine_type::result_type>(time(NULL))); }
   static void init(seedType seed) { seedEngine = new engine_type(seed); }
 
   static void finish() { if (seedEngine != NULL) delete seedEngine; }

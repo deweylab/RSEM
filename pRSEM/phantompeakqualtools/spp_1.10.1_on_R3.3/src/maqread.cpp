@@ -21,8 +21,7 @@ extern "C" {
 #include "maqmap.h"
 }
 
-using namespace std;
-using namespace __gnu_cxx; 
+using namespace std; 
 
 
 class lessAbsoluteValue {
@@ -57,7 +56,7 @@ extern "C" {
   vector< vector<string> > tagnames;
 
   // chromosome map
-  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
+  std::unordered_map<string, int> cind_map;
   vector<string> cnames;
   
 
@@ -91,7 +90,7 @@ extern "C" {
     
 
       // determine the chromosome index
-      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      std::unordered_map<string, int>::const_iterator li=cind_map.find(chr);
       int cind=-1;
       if(li==cind_map.end()) {
 	// register new chromosome

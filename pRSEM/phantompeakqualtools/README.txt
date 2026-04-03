@@ -20,7 +20,7 @@ If you are using the code or results in any formal publication please cite
 ===========================
 DEPENDENCIES:
 ===========================
-unix,bash,R-2.10 and above,awk,samtools,boost C++ libraries
+unix,bash,R-2.10 and above,awk,samtools
 R packages: SPP, caTools, snow
 NOTE: The current package does not run on a MAC or WINDOWS.
 

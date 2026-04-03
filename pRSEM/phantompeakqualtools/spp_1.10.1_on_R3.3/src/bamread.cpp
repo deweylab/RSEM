@@ -10,9 +10,6 @@
 #include <string>
 #include <functional>
 #include <utility>
-#include <ext/hash_map>
-#include <boost/tokenizer.hpp>
-
 #include "BamAlignment.h"
 #include "BamAux.h"         /* RefVector/RefData */
 #include "BamReader.h"
@@ -27,8 +24,7 @@ extern "C" {
 #include "Rdefines.h"
 }
 
-using namespace std;
-using namespace __gnu_cxx; 
+using namespace std; 
 
 
 class lessAbsoluteValue {
@@ -66,13 +62,8 @@ extern "C" {
   vector< vector<string> > tagnames;
 
   // chromosome map
-  hash_map<string, int, hash<string>,equal_to<string> > cind_map;
+  std::unordered_map<string, int> cind_map;
   vector<string> cnames;
-  
-
-  typedef boost::tokenizer<boost::char_separator<char> >  tokType;
-  boost::char_separator<char> sep("\t","",boost::keep_empty_tokens);
-  boost::char_separator<char> sep2(",");
 
   BamTools::BamReader bamf;
   
@@ -103,7 +94,7 @@ extern "C" {
       
       
       // determine the chromosome index
-      hash_map<string, int, hash<string>,equal_to<string> >::const_iterator li=cind_map.find(chr);
+      std::unordered_map<string, int>::const_iterator li=cind_map.find(chr);
       int cind=-1;
       if(li==cind_map.end()) {
 	// register new chromosome

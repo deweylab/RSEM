@@ -1,15 +1,19 @@
 #ifndef LENDIST_H_
 #define LENDIST_H_
 
-#include<cstdio>
-#include<cstring>
-#include<cstdlib>
-#include<cassert>
-#include<algorithm>
-
-#include "boost/math/distributions/normal.hpp"
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
+#include <cassert>
+#include <algorithm>
+#include <cmath>
 
 #include "utils.h"
+
+// Normal distribution CDF using std::erf (C++11)
+inline double normal_cdf(double mean, double sd, double x) {
+	return 0.5 * (1.0 + std::erf((x - mean) / (sd * std::sqrt(2.0))));
+}
 #include "simul.h"
 
 class LenDist {
@@ -131,8 +135,6 @@ void LenDist::setAsNormal(double mean, double sd, int minL, int maxL) {
   }
 
 
-  boost::math::normal norm(mean, sd);
-
   if (maxL - minL + 1 > RANGE) {
     if (meanL <= minL) maxL = minL + RANGE - 1;
     else if (meanL >= maxL) minL = maxL - RANGE + 1;
@@ -162,9 +164,9 @@ void LenDist::setAsNormal(double mean, double sd, int minL, int maxL) {
   double old_val, val, sum;
     
   sum = 0.0;
-  old_val = boost::math::cdf(norm, minL - 0.5);
+  old_val = normal_cdf(mean, sd, minL - 0.5);
   for (int i = 1; i <= span; i++) {
-    val = boost::math::cdf(norm, lb + i + 0.5);
+    val = normal_cdf(mean, sd, lb + i + 0.5);
     pdf[i] = val - old_val;
     sum += pdf[i];
     old_val = val;
