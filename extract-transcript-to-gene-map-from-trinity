@@ -1,34 +1,43 @@
-#!/usr/bin/env perl
+#!/usr/bin/env python3
+"""
+extract-transcript-to-gene-map-from-trinity - Extract transcript-to-gene map from Trinity FASTA.
+"""
 
-use strict;
+import sys
 
-if (scalar(@ARGV) != 2) {
-    print "Usage: extract-transcript-to-gene-map-from-trinity trinity_fasta_file map_file\n";
-    exit(-1);
-}
 
-open(INPUT, $ARGV[0]);
-open(OUTPUT, ">$ARGV[1]");
+def main():
+    if len(sys.argv) != 3:
+        print("Usage: extract-transcript-to-gene-map-from-trinity trinity_fasta_file map_file", file=sys.stderr)
+        sys.exit(-1)
 
-my ($tag, $line);
-$tag = <INPUT>; chomp($tag);
-while (substr($tag, 0, 1) eq ">") {
-    $tag = substr($tag, 1);
-    my $cnt = 0;
-    while (($line = <INPUT>) && substr($line, 0, 1) ne ">") {
-	$cnt++;
-    }
-    if ($cnt == 0) { print "Warning: Fasta entry $tag has an empty sequence, it is omitted.\n"; }
-    else {
-	my ($tid, @tmp) = split(/ /, $tag);
-	my $pos = rindex($tid, "_");
-	my $gid = "";
-	if ($pos >= 0) { $gid = substr($tid, 0, $pos); }
-	else { $gid = $tid; }
-	print OUTPUT "$gid\t$tid\n";
-    }
-    $tag = $line; chomp($tag);
-} 
+    input_file = sys.argv[1]
+    output_file = sys.argv[2]
 
-close(INPUT);
-close(OUTPUT);
+    with open(input_file) as inp, open(output_file, "w") as out:
+        lines = iter(inp)
+        tag = next(lines, None)
+        if tag:
+            tag = tag.rstrip("\n")
+
+        while tag and tag.startswith(">"):
+            tag = tag[1:]
+            cnt = 0
+            line = next(lines, None)
+            while line and not line.startswith(">"):
+                cnt += 1
+                line = next(lines, None)
+
+            if cnt == 0:
+                print(f"Warning: Fasta entry {tag} has an empty sequence, it is omitted.", file=sys.stderr)
+            else:
+                tid = tag.split()[0]
+                pos = tid.rfind("_")
+                gid = tid[:pos] if pos >= 0 else tid
+                out.write(f"{gid}\t{tid}\n")
+
+            tag = line.rstrip("\n") if line else None
+
+
+if __name__ == "__main__":
+    main()
