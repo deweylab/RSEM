@@ -247,8 +247,9 @@ test-prepare-reference:
 		bf=$$(basename $$f); \
 		diff $(TEST_OUTPUT)/reference/$$bf $$f; \
 	done
+	@echo "==> test-prepare-reference: OK"
 
-test-calculate-expression: test-prepare-reference
+test-calculate-expression:
 	@echo "==> Testing rsem-calculate-expression"
 	rm -rf $(TEST_OUTPUT)/expression
 	mkdir -p $(TEST_OUTPUT)/expression
@@ -264,8 +265,9 @@ test-calculate-expression: test-prepare-reference
 	diff $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt $(GOLD)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt
 	diff $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model $(GOLD)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model
 	diff $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta $(GOLD)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta
+	@echo "==> test-calculate-expression: OK"
 
-test-calculate-expression-ci: test-prepare-reference
+test-calculate-expression-ci:
 	@echo "==> Testing rsem-calculate-expression with --calc-ci"
 	rm -rf $(TEST_OUTPUT)/expression_ci
 	mkdir -p $(TEST_OUTPUT)/expression_ci
@@ -282,16 +284,17 @@ test-calculate-expression-ci: test-prepare-reference
 	diff $(TEST_OUTPUT)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).cnt $(GOLD)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).cnt
 	diff $(TEST_OUTPUT)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).model $(GOLD)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).model
 	diff $(TEST_OUTPUT)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).theta $(GOLD)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).theta
+	@echo "==> test-calculate-expression-ci: OK"
 
-test-simulate-reads: test-calculate-expression
+test-simulate-reads:
 	@echo "==> Testing rsem-simulate-reads"
 	rm -rf $(TEST_OUTPUT)/simulated
 	mkdir -p $(TEST_OUTPUT)/simulated
-	@theta0=$$(awk 'NR==3 {print $$1}' $(TEST_OUTPUT)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta) && \
+	@theta0=$$(awk 'NR==3 {print $$1}' $(GOLD)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta) && \
 	./rsem-simulate-reads \
 		$(GOLD)/reference/$(REF_NAME) \
-		$(TEST_OUTPUT)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model \
-		$(TEST_OUTPUT)/expression/$(SAMPLE_NAME).isoforms.results \
+		$(GOLD)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model \
+		$(GOLD)/expression/$(SAMPLE_NAME).isoforms.results \
 		$$theta0 \
 		1000 \
 		$(TEST_OUTPUT)/simulated/$(SAMPLE_NAME).simulated \
@@ -299,3 +302,4 @@ test-simulate-reads: test-calculate-expression
 	diff $(TEST_OUTPUT)/simulated/$(SAMPLE_NAME).simulated.fq $(GOLD)/simulated/$(SAMPLE_NAME).simulated.fq
 	diff $(TEST_OUTPUT)/simulated/$(SAMPLE_NAME).simulated.sim.isoforms.results $(GOLD)/simulated/$(SAMPLE_NAME).simulated.sim.isoforms.results
 	diff $(TEST_OUTPUT)/simulated/$(SAMPLE_NAME).simulated.sim.genes.results $(GOLD)/simulated/$(SAMPLE_NAME).simulated.sim.genes.results
+	@echo "==> test-simulate-reads: OK"
