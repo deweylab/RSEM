@@ -1,0 +1,19 @@
+### /Users/jeevesh/Documents/OSPO/RSEM/tests/tools/star-2.7.6a/bin/STAR   --runMode genomeGenerate   --runThreadN 1   --genomeDir tests/output/star/reference   --genomeFastaFiles tests/data/sarscov2.fasta      --genomeSAindexNbases 6   --outFileNamePrefix tests/output/star/reference/my_ref   --sjdbGTFfile tests/data/sarscov2.gtf   --sjdbOverhang 100
+### GstrandBit 32
+versionGenome	2.7.4a
+genomeType	Full
+genomeFastaFiles	tests/data/sarscov2.fasta 
+genomeSAindexNbases	6
+genomeChrBinNbits	18
+genomeSAsparseD	1
+genomeTransformType	None
+genomeTransformVCF	-
+sjdbOverhang	100
+sjdbFileChrStartEnd	- 
+sjdbGTFfile	tests/data/sarscov2.gtf
+sjdbGTFchrPrefix	-
+sjdbGTFfeatureExon	exon
+sjdbGTFtagExonParentTranscript	transcript_id
+sjdbGTFtagExonParentGene	gene_id
+sjdbInsertSave	Basic
+genomeFileSizes	263953 259697
