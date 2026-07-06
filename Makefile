@@ -179,7 +179,9 @@ clean :
 # ---- Test targets -------------------------------------------------
 # ===================================================================
 
-# Gold layout: tests/gold/<aligner>/{reference,expression,expression_ci,simulated}
+# Gold layout: tests/gold/<read_mode>/<aligner>/{reference,expression,expression_ci,simulated}
+# read_mode: single_end (reads_1.fastq) | paired_end (reads_1 + reads_2, --paired-end)
+READ_MODES := single_end paired_end
 ALIGNERS := bowtie bowtie2 hisat2 star
 
 # STAR 2.7.6a for gold + star tests (Bioconda binary + wrapper; run `make fetch-star-276a` first).
@@ -198,16 +200,16 @@ REF_DIFF_EXCL_bowtie2 :=
 REF_DIFF_EXCL_hisat2 :=
 REF_DIFF_EXCL_star := -x Log.out
 
-TEST_TARGETS := $(foreach a,$(ALIGNERS),test-prepare-reference-$(a) test-calculate-expression-$(a) test-calculate-expression-ci-$(a) test-simulate-reads-$(a))
+TEST_TARGETS := $(foreach m,$(READ_MODES),$(foreach a,$(ALIGNERS),test-prepare-reference-$(m)-$(a) test-calculate-expression-$(m)-$(a) test-calculate-expression-ci-$(m)-$(a) test-simulate-reads-$(m)-$(a)))
 
 .PHONY: test test-all generate-gold fetch-star-276a $(TEST_TARGETS) \
 	test-prepare-reference test-calculate-expression test-calculate-expression-ci test-simulate-reads
 
-# Convenience aliases (run all aligners)
-test-prepare-reference: $(foreach a,$(ALIGNERS),test-prepare-reference-$(a))
-test-calculate-expression: $(foreach a,$(ALIGNERS),test-calculate-expression-$(a))
-test-calculate-expression-ci: $(foreach a,$(ALIGNERS),test-calculate-expression-ci-$(a))
-test-simulate-reads: $(foreach a,$(ALIGNERS),test-simulate-reads-$(a))
+# Convenience aliases (all read modes × aligners)
+test-prepare-reference: $(foreach m,$(READ_MODES),$(foreach a,$(ALIGNERS),test-prepare-reference-$(m)-$(a)))
+test-calculate-expression: $(foreach m,$(READ_MODES),$(foreach a,$(ALIGNERS),test-calculate-expression-$(m)-$(a)))
+test-calculate-expression-ci: $(foreach m,$(READ_MODES),$(foreach a,$(ALIGNERS),test-calculate-expression-ci-$(m)-$(a)))
+test-simulate-reads: $(foreach m,$(READ_MODES),$(foreach a,$(ALIGNERS),test-simulate-reads-$(m)-$(a)))
 
 # Default: fail fast. Depends on 'all' to ensure binaries are built first.
 # fetch-star-276a is a no-op if STAR 2.7.6a is already unpacked (required for star/* tests).
@@ -229,38 +231,52 @@ CALC_FLAGS_bowtie2 := --bowtie2
 CALC_FLAGS_hisat2 := --hisat2-hca
 CALC_FLAGS_star := --star
 
-# Generate gold standard: run pipeline per aligner and copy output under tests/gold/<aligner>/
+# Generate gold standard: run pipeline per read_mode × aligner under tests/gold/<read_mode>/<aligner>/
 # Requires bowtie, bowtie2, hisat2, and STAR 2.7.6a under tests/tools/star-2.7.6a/ (see fetch-star-276a).
 generate-gold: all fetch-star-276a
-	@echo "==> Generating gold standard (aligners=$(ALIGNERS), TEST_THREADS=$(TEST_THREADS), TEST_SEED=$(TEST_SEED))"
+	@echo "==> Generating gold standard (read_modes=$(READ_MODES), aligners=$(ALIGNERS), TEST_THREADS=$(TEST_THREADS), TEST_SEED=$(TEST_SEED))"
 	rm -rf $(TEST_OUTPUT) $(GOLD_ROOT)
-	@set -e; for a in $(ALIGNERS); do \
-	  echo "==> Gold aligner: $$a"; \
-	  G="$(GOLD_ROOT)/$$a"; \
-	  O="$(TEST_OUTPUT)/$$a"; \
-	  mkdir -p "$$O/reference" "$$O/expression/$(SAMPLE_NAME).stat" "$$O/simulated" "$$O/expression_ci/$(SAMPLE_NAME_CI).stat" \
-	    "$$G/reference" "$$G/expression/$(SAMPLE_NAME).stat" "$$G/simulated" "$$G/expression_ci/$(SAMPLE_NAME_CI).stat"; \
-	  starp=""; test "$$a" != star || starp="--star-path $(STAR_276A_DIR)"; \
-	  case $$a in \
-	    bowtie) prepflags="--bowtie"; calcflags="" ;; \
-	    bowtie2) prepflags="--bowtie2"; calcflags="--bowtie2" ;; \
-	    hisat2) prepflags="--hisat2-hca"; calcflags="--hisat2-hca" ;; \
-	    star) prepflags="--star --star-genome-sa-index-nbases $(STAR_GENOME_SA_INDEX_NBASES)"; calcflags="--star" ;; \
-	    *) echo "Unknown aligner $$a"; exit 1 ;; \
-	  esac; \
-	  ./rsem-prepare-reference --gtf $(TEST_GTF) $$prepflags $$starp -p $(TEST_THREADS) $(TEST_GENOME) "$$O/reference/$(REF_NAME)"; \
-	  cp -a "$$O/reference/." "$$G/reference/"; \
-	  ./rsem-calculate-expression $$calcflags $$starp -p $(TEST_THREADS) --seed $(TEST_SEED) $(TEST_READS) "$$O/reference/$(REF_NAME)" "$$O/expression/$(SAMPLE_NAME)"; \
-	  cp "$$O/expression/$(SAMPLE_NAME).genes.results" "$$O/expression/$(SAMPLE_NAME).isoforms.results" "$$G/expression/"; \
-	  cp "$$O/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt" "$$O/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model" "$$O/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta" "$$G/expression/$(SAMPLE_NAME).stat/"; \
-	  theta0=$$(awk 'NR==3 {print $$1}' "$$O/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta"); \
-	  ./rsem-simulate-reads "$$O/reference/$(REF_NAME)" "$$O/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model" "$$O/expression/$(SAMPLE_NAME).isoforms.results" "$$theta0" 1000 "$$O/simulated/$(SAMPLE_NAME).simulated" --seed $(TEST_SEED); \
-	  cp "$$O/simulated/$(SAMPLE_NAME).simulated.fq" "$$O/simulated/$(SAMPLE_NAME).simulated.sim.isoforms.results" "$$O/simulated/$(SAMPLE_NAME).simulated.sim.genes.results" "$$G/simulated/"; \
-	  ./rsem-calculate-expression $$calcflags $$starp -p $(TEST_THREADS) --seed $(TEST_SEED) --calc-ci $(TEST_READS) "$$G/reference/$(REF_NAME)" "$$O/expression_ci/$(SAMPLE_NAME_CI)"; \
-	  cp "$$O/expression_ci/$(SAMPLE_NAME_CI).genes.results" "$$O/expression_ci/$(SAMPLE_NAME_CI).isoforms.results" "$$G/expression_ci/"; \
-	  cp "$$O/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).cnt" "$$O/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).model" "$$O/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).theta" "$$G/expression_ci/$(SAMPLE_NAME_CI).stat/"; \
+	@set -e; for m in $(READ_MODES); do \
+	  for a in $(ALIGNERS); do \
+	    echo "==> Gold read_mode=$$m aligner=$$a"; \
+	    G="$(GOLD_ROOT)/$$m/$$a"; \
+	    O="$(TEST_OUTPUT)/$$m/$$a"; \
+	    mkdir -p "$$O/reference" "$$O/expression/$(SAMPLE_NAME).stat" "$$O/simulated" "$$O/expression_ci/$(SAMPLE_NAME_CI).stat" \
+	      "$$G/reference" "$$G/expression/$(SAMPLE_NAME).stat" "$$G/simulated" "$$G/expression_ci/$(SAMPLE_NAME_CI).stat"; \
+	    starp=""; test "$$a" != star || starp="--star-path $(STAR_276A_DIR)"; \
+	    case $$a in \
+	      bowtie) prepflags="--bowtie"; calcflags="" ;; \
+	      bowtie2) prepflags="--bowtie2"; calcflags="--bowtie2" ;; \
+	      hisat2) prepflags="--hisat2-hca"; calcflags="--hisat2-hca" ;; \
+	      star) prepflags="--star --star-genome-sa-index-nbases $(STAR_GENOME_SA_INDEX_NBASES)"; calcflags="--star" ;; \
+	      *) echo "Unknown aligner $$a"; exit 1 ;; \
+	    esac; \
+	    ./rsem-prepare-reference --gtf $(TEST_GTF) $$prepflags $$starp -p $(TEST_THREADS) $(TEST_GENOME) "$$O/reference/$(REF_NAME)"; \
+	    cp -a "$$O/reference/." "$$G/reference/"; \
+	    if [ "$$m" = paired_end ]; then \
+	      ./rsem-calculate-expression $$calcflags $$starp -p $(TEST_THREADS) --seed $(TEST_SEED) --paired-end $(TEST_READS_1) $(TEST_READS_2) "$$O/reference/$(REF_NAME)" "$$O/expression/$(SAMPLE_NAME)"; \
+	    else \
+	      ./rsem-calculate-expression $$calcflags $$starp -p $(TEST_THREADS) --seed $(TEST_SEED) $(TEST_READS_1) "$$O/reference/$(REF_NAME)" "$$O/expression/$(SAMPLE_NAME)"; \
+	    fi; \
+	    cp "$$O/expression/$(SAMPLE_NAME).genes.results" "$$O/expression/$(SAMPLE_NAME).isoforms.results" "$$G/expression/"; \
+	    cp "$$O/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt" "$$O/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model" "$$O/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta" "$$G/expression/$(SAMPLE_NAME).stat/"; \
+	    theta0=$$(awk 'NR==3 {print $$1}' "$$O/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta"); \
+	    ./rsem-simulate-reads "$$O/reference/$(REF_NAME)" "$$O/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model" "$$O/expression/$(SAMPLE_NAME).isoforms.results" "$$theta0" 1000 "$$O/simulated/$(SAMPLE_NAME).simulated" --seed $(TEST_SEED); \
+	    if [ "$$m" = paired_end ]; then \
+	      cp "$$O/simulated/$(SAMPLE_NAME).simulated_1.fq" "$$O/simulated/$(SAMPLE_NAME).simulated_2.fq" "$$O/simulated/$(SAMPLE_NAME).simulated.sim.isoforms.results" "$$O/simulated/$(SAMPLE_NAME).simulated.sim.genes.results" "$$G/simulated/"; \
+	    else \
+	      cp "$$O/simulated/$(SAMPLE_NAME).simulated.fq" "$$O/simulated/$(SAMPLE_NAME).simulated.sim.isoforms.results" "$$O/simulated/$(SAMPLE_NAME).simulated.sim.genes.results" "$$G/simulated/"; \
+	    fi; \
+	    if [ "$$m" = paired_end ]; then \
+	      ./rsem-calculate-expression $$calcflags $$starp -p $(TEST_THREADS) --seed $(TEST_SEED) --calc-ci --paired-end $(TEST_READS_1) $(TEST_READS_2) "$$G/reference/$(REF_NAME)" "$$O/expression_ci/$(SAMPLE_NAME_CI)"; \
+	    else \
+	      ./rsem-calculate-expression $$calcflags $$starp -p $(TEST_THREADS) --seed $(TEST_SEED) --calc-ci $(TEST_READS_1) "$$G/reference/$(REF_NAME)" "$$O/expression_ci/$(SAMPLE_NAME_CI)"; \
+	    fi; \
+	    cp "$$O/expression_ci/$(SAMPLE_NAME_CI).genes.results" "$$O/expression_ci/$(SAMPLE_NAME_CI).isoforms.results" "$$G/expression_ci/"; \
+	    cp "$$O/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).cnt" "$$O/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).model" "$$O/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).theta" "$$G/expression_ci/$(SAMPLE_NAME_CI).stat/"; \
+	  done; \
 	done
-	@echo "==> Gold standard generated under $(GOLD_ROOT)/{$(ALIGNERS)}/"
+	@echo "==> Gold standard generated under $(GOLD_ROOT)/{$(READ_MODES)}/{$(ALIGNERS)}/"
 
 fetch-star-276a:
 	@chmod +x tests/fetch-star-276a.sh 2>/dev/null || true
@@ -269,103 +285,113 @@ fetch-star-276a:
 
 # ---- Paths --------------------------------------------------------
 
-TEST_DATA   := tests/data
-TEST_OUTPUT := tests/output
-GOLD_ROOT   := tests/gold
-REF_NAME    := my_ref
-SAMPLE_NAME := my_sample
+TEST_DATA    := tests/data
+TEST_OUTPUT  := tests/output
+GOLD_ROOT    := tests/gold
+REF_NAME     := my_ref
+SAMPLE_NAME  := my_sample
 SAMPLE_NAME_CI := my_sample_ci
 
 # Reproducibility: same thread count and seed for all test commands (single thread for deterministic Gibbs/calcCI)
 TEST_THREADS := 1
 TEST_SEED    := 0
 
-# Input files (SARS-CoV-2 reference data)
+# Input files (SARS-CoV-2 reference + SRR11550043 read subset)
 TEST_GENOME  := $(TEST_DATA)/sarscov2.fasta
 TEST_GTF     := $(TEST_DATA)/sarscov2.gtf
-TEST_READS   := $(TEST_DATA)/reads.fastq
+TEST_READS_1 := $(TEST_DATA)/reads_1.fastq
+TEST_READS_2 := $(TEST_DATA)/reads_2.fastq
 
-# ---- Individual tests (one rule per aligner) ---
+# Per-read-mode arguments for rsem-calculate-expression
+CALC_READ_ARGS_single_end := $(TEST_READS_1)
+CALC_READ_ARGS_paired_end := --paired-end $(TEST_READS_1) $(TEST_READS_2)
+
+# ---- Individual tests (read_mode × aligner) ---
 
 define _RULE_TEST_PREP_REF
-test-prepare-reference-$(1): $$(if $$(filter star,$(1)),fetch-star-276a)
-	@echo "==> Testing rsem-prepare-reference ($(1))"
-	rm -rf $(TEST_OUTPUT)/$(1)/reference
-	mkdir -p $(TEST_OUTPUT)/$(1)/reference
+test-prepare-reference-$(2)-$(1): $$(if $$(filter star,$(1)),fetch-star-276a)
+	@echo "==> Testing rsem-prepare-reference ($(2), $(1))"
+	rm -rf $(TEST_OUTPUT)/$(2)/$(1)/reference
+	mkdir -p $(TEST_OUTPUT)/$(2)/$(1)/reference
 	./rsem-prepare-reference \
 		--gtf $(TEST_GTF) \
 		$(PREP_FLAGS_$(1)) \
 		$(STAR_EXTRA_ARGS_$(1)) \
 		-p $(TEST_THREADS) \
 		$(TEST_GENOME) \
-		$(TEST_OUTPUT)/$(1)/reference/$(REF_NAME)
-	diff -r $(REF_DIFF_EXCL_$(1)) $(TEST_OUTPUT)/$(1)/reference $(GOLD_ROOT)/$(1)/reference
-	@echo "==> test-prepare-reference-$(1): OK"
+		$(TEST_OUTPUT)/$(2)/$(1)/reference/$(REF_NAME)
+	diff -r $(REF_DIFF_EXCL_$(1)) $(TEST_OUTPUT)/$(2)/$(1)/reference $(GOLD_ROOT)/$(2)/$(1)/reference
+	@echo "==> test-prepare-reference-$(2)-$(1): OK"
 endef
-$(foreach _a,$(ALIGNERS),$(eval $(call _RULE_TEST_PREP_REF,$(_a))))
+$(foreach _m,$(READ_MODES),$(foreach _a,$(ALIGNERS),$(eval $(call _RULE_TEST_PREP_REF,$(_a),$(_m)))))
 
 define _RULE_TEST_CALC_EXPR
-test-calculate-expression-$(1): $$(if $$(filter star,$(1)),fetch-star-276a)
-	@echo "==> Testing rsem-calculate-expression ($(1))"
-	rm -rf $(TEST_OUTPUT)/$(1)/expression
-	mkdir -p $(TEST_OUTPUT)/$(1)/expression
+test-calculate-expression-$(2)-$(1): $$(if $$(filter star,$(1)),fetch-star-276a)
+	@echo "==> Testing rsem-calculate-expression ($(2), $(1))"
+	rm -rf $(TEST_OUTPUT)/$(2)/$(1)/expression
+	mkdir -p $(TEST_OUTPUT)/$(2)/$(1)/expression
 	./rsem-calculate-expression \
 		$(CALC_FLAGS_$(1)) \
 		$(STAR_EXTRA_ARGS_$(1)) \
 		-p $(TEST_THREADS) \
 		--seed $(TEST_SEED) \
-		$(TEST_READS) \
-		$(GOLD_ROOT)/$(1)/reference/$(REF_NAME) \
-		$(TEST_OUTPUT)/$(1)/expression/$(SAMPLE_NAME)
-	diff $(TEST_OUTPUT)/$(1)/expression/$(SAMPLE_NAME).genes.results $(GOLD_ROOT)/$(1)/expression/$(SAMPLE_NAME).genes.results
-	diff $(TEST_OUTPUT)/$(1)/expression/$(SAMPLE_NAME).isoforms.results $(GOLD_ROOT)/$(1)/expression/$(SAMPLE_NAME).isoforms.results
-	diff $(TEST_OUTPUT)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt $(GOLD_ROOT)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt
-	diff $(TEST_OUTPUT)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model $(GOLD_ROOT)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model
-	diff $(TEST_OUTPUT)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta $(GOLD_ROOT)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta
-	@echo "==> test-calculate-expression-$(1): OK"
+		$(CALC_READ_ARGS_$(2)) \
+		$(GOLD_ROOT)/$(2)/$(1)/reference/$(REF_NAME) \
+		$(TEST_OUTPUT)/$(2)/$(1)/expression/$(SAMPLE_NAME)
+	diff $(TEST_OUTPUT)/$(2)/$(1)/expression/$(SAMPLE_NAME).genes.results $(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).genes.results
+	diff $(TEST_OUTPUT)/$(2)/$(1)/expression/$(SAMPLE_NAME).isoforms.results $(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).isoforms.results
+	diff $(TEST_OUTPUT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt $(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt
+	diff $(TEST_OUTPUT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model $(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model
+	diff $(TEST_OUTPUT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta $(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta
+	@echo "==> test-calculate-expression-$(2)-$(1): OK"
 endef
-$(foreach _a,$(ALIGNERS),$(eval $(call _RULE_TEST_CALC_EXPR,$(_a))))
+$(foreach _m,$(READ_MODES),$(foreach _a,$(ALIGNERS),$(eval $(call _RULE_TEST_CALC_EXPR,$(_a),$(_m)))))
 
 define _RULE_TEST_CALC_CI
-test-calculate-expression-ci-$(1): $$(if $$(filter star,$(1)),fetch-star-276a)
-	@echo "==> Testing rsem-calculate-expression with --calc-ci ($(1))"
-	rm -rf $(TEST_OUTPUT)/$(1)/expression_ci
-	mkdir -p $(TEST_OUTPUT)/$(1)/expression_ci
+test-calculate-expression-ci-$(2)-$(1): $$(if $$(filter star,$(1)),fetch-star-276a)
+	@echo "==> Testing rsem-calculate-expression with --calc-ci ($(2), $(1))"
+	rm -rf $(TEST_OUTPUT)/$(2)/$(1)/expression_ci
+	mkdir -p $(TEST_OUTPUT)/$(2)/$(1)/expression_ci
 	./rsem-calculate-expression \
 		$(CALC_FLAGS_$(1)) \
 		$(STAR_EXTRA_ARGS_$(1)) \
 		-p $(TEST_THREADS) \
 		--seed $(TEST_SEED) \
 		--calc-ci \
-		$(TEST_READS) \
-		$(GOLD_ROOT)/$(1)/reference/$(REF_NAME) \
-		$(TEST_OUTPUT)/$(1)/expression_ci/$(SAMPLE_NAME_CI)
-	diff $(TEST_OUTPUT)/$(1)/expression_ci/$(SAMPLE_NAME_CI).genes.results $(GOLD_ROOT)/$(1)/expression_ci/$(SAMPLE_NAME_CI).genes.results
-	diff $(TEST_OUTPUT)/$(1)/expression_ci/$(SAMPLE_NAME_CI).isoforms.results $(GOLD_ROOT)/$(1)/expression_ci/$(SAMPLE_NAME_CI).isoforms.results
-	diff $(TEST_OUTPUT)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).cnt $(GOLD_ROOT)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).cnt
-	diff $(TEST_OUTPUT)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).model $(GOLD_ROOT)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).model
-	diff $(TEST_OUTPUT)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).theta $(GOLD_ROOT)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).theta
-	@echo "==> test-calculate-expression-ci-$(1): OK"
+		$(CALC_READ_ARGS_$(2)) \
+		$(GOLD_ROOT)/$(2)/$(1)/reference/$(REF_NAME) \
+		$(TEST_OUTPUT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI)
+	diff $(TEST_OUTPUT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).genes.results $(GOLD_ROOT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).genes.results
+	diff $(TEST_OUTPUT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).isoforms.results $(GOLD_ROOT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).isoforms.results
+	diff $(TEST_OUTPUT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).cnt $(GOLD_ROOT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).cnt
+	diff $(TEST_OUTPUT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).model $(GOLD_ROOT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).model
+	diff $(TEST_OUTPUT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).theta $(GOLD_ROOT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).theta
+	@echo "==> test-calculate-expression-ci-$(2)-$(1): OK"
 endef
-$(foreach _a,$(ALIGNERS),$(eval $(call _RULE_TEST_CALC_CI,$(_a))))
+$(foreach _m,$(READ_MODES),$(foreach _a,$(ALIGNERS),$(eval $(call _RULE_TEST_CALC_CI,$(_a),$(_m)))))
 
 define _RULE_TEST_SIM
-test-simulate-reads-$(1):
-	@echo "==> Testing rsem-simulate-reads ($(1))"
-	rm -rf $(TEST_OUTPUT)/$(1)/simulated
-	mkdir -p $(TEST_OUTPUT)/$(1)/simulated
-	@theta0=`awk 'NR==3 {print $$$$1}' $(GOLD_ROOT)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta` && \
+test-simulate-reads-$(2)-$(1):
+	@echo "==> Testing rsem-simulate-reads ($(2), $(1))"
+	rm -rf $(TEST_OUTPUT)/$(2)/$(1)/simulated
+	mkdir -p $(TEST_OUTPUT)/$(2)/$(1)/simulated
+	@theta0=`awk 'NR==3 {print $$$$1}' $(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta` && \
 	./rsem-simulate-reads \
-		$(GOLD_ROOT)/$(1)/reference/$(REF_NAME) \
-		$(GOLD_ROOT)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model \
-		$(GOLD_ROOT)/$(1)/expression/$(SAMPLE_NAME).isoforms.results \
+		$(GOLD_ROOT)/$(2)/$(1)/reference/$(REF_NAME) \
+		$(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model \
+		$(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).isoforms.results \
 		$$$$theta0 \
 		1000 \
-		$(TEST_OUTPUT)/$(1)/simulated/$(SAMPLE_NAME).simulated \
+		$(TEST_OUTPUT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated \
 		--seed $(TEST_SEED)
-	diff $(TEST_OUTPUT)/$(1)/simulated/$(SAMPLE_NAME).simulated.fq $(GOLD_ROOT)/$(1)/simulated/$(SAMPLE_NAME).simulated.fq
-	diff $(TEST_OUTPUT)/$(1)/simulated/$(SAMPLE_NAME).simulated.sim.isoforms.results $(GOLD_ROOT)/$(1)/simulated/$(SAMPLE_NAME).simulated.sim.isoforms.results
-	diff $(TEST_OUTPUT)/$(1)/simulated/$(SAMPLE_NAME).simulated.sim.genes.results $(GOLD_ROOT)/$(1)/simulated/$(SAMPLE_NAME).simulated.sim.genes.results
-	@echo "==> test-simulate-reads-$(1): OK"
+	@if [ "$(2)" = "paired_end" ]; then \
+	  diff $(TEST_OUTPUT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated_1.fq $(GOLD_ROOT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated_1.fq; \
+	  diff $(TEST_OUTPUT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated_2.fq $(GOLD_ROOT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated_2.fq; \
+	else \
+	  diff $(TEST_OUTPUT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated.fq $(GOLD_ROOT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated.fq; \
+	fi
+	diff $(TEST_OUTPUT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated.sim.isoforms.results $(GOLD_ROOT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated.sim.isoforms.results
+	diff $(TEST_OUTPUT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated.sim.genes.results $(GOLD_ROOT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated.sim.genes.results
+	@echo "==> test-simulate-reads-$(2)-$(1): OK"
 endef
-$(foreach _a,$(ALIGNERS),$(eval $(call _RULE_TEST_SIM,$(_a))))
+$(foreach _m,$(READ_MODES),$(foreach _a,$(ALIGNERS),$(eval $(call _RULE_TEST_SIM,$(_a),$(_m)))))
