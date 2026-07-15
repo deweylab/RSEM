@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# rsem-calculate-expression hardcodes `--readFilesCommand zcat` for STAR when
+# --star-gzipped-read-file is passed. On macOS, /usr/bin/zcat is the BSD/compress
+# variant and only understands .Z files, not .gz -- it fails "can't stat: foo.gz.Z"
+# and STAR silently proceeds with zero reads instead of erroring. On Linux, the
+# system `zcat` is normally GNU zcat (gzip-compatible) and this isn't an issue.
+# This shim, put ahead of the real zcat on PATH for option-coverage test/gold
+# targets, makes `zcat` behave like `gzip -dc` everywhere.
+exec gzip -dc "$@"

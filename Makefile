@@ -1,3 +1,5 @@
+SHELL := /bin/bash
+
 SAMTOOLS = samtools-1.3
 HTSLIB = htslib-1.3
 
@@ -195,10 +197,15 @@ STAR_EXTRA_ARGS_star := --star-path $(STAR_276A_DIR)
 STAR_GENOME_SA_INDEX_NBASES := 6
 
 # STAR writes a timestamped Log.out next to the genome; exclude from reference diff.
+# genomeParameters.txt embeds the absolute path to the STAR binary that built it, so it's
+# excluded here too and instead diffed separately below with that one line stripped.
+# HISAT2's .ht2 index files are binary and not guaranteed byte-identical across otherwise-
+# correct builds; their correctness is validated transitively by the calculate-expression
+# tests, which actually align reads against them.
 REF_DIFF_EXCL_bowtie :=
 REF_DIFF_EXCL_bowtie2 :=
-REF_DIFF_EXCL_hisat2 :=
-REF_DIFF_EXCL_star := -x Log.out
+REF_DIFF_EXCL_hisat2 := -x '*.ht2'
+REF_DIFF_EXCL_star := -x Log.out -x genomeParameters.txt
 
 TEST_TARGETS := $(foreach m,$(READ_MODES),$(foreach a,$(ALIGNERS),test-prepare-reference-$(m)-$(a) test-calculate-expression-$(m)-$(a) test-calculate-expression-ci-$(m)-$(a) test-simulate-reads-$(m)-$(a)))
 
@@ -213,7 +220,7 @@ test-simulate-reads: $(foreach m,$(READ_MODES),$(foreach a,$(ALIGNERS),test-simu
 
 # Default: fail fast. Depends on 'all' to ensure binaries are built first.
 # fetch-star-276a is a no-op if STAR 2.7.6a is already unpacked (required for star/* tests).
-test: all fetch-star-276a $(TEST_TARGETS)
+test: all fetch-star-276a $(TEST_TARGETS) test-options
 
 # CI / full signal: keep going
 test-all: all
@@ -321,6 +328,7 @@ test-prepare-reference-$(2)-$(1): $$(if $$(filter star,$(1)),fetch-star-276a)
 		$(TEST_GENOME) \
 		$(TEST_OUTPUT)/$(2)/$(1)/reference/$(REF_NAME)
 	diff -r $(REF_DIFF_EXCL_$(1)) $(TEST_OUTPUT)/$(2)/$(1)/reference $(GOLD_ROOT)/$(2)/$(1)/reference
+	$$(if $$(filter star,$(1)),diff <(grep -v '^###' $(TEST_OUTPUT)/$(2)/$(1)/reference/genomeParameters.txt) <(grep -v '^###' $(GOLD_ROOT)/$(2)/$(1)/reference/genomeParameters.txt))
 	@echo "==> test-prepare-reference-$(2)-$(1): OK"
 endef
 $(foreach _m,$(READ_MODES),$(foreach _a,$(ALIGNERS),$(eval $(call _RULE_TEST_PREP_REF,$(_a),$(_m)))))
@@ -342,7 +350,7 @@ test-calculate-expression-$(2)-$(1): $$(if $$(filter star,$(1)),fetch-star-276a)
 	diff $(TEST_OUTPUT)/$(2)/$(1)/expression/$(SAMPLE_NAME).isoforms.results $(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).isoforms.results
 	diff $(TEST_OUTPUT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt $(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt
 	diff $(TEST_OUTPUT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model $(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model
-	diff $(TEST_OUTPUT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta $(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta
+	python3 tests/compare_floats.py $(TEST_OUTPUT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta $(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta
 	@echo "==> test-calculate-expression-$(2)-$(1): OK"
 endef
 $(foreach _m,$(READ_MODES),$(foreach _a,$(ALIGNERS),$(eval $(call _RULE_TEST_CALC_EXPR,$(_a),$(_m)))))
@@ -365,7 +373,7 @@ test-calculate-expression-ci-$(2)-$(1): $$(if $$(filter star,$(1)),fetch-star-27
 	diff $(TEST_OUTPUT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).isoforms.results $(GOLD_ROOT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).isoforms.results
 	diff $(TEST_OUTPUT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).cnt $(GOLD_ROOT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).cnt
 	diff $(TEST_OUTPUT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).model $(GOLD_ROOT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).model
-	diff $(TEST_OUTPUT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).theta $(GOLD_ROOT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).theta
+	python3 tests/compare_floats.py $(TEST_OUTPUT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).theta $(GOLD_ROOT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).theta
 	@echo "==> test-calculate-expression-ci-$(2)-$(1): OK"
 endef
 $(foreach _m,$(READ_MODES),$(foreach _a,$(ALIGNERS),$(eval $(call _RULE_TEST_CALC_CI,$(_a),$(_m)))))
@@ -395,3 +403,81 @@ test-simulate-reads-$(2)-$(1):
 	@echo "==> test-simulate-reads-$(2)-$(1): OK"
 endef
 $(foreach _m,$(READ_MODES),$(foreach _a,$(ALIGNERS),$(eval $(call _RULE_TEST_SIM,$(_a),$(_m)))))
+
+# ===================================================================
+# ---- Option-coverage tests -----------------------------------------
+# ===================================================================
+# Each case exercises a distinct cluster of rsem-calculate-expression flags
+# (see tests/check_option_coverage.py to confirm each flag actually changes
+# output on this dataset before trusting the case as real coverage).
+
+OPTION_CASES := bowtie_custom bowtie2_custom gibbs_sampling fragment_modeling star_gzip_genomebam
+
+TEST_READS_1_GZ := $(TEST_DATA)/reads_1.fastq.gz
+TEST_READS_2_GZ := $(TEST_DATA)/reads_2.fastq.gz
+
+$(TEST_READS_1_GZ): $(TEST_READS_1)
+	gzip -k -f $<
+
+$(TEST_READS_2_GZ): $(TEST_READS_2)
+	gzip -k -f $<
+
+OPT_ARGS_bowtie_custom       := --bowtie-n 3 --bowtie-e 200 --bowtie-m 5 --seed-length 28 --paired-end $(TEST_READS_1) $(TEST_READS_2)
+OPT_ARGS_bowtie2_custom      := --bowtie2 --bowtie2-mismatch-rate 0.05 --bowtie2-k 5 --bowtie2-sensitivity-level very_fast --paired-end $(TEST_READS_1) $(TEST_READS_2)
+OPT_ARGS_gibbs_sampling      := --seed $(TEST_SEED) --paired-end --single-cell-prior --calc-pme --calc-ci --gibbs-burnin 20 --gibbs-number-of-samples 800 --gibbs-sampling-gap 2 --ci-credibility-level 0.80 --ci-number-of-samples-per-count-vector 30 $(TEST_READS_1) $(TEST_READS_2)
+OPT_ARGS_fragment_modeling   := --fragment-length-mean 400 --fragment-length-sd 50 --fragment-length-min 100 --fragment-length-max 700 --estimate-rspd --num-rspd-bins 40 $(TEST_READS_1)
+OPT_ARGS_star_gzip_genomebam := --star --star-path $(STAR_276A_DIR) --star-gzipped-read-file --star-output-genome-bam --paired-end $(TEST_READS_1_GZ) $(TEST_READS_2_GZ)
+
+# Each case aligns against the gold reference matching its aligner (bowtie is RSEM's default
+# when no --bowtie2/--star/--hisat2-hca flag is given).
+OPT_REF_bowtie_custom       := $(GOLD_ROOT)/paired_end/bowtie/reference/$(REF_NAME)
+OPT_REF_bowtie2_custom      := $(GOLD_ROOT)/paired_end/bowtie2/reference/$(REF_NAME)
+OPT_REF_gibbs_sampling      := $(GOLD_ROOT)/paired_end/bowtie/reference/$(REF_NAME)
+OPT_REF_fragment_modeling   := $(GOLD_ROOT)/single_end/bowtie/reference/$(REF_NAME)
+OPT_REF_star_gzip_genomebam := $(GOLD_ROOT)/paired_end/star/reference/$(REF_NAME)
+
+OPT_PREREQ_bowtie_custom       :=
+OPT_PREREQ_bowtie2_custom      :=
+OPT_PREREQ_gibbs_sampling      :=
+OPT_PREREQ_fragment_modeling   :=
+OPT_PREREQ_star_gzip_genomebam := fetch-star-276a $(TEST_READS_1_GZ) $(TEST_READS_2_GZ)
+
+.PHONY: test-options generate-gold-options $(foreach _c,$(OPTION_CASES),test-option-$(_c))
+
+define _RULE_TEST_OPTION
+test-option-$(1): $(OPT_PREREQ_$(1))
+	@echo "==> Testing option case: $(1)"
+	rm -rf $(TEST_OUTPUT)/options/$(1)
+	mkdir -p $(TEST_OUTPUT)/options/$(1)
+	PATH="$(CURDIR)/tests/shims:$$$$PATH" ./rsem-calculate-expression -p $(TEST_THREADS) $$(OPT_ARGS_$(1)) $$(OPT_REF_$(1)) $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME)
+	diff $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).genes.results $(GOLD_ROOT)/options/$(1)/$(SAMPLE_NAME).genes.results
+	diff $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).isoforms.results $(GOLD_ROOT)/options/$(1)/$(SAMPLE_NAME).isoforms.results
+	diff $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt $(GOLD_ROOT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt
+	diff $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model $(GOLD_ROOT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model
+	python3 tests/compare_floats.py $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta $(GOLD_ROOT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta
+	@echo "==> test-option-$(1): OK"
+endef
+$(foreach _c,$(OPTION_CASES),$(eval $(call _RULE_TEST_OPTION,$(_c))))
+
+test-options: $(foreach _c,$(OPTION_CASES),test-option-$(_c))
+
+# Generate gold standard for the option-coverage cases (mirrors generate-gold above).
+# Note: OPT_ARGS_$(1)/OPT_REF_$(1) are Make-level variable indirection, which only resolves
+# for a literal $(1) substituted per-target via $(eval $(call ...)) below -- unlike
+# generate-gold's aligner loop (which sidesteps this with a runtime shell `case` statement),
+# a shell `for c in $(OPTION_CASES)` loop here could NOT look up $(OPT_ARGS_$$c) at Make's
+# expansion time, so each case gets its own generated rule instead.
+.PHONY: $(foreach _c,$(OPTION_CASES),generate-gold-option-$(_c))
+
+define _RULE_GENERATE_GOLD_OPTION
+generate-gold-option-$(1): all $(OPT_PREREQ_$(1))
+	@echo "==> Gold option case=$(1)"
+	mkdir -p $(TEST_OUTPUT)/options/$(1) $(GOLD_ROOT)/options/$(1)/$(SAMPLE_NAME).stat
+	PATH="$(CURDIR)/tests/shims:$$$$PATH" ./rsem-calculate-expression -p $(TEST_THREADS) $(OPT_ARGS_$(1)) $(OPT_REF_$(1)) $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME)
+	cp $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).genes.results $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).isoforms.results $(GOLD_ROOT)/options/$(1)/
+	cp $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta $(GOLD_ROOT)/options/$(1)/$(SAMPLE_NAME).stat/
+endef
+$(foreach _c,$(OPTION_CASES),$(eval $(call _RULE_GENERATE_GOLD_OPTION,$(_c))))
+
+generate-gold-options: $(foreach _c,$(OPTION_CASES),generate-gold-option-$(_c))
+	@echo "==> Gold option-coverage standard generated under $(GOLD_ROOT)/options/{$(OPTION_CASES)}/"
