@@ -67,8 +67,9 @@ jobs:
         run: make all
 
       - name: Run test suite
-        shell: bash -el {0}
-        # Run each target separately for a per-target result table; keep going on failure.
+        # No -e: the loop tracks failures itself and exits with $overall. errexit would
+        # abort the step (and misreport it) on any stray non-zero, even when all pass.
+        shell: bash -l {0}
         run: |
           mkdir -p tests/output/logs
           targets=$(make print-test-targets)
