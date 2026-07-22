@@ -1,19 +1,12 @@
 #!/usr/bin/env python3
 """Ablation check for option-coverage test cases.
 
-For each named case, run rsem-calculate-expression once with the case's full
-argument list, then once more per flag with that flag reverted to RSEM's own
-documented default. If a reverted run produces byte-identical output to the
-full run, that flag isn't actually exercising anything on this dataset, and
-the test case is not real coverage for it.
+For each case, run rsem-calculate-expression once with the full flag set, then
+once per flag with that flag reverted to its default. A reverted run that
+produces identical output means the flag isn't exercised by the test data.
 
-This is a discussion/starting-point script, not wired into `make test` yet --
-see the NOTE below on fragment-length-mean/sd before trusting it as-is.
-
-Path-only flags such as --hisat2-path / --star-path are intentionally omitted:
-reverting them to "use PATH" typically yields identical isoform output when the
-same binary is resolved, so the identity check below cannot confirm coverage.
-Those cases are covered by make test-option-* (wiring + gold diff) instead.
+Run manually (not wired into `make test`). Path-only flags (--hisat2-path,
+--star-path) are omitted since reverting them resolves the same binary.
 """
 import filecmp
 import subprocess
@@ -25,9 +18,8 @@ TEST_READS_SINGLE = ["tests/data/reads_1.fastq"]
 REFERENCE = "tests/gold/paired_end/bowtie/reference/my_ref"
 REFERENCE_SE = "tests/gold/single_end/bowtie/reference/my_ref"
 
-# name -> {base: full arg list (minus reads/reference), ablate: {flag: default_or_None}}
-# "default_or_None": the RSEM-documented default value to substitute; None means the flag
-# is boolean and should just be dropped entirely for the ablated run.
+# case -> {base: flags, reads, reference, ablate: {flag: default | None}}
+# ablate value: default to substitute, or None to drop a boolean flag.
 CASES = {
     "bowtie_custom": {
         "base": ["--bowtie-n", "3", "--bowtie-e", "200", "--bowtie-m", "5", "--seed-length", "28"],
@@ -76,11 +68,8 @@ CASES = {
             "--fragment-length-min": "1",     # RSEM default
             "--fragment-length-max": "1000",  # RSEM default
             "--num-rspd-bins": "20",          # RSEM default
-            # NOTE: --fragment-length-mean's RSEM default (-1) *disables* fragment-length
-            # modeling entirely, and --fragment-length-sd's default depends on --mean being
-            # set. Reverting either to its literal default changes the shape of the run, not
-            # just the value -- needs a decision (e.g. compare against a mean/sd pair that's
-            # merely "different" rather than "off") before this pair can ablate meaningfully.
+            # --fragment-length-mean/-sd omitted: their defaults disable fragment-length
+            # modeling, so reverting them changes the run's shape, not just a value.
         },
     },
 }

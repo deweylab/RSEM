@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
-# Wrapper so RSEM's --hisat2-path <this_dir>/ invokes the real hisat2 from PATH.
-# Mirrors tests/tools/star-2.7.6a/STAR: a stable directory for --hisat2-path without
-# vendoring the HISAT2 binary itself.
+# Stable directory for RSEM's --hisat2-path that execs hisat2 from PATH,
+# so the binary itself need not be vendored (mirrors tests/tools/star-2.7.6a/STAR).
 set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# Drop this directory from PATH so `command -v hisat2` cannot resolve to this wrapper.
+# Drop this dir from PATH so hisat2 doesn't resolve back to this wrapper.
 PATH="$(echo "$PATH" | tr ':' '\n' | grep -vx "$DIR" | paste -sd: -)"
 export PATH
 if ! command -v hisat2 >/dev/null 2>&1; then

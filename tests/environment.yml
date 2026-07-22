@@ -1,25 +1,7 @@
-# Pinned aligner versions for the RSEM test suite.
-#
-# These are the EXACT versions the committed gold files under tests/gold/ were
-# generated with. The gold is a fingerprint of each aligner's alignment behavior,
-# so a different version can produce different (but still "correct") output and
-# fail the gold diff spuriously. Pin, don't float.
-#
-# NOTE on Apple Silicon: bowtie2 2.4.1 and star 2.7.6a have no osx-arm64 build at
-# these versions (bowtie 1.3.1 and hisat2 2.2.1 do). To install all four at the
-# validated versions on an arm64 runner, create the env with subdir osx-64 so they
-# resolve and run under Rosetta 2. The CI workflow does this. Native-arm testing
-# would require bumping bowtie2/STAR and regenerating gold -- a separate decision.
-#
-# This is also the pinned-aligner env Colin asked for (his Q1): it deliberately
-# omits rsem/samtools/sra-tools -- RSEM is built from source here, and samtools is
-# vendored, so only the external aligners belong in this file.
-#
-# STAR caveat: the Makefile currently routes STAR through tests/fetch-star-276a.sh
-# + the committed tests/tools/star-2.7.6a/STAR wrapper (which already runs the
-# osx-64 build under Rosetta on arm via `arch -x86_64`), NOT through this env. star
-# is pinned here anyway as the canonical version record and for the eventual switch
-# to a single conda-based mechanism (Colin's Q2 -- retiring the separate fetch).
+# Aligner versions the gold files under tests/gold/ were generated with.
+# Different versions can change alignment output and fail the gold diff, so pin.
+# bowtie2 2.4.1 and star 2.7.6a have no arm64 build; on Apple Silicon create the
+# env with subdir osx-64 (runs under Rosetta). See the CI workflow.
 name: rsem-test
 channels:
   - bioconda

@@ -196,12 +196,10 @@ STAR_EXTRA_ARGS_star := --star-path $(STAR_276A_DIR)
 # STAR --genomeSAindexNbases for the small viral test reference (stable SAindex size + reproducible gold).
 STAR_GENOME_SA_INDEX_NBASES := 6
 
-# STAR writes a timestamped Log.out next to the genome; exclude from reference diff.
-# genomeParameters.txt embeds the absolute path to the STAR binary that built it, so it's
-# excluded here too and instead diffed separately below with that one line stripped.
-# HISAT2's .ht2 index files are binary and not guaranteed byte-identical across otherwise-
-# correct builds; their correctness is validated transitively by the calculate-expression
-# tests, which actually align reads against them.
+# Exclude machine-specific files from the reference diff:
+#   Log.out            - STAR timestamp
+#   genomeParameters.txt - embeds STAR's absolute path; diffed separately below
+#   *.ht2              - HISAT2 binary index, not byte-reproducible (covered by expression tests)
 REF_DIFF_EXCL_bowtie :=
 REF_DIFF_EXCL_bowtie2 :=
 REF_DIFF_EXCL_hisat2 := -x '*.ht2'
@@ -414,13 +412,12 @@ $(foreach _m,$(READ_MODES),$(foreach _a,$(ALIGNERS),$(eval $(call _RULE_TEST_SIM
 # ===================================================================
 # ---- Option-coverage tests -----------------------------------------
 # ===================================================================
-# Each case exercises a distinct cluster of rsem-calculate-expression flags
-# (see tests/check_option_coverage.py to confirm each flag actually changes
-# output on this dataset before trusting the case as real coverage).
+# Each case exercises a cluster of rsem-calculate-expression flags.
+# tests/check_option_coverage.py verifies each flag changes the output.
 
 OPTION_CASES := bowtie_custom bowtie2_custom gibbs_sampling fragment_modeling star_gzip_genomebam hisat2_path
 
-# Stable dir for --hisat2-path (wrapper execs the real hisat2 from PATH; see tests/tools/hisat2/hisat2).
+# Dir passed to --hisat2-path; holds a wrapper that execs hisat2 from PATH.
 HISAT2_DIR := $(CURDIR)/tests/tools/hisat2
 
 TEST_READS_1_GZ := $(TEST_DATA)/reads_1.fastq.gz
@@ -437,12 +434,9 @@ OPT_ARGS_bowtie2_custom      := --bowtie2 --bowtie2-mismatch-rate 0.05 --bowtie2
 OPT_ARGS_gibbs_sampling      := --seed $(TEST_SEED) --paired-end --single-cell-prior --calc-pme --calc-ci --gibbs-burnin 20 --gibbs-number-of-samples 800 --gibbs-sampling-gap 2 --ci-credibility-level 0.80 --ci-number-of-samples-per-count-vector 30 $(TEST_READS_1) $(TEST_READS_2)
 OPT_ARGS_fragment_modeling   := --fragment-length-mean 400 --fragment-length-sd 50 --fragment-length-min 100 --fragment-length-max 700 --estimate-rspd --num-rspd-bins 40 $(TEST_READS_1)
 OPT_ARGS_star_gzip_genomebam := --star --star-path $(STAR_276A_DIR) --star-gzipped-read-file --star-output-genome-bam --paired-end $(TEST_READS_1_GZ) $(TEST_READS_2_GZ)
-# Same inputs/seed as the paired_end/hisat2 matrix case, plus an explicit --hisat2-path.
-# Gold matches tests/gold/paired_end/hisat2/expression/ when the wrapper resolves the same binary.
 OPT_ARGS_hisat2_path         := --hisat2-hca --hisat2-path $(HISAT2_DIR) --seed $(TEST_SEED) --paired-end $(TEST_READS_1) $(TEST_READS_2)
 
-# Each case aligns against the gold reference matching its aligner (bowtie is RSEM's default
-# when no --bowtie2/--star/--hisat2-hca flag is given).
+# Reference for each case (bowtie is the default when no aligner flag is given).
 OPT_REF_bowtie_custom       := $(GOLD_ROOT)/paired_end/bowtie/reference/$(REF_NAME)
 OPT_REF_bowtie2_custom      := $(GOLD_ROOT)/paired_end/bowtie2/reference/$(REF_NAME)
 OPT_REF_gibbs_sampling      := $(GOLD_ROOT)/paired_end/bowtie/reference/$(REF_NAME)
@@ -476,12 +470,8 @@ $(foreach _c,$(OPTION_CASES),$(eval $(call _RULE_TEST_OPTION,$(_c))))
 
 test-options: $(foreach _c,$(OPTION_CASES),test-option-$(_c))
 
-# Generate gold standard for the option-coverage cases (mirrors generate-gold above).
-# Note: OPT_ARGS_$(1)/OPT_REF_$(1) are Make-level variable indirection, which only resolves
-# for a literal $(1) substituted per-target via $(eval $(call ...)) below -- unlike
-# generate-gold's aligner loop (which sidesteps this with a runtime shell `case` statement),
-# a shell `for c in $(OPTION_CASES)` loop here could NOT look up $(OPT_ARGS_$$c) at Make's
-# expansion time, so each case gets its own generated rule instead.
+# Generate gold for the option-coverage cases. One rule per case via $(eval): the
+# OPT_ARGS_$(1)/OPT_REF_$(1) lookups need a literal $(1), so a shell loop won't work.
 .PHONY: $(foreach _c,$(OPTION_CASES),generate-gold-option-$(_c))
 
 define _RULE_GENERATE_GOLD_OPTION

@@ -1,14 +1,9 @@
 #!/usr/bin/env python3
-"""Compare two whitespace-delimited numeric files, allowing small relative-error tolerance.
+"""Compare two whitespace-delimited numeric files with relative-error tolerance.
 
-Used in place of exact `diff` for RSEM outputs (e.g. .theta files) that can carry
-tiny floating-point differences across platforms/compilers even on a correct run.
-
-Relative error only (no absolute floor): matches the convergence criterion RSEM's own
-EM algorithm uses (see the paper's Methods -- "stopped when all theta_i with value >=
-1e-7 have a relative change of less than 1e-3"). Values very close to zero can therefore
-still trip this check on a large relative swing between two tiny numbers; that's a known
-tradeoff of dropping the absolute-tolerance floor, not a bug.
+Used instead of exact `diff` for outputs (e.g. .theta) that carry tiny
+floating-point differences across platforms even on a correct run. Relative
+error only, so near-zero values may still differ on a large relative swing.
 """
 import sys
 import math

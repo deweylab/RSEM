@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runs-on }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # bowtie2 2.4.1 / STAR 2.7.6a have no arm64 build, so macOS arm runs the
+          # pinned osx-64 aligners under Rosetta. Intel and Linux run native.
+          - name: macOS arm64
+            runs-on: macos-14
+            subdir: osx-64
+            rosetta: true
+          - name: macOS Intel
+            runs-on: macos-13
+            subdir: osx-64
+            rosetta: false
+          - name: Linux x86-64
+            runs-on: ubuntu-latest
+            subdir: linux-64
+            rosetta: false
+
+    env:
+      CONDA_SUBDIR: ${{ matrix.subdir }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Ensure Rosetta 2 is available
+        if: ${{ matrix.rosetta }}
+        run: softwareupdate --install-rosetta --agree-to-license || true
+
+      - name: Install pinned aligners
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: tests/environment.yml
+          condarc: |
+            subdirs:
+              - ${{ matrix.subdir }}
+          init-shell: bash
+
+      - name: Show toolchain versions
+        shell: bash -el {0}
+        run: |
+          uname -m
+          g++ --version | head -1
+          bowtie --version | head -1
+          bowtie2 --version | head -1
+          STAR --version
+          hisat2 --version | head -1
+          perl --version | sed -n 2p
+          python3 --version
+
+      - name: Build RSEM
+        shell: bash -el {0}
+        run: make all
+
+      - name: Run test suite
+        shell: bash -el {0}
+        # Run each target separately for a per-target result table; keep going on failure.
+        run: |
+          mkdir -p tests/output/logs
+          targets=$(make print-test-targets)
+
+          {
+            echo "## ${{ matrix.name }}"
+            echo ""
+            echo "| Test target | Result |"
+            echo "| :--- | :--- |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          overall=0
+          passed=0
+          failed=0
+          for t in $targets; do
+            if make "$t" > "tests/output/logs/$t.log" 2>&1; then
+              echo "| \`$t\` | pass |" >> "$GITHUB_STEP_SUMMARY"
+              passed=$((passed + 1))
+            else
+              echo "| \`$t\` | **FAIL** |" >> "$GITHUB_STEP_SUMMARY"
+              failed=$((failed + 1))
+              overall=1
+              echo "::group::FAILED: $t"
+              cat "tests/output/logs/$t.log"
+              echo "::endgroup::"
+            fi
+          done
+
+          {
+            echo ""
+            echo "**$passed passed, $failed failed** of $((passed + failed)) targets."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          exit $overall
+
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs-${{ matrix.runs-on }}
+          path: tests/output/logs/
