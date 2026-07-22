@@ -35,14 +35,14 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Ensure Rosetta 2 is available
         if: ${{ matrix.rosetta }}
         run: softwareupdate --install-rosetta --agree-to-license || true
 
       - name: Install pinned aligners
-        uses: mamba-org/setup-micromamba@v2
+        uses: mamba-org/setup-micromamba@v3
         with:
           environment-file: tests/environment.yml
           condarc: |
@@ -107,7 +107,7 @@ jobs:
 
       - name: Upload test logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-logs-${{ matrix.runs-on }}
           path: tests/output/logs/
