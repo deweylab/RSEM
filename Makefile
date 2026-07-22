@@ -354,7 +354,7 @@ test-calculate-expression-$(2)-$(1): $$(if $$(filter star,$(1)),fetch-star-276a)
 	diff $(TEST_OUTPUT)/$(2)/$(1)/expression/$(SAMPLE_NAME).genes.results $(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).genes.results
 	diff $(TEST_OUTPUT)/$(2)/$(1)/expression/$(SAMPLE_NAME).isoforms.results $(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).isoforms.results
 	diff $(TEST_OUTPUT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt $(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt
-	diff $(TEST_OUTPUT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model $(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model
+	python3 tests/compare_floats.py --exact $(TEST_OUTPUT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model $(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model
 	python3 tests/compare_floats.py $(TEST_OUTPUT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta $(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta
 	@echo "==> test-calculate-expression-$(2)-$(1): OK"
 endef
@@ -377,7 +377,7 @@ test-calculate-expression-ci-$(2)-$(1): $$(if $$(filter star,$(1)),fetch-star-27
 	diff $(TEST_OUTPUT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).genes.results $(GOLD_ROOT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).genes.results
 	diff $(TEST_OUTPUT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).isoforms.results $(GOLD_ROOT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).isoforms.results
 	diff $(TEST_OUTPUT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).cnt $(GOLD_ROOT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).cnt
-	diff $(TEST_OUTPUT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).model $(GOLD_ROOT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).model
+	python3 tests/compare_floats.py --exact $(TEST_OUTPUT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).model $(GOLD_ROOT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).model
 	python3 tests/compare_floats.py $(TEST_OUTPUT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).theta $(GOLD_ROOT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).theta
 	@echo "==> test-calculate-expression-ci-$(2)-$(1): OK"
 endef
@@ -462,7 +462,7 @@ test-option-$(1): $(OPT_PREREQ_$(1))
 	diff $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).genes.results $(GOLD_ROOT)/options/$(1)/$(SAMPLE_NAME).genes.results
 	diff $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).isoforms.results $(GOLD_ROOT)/options/$(1)/$(SAMPLE_NAME).isoforms.results
 	diff $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt $(GOLD_ROOT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt
-	diff $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model $(GOLD_ROOT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model
+	python3 tests/compare_floats.py --exact $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model $(GOLD_ROOT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model
 	python3 tests/compare_floats.py $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta $(GOLD_ROOT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta
 	@echo "==> test-option-$(1): OK"
 endef
