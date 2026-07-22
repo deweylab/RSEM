@@ -9,6 +9,11 @@ the test case is not real coverage for it.
 
 This is a discussion/starting-point script, not wired into `make test` yet --
 see the NOTE below on fragment-length-mean/sd before trusting it as-is.
+
+Path-only flags such as --hisat2-path / --star-path are intentionally omitted:
+reverting them to "use PATH" typically yields identical isoform output when the
+same binary is resolved, so the identity check below cannot confirm coverage.
+Those cases are covered by make test-option-* (wiring + gold diff) instead.
 """
 import filecmp
 import subprocess

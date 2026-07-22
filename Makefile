@@ -226,6 +226,13 @@ test: all fetch-star-276a $(TEST_TARGETS) test-options
 test-all: all
 	$(MAKE) -k test
 
+# Print every individual test target (matrix + option cases), space-separated.
+# Used by CI to drive each target separately and build a per-target result table,
+# without duplicating the matrix definition in the workflow.
+.PHONY: print-test-targets
+print-test-targets:
+	@echo $(TEST_TARGETS) $(foreach _c,$(OPTION_CASES),test-option-$(_c))
+
 # Per-aligner flags for rsem-prepare-reference / rsem-calculate-expression
 PREP_FLAGS_bowtie := --bowtie
 PREP_FLAGS_bowtie2 := --bowtie2
@@ -411,7 +418,10 @@ $(foreach _m,$(READ_MODES),$(foreach _a,$(ALIGNERS),$(eval $(call _RULE_TEST_SIM
 # (see tests/check_option_coverage.py to confirm each flag actually changes
 # output on this dataset before trusting the case as real coverage).
 
-OPTION_CASES := bowtie_custom bowtie2_custom gibbs_sampling fragment_modeling star_gzip_genomebam
+OPTION_CASES := bowtie_custom bowtie2_custom gibbs_sampling fragment_modeling star_gzip_genomebam hisat2_path
+
+# Stable dir for --hisat2-path (wrapper execs the real hisat2 from PATH; see tests/tools/hisat2/hisat2).
+HISAT2_DIR := $(CURDIR)/tests/tools/hisat2
 
 TEST_READS_1_GZ := $(TEST_DATA)/reads_1.fastq.gz
 TEST_READS_2_GZ := $(TEST_DATA)/reads_2.fastq.gz
@@ -427,6 +437,9 @@ OPT_ARGS_bowtie2_custom      := --bowtie2 --bowtie2-mismatch-rate 0.05 --bowtie2
 OPT_ARGS_gibbs_sampling      := --seed $(TEST_SEED) --paired-end --single-cell-prior --calc-pme --calc-ci --gibbs-burnin 20 --gibbs-number-of-samples 800 --gibbs-sampling-gap 2 --ci-credibility-level 0.80 --ci-number-of-samples-per-count-vector 30 $(TEST_READS_1) $(TEST_READS_2)
 OPT_ARGS_fragment_modeling   := --fragment-length-mean 400 --fragment-length-sd 50 --fragment-length-min 100 --fragment-length-max 700 --estimate-rspd --num-rspd-bins 40 $(TEST_READS_1)
 OPT_ARGS_star_gzip_genomebam := --star --star-path $(STAR_276A_DIR) --star-gzipped-read-file --star-output-genome-bam --paired-end $(TEST_READS_1_GZ) $(TEST_READS_2_GZ)
+# Same inputs/seed as the paired_end/hisat2 matrix case, plus an explicit --hisat2-path.
+# Gold matches tests/gold/paired_end/hisat2/expression/ when the wrapper resolves the same binary.
+OPT_ARGS_hisat2_path         := --hisat2-hca --hisat2-path $(HISAT2_DIR) --seed $(TEST_SEED) --paired-end $(TEST_READS_1) $(TEST_READS_2)
 
 # Each case aligns against the gold reference matching its aligner (bowtie is RSEM's default
 # when no --bowtie2/--star/--hisat2-hca flag is given).
@@ -435,12 +448,14 @@ OPT_REF_bowtie2_custom      := $(GOLD_ROOT)/paired_end/bowtie2/reference/$(REF_N
 OPT_REF_gibbs_sampling      := $(GOLD_ROOT)/paired_end/bowtie/reference/$(REF_NAME)
 OPT_REF_fragment_modeling   := $(GOLD_ROOT)/single_end/bowtie/reference/$(REF_NAME)
 OPT_REF_star_gzip_genomebam := $(GOLD_ROOT)/paired_end/star/reference/$(REF_NAME)
+OPT_REF_hisat2_path         := $(GOLD_ROOT)/paired_end/hisat2/reference/$(REF_NAME)
 
 OPT_PREREQ_bowtie_custom       :=
 OPT_PREREQ_bowtie2_custom      :=
 OPT_PREREQ_gibbs_sampling      :=
 OPT_PREREQ_fragment_modeling   :=
 OPT_PREREQ_star_gzip_genomebam := fetch-star-276a $(TEST_READS_1_GZ) $(TEST_READS_2_GZ)
+OPT_PREREQ_hisat2_path         :=
 
 .PHONY: test-options generate-gold-options $(foreach _c,$(OPTION_CASES),test-option-$(_c))
 

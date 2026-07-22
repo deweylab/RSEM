@@ -1,0 +1,103 @@
+name: CI (macOS Apple Silicon)
+
+# First CI platform: Apple Silicon (arm64). Linux x86/arm and macOS Intel are
+# planned follow-ups once this leg is green.
+
+on:
+  pull_request:          # any PR: fires on open and on every new commit to it
+  push:
+    branches: [ master ] # merges / direct pushes to the main branch
+  workflow_dispatch:     # manual "Run workflow" button, runnable against any branch
+
+jobs:
+  test-macos-arm64:
+    # macos-14 / macos-15 are Apple Silicon (arm64) runners.
+    runs-on: macos-14
+
+    # The pinned aligners (bowtie2 2.4.1, STAR 2.7.6a) have no native arm64 build,
+    # so the conda env is created as osx-64 and runs under Rosetta 2. This keeps
+    # the exact versions the gold was validated against.
+    env:
+      CONDA_SUBDIR: osx-64
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Ensure Rosetta 2 is available
+        # x86-64 aligners run via Rosetta on Apple Silicon. Idempotent; no-op if present.
+        run: softwareupdate --install-rosetta --agree-to-license || true
+
+      - name: Install pinned aligners (conda env, forced osx-64)
+        uses: mamba-org/setup-micromamba@v2
+        with:
+          environment-file: tests/environment.yml
+          # Force the whole env to osx-64 so the pinned, arm-less versions resolve.
+          condarc: |
+            subdirs:
+              - osx-64
+          init-shell: bash
+
+      - name: Show toolchain versions
+        shell: bash -el {0}
+        run: |
+          uname -m
+          clang++ --version | head -1
+          bowtie --version | head -1
+          bowtie2 --version | head -1
+          STAR --version
+          hisat2 --version | head -1
+          perl --version | sed -n 2p
+          python3 --version
+
+      - name: Build RSEM
+        shell: bash -el {0}
+        run: make all
+
+      - name: Run test suite
+        shell: bash -el {0}
+        # Drive each test target separately so we get a deterministic per-target
+        # pass/fail table in the run summary, and continue past failures (like
+        # make -k) so a fresh platform reports ALL divergences in one run.
+        run: |
+          mkdir -p tests/output/logs
+          targets=$(make print-test-targets)
+
+          {
+            echo "## Test results — macOS arm64 (x86-64 aligners via Rosetta)"
+            echo ""
+            echo "| Test target | Result |"
+            echo "| --- | --- |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          overall=0
+          passed=0
+          failed=0
+          for t in $targets; do
+            if make "$t" > "tests/output/logs/$t.log" 2>&1; then
+              echo "| \`$t\` | ✅ pass |" >> "$GITHUB_STEP_SUMMARY"
+              passed=$((passed + 1))
+            else
+              echo "| \`$t\` | ❌ fail |" >> "$GITHUB_STEP_SUMMARY"
+              failed=$((failed + 1))
+              overall=1
+              # Surface the failing target's log inline (collapsible) in the console.
+              echo "::group::FAILED: $t"
+              cat "tests/output/logs/$t.log"
+              echo "::endgroup::"
+            fi
+          done
+
+          {
+            echo ""
+            echo "**$passed passed, $failed failed, of $((passed + failed)) targets.**"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          exit $overall
+
+      - name: Upload test logs
+        if: always()   # keep logs even when the suite fails
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs-macos-arm64
+          path: tests/output/logs/

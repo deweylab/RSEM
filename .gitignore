@@ -41,6 +41,8 @@ tests/output/
 
 # Conda compare
 environment.yml
+# ...but the pinned aligner env for the test suite / CI is checked in.
+!tests/environment.yml
 tests/run-conda-compare.sh
 tests/output_conda/
 
