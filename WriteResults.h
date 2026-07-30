@@ -107,8 +107,8 @@ inline bool isAlleleSpecific(const char* refName, GroupInfo* gt = NULL, GroupInf
   bool alleleS;
   char gtF[STRLEN], taF[STRLEN];
 
-  sprintf(gtF, "%s.gt", refName);
-  sprintf(taF, "%s.ta", refName);
+  snprintf(gtF, sizeof(gtF), "%s.gt", refName);
+  snprintf(taF, sizeof(taF), "%s.ta", refName);
   std::ifstream gtIF(gtF), taIF(taF);
   alleleS = gtIF.is_open() && taIF.is_open();
   if (gtIF.is_open()) gtIF.close();
@@ -135,7 +135,7 @@ void writeResultsEM(int M, const char* refName, const char* imdName, Transcripts
 	std::vector<double> glens, gene_eels, gene_counts, gene_tpm, gene_fpkm;
 	
 	// Load group info
-	sprintf(groupF, "%s.grp", refName);
+	snprintf(groupF, sizeof(groupF), "%s.grp", refName);
 	gi.load(groupF);
 	m = gi.getm();
 
@@ -222,7 +222,7 @@ void writeResultsEM(int M, const char* refName, const char* imdName, Transcripts
 
 	if (!alleleS) {
 	  //isoform level results
-	  sprintf(outF, "%s.iso_res", imdName);
+	  snprintf(outF, sizeof(outF), "%s.iso_res", imdName);
 	  fo = fopen(outF, "w");
 	  for (int i = 1; i <= M; i++) {
 	    const Transcript& transcript = transcripts.getTranscriptAt(i);
@@ -256,7 +256,7 @@ void writeResultsEM(int M, const char* refName, const char* imdName, Transcripts
 	}
 	else {
 	  // allele level results
-	  sprintf(outF, "%s.allele_res", imdName);
+	  snprintf(outF, sizeof(outF), "%s.allele_res", imdName);
 	  fo = fopen(outF, "w");
 	  for (int i = 1; i <= M; i++) {
 	    const Transcript& transcript = transcripts.getTranscriptAt(i);
@@ -287,7 +287,7 @@ void writeResultsEM(int M, const char* refName, const char* imdName, Transcripts
 	  fclose(fo);
 
 	  // isoform level results
-	  sprintf(outF, "%s.iso_res", imdName);
+	  snprintf(outF, sizeof(outF), "%s.iso_res", imdName);
 	  fo = fopen(outF, "w");
 	  for (int i = 0; i < m_trans; i++) {
 	    const Transcript& transcript = transcripts.getTranscriptAt(ta.spAt(i));
@@ -313,7 +313,7 @@ void writeResultsEM(int M, const char* refName, const char* imdName, Transcripts
 	}
 
 	//gene level results
-	sprintf(outF, "%s.gene_res", imdName);
+	snprintf(outF, sizeof(outF), "%s.gene_res", imdName);
 	fo = fopen(outF, "w");
 	for (int i = 0; i < m; i++) {
 		const Transcript& transcript = transcripts.getTranscriptAt(gi.spAt(i));
@@ -406,7 +406,7 @@ void writeResultsGibbs(int M, int m, int m_trans, GroupInfo& gi, GroupInfo &gt, 
 
 	if (!alleleS) {
 	  //isoform level results
-	  sprintf(outF, "%s.iso_res", imdName);
+	  snprintf(outF, sizeof(outF), "%s.iso_res", imdName);
 	  fo = fopen(outF, "a");
 	  general_assert(fo != NULL, "Cannot open " + cstrtos(outF) + "!");
 	  
@@ -424,7 +424,7 @@ void writeResultsGibbs(int M, int m, int m_trans, GroupInfo& gi, GroupInfo &gt, 
 	}
 	else {
 	  //allele level results
-	  sprintf(outF, "%s.allele_res", imdName);
+	  snprintf(outF, sizeof(outF), "%s.allele_res", imdName);
 	  fo = fopen(outF, "a");
 	  general_assert(fo != NULL, "Cannot open " + cstrtos(outF) + "!");
 	  
@@ -443,7 +443,7 @@ void writeResultsGibbs(int M, int m, int m_trans, GroupInfo& gi, GroupInfo &gt, 
 	  fclose(fo);
 
 	  //isoform level results
-	  sprintf(outF, "%s.iso_res", imdName);
+	  snprintf(outF, sizeof(outF), "%s.iso_res", imdName);
 	  fo = fopen(outF, "a");
 	  general_assert(fo != NULL, "Cannot open " + cstrtos(outF) + "!");
 	  
@@ -461,7 +461,7 @@ void writeResultsGibbs(int M, int m, int m_trans, GroupInfo& gi, GroupInfo &gt, 
 	}
  
 	//gene level results
-	sprintf(outF, "%s.gene_res", imdName);
+	snprintf(outF, sizeof(outF), "%s.gene_res", imdName);
 	fo = fopen(outF, "a");
 	general_assert(fo != NULL, "Cannot open " + cstrtos(outF) + "!");
 
@@ -487,7 +487,7 @@ void writeResultsSimulation(int M, char* refName, char* outFN, Transcripts& tran
 	char groupF[STRLEN];
 
         // Load group info
-        sprintf(groupF, "%s.grp", refName);
+        snprintf(groupF, sizeof(groupF), "%s.grp", refName);
         gi.load(groupF);
 	m = gi.getm();
 
@@ -581,7 +581,7 @@ void writeResultsSimulation(int M, char* refName, char* outFN, Transcripts& tran
 
 	//allele level
 	if (alleleS) {
-	  sprintf(outF, "%s.sim.alleles.results", outFN);
+	  snprintf(outF, sizeof(outF), "%s.sim.alleles.results", outFN);
 	  fo = fopen(outF, "w");
 	  fprintf(fo, "allele_id\ttranscript_id\tgene_id\tlength\teffective_length\tcount\tTPM\tFPKM\tAlleleIsoPct\tAlleleGenePct\n");
 	  for (int i = 1; i <= M; i++) {
@@ -593,7 +593,7 @@ void writeResultsSimulation(int M, char* refName, char* outFN, Transcripts& tran
 	}
 
 	//isoform level
-	sprintf(outF, "%s.sim.isoforms.results", outFN);
+	snprintf(outF, sizeof(outF), "%s.sim.isoforms.results", outFN);
 	fo = fopen(outF, "w");
 	fprintf(fo, "transcript_id\tgene_id\tlength\teffective_length\tcount\tTPM\tFPKM\tIsoPct\n");
 	if (!alleleS) {
@@ -613,7 +613,7 @@ void writeResultsSimulation(int M, char* refName, char* outFN, Transcripts& tran
 	fclose(fo);
 
 	//gene level
-	sprintf(outF, "%s.sim.genes.results", outFN);
+	snprintf(outF, sizeof(outF), "%s.sim.genes.results", outFN);
 	fo = fopen(outF, "w");
 	fprintf(fo, "gene_id\ttranscript_id(s)\tlength\teffective_length\tcount\tTPM\tFPKM\n");
 	for (int i = 0; i < m; i++) {

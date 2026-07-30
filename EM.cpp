@@ -124,7 +124,7 @@ void init(ReadReader<ReadType> **&readers, HitContainer<HitType> **&hitvs, doubl
 		hitvs[i] = new HitContainer<HitType>();
 	}
 
-	sprintf(datF, "%s.dat", imdName);
+	snprintf(datF, sizeof(datF), "%s.dat", imdName);
 	fin.open(datF);
 	general_assert(fin.is_open(), "Cannot open " + cstrtos(datF) + "! It may not exist.");
 	fin>>nReads>>nHits>>rt;
@@ -279,7 +279,7 @@ void* calcConProbs(void* arg) {
 
 template<class ModelType>
 void writeResults(ModelType& model, double* counts) {
-  sprintf(modelF, "%s.model", statName);
+  snprintf(modelF, sizeof(modelF), "%s.model", statName);
   model.write(modelF);
   writeResultsEM(M, refName, imdName, transcripts, theta, eel, countvs[0], appendNames);
 }
@@ -432,7 +432,7 @@ void EM() {
 		}
 		model.setNeedCalcConPrb(false);
 
-		sprintf(out_for_gibbs_F, "%s.ofg", imdName);
+		snprintf(out_for_gibbs_F, sizeof(out_for_gibbs_F), "%s.ofg", imdName);
 		ofstream fout(out_for_gibbs_F);
 		fout<< M<< " "<< N0<< endl;
 		for (int i = 0; i < nThreads; i++) {
@@ -481,7 +481,7 @@ void EM() {
 	pthread_attr_destroy(&attr);
 
 
-	sprintf(thetaF, "%s.theta", statName);
+	snprintf(thetaF, sizeof(thetaF), "%s.theta", statName);
 	fo = fopen(thetaF, "w");
 	fprintf(fo, "%d\n", M + 1);
 
@@ -502,7 +502,7 @@ void EM() {
 	writeResults<ModelType>(model, countvs[0]);
 
 	if (genBamF) {
-		sprintf(outBamF, "%s.transcript.bam", outName);
+		snprintf(outBamF, sizeof(outBamF), "%s.transcript.bam", outName);
 		
 		if (bamSampling) {
 			READ_INT_TYPE local_N;
@@ -597,14 +597,14 @@ int main(int argc, char* argv[]) {
 	general_assert(nThreads > 0, "Number of threads should be bigger than 0!");
 
 	//basic info loading
-	sprintf(refF, "%s.seq", refName);
+	snprintf(refF, sizeof(refF), "%s.seq", refName);
 	refs.loadRefs(refF);
 	M = refs.getM();
 
-	sprintf(tiF, "%s.ti", refName);
+	snprintf(tiF, sizeof(tiF), "%s.ti", refName);
 	transcripts.readFrom(tiF);
 
-	sprintf(cntF, "%s.cnt", statName);
+	snprintf(cntF, sizeof(cntF), "%s.cnt", statName);
 	fin.open(cntF);
 
 	general_assert(fin.is_open(), "Cannot open " + cstrtos(cntF) + "! It may not exist.");
@@ -616,10 +616,10 @@ int main(int argc, char* argv[]) {
 		printf("Warning: There are no alignable reads!\n");
 		theta.resize(M + 1, 0.0);
 		FILE *fo = NULL;
-		sprintf(thetaF, "%s.theta", statName);
+		snprintf(thetaF, sizeof(thetaF), "%s.theta", statName);
 		fo = fopen(thetaF, "w");
 		fclose(fo);
-		sprintf(modelF, "%s.model", statName);
+		snprintf(modelF, sizeof(modelF), "%s.model", statName);
 		fo = fopen(modelF, "w");
 		fclose(fo);
 		eel.resize(M + 1, 0.0);
@@ -628,9 +628,9 @@ int main(int argc, char* argv[]) {
 		memset(countv, 0, sizeof(double) * (M + 1));
 		writeResultsEM(M, refName, imdName, transcripts, theta, eel, countv, appendNames);
 		if (genBamF) {
-			sprintf(outBamF, "%s.transcript.bam", outName);
+			snprintf(outBamF, sizeof(outBamF), "%s.transcript.bam", outName);
 			char command[1005];
-			sprintf(command, "cp %s %s", inpSamF, outBamF);
+			snprintf(command, sizeof(command), "cp %s %s", inpSamF, outBamF);
 			printf("%s\n", command);
 			system(command);
 		}
@@ -644,7 +644,7 @@ int main(int argc, char* argv[]) {
 		mparams.N[0] = N0; mparams.N[1] = N1; mparams.N[2] = N2;
 		mparams.refs = &refs;
 
-		sprintf(mparamsF, "%s.mparams", imdName);
+		snprintf(mparamsF, sizeof(mparamsF), "%s.mparams", imdName);
 		fin.open(mparamsF);
 
 		general_assert(fin.is_open(), "Cannot open " + cstrtos(mparamsF) + "It may not exist.");

@@ -22,7 +22,7 @@ void buildIndex(char* readF, int gap, bool hasQ) {
 	char buf[sizeof(nReads) + sizeof(gap) + sizeof(nPos)];
 	streampos startPos;
 
-	sprintf(idxF, "%s.ridx", readF);
+	snprintf(idxF, sizeof(idxF), "%s.ridx", readF);
 
 	ifstream fin(readF);
 	if (!fin.is_open()) { fprintf(stderr, "Cannot open %s! It may not exist.\n", readF); exit(-1); }

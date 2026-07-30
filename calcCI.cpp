@@ -180,7 +180,7 @@ void sample_theta_vectors_from_count_vectors() {
 	hasSeed ? engineFactory::init(seed) : engineFactory::init();
 	for (int i = 0; i < num_threads; i++) {
 		paramsArray[i].no = i;
-		sprintf(inpF, "%s%d", cvsF, i);
+		snprintf(inpF, sizeof(inpF), "%s%d", cvsF, i);
 		paramsArray[i].fi = fopen(inpF, "r");
 		paramsArray[i].engine = engineFactory::new_engine();
 		paramsArray[i].mw = model.getMW();
@@ -443,7 +443,7 @@ void calculate_credibility_intervals(char* imdName) {
 
 	delete[] ciParamsArray;
 
-	alleleS ? sprintf(outF, "%s.allele_res", imdName) : sprintf(outF, "%s.iso_res", imdName);
+	alleleS ? snprintf(outF, sizeof(outF), "%s.allele_res", imdName) : snprintf(outF, sizeof(outF), "%s.iso_res", imdName);
 	fo = fopen(outF, "a");
 	for (int i = 1; i <= M; i++)
 	  fprintf(fo, "%.6g%c", tpm[i].lb, (i < M ? '\t' : '\n'));
@@ -461,7 +461,7 @@ void calculate_credibility_intervals(char* imdName) {
 
 	if (alleleS) {
 	  //isoform level results
-	  sprintf(outF, "%s.iso_res", imdName);
+	  snprintf(outF, sizeof(outF), "%s.iso_res", imdName);
 	  fo = fopen(outF, "a");
 	  for (int i = 0; i < m_trans; i++)
 	    fprintf(fo, "%.6g%c", iso_tpm[i].lb, (i < m_trans - 1 ? '\t' : '\n'));
@@ -479,7 +479,7 @@ void calculate_credibility_intervals(char* imdName) {
 	}
 
 	//gene level results
-	sprintf(outF, "%s.gene_res", imdName);
+	snprintf(outF, sizeof(outF), "%s.gene_res", imdName);
 	fo = fopen(outF, "a");
 	for (int i = 0; i < m; i++)
 	  fprintf(fo, "%.6g%c", gene_tpm[i].lb, (i < m - 1 ? '\t' : '\n'));
@@ -539,11 +539,11 @@ int main(int argc, char* argv[]) {
 	}
 	verbose = !quiet;
 
-	sprintf(refF, "%s.seq", refName);
+	snprintf(refF, sizeof(refF), "%s.seq", refName);
 	refs.loadRefs(refF, 1);
 	M = refs.getM();
 
-	sprintf(groupF, "%s.grp", refName);
+	snprintf(groupF, sizeof(groupF), "%s.grp", refName);
 	gi.load(groupF);
 	m = gi.getm();
 
@@ -555,10 +555,10 @@ int main(int argc, char* argv[]) {
 	assert(nSamples > 0 && M > 0); // for Buffter.h: (bufsize_type)nSamples
 	l_bars = new float[nSamples];
 
-	sprintf(tmpF, "%s.tmp", imdName);
-	sprintf(cvsF, "%s.countvectors", imdName);
+	snprintf(tmpF, sizeof(tmpF), "%s.tmp", imdName);
+	snprintf(cvsF, sizeof(cvsF), "%s.countvectors", imdName);
 
-	sprintf(modelF, "%s.model", statName);
+	snprintf(modelF, sizeof(modelF), "%s.model", statName);
 	FILE *fi = fopen(modelF, "r");
 	general_assert(fi != NULL, "Cannot open " + cstrtos(modelF) + "!");
 	assert(fscanf(fi, "%d", &model_type) == 1);

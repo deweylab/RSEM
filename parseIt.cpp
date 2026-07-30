@@ -182,13 +182,13 @@ int main(int argc, char* argv[]) {
 	  }
 	}
 
-	sprintf(groupF, "%s.grp", argv[1]);
+	snprintf(groupF, sizeof(groupF), "%s.grp", argv[1]);
 	gi.load(groupF);
-	sprintf(tiF, "%s.ti", argv[1]);
+	snprintf(tiF, sizeof(tiF), "%s.ti", argv[1]);
 	transcripts.readFrom(tiF);
 
-	sprintf(datF, "%s.dat", argv[2]);
-	sprintf(cntF, "%s.cnt", argv[3]);
+	snprintf(datF, sizeof(datF), "%s.dat", argv[2]);
+	snprintf(cntF, sizeof(cntF), "%s.cnt", argv[3]);
 
 	init(argv[2], argv[4]);
 

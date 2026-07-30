@@ -104,12 +104,12 @@ void load_data(char* refName, char* statName, char* imdName) {
 	int tmpVal;
 
 	//load reference file
-	sprintf(refF, "%s.seq", refName);
+	snprintf(refF, sizeof(refF), "%s.seq", refName);
 	refs.loadRefs(refF, 1);
 	M = refs.getM();
 
 	//load ofgF;
-	sprintf(ofgF, "%s.ofg", imdName);
+	snprintf(ofgF, sizeof(ofgF), "%s.ofg", imdName);
 	fin.open(ofgF);
 	general_assert(fin.is_open(), "Cannot open " + cstrtos(ofgF) + "!");
 	fin>>tmpVal>>N0;
@@ -138,7 +138,7 @@ void load_data(char* refName, char* statName, char* imdName) {
 
 void load_group_info(char* refName) {
   // Load group info
-  sprintf(groupF, "%s.grp", refName);
+  snprintf(groupF, sizeof(groupF), "%s.grp", refName);
   gi.load(groupF);
   m = gi.getm();
   
@@ -154,7 +154,7 @@ void load_omit_info(const char* imdName) {
   FILE *fi = NULL;
   int tid;
   
-  sprintf(omitF, "%s.omit", imdName);
+  snprintf(omitF, sizeof(omitF), "%s.omit", imdName);
   fi = fopen(omitF, "r");
   init_counts.assign(M + 1, 0);
   totc = M + 1;
@@ -211,7 +211,7 @@ void init() {
 	quotient = NSAMPLES / nThreads;
 	left = NSAMPLES % nThreads;
 
-	sprintf(cvsF, "%s.countvectors", imdName);
+	snprintf(cvsF, sizeof(cvsF), "%s.countvectors", imdName);
 	paramsArray = new Params[nThreads];
 	threads = new pthread_t[nThreads];
 
@@ -222,7 +222,7 @@ void init() {
 		paramsArray[i].nsamples = quotient;
 		if (i < left) paramsArray[i].nsamples++;
 
-		sprintf(outF, "%s%d", cvsF, i);
+		snprintf(outF, sizeof(outF), "%s%d", cvsF, i);
 		paramsArray[i].fo = fopen(outF, "w");
 
 		paramsArray[i].engine = engineFactory::new_engine();
@@ -492,7 +492,7 @@ int main(int argc, char* argv[]) {
 	}
 	//////
 
-	sprintf(modelF, "%s.model", statName);
+	snprintf(modelF, sizeof(modelF), "%s.model", statName);
 	FILE *fi = fopen(modelF, "r");
 	general_assert(fi != NULL, "Cannot open " + cstrtos(modelF) + "!");
 	assert(fscanf(fi, "%d", &model_type) == 1);

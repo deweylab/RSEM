@@ -139,12 +139,12 @@ inline void genReadFileNames(const char* readFN, int tagType, int read_type, int
 
 	if (read_type == 0 || read_type == 1) {
 		s = 1;
-		sprintf(readFs[0], "%s_%s.%s", readFN, tags[tagType], suffix);
+		snprintf(readFs[0], sizeof(readFs[0]), "%s_%s.%s", readFN, tags[tagType], suffix);
 	}
 	else {
 		s = 2;
-		sprintf(readFs[0], "%s_%s_1.%s", readFN, tags[tagType], suffix);
-		sprintf(readFs[1], "%s_%s_2.%s", readFN, tags[tagType], suffix);
+		snprintf(readFs[0], sizeof(readFs[0]), "%s_%s_1.%s", readFN, tags[tagType], suffix);
+		snprintf(readFs[1], sizeof(readFs[1]), "%s_%s_2.%s", readFN, tags[tagType], suffix);
 	}
 }
 
