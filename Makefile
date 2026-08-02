@@ -417,8 +417,11 @@ $(foreach _m,$(READ_MODES),$(foreach _a,$(ALIGNERS),$(eval $(call _RULE_TEST_SIM
 
 OPTION_CASES := bowtie_custom bowtie2_custom gibbs_sampling fragment_modeling star_gzip_genomebam hisat2_path
 
-# Dir passed to --hisat2-path; holds a wrapper that execs hisat2 from PATH.
-HISAT2_DIR := $(CURDIR)/tests/tools/hisat2
+# Dir passed to --hisat2-path; holds a probe wrapper that records invocations
+# and delegates by absolute path. Kept off PATH so only the flag can reach it.
+HISAT2_PROBE_DIR := $(CURDIR)/tests/tools/hisat2-probe
+HISAT2_REAL      := $(shell command -v hisat2 2>/dev/null)
+HISAT2_PROBE_LOG := $(TEST_OUTPUT)/options/hisat2_path/hisat2-probe.log
 
 TEST_READS_1_GZ := $(TEST_DATA)/reads_1.fastq.gz
 TEST_READS_2_GZ := $(TEST_DATA)/reads_2.fastq.gz
@@ -434,7 +437,7 @@ OPT_ARGS_bowtie2_custom      := --bowtie2 --bowtie2-mismatch-rate 0.05 --bowtie2
 OPT_ARGS_gibbs_sampling      := --seed $(TEST_SEED) --paired-end --single-cell-prior --calc-pme --calc-ci --gibbs-burnin 20 --gibbs-number-of-samples 800 --gibbs-sampling-gap 2 --ci-credibility-level 0.80 --ci-number-of-samples-per-count-vector 30 $(TEST_READS_1) $(TEST_READS_2)
 OPT_ARGS_fragment_modeling   := --fragment-length-mean 400 --fragment-length-sd 50 --fragment-length-min 100 --fragment-length-max 700 --estimate-rspd --num-rspd-bins 40 $(TEST_READS_1)
 OPT_ARGS_star_gzip_genomebam := --star --star-path $(STAR_276A_DIR) --star-gzipped-read-file --star-output-genome-bam --paired-end $(TEST_READS_1_GZ) $(TEST_READS_2_GZ)
-OPT_ARGS_hisat2_path         := --hisat2-hca --hisat2-path $(HISAT2_DIR) --seed $(TEST_SEED) --paired-end $(TEST_READS_1) $(TEST_READS_2)
+OPT_ARGS_hisat2_path         := --hisat2-hca --hisat2-path $(HISAT2_PROBE_DIR) --seed $(TEST_SEED) --paired-end $(TEST_READS_1) $(TEST_READS_2)
 
 # Reference for each case (bowtie is the default when no aligner flag is given).
 OPT_REF_bowtie_custom       := $(GOLD_ROOT)/paired_end/bowtie/reference/$(REF_NAME)
@@ -451,6 +454,11 @@ OPT_PREREQ_fragment_modeling   :=
 OPT_PREREQ_star_gzip_genomebam := fetch-star-276a $(TEST_READS_1_GZ) $(TEST_READS_2_GZ)
 OPT_PREREQ_hisat2_path         :=
 
+# Optional per-case environment prefix, and assertion run after the gold diffs
+# for checks gold files cannot express. Unset cases expand to nothing.
+OPT_ENV_hisat2_path  := RSEM_TEST_HISAT2_PROBE=$(HISAT2_PROBE_LOG) RSEM_TEST_HISAT2_BIN=$(HISAT2_REAL)
+OPT_POST_hisat2_path := tests/assert_path_flag_honored.sh $(HISAT2_PROBE_LOG) $(HISAT2_PROBE_DIR) hisat2 --hisat2-path
+
 .PHONY: test-options generate-gold-options $(foreach _c,$(OPTION_CASES),test-option-$(_c))
 
 define _RULE_TEST_OPTION
@@ -458,12 +466,13 @@ test-option-$(1): $(OPT_PREREQ_$(1))
 	@echo "==> Testing option case: $(1)"
 	rm -rf $(TEST_OUTPUT)/options/$(1)
 	mkdir -p $(TEST_OUTPUT)/options/$(1)
-	PATH="$(CURDIR)/tests/shims:$$$$PATH" ./rsem-calculate-expression -p $(TEST_THREADS) $$(OPT_ARGS_$(1)) $$(OPT_REF_$(1)) $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME)
+	$$(OPT_ENV_$(1)) PATH="$(CURDIR)/tests/shims:$$$$PATH" ./rsem-calculate-expression -p $(TEST_THREADS) $$(OPT_ARGS_$(1)) $$(OPT_REF_$(1)) $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME)
 	diff $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).genes.results $(GOLD_ROOT)/options/$(1)/$(SAMPLE_NAME).genes.results
 	diff $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).isoforms.results $(GOLD_ROOT)/options/$(1)/$(SAMPLE_NAME).isoforms.results
 	diff $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt $(GOLD_ROOT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt
 	python3 tests/compare_floats.py --exact $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model $(GOLD_ROOT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model
 	python3 tests/compare_floats.py $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta $(GOLD_ROOT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta
+	$$(OPT_POST_$(1))
 	@echo "==> test-option-$(1): OK"
 endef
 $(foreach _c,$(OPTION_CASES),$(eval $(call _RULE_TEST_OPTION,$(_c))))
@@ -478,7 +487,7 @@ define _RULE_GENERATE_GOLD_OPTION
 generate-gold-option-$(1): all $(OPT_PREREQ_$(1))
 	@echo "==> Gold option case=$(1)"
 	mkdir -p $(TEST_OUTPUT)/options/$(1) $(GOLD_ROOT)/options/$(1)/$(SAMPLE_NAME).stat
-	PATH="$(CURDIR)/tests/shims:$$$$PATH" ./rsem-calculate-expression -p $(TEST_THREADS) $(OPT_ARGS_$(1)) $(OPT_REF_$(1)) $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME)
+	$(OPT_ENV_$(1)) PATH="$(CURDIR)/tests/shims:$$$$PATH" ./rsem-calculate-expression -p $(TEST_THREADS) $(OPT_ARGS_$(1)) $(OPT_REF_$(1)) $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME)
 	cp $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).genes.results $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).isoforms.results $(GOLD_ROOT)/options/$(1)/
 	cp $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta $(GOLD_ROOT)/options/$(1)/$(SAMPLE_NAME).stat/
 endef

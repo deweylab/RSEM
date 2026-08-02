@@ -5,8 +5,10 @@ For each case, run rsem-calculate-expression once with the full flag set, then
 once per flag with that flag reverted to its default. A reverted run that
 produces identical output means the flag isn't exercised by the test data.
 
-Run manually (not wired into `make test`). Path-only flags (--hisat2-path,
---star-path) are omitted since reverting them resolves the same binary.
+Run manually (not wired into `make test`). Path-only flags are invisible to
+ablation, since reverting one resolves the same binary. --hisat2-path is
+covered instead by the hisat2_path case via a probe wrapper (see
+tests/assert_path_flag_honored.sh); --star-path has no probe yet.
 """
 import filecmp
 import subprocess
