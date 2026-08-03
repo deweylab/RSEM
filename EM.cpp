@@ -629,7 +629,7 @@ int main(int argc, char* argv[]) {
 		writeResultsEM(M, refName, imdName, transcripts, theta, eel, countv, appendNames);
 		if (genBamF) {
 			snprintf(outBamF, sizeof(outBamF), "%s.transcript.bam", outName);
-			char command[1005];
+			char command[STRLEN];
 			snprintf(command, sizeof(command), "cp %s %s", inpSamF, outBamF);
 			printf("%s\n", command);
 			system(command);
