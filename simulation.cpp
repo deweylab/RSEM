@@ -61,21 +61,21 @@ void genOutReadStreams(int type, char *outFN) {
 	switch(type) {
 	case 0 :
 		n_os = 1;
-		sprintf(outReadF[0], "%s.fa", outFN);
+		snprintf(outReadF[0], sizeof(outReadF[0]), "%s.fa", outFN);
 		break;
 	case 1 :
 		n_os = 1;
-		sprintf(outReadF[0], "%s.fq", outFN);
+		snprintf(outReadF[0], sizeof(outReadF[0]), "%s.fq", outFN);
 		break;
 	case 2 :
 		n_os = 2;
 		for (int i = 0; i < n_os; i++)
-			sprintf(outReadF[i], "%s_%d.fa", outFN, i + 1);
+			snprintf(outReadF[i], sizeof(outReadF[i]), "%s_%d.fa", outFN, i + 1);
 		break;
 	case 3 :
 		n_os = 2;
 		for (int i = 0; i < n_os; i++)
-			sprintf(outReadF[i], "%s_%d.fq", outFN, i + 1);
+			snprintf(outReadF[i], sizeof(outReadF[i]), "%s_%d.fq", outFN, i + 1);
 		break;
 	}
 
@@ -190,10 +190,10 @@ int main(int argc, char* argv[]) {
 	OFFSITE = (alleleS ? 6: 5);
 
 	//load basic files
-	sprintf(refF, "%s.seq", argv[1]);
+	snprintf(refF, sizeof(refF), "%s.seq", argv[1]);
 	refs.loadRefs(refF);
 	M = refs.getM();
-	sprintf(tiF, "%s.ti", argv[1]);
+	snprintf(tiF, sizeof(tiF), "%s.ti", argv[1]);
 	transcripts.readFrom(tiF);
 
 	//read model type from modelF

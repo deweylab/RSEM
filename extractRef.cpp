@@ -257,10 +257,10 @@ void writeResults(char* refName) {
 	int s;
 	ofstream fout;
 
-	sprintf(groupF, "%s.grp", refName);
-	sprintf(tiF, "%s.ti", refName);
-	sprintf(refFastaF, "%s.transcripts.fa", refName);
-	sprintf(chromListF, "%s.chrlist", refName);
+	snprintf(groupF, sizeof(groupF), "%s.grp", refName);
+	snprintf(tiF, sizeof(tiF), "%s.ti", refName);
+	snprintf(refFastaF, sizeof(refFastaF), "%s.transcripts.fa", refName);
+	snprintf(chromListF, sizeof(chromListF), "%s.chrlist", refName);
 
 
 	fout.open(groupF);

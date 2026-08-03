@@ -134,7 +134,7 @@ void Transcripts::buildMappings(int n_targets, char** target_name, const char* i
 
 	if (imdName != NULL) {
 	  char omitF[STRLEN];
-	  sprintf(omitF, "%s.omit", imdName);
+	  snprintf(omitF, sizeof(omitF), "%s.omit", imdName);
 	  FILE *fo = fopen(omitF, "w");
 	  for (int i = 1; i <= M; i++) 
 	    if (!appeared[i]) fprintf(fo, "%d\n", i);

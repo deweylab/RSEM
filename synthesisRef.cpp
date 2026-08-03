@@ -74,7 +74,7 @@ void writeResults(int option, char* refName) {
 	string cur_gene_id, cur_transcript_id, name;
 	vector<int> gi, gt, ta;
 
-	sprintf(tiF, "%s.ti", refName);
+	snprintf(tiF, sizeof(tiF), "%s.ti", refName);
 	transcripts.writeTo(tiF);
 	if (verbose) { printf("Transcript Information File is generated!\n"); }
 
@@ -95,25 +95,25 @@ void writeResults(int option, char* refName) {
 	gi.push_back(M + 1);
 	if (option == 2) { gt.push_back((int)ta.size()); ta.push_back(M + 1); }
 
-	sprintf(groupF, "%s.grp", refName);
+	snprintf(groupF, sizeof(groupF), "%s.grp", refName);
 	fout.open(groupF);
 	for (int i = 0; i < (int)gi.size(); i++) fout<< gi[i]<< endl;
 	fout.close();
 	if (verbose) { printf("Group File is generated!\n"); }
 
 	if (option == 2) {
-	  sprintf(gtF, "%s.gt", refName);
+	  snprintf(gtF, sizeof(gtF), "%s.gt", refName);
 	  fout.open(gtF);
 	  for (int i = 0; i < (int)gt.size(); i++) fout<< gt[i]<< endl;
 	  fout.close();
-	  sprintf(taF, "%s.ta", refName);
+	  snprintf(taF, sizeof(taF), "%s.ta", refName);
 	  fout.open(taF);
 	  for (int i = 0; i < (int)ta.size(); i++) fout<< ta[i]<< endl;
 	  fout.close();
 	  if (verbose) { printf("Allele-specific group files are generated!\n"); }
 	}
 
-	sprintf(refFastaF, "%s.transcripts.fa", refName);
+	snprintf(refFastaF, sizeof(refFastaF), "%s.transcripts.fa", refName);
 	fout.open(refFastaF);
 	for (int i = 1; i <= M; i++) {
 		name = transcripts.getTranscriptAt(i).getSeqName();

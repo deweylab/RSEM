@@ -22,7 +22,7 @@ struct ReadIndex {
 		char indexF[STRLEN];
 		std::ifstream fin;
 
-		sprintf(indexF, "%s.ridx", readF);
+		snprintf(indexF, sizeof(indexF), "%s.ridx", readF);
 		fin.open(indexF, std::ios::binary);
 		if (!fin.is_open()) { fprintf(stderr, "Cannot open %s! It may not exist.\n", indexF); exit(-1); }
 

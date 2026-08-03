@@ -22,8 +22,8 @@ int main(int argc, char* argv[]) {
         nThreads = 1; // default is 1
         if (argc == 6) { assert(strcmp(argv[4], "-p") == 0); nThreads = atoi(argv[5]); }
 
-	sprintf(tiF, "%s.ti", argv[1]);
-	sprintf(chr_list, "%s.chrlist", argv[1]);
+	snprintf(tiF, sizeof(tiF), "%s.ti", argv[1]);
+	snprintf(chr_list, sizeof(chr_list), "%s.chrlist", argv[1]);
 	transcripts.readFrom(tiF);
 
 	printf("Start converting:\n");

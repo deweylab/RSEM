@@ -67,10 +67,10 @@ int main(int argc, char* argv[]) {
 	M = refs.getM();
 
 	//save references
-	sprintf(refF, "%s.seq", argv[3]);
+	snprintf(refF, sizeof(refF), "%s.seq", argv[3]);
 	refs.saveRefs(refF);
 
-	sprintf(idxF, "%s.idx.fa", argv[3]);
+	snprintf(idxF, sizeof(idxF), "%s.idx.fa", argv[3]);
 	fout.open(idxF);
 	for (int i = 1; i <= M; i++) {
 		fout<< ">"<< refs.getRef(i).getName()<< endl<< refs.getRef(i).getSeq()<< endl;
@@ -78,7 +78,7 @@ int main(int argc, char* argv[]) {
 	fout.close();
 	if (verbose) printf("%s is generated!\n", idxF);
 
-	sprintf(n2g_idxF, "%s.n2g.idx.fa", argv[3]);
+	snprintf(n2g_idxF, sizeof(n2g_idxF), "%s.n2g.idx.fa", argv[3]);
 	fout.open(n2g_idxF);
 	for (int i = 1; i <= M; i++) {
 	  fout<< ">"<< refs.getRef(i).getName()<< endl<< aligner_refp.convert(refs.getRef(i).getSeq())<< endl;
