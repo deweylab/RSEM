@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Wrapper so RSEM's --star-path <this_dir>/ invokes STAR 2.7.6a from bin/STAR.
+# On Apple Silicon, the Bioconda osx-64 binary is used under Rosetta.
+set -euo pipefail
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BIN="$DIR/bin/STAR"
+if [[ ! -x "$BIN" ]]; then
+  echo "Missing $BIN. Run: make fetch-star-276a" >&2
+  exit 127
+fi
+if [[ "$(uname -s)" == Darwin && "$(uname -m)" == arm64 ]]; then
+  exec arch -x86_64 "$BIN" "$@"
+fi
+exec "$BIN" "$@"

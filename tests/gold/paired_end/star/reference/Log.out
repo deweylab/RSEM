@@ -1,0 +1,80 @@
+STAR version=2.7.6a
+STAR compilation time,server,dir=Sat Sep 19 19:25:43 GMT 2020 :/Users/travis/build/alexdobin/travis-tests/STARcompile/source
+##### Command Line:
+/Users/jeevesh/Documents/OSPO/RSEM/tests/tools/star-2.7.6a/bin/STAR --runThreadN 1 --runMode genomeGenerate --genomeDir tests/output/paired_end/star/reference --genomeFastaFiles tests/data/sarscov2.fasta --sjdbGTFfile tests/data/sarscov2.gtf --sjdbOverhang 100 --genomeSAindexNbases 6 --outFileNamePrefix tests/output/paired_end/star/reference/my_ref
+##### Initial USER parameters from Command Line:
+outFileNamePrefix                 tests/output/paired_end/star/reference/my_ref
+###### All USER parameters from Command Line:
+runThreadN                    1     ~RE-DEFINED
+runMode                       genomeGenerate     ~RE-DEFINED
+genomeDir                     tests/output/paired_end/star/reference     ~RE-DEFINED
+genomeFastaFiles              tests/data/sarscov2.fasta        ~RE-DEFINED
+sjdbGTFfile                   tests/data/sarscov2.gtf     ~RE-DEFINED
+sjdbOverhang                  100     ~RE-DEFINED
+genomeSAindexNbases           6     ~RE-DEFINED
+outFileNamePrefix             tests/output/paired_end/star/reference/my_ref     ~RE-DEFINED
+##### Finished reading parameters from all sources
+
+##### Final user re-defined parameters-----------------:
+runMode                           genomeGenerate
+runThreadN                        1
+genomeDir                         tests/output/paired_end/star/reference
+genomeFastaFiles                  tests/data/sarscov2.fasta   
+genomeSAindexNbases               6
+outFileNamePrefix                 tests/output/paired_end/star/reference/my_ref
+sjdbGTFfile                       tests/data/sarscov2.gtf
+sjdbOverhang                      100
+
+-------------------------------
+##### Final effective command line:
+/Users/jeevesh/Documents/OSPO/RSEM/tests/tools/star-2.7.6a/bin/STAR   --runMode genomeGenerate   --runThreadN 1   --genomeDir tests/output/paired_end/star/reference   --genomeFastaFiles tests/data/sarscov2.fasta      --genomeSAindexNbases 6   --outFileNamePrefix tests/output/paired_end/star/reference/my_ref   --sjdbGTFfile tests/data/sarscov2.gtf   --sjdbOverhang 100
+----------------------------------------
+
+Number of fastq files for each mate = 1
+Finished loading and checking parameters
+--genomeDir directory exists and will be overwritten: tests/output/paired_end/star/reference/
+Jul 05 23:06:07 ... starting to generate Genome files
+tests/data/sarscov2.fasta : chr # 0  "NC_045512v2" chrStart: 0
+Chromosome sequence lengths: 
+NC_045512v2	29903
+Genome sequence total length = 29903
+Genome size with padding = 262144
+Jul 05 23:06:07 ..... processing annotations GTF
+Processing pGe.sjdbGTFfile=tests/data/sarscov2.gtf, found:
+		10 transcripts
+		19 exons (non-collapsed)
+		9 collapsed junctions
+Total junctions: 9
+Jul 05 23:06:07 ..... finished GTF processing
+
+Estimated genome size with padding and SJs: total=genome+SJ=201262144 = 262144 + 201000000
+GstrandBit=32
+Number of SA indices: 59806
+Jul 05 23:06:07 ... starting to sort Suffix Array. This may take a long time...
+Number of chunks: 1;   chunks size limit: 18599685304 bytes
+Jul 05 23:06:07 ... sorting Suffix Array chunks and saving them to disk...
+Writing 478448 bytes into tests/output/paired_end/star/reference//SA_0 ; empty space on disk = 47770613317632 bytes ... done
+Jul 05 23:06:07 ... loading chunks from disk, packing SA...
+Jul 05 23:06:07 ... finished generating suffix array
+Jul 05 23:06:07 ... generating Suffix Array index
+Jul 05 23:06:07 ... completed Suffix Array index
+Jul 05 23:06:07   Finished preparing junctions
+Jul 05 23:06:07 ..... inserting junctions into the genome indices
+Jul 05 23:06:07   Finished SA search: number of new junctions=9, old junctions=0
+Jul 05 23:06:07   Finished sorting SA indicesL nInd=3150
+Genome size with junctions=263953  262144   1809
+GstrandBit1=32   GstrandBit=32
+Jul 05 23:06:07   Finished inserting junction indices
+Jul 05 23:06:07   Finished SAi
+Jul 05 23:06:07 ..... finished inserting junctions into genome
+Jul 05 23:06:07 ... writing Genome to disk ...
+Writing 263953 bytes into tests/output/paired_end/star/reference//Genome ; empty space on disk = 47770608074752 bytes ... done
+SA size in bytes: 259697
+Jul 05 23:06:07 ... writing Suffix Array to disk ...
+Writing 259697 bytes into tests/output/paired_end/star/reference//SA ; empty space on disk = 47770539917312 bytes ... done
+Jul 05 23:06:07 ... writing SAindex to disk
+Writing 8 bytes into tests/output/paired_end/star/reference//SAindex ; empty space on disk = 47770472808448 bytes ... done
+Writing 56 bytes into tests/output/paired_end/star/reference//SAindex ; empty space on disk = 47770472808448 bytes ... done
+Writing 23891 bytes into tests/output/paired_end/star/reference//SAindex ; empty space on disk = 47770472808448 bytes ... done
+Jul 05 23:06:07 ..... finished successfully
+DONE: Genome generation, EXITING

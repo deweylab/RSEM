@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Probe wrapper for --hisat2-path. Records each invocation so the test can
+# assert RSEM ran <--hisat2-path>/hisat2, then delegates to an absolute binary
+# rather than searching PATH. Kept off PATH; only the flag can reach it.
+set -euo pipefail
+
+: "${RSEM_TEST_HISAT2_PROBE:?probe log path must be set}"
+: "${RSEM_TEST_HISAT2_BIN:?absolute hisat2 path must be set}"
+
+if [[ ! -x "$RSEM_TEST_HISAT2_BIN" ]]; then
+  echo "hisat2 not executable at: $RSEM_TEST_HISAT2_BIN" >&2
+  exit 127
+fi
+
+printf '%s %s\n' "$RSEM_TEST_HISAT2_BIN" "$*" >>"$RSEM_TEST_HISAT2_PROBE"
+
+exec "$RSEM_TEST_HISAT2_BIN" "$@"

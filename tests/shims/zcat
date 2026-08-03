@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# STAR's --star-gzipped-read-file calls `zcat`, but macOS's zcat only reads .Z,
+# not .gz. Shimmed ahead of it on PATH so `zcat` handles .gz everywhere.
+exec gzip -dc "$@"

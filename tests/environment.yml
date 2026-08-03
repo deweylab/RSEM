@@ -1,0 +1,13 @@
+# Aligner versions the gold files under tests/gold/ were generated with.
+# Different versions can change alignment output and fail the gold diff, so pin.
+# bowtie2 2.4.1 and star 2.7.6a have no arm64 build; on Apple Silicon create the
+# env with subdir osx-64 (runs under Rosetta). See the CI workflow.
+name: rsem-test
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - bowtie=1.3.1
+  - bowtie2=2.4.1
+  - star=2.7.6a
+  - hisat2=2.2.1

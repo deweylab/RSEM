@@ -1,0 +1,61 @@
+10 0
+3a-mRNA
+3a-mRNA
+NC_045512v2
++ 4588
+2 1 75 25391 29903
+gene_id "3a-mRNA"; transcript_id "3a-mRNA"; 
+6-mRNA
+6-mRNA
+NC_045512v2
++ 2932
+2 1 75 27047 29903
+gene_id "6-mRNA"; transcript_id "6-mRNA"; 
+7a-mRNA
+7a-mRNA
+NC_045512v2
++ 2585
+2 1 75 27394 29903
+gene_id "7a-mRNA"; transcript_id "7a-mRNA"; 
+7b-mRNA*
+7b-mRNA*
+NC_045512v2
++ 2299
+2 1 75 27680 29903
+gene_id "7b-mRNA*"; transcript_id "7b-mRNA*"; 
+8-mRNA
+8-mRNA
+NC_045512v2
++ 2085
+2 1 75 27894 29903
+gene_id "8-mRNA"; transcript_id "8-mRNA"; 
+E-mRNA
+E-mRNA
+NC_045512v2
++ 3736
+2 1 75 26243 29903
+gene_id "E-mRNA"; transcript_id "E-mRNA"; 
+M-mRNA
+M-mRNA
+NC_045512v2
++ 3500
+2 1 75 26479 29903
+gene_id "M-mRNA"; transcript_id "M-mRNA"; 
+N-mRNA
+N-mRNA
+NC_045512v2
++ 1713
+2 1 75 28266 29903
+gene_id "N-mRNA"; transcript_id "N-mRNA"; 
+S-mRNA
+S-mRNA
+NC_045512v2
++ 8417
+2 1 75 21562 29903
+gene_id "S-mRNA"; transcript_id "S-mRNA"; 
+gRNA
+gRNA
+NC_045512v2
++ 29903
+1 1 29903
+gene_id "gRNA"; transcript_id "gRNA"; 
