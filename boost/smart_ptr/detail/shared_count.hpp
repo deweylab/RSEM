@@ -31,7 +31,7 @@
 #include <boost/detail/workaround.hpp>
 // In order to avoid circular dependencies with Boost.TR1
 // we make sure that our include of <memory> doesn't try to
-// pull in the TR1 headers: that's why we use this header 
+// pull in the TR1 headers: that's why we use this header
 // rather than including <memory> directly:
 #include <boost/config/no_tr1/memory.hpp>  // std::auto_ptr
 #include <functional>       // std::less
@@ -66,7 +66,7 @@ template< class D > struct sp_inplace_tag
 #if !defined( BOOST_NO_CXX11_SMART_PTR )
 
 template< class T > class sp_reference_wrapper
-{ 
+{
 public:
 
     explicit sp_reference_wrapper( T & t): t_( boost::addressof( t ) )
@@ -320,7 +320,7 @@ public:
     // auto_ptr<Y> is special cased to provide the strong guarantee
 
     template<class Y>
-    explicit shared_count( std::auto_ptr<Y> & r ): pi_( new sp_counted_impl_p<Y>( r.get() ) )
+    explicit shared_count( std::unique_ptr<Y> & r ): pi_( new sp_counted_impl_p<Y>( r.get() ) )
 #if defined(BOOST_SP_ENABLE_DEBUG_HOOKS)
         , id_(shared_count_id)
 #endif
@@ -337,7 +337,7 @@ public:
         r.release();
     }
 
-#endif 
+#endif
 
 #if !defined( BOOST_NO_CXX11_SMART_PTR )
 
