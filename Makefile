@@ -162,13 +162,13 @@ pRSEM :
 
 
 # Install RSEM
-install : $(PROGRAMS) $(SCRIPTS) $(SAMTOOLS)/samtools rsem_perl_utils.pm
+install : $(PROGRAMS) $(SCRIPTS) $(SAMTOOLS)/samtools rsem_utils.py
 	$(INSTALL_DIR) $(DESTDIR)$(bindir) $(DESTDIR)$(bindir)/$(SAMTOOLS)
 	$(foreach prog,$(PROGRAMS),$(INSTALL_PROGRAM) $(prog) $(DESTDIR)$(bindir)/$(prog) ; $(STRIP) $(DESTDIR)$(bindir)/$(prog) ;)
 	$(INSTALL_PROGRAM) $(SAMTOOLS)/samtools $(DESTDIR)$(bindir)/$(SAMTOOLS)/samtools
 	$(STRIP) $(DESTDIR)$(bindir)/$(SAMTOOLS)/samtools
 	$(foreach script,$(SCRIPTS),$(INSTALL_PROGRAM) $(script) $(DESTDIR)$(bindir)/$(script) ;)
-	$(INSTALL_DATA) rsem_perl_utils.pm $(DESTDIR)$(bindir)/rsem_perl_utils.pm
+	$(INSTALL_DATA) rsem_utils.py $(DESTDIR)$(bindir)/rsem_utils.py
 
 # Clean
 clean :
