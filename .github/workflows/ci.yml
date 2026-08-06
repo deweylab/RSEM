@@ -69,6 +69,8 @@ jobs:
       - name: Run test suite
         # No -e: the loop tracks failures itself and exits with $overall. errexit would
         # abort the step (and misreport it) on any stray non-zero, even when all pass.
+        # Per-target stdout/stderr lives in tests/output/logs/<target>.log (Makefile);
+        # do not wrap `make $t` in another redirect to that same path.
         shell: bash -l {0}
         run: |
           mkdir -p tests/output/logs
@@ -85,7 +87,7 @@ jobs:
           passed=0
           failed=0
           for t in $targets; do
-            if make "$t" > "tests/output/logs/$t.log" 2>&1; then
+            if make "$t"; then
               echo "| \`$t\` | pass |" >> "$GITHUB_STEP_SUMMARY"
               passed=$((passed + 1))
             else
