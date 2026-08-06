@@ -679,8 +679,7 @@ All the following packages will be automatically installed when compiling pRSEM.
 
 ## <a name="acknowledgements"></a> Acknowledgements
 
-RSEM uses the [Boost C++](http://www.boost.org/) and
-[SAMtools](http://www.htslib.org/) libraries. RSEM includes
+RSEM uses the [SAMtools](http://www.htslib.org/) library. RSEM includes
 [EBSeq](http://www.biostat.wisc.edu/~ningleng/EBSeq_Package/) for
 differential expression analysis.
 
