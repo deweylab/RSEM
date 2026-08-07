@@ -107,8 +107,21 @@ jobs:
 
           exit $overall
 
+      # Artifact upload can flake with ENOTFOUND on some runners (seen on
+      # macos-15-intel). Retries + continue-on-error keep a green test suite
+      # from going red on upload-only failures.
       - name: Upload test logs
+        id: upload-logs
         if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-logs-${{ matrix.runs-on }}
+          path: tests/output/logs/
+
+      - name: Retry upload test logs
+        if: always() && steps.upload-logs.outcome == 'failure'
+        continue-on-error: true
         uses: actions/upload-artifact@v7
         with:
           name: test-logs-${{ matrix.runs-on }}
