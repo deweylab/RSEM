@@ -162,13 +162,13 @@ pRSEM :
 
 
 # Install RSEM
-install : $(PROGRAMS) $(SCRIPTS) $(SAMTOOLS)/samtools rsem_perl_utils.pm
+install : $(PROGRAMS) $(SCRIPTS) $(SAMTOOLS)/samtools rsem_utils.py
 	$(INSTALL_DIR) $(DESTDIR)$(bindir) $(DESTDIR)$(bindir)/$(SAMTOOLS)
 	$(foreach prog,$(PROGRAMS),$(INSTALL_PROGRAM) $(prog) $(DESTDIR)$(bindir)/$(prog) ; $(STRIP) $(DESTDIR)$(bindir)/$(prog) ;)
 	$(INSTALL_PROGRAM) $(SAMTOOLS)/samtools $(DESTDIR)$(bindir)/$(SAMTOOLS)/samtools
 	$(STRIP) $(DESTDIR)$(bindir)/$(SAMTOOLS)/samtools
 	$(foreach script,$(SCRIPTS),$(INSTALL_PROGRAM) $(script) $(DESTDIR)$(bindir)/$(script) ;)
-	$(INSTALL_DATA) rsem_perl_utils.pm $(DESTDIR)$(bindir)/rsem_perl_utils.pm
+	$(INSTALL_DATA) rsem_utils.py $(DESTDIR)$(bindir)/rsem_utils.py
 
 # Clean
 clean :
@@ -299,6 +299,7 @@ fetch-star-276a:
 
 TEST_DATA    := tests/data
 TEST_OUTPUT  := tests/output
+TEST_LOG_DIR := $(TEST_OUTPUT)/logs
 GOLD_ROOT    := tests/gold
 REF_NAME     := my_ref
 SAMPLE_NAME  := my_sample
@@ -319,53 +320,66 @@ CALC_READ_ARGS_single_end := $(TEST_READS_1)
 CALC_READ_ARGS_paired_end := --paired-end $(TEST_READS_1) $(TEST_READS_2)
 
 # ---- Individual tests (read_mode × aligner) ---
+# Each test redirects the noisy command/diff body to $(TEST_LOG_DIR)/<target>.log.
+# Console only gets start/OK/FAIL lines (with the log path on failure).
 
 define _RULE_TEST_PREP_REF
 test-prepare-reference-$(2)-$(1): $$(if $$(filter star,$(1)),fetch-star-276a)
+	@mkdir -p $(TEST_LOG_DIR)
 	@echo "==> Testing rsem-prepare-reference ($(2), $(1))"
-	rm -rf $(TEST_OUTPUT)/$(2)/$(1)/reference
-	mkdir -p $(TEST_OUTPUT)/$(2)/$(1)/reference
-	./rsem-prepare-reference \
+	@{ \
+	  set -e; \
+	  rm -rf $(TEST_OUTPUT)/$(2)/$(1)/reference; \
+	  mkdir -p $(TEST_OUTPUT)/$(2)/$(1)/reference; \
+	  ./rsem-prepare-reference \
 		--gtf $(TEST_GTF) \
 		$(PREP_FLAGS_$(1)) \
 		$(STAR_EXTRA_ARGS_$(1)) \
 		-p $(TEST_THREADS) \
 		$(TEST_GENOME) \
-		$(TEST_OUTPUT)/$(2)/$(1)/reference/$(REF_NAME)
-	diff -r $(REF_DIFF_EXCL_$(1)) $(TEST_OUTPUT)/$(2)/$(1)/reference $(GOLD_ROOT)/$(2)/$(1)/reference
-	$$(if $$(filter star,$(1)),diff <(grep -v '^###' $(TEST_OUTPUT)/$(2)/$(1)/reference/genomeParameters.txt) <(grep -v '^###' $(GOLD_ROOT)/$(2)/$(1)/reference/genomeParameters.txt))
+		$(TEST_OUTPUT)/$(2)/$(1)/reference/$(REF_NAME); \
+	  diff -r $(REF_DIFF_EXCL_$(1)) $(TEST_OUTPUT)/$(2)/$(1)/reference $(GOLD_ROOT)/$(2)/$(1)/reference; \
+	  $$(if $$(filter star,$(1)),diff <(grep -v '^###' $(TEST_OUTPUT)/$(2)/$(1)/reference/genomeParameters.txt) <(grep -v '^###' $(GOLD_ROOT)/$(2)/$(1)/reference/genomeParameters.txt);) \
+	} >$(TEST_LOG_DIR)/$$@.log 2>&1 || { echo "==> FAILED: $$@ (see $(TEST_LOG_DIR)/$$@.log)"; exit 1; }
 	@echo "==> test-prepare-reference-$(2)-$(1): OK"
 endef
 $(foreach _m,$(READ_MODES),$(foreach _a,$(ALIGNERS),$(eval $(call _RULE_TEST_PREP_REF,$(_a),$(_m)))))
 
 define _RULE_TEST_CALC_EXPR
 test-calculate-expression-$(2)-$(1): $$(if $$(filter star,$(1)),fetch-star-276a)
+	@mkdir -p $(TEST_LOG_DIR)
 	@echo "==> Testing rsem-calculate-expression ($(2), $(1))"
-	rm -rf $(TEST_OUTPUT)/$(2)/$(1)/expression
-	mkdir -p $(TEST_OUTPUT)/$(2)/$(1)/expression
-	./rsem-calculate-expression \
+	@{ \
+	  set -e; \
+	  rm -rf $(TEST_OUTPUT)/$(2)/$(1)/expression; \
+	  mkdir -p $(TEST_OUTPUT)/$(2)/$(1)/expression; \
+	  ./rsem-calculate-expression \
 		$(CALC_FLAGS_$(1)) \
 		$(STAR_EXTRA_ARGS_$(1)) \
 		-p $(TEST_THREADS) \
 		--seed $(TEST_SEED) \
 		$(CALC_READ_ARGS_$(2)) \
 		$(GOLD_ROOT)/$(2)/$(1)/reference/$(REF_NAME) \
-		$(TEST_OUTPUT)/$(2)/$(1)/expression/$(SAMPLE_NAME)
-	diff $(TEST_OUTPUT)/$(2)/$(1)/expression/$(SAMPLE_NAME).genes.results $(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).genes.results
-	diff $(TEST_OUTPUT)/$(2)/$(1)/expression/$(SAMPLE_NAME).isoforms.results $(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).isoforms.results
-	diff $(TEST_OUTPUT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt $(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt
-	python3 tests/compare_floats.py --exact $(TEST_OUTPUT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model $(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model
-	python3 tests/compare_floats.py $(TEST_OUTPUT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta $(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta
+		$(TEST_OUTPUT)/$(2)/$(1)/expression/$(SAMPLE_NAME); \
+	  diff $(TEST_OUTPUT)/$(2)/$(1)/expression/$(SAMPLE_NAME).genes.results $(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).genes.results; \
+	  diff $(TEST_OUTPUT)/$(2)/$(1)/expression/$(SAMPLE_NAME).isoforms.results $(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).isoforms.results; \
+	  diff $(TEST_OUTPUT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt $(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt; \
+	  python3 tests/compare_floats.py --exact $(TEST_OUTPUT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model $(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model; \
+	  python3 tests/compare_floats.py $(TEST_OUTPUT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta $(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta; \
+	} >$(TEST_LOG_DIR)/$$@.log 2>&1 || { echo "==> FAILED: $$@ (see $(TEST_LOG_DIR)/$$@.log)"; exit 1; }
 	@echo "==> test-calculate-expression-$(2)-$(1): OK"
 endef
 $(foreach _m,$(READ_MODES),$(foreach _a,$(ALIGNERS),$(eval $(call _RULE_TEST_CALC_EXPR,$(_a),$(_m)))))
 
 define _RULE_TEST_CALC_CI
 test-calculate-expression-ci-$(2)-$(1): $$(if $$(filter star,$(1)),fetch-star-276a)
+	@mkdir -p $(TEST_LOG_DIR)
 	@echo "==> Testing rsem-calculate-expression with --calc-ci ($(2), $(1))"
-	rm -rf $(TEST_OUTPUT)/$(2)/$(1)/expression_ci
-	mkdir -p $(TEST_OUTPUT)/$(2)/$(1)/expression_ci
-	./rsem-calculate-expression \
+	@{ \
+	  set -e; \
+	  rm -rf $(TEST_OUTPUT)/$(2)/$(1)/expression_ci; \
+	  mkdir -p $(TEST_OUTPUT)/$(2)/$(1)/expression_ci; \
+	  ./rsem-calculate-expression \
 		$(CALC_FLAGS_$(1)) \
 		$(STAR_EXTRA_ARGS_$(1)) \
 		-p $(TEST_THREADS) \
@@ -373,38 +387,43 @@ test-calculate-expression-ci-$(2)-$(1): $$(if $$(filter star,$(1)),fetch-star-27
 		--calc-ci \
 		$(CALC_READ_ARGS_$(2)) \
 		$(GOLD_ROOT)/$(2)/$(1)/reference/$(REF_NAME) \
-		$(TEST_OUTPUT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI)
-	diff $(TEST_OUTPUT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).genes.results $(GOLD_ROOT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).genes.results
-	diff $(TEST_OUTPUT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).isoforms.results $(GOLD_ROOT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).isoforms.results
-	diff $(TEST_OUTPUT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).cnt $(GOLD_ROOT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).cnt
-	python3 tests/compare_floats.py --exact $(TEST_OUTPUT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).model $(GOLD_ROOT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).model
-	python3 tests/compare_floats.py $(TEST_OUTPUT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).theta $(GOLD_ROOT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).theta
+		$(TEST_OUTPUT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI); \
+	  diff $(TEST_OUTPUT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).genes.results $(GOLD_ROOT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).genes.results; \
+	  diff $(TEST_OUTPUT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).isoforms.results $(GOLD_ROOT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).isoforms.results; \
+	  diff $(TEST_OUTPUT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).cnt $(GOLD_ROOT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).cnt; \
+	  python3 tests/compare_floats.py --exact $(TEST_OUTPUT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).model $(GOLD_ROOT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).model; \
+	  python3 tests/compare_floats.py $(TEST_OUTPUT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).theta $(GOLD_ROOT)/$(2)/$(1)/expression_ci/$(SAMPLE_NAME_CI).stat/$(SAMPLE_NAME_CI).theta; \
+	} >$(TEST_LOG_DIR)/$$@.log 2>&1 || { echo "==> FAILED: $$@ (see $(TEST_LOG_DIR)/$$@.log)"; exit 1; }
 	@echo "==> test-calculate-expression-ci-$(2)-$(1): OK"
 endef
 $(foreach _m,$(READ_MODES),$(foreach _a,$(ALIGNERS),$(eval $(call _RULE_TEST_CALC_CI,$(_a),$(_m)))))
 
 define _RULE_TEST_SIM
 test-simulate-reads-$(2)-$(1):
+	@mkdir -p $(TEST_LOG_DIR)
 	@echo "==> Testing rsem-simulate-reads ($(2), $(1))"
-	rm -rf $(TEST_OUTPUT)/$(2)/$(1)/simulated
-	mkdir -p $(TEST_OUTPUT)/$(2)/$(1)/simulated
-	@theta0=`awk 'NR==3 {print $$$$1}' $(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta` && \
-	./rsem-simulate-reads \
+	@{ \
+	  set -e; \
+	  rm -rf $(TEST_OUTPUT)/$(2)/$(1)/simulated; \
+	  mkdir -p $(TEST_OUTPUT)/$(2)/$(1)/simulated; \
+	  theta0=`awk 'NR==3 {print $$$$1}' $(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta`; \
+	  ./rsem-simulate-reads \
 		$(GOLD_ROOT)/$(2)/$(1)/reference/$(REF_NAME) \
 		$(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model \
 		$(GOLD_ROOT)/$(2)/$(1)/expression/$(SAMPLE_NAME).isoforms.results \
 		$$$$theta0 \
 		1000 \
 		$(TEST_OUTPUT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated \
-		--seed $(TEST_SEED)
-	@if [ "$(2)" = "paired_end" ]; then \
-	  diff $(TEST_OUTPUT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated_1.fq $(GOLD_ROOT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated_1.fq; \
-	  diff $(TEST_OUTPUT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated_2.fq $(GOLD_ROOT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated_2.fq; \
-	else \
-	  diff $(TEST_OUTPUT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated.fq $(GOLD_ROOT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated.fq; \
-	fi
-	diff $(TEST_OUTPUT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated.sim.isoforms.results $(GOLD_ROOT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated.sim.isoforms.results
-	diff $(TEST_OUTPUT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated.sim.genes.results $(GOLD_ROOT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated.sim.genes.results
+		--seed $(TEST_SEED); \
+	  if [ "$(2)" = "paired_end" ]; then \
+	    diff $(TEST_OUTPUT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated_1.fq $(GOLD_ROOT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated_1.fq; \
+	    diff $(TEST_OUTPUT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated_2.fq $(GOLD_ROOT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated_2.fq; \
+	  else \
+	    diff $(TEST_OUTPUT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated.fq $(GOLD_ROOT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated.fq; \
+	  fi; \
+	  diff $(TEST_OUTPUT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated.sim.isoforms.results $(GOLD_ROOT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated.sim.isoforms.results; \
+	  diff $(TEST_OUTPUT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated.sim.genes.results $(GOLD_ROOT)/$(2)/$(1)/simulated/$(SAMPLE_NAME).simulated.sim.genes.results; \
+	} >$(TEST_LOG_DIR)/$$@.log 2>&1 || { echo "==> FAILED: $$@ (see $(TEST_LOG_DIR)/$$@.log)"; exit 1; }
 	@echo "==> test-simulate-reads-$(2)-$(1): OK"
 endef
 $(foreach _m,$(READ_MODES),$(foreach _a,$(ALIGNERS),$(eval $(call _RULE_TEST_SIM,$(_a),$(_m)))))
@@ -463,16 +482,20 @@ OPT_POST_hisat2_path := tests/assert_path_flag_honored.sh $(HISAT2_PROBE_LOG) $(
 
 define _RULE_TEST_OPTION
 test-option-$(1): $(OPT_PREREQ_$(1))
+	@mkdir -p $(TEST_LOG_DIR)
 	@echo "==> Testing option case: $(1)"
-	rm -rf $(TEST_OUTPUT)/options/$(1)
-	mkdir -p $(TEST_OUTPUT)/options/$(1)
-	$$(OPT_ENV_$(1)) PATH="$(CURDIR)/tests/shims:$$$$PATH" ./rsem-calculate-expression -p $(TEST_THREADS) $$(OPT_ARGS_$(1)) $$(OPT_REF_$(1)) $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME)
-	diff $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).genes.results $(GOLD_ROOT)/options/$(1)/$(SAMPLE_NAME).genes.results
-	diff $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).isoforms.results $(GOLD_ROOT)/options/$(1)/$(SAMPLE_NAME).isoforms.results
-	diff $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt $(GOLD_ROOT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt
-	python3 tests/compare_floats.py --exact $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model $(GOLD_ROOT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model
-	python3 tests/compare_floats.py $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta $(GOLD_ROOT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta
-	$$(OPT_POST_$(1))
+	@{ \
+	  set -e; \
+	  rm -rf $(TEST_OUTPUT)/options/$(1); \
+	  mkdir -p $(TEST_OUTPUT)/options/$(1); \
+	  $$(OPT_ENV_$(1)) PATH="$(CURDIR)/tests/shims:$$$$PATH" ./rsem-calculate-expression -p $(TEST_THREADS) $$(OPT_ARGS_$(1)) $$(OPT_REF_$(1)) $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME); \
+	  diff $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).genes.results $(GOLD_ROOT)/options/$(1)/$(SAMPLE_NAME).genes.results; \
+	  diff $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).isoforms.results $(GOLD_ROOT)/options/$(1)/$(SAMPLE_NAME).isoforms.results; \
+	  diff $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt $(GOLD_ROOT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).cnt; \
+	  python3 tests/compare_floats.py --exact $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model $(GOLD_ROOT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).model; \
+	  python3 tests/compare_floats.py $(TEST_OUTPUT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta $(GOLD_ROOT)/options/$(1)/$(SAMPLE_NAME).stat/$(SAMPLE_NAME).theta; \
+	  $$(if $$(OPT_POST_$(1)),$$(OPT_POST_$(1));) \
+	} >$(TEST_LOG_DIR)/$$@.log 2>&1 || { echo "==> FAILED: $$@ (see $(TEST_LOG_DIR)/$$@.log)"; exit 1; }
 	@echo "==> test-option-$(1): OK"
 endef
 $(foreach _c,$(OPTION_CASES),$(eval $(call _RULE_TEST_OPTION,$(_c))))
