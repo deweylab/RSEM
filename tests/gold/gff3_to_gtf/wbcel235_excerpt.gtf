@@ -1,0 +1,3 @@
+NC_003279.8	RefSeq	exon	7954977	7955033	.	+	.	gene_id "gene-CELE_T22C1.13"; transcript_id "rna-NR_050281.2"; gene_name "mir-8209"; transcript_name "NR_050281.2";
+NC_003279.8	RefSeq	exon	7954977	7954997	.	+	.	gene_id "gene-CELE_T22C1.13"; transcript_id "rna-CELE_T22C1.13"; gene_name "mir-8209";
+NC_003279.8	RefSeq	exon	7955012	7955033	.	+	.	gene_id "gene-CELE_T22C1.13"; transcript_id "rna-CELE_T22C1.13-2"; gene_name "mir-8209";

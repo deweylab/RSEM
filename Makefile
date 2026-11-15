@@ -218,7 +218,7 @@ test-simulate-reads: $(foreach m,$(READ_MODES),$(foreach a,$(ALIGNERS),test-simu
 
 # Default: fail fast. Depends on 'all' to ensure binaries are built first.
 # fetch-star-276a is a no-op if STAR 2.7.6a is already unpacked (required for star/* tests).
-test: all fetch-star-276a $(TEST_TARGETS) test-options
+test: all fetch-star-276a $(TEST_TARGETS) test-options test-gff3-to-gtf
 
 # CI / full signal: keep going
 test-all: all
@@ -229,7 +229,7 @@ test-all: all
 # without duplicating the matrix definition in the workflow.
 .PHONY: print-test-targets
 print-test-targets:
-	@echo $(TEST_TARGETS) $(foreach _c,$(OPTION_CASES),test-option-$(_c))
+	@echo $(TEST_TARGETS) $(foreach _c,$(OPTION_CASES),test-option-$(_c)) test-gff3-to-gtf
 
 # Per-aligner flags for rsem-prepare-reference / rsem-calculate-expression
 PREP_FLAGS_bowtie := --bowtie
@@ -495,3 +495,24 @@ $(foreach _c,$(OPTION_CASES),$(eval $(call _RULE_GENERATE_GOLD_OPTION,$(_c))))
 
 generate-gold-options: $(foreach _c,$(OPTION_CASES),generate-gold-option-$(_c))
 	@echo "==> Gold option-coverage standard generated under $(GOLD_ROOT)/options/{$(OPTION_CASES)}/"
+
+# ===================================================================
+# ---- rsem-gff3-to-gtf test ----------------------------------------
+# ===================================================================
+# Excerpt of the NCBI RefSeq GFF3 of C. elegans (GCF_000002985.6_WBcel235): a primary_transcript
+# without Parent, and mature miRNAs whose Parent is a primary_transcript.
+
+.PHONY: test-gff3-to-gtf generate-gold-gff3-to-gtf
+test-gff3-to-gtf:
+	@echo "==> Testing rsem-gff3-to-gtf (NCBI RefSeq GFF3)"
+	rm -rf $(TEST_OUTPUT)/gff3_to_gtf
+	mkdir -p $(TEST_OUTPUT)/gff3_to_gtf
+	python3 ./rsem-gff3-to-gtf $(TEST_DATA)/wbcel235_excerpt.gff3 $(TEST_OUTPUT)/gff3_to_gtf/wbcel235_excerpt.gtf
+	diff $(TEST_OUTPUT)/gff3_to_gtf/wbcel235_excerpt.gtf $(GOLD_ROOT)/gff3_to_gtf/wbcel235_excerpt.gtf
+	@echo "==> test-gff3-to-gtf: OK"
+
+# The expected file was checked by hand against the GFF3 excerpt. Regenerate it only after reviewing the diff.
+generate-gold-gff3-to-gtf:
+	mkdir -p $(TEST_OUTPUT)/gff3_to_gtf $(GOLD_ROOT)/gff3_to_gtf
+	python3 ./rsem-gff3-to-gtf $(TEST_DATA)/wbcel235_excerpt.gff3 $(GOLD_ROOT)/gff3_to_gtf/wbcel235_excerpt.gtf
+	@echo "==> Gold gff3-to-gtf generated under $(GOLD_ROOT)/gff3_to_gtf/"

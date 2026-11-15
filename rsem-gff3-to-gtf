@@ -192,13 +192,23 @@ def flush_out(fout):
 	global num_trans
 	global patterns
 
+	tid2transcript = dict((transcript.tid, transcript) for transcript in transcripts)
+
 	for transcript in transcripts:
 		tid2pos[transcript.tid] = -1
 		if not transcript.setT or len(transcript.intervals) == 0 or (len(patterns) > 0 and transcript.ttype not in patterns):
 			continue
 
-		my_assert(transcript.gid in gid2gname, 
+		# a transcript can be the child of another transcript (e.g. a mature miRNA of a primary_transcript), use the gene of the latter
+		gid = transcript.gid
+		seen = set([transcript.tid])
+		while gid not in gid2gname and gid in tid2transcript and gid not in seen:
+			seen.add(gid)
+			gid = tid2transcript[gid].gid
+
+		my_assert(gid in gid2gname,
 			"Cannot recognize transcript {0}'s parent {1}, a gene feature might be missing.".format(transcript.tid, transcript.gid))
+		transcript.gid = gid
 
 		transcript.gname = gid2gname[transcript.gid]
 
@@ -286,6 +296,11 @@ with open(args.input_GFF3_file) as fin:
 			if args.make_genes_as_transcripts:
 				feature.feature_type = feature.original_type = "transcript"
 				feature.attribute_dict["Parent"] = [feature.attribute_dict["ID"]]
+
+		# NCBI files contain transcript and exon features without Parent (e.g. a primary_transcript duplicating its gene)
+		if feature.feature_type in ("transcript", "exon") and feature.getAttribute("Parent") == None:
+			sys.stderr.write("Warning: ignore line {0} because it has no attribute Parent:\n{1}\n".format(feature.line_no, feature.line))
+			continue
 
 		if feature.feature_type == "transcript":
 			transcript = getTranscript(feature.getAttribute("ID", True), feature)
