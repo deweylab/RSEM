@@ -499,8 +499,7 @@ generate-gold-options: $(foreach _c,$(OPTION_CASES),generate-gold-option-$(_c))
 # ===================================================================
 # ---- rsem-gff3-to-gtf test ----------------------------------------
 # ===================================================================
-# Excerpt of the NCBI RefSeq GFF3 of C. elegans (GCF_000002985.6_WBcel235): a primary_transcript
-# without Parent, and mature miRNAs whose Parent is a primary_transcript.
+# Excerpt of the C. elegans NCBI RefSeq GFF3: parentless primary_transcript, miRNAs under a primary_transcript.
 
 .PHONY: test-gff3-to-gtf generate-gold-gff3-to-gtf
 test-gff3-to-gtf:
@@ -511,7 +510,7 @@ test-gff3-to-gtf:
 	diff $(TEST_OUTPUT)/gff3_to_gtf/wbcel235_excerpt.gtf $(GOLD_ROOT)/gff3_to_gtf/wbcel235_excerpt.gtf
 	@echo "==> test-gff3-to-gtf: OK"
 
-# The expected file was checked by hand against the GFF3 excerpt. Regenerate it only after reviewing the diff.
+# Review the diff before regenerating.
 generate-gold-gff3-to-gtf:
 	mkdir -p $(TEST_OUTPUT)/gff3_to_gtf $(GOLD_ROOT)/gff3_to_gtf
 	python3 ./rsem-gff3-to-gtf $(TEST_DATA)/wbcel235_excerpt.gff3 $(GOLD_ROOT)/gff3_to_gtf/wbcel235_excerpt.gtf
