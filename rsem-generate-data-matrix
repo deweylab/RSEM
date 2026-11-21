@@ -55,9 +55,13 @@ for (my $i = 0; $i < $n; $i++) {
 	$M = scalar(@ids); 
 	@ids_arr = @ids;
     }
-    elsif (!&check($M, \@ids_arr, \@ids)) { 
-	print STDERR "Number of lines among samples are not equal!\n"; 
-	exit(-1); 
+    elsif (scalar(@ids) != $M) {
+	print STDERR "Number of lines among samples are not equal! $ARGV[0] has $M lines but $ARGV[$i] has ", scalar(@ids), ".\n";
+	exit(-1);
+    }
+    elsif (!&check($M, \@ids_arr, \@ids)) {
+	print STDERR "IDs among samples are not the same or not in the same order! Compare $ARGV[0] with $ARGV[$i].\n";
+	exit(-1);
     }
 
     my $colname;
