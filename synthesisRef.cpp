@@ -172,7 +172,8 @@ int main(int argc, char* argv[]) {
 
 		cursor.filename = argv[i]; cursor.line_no = cursor.pos = 0;
 		
-		getline(fin, line);
+		// skip ';' comment lines and blank lines before the first '>' record
+		while (getline(fin, line) && (line.empty() || line[0] == ';')) ++cursor.line_no;
 		while ((fin) && (line[0] == '>')) {
 			istringstream strin(line.substr(1));
 			strin>>seqname;
