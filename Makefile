@@ -218,7 +218,7 @@ test-simulate-reads: $(foreach m,$(READ_MODES),$(foreach a,$(ALIGNERS),test-simu
 
 # Default: fail fast. Depends on 'all' to ensure binaries are built first.
 # fetch-star-276a is a no-op if STAR 2.7.6a is already unpacked (required for star/* tests).
-test: all fetch-star-276a $(TEST_TARGETS) test-options
+test: all fetch-star-276a $(TEST_TARGETS) test-options test-fasta-comments
 
 # CI / full signal: keep going
 test-all: all
@@ -229,7 +229,7 @@ test-all: all
 # without duplicating the matrix definition in the workflow.
 .PHONY: print-test-targets
 print-test-targets:
-	@echo $(TEST_TARGETS) $(foreach _c,$(OPTION_CASES),test-option-$(_c))
+	@echo $(TEST_TARGETS) $(foreach _c,$(OPTION_CASES),test-option-$(_c)) test-fasta-comments
 
 # Per-aligner flags for rsem-prepare-reference / rsem-calculate-expression
 PREP_FLAGS_bowtie := --bowtie
@@ -478,6 +478,30 @@ endef
 $(foreach _c,$(OPTION_CASES),$(eval $(call _RULE_TEST_OPTION,$(_c))))
 
 test-options: $(foreach _c,$(OPTION_CASES),test-option-$(_c))
+
+# ';' comment lines and blank lines before the first '>' record must be skipped:
+# a commented copy of the genome gives the gold reference files, and a commented
+# transcript FASTA gives the same files as the uncommented one, both through
+# rsem-prepare-reference and through rsem-preref directly.
+FASTA_COMMENTS_OUT := $(TEST_OUTPUT)/fasta_comments
+FASTA_COMMENTS_HEADER := ';test comment\n;>not a record\n\n'
+RSEM_REF_SUFFIXES := grp ti seq transcripts.fa idx.fa n2g.idx.fa
+
+.PHONY: test-fasta-comments
+test-fasta-comments:
+	@echo "==> Testing ';' comment lines before the first FASTA record"
+	rm -rf $(FASTA_COMMENTS_OUT)
+	mkdir -p $(FASTA_COMMENTS_OUT)/genome $(FASTA_COMMENTS_OUT)/plain $(FASTA_COMMENTS_OUT)/commented $(FASTA_COMMENTS_OUT)/preref
+	{ printf $(FASTA_COMMENTS_HEADER); cat $(TEST_GENOME); } > $(FASTA_COMMENTS_OUT)/genome.fa
+	./rsem-prepare-reference --gtf $(TEST_GTF) $(FASTA_COMMENTS_OUT)/genome.fa $(FASTA_COMMENTS_OUT)/genome/$(REF_NAME)
+	for s in chrlist $(RSEM_REF_SUFFIXES); do diff $(FASTA_COMMENTS_OUT)/genome/$(REF_NAME).$$s $(GOLD_ROOT)/paired_end/bowtie2/reference/$(REF_NAME).$$s || exit 1; done
+	{ printf $(FASTA_COMMENTS_HEADER); cat $(GOLD_ROOT)/paired_end/bowtie2/reference/$(REF_NAME).transcripts.fa; } > $(FASTA_COMMENTS_OUT)/transcripts.fa
+	./rsem-prepare-reference $(GOLD_ROOT)/paired_end/bowtie2/reference/$(REF_NAME).transcripts.fa $(FASTA_COMMENTS_OUT)/plain/$(REF_NAME)
+	./rsem-prepare-reference $(FASTA_COMMENTS_OUT)/transcripts.fa $(FASTA_COMMENTS_OUT)/commented/$(REF_NAME)
+	for s in $(RSEM_REF_SUFFIXES); do diff $(FASTA_COMMENTS_OUT)/commented/$(REF_NAME).$$s $(FASTA_COMMENTS_OUT)/plain/$(REF_NAME).$$s || exit 1; done
+	./rsem-preref $(FASTA_COMMENTS_OUT)/transcripts.fa 1 $(FASTA_COMMENTS_OUT)/preref/$(REF_NAME)
+	for s in seq idx.fa n2g.idx.fa; do diff $(FASTA_COMMENTS_OUT)/preref/$(REF_NAME).$$s $(GOLD_ROOT)/paired_end/bowtie2/reference/$(REF_NAME).$$s || exit 1; done
+	@echo "==> test-fasta-comments: OK"
 
 # Generate gold for the option-coverage cases. One rule per case via $(eval): the
 # OPT_ARGS_$(1)/OPT_REF_$(1) lookups need a literal $(1), so a shell loop won't work.

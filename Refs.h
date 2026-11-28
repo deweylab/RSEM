@@ -93,7 +93,8 @@ void Refs::makeRefs(char *inpF, RefSeqPolicy& policy, PolyARules& rules) {
 
   fin.open(inpF);
   if (!fin.is_open()) { fprintf(stderr, "Cannot open %s! It may not exist.\n", inpF); exit(-1); }
-  getline(fin, line);
+  // skip ';' comment lines and blank lines before the first '>' record
+  while (getline(fin, line) && (line.empty() || line[0] == ';')) {}
   while ((fin) && (line[0] == '>')) {
     tag = line.substr(1);
     rawseq = "";
